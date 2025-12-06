@@ -1,7 +1,37 @@
-import { Bot, Context } from "grammy";
+import { Bot, Context, InlineKeyboard } from "grammy";
 import { Config } from "../types/index.js";
+import {
+  handleMessage,
+  handleCallback,
+  ServiceContext,
+  MessageResponse,
+} from "../handlers/index.js";
 
-export function createBot(config: Config): Bot<Context> {
+/**
+ * Send response with optional inline keyboard
+ */
+async function sendResponse(
+  ctx: Context,
+  response: MessageResponse,
+): Promise<void> {
+  if (response.inlineKeyboard) {
+    const keyboard = new InlineKeyboard();
+    for (const row of response.inlineKeyboard) {
+      for (const button of row) {
+        keyboard.text(button.text, button.callbackData);
+      }
+      keyboard.row();
+    }
+    await ctx.reply(response.text, { reply_markup: keyboard });
+  } else {
+    await ctx.reply(response.text);
+  }
+}
+
+export function createBot(
+  config: Config,
+  services: ServiceContext,
+): Bot<Context> {
   const bot = new Bot<Context>(config.telegram.botToken);
 
   // Debug middleware for local development
@@ -26,34 +56,33 @@ export function createBot(config: Config): Bot<Context> {
     });
   }
 
-  // Commands
-  bot.command("start", async (ctx) => {
-    await ctx.reply(
-      "DCA Bot for Solana\n\n" +
-        "Commands:\n" +
-        "/status - Portfolio status\n" +
-        "/balance - Check balances\n" +
-        "/help - Show help",
+  // Handle all text messages through unified handler
+  bot.on("message:text", async (ctx) => {
+    const response = await handleMessage(
+      {
+        userId: String(ctx.from.id),
+        telegramId: ctx.from.id,
+        username: ctx.from.username,
+        text: ctx.message.text,
+      },
+      services,
     );
+    await sendResponse(ctx, response);
   });
 
-  bot.command("help", async (ctx) => {
-    await ctx.reply(
-      "Healthy Crypto Index DCA Bot\n\n" +
-        "Target allocations:\n" +
-        "- BTC: 40%\n" +
-        "- ETH: 30%\n" +
-        "- SOL: 30%\n\n" +
-        "The bot purchases the asset furthest below its target allocation.",
+  // Handle callback queries (inline button clicks)
+  bot.on("callback_query:data", async (ctx) => {
+    const response = await handleCallback(
+      ctx.from.id,
+      ctx.callbackQuery.data,
+      services,
     );
-  });
 
-  bot.command("status", async (ctx) => {
-    await ctx.reply("Portfolio status: Not implemented yet");
-  });
+    // Answer callback to remove loading state
+    await ctx.answerCallbackQuery();
 
-  bot.command("balance", async (ctx) => {
-    await ctx.reply("Balance check: Not implemented yet");
+    // Edit the original message with the result
+    await ctx.editMessageText(response.text);
   });
 
   // Error handling
