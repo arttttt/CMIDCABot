@@ -1,32 +1,41 @@
-import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import {
+  createSolanaRpc,
+  address,
+  lamports,
+  type Rpc,
+  type SolanaRpcApi,
+  type Address,
+} from "@solana/web3.js";
 import { SolanaConfig } from "../types/index.js";
 
+const LAMPORTS_PER_SOL = 1_000_000_000n;
+
 export class SolanaService {
-  private connection: Connection;
+  private rpc: Rpc<SolanaRpcApi>;
   private config: SolanaConfig;
 
   constructor(config: SolanaConfig) {
     this.config = config;
-    this.connection = new Connection(config.rpcUrl, "confirmed");
+    this.rpc = createSolanaRpc(config.rpcUrl);
   }
 
-  async getBalance(address: string): Promise<number> {
-    const publicKey = new PublicKey(address);
-    const balance = await this.connection.getBalance(publicKey);
-    return balance / LAMPORTS_PER_SOL;
+  async getBalance(walletAddress: string): Promise<number> {
+    const addr = address(walletAddress);
+    const { value } = await this.rpc.getBalance(addr).send();
+    return Number(value) / Number(LAMPORTS_PER_SOL);
   }
 
-  async isValidAddress(address: string): Promise<boolean> {
+  isValidAddress(walletAddress: string): boolean {
     try {
-      new PublicKey(address);
+      address(walletAddress);
       return true;
     } catch {
       return false;
     }
   }
 
-  getConnection(): Connection {
-    return this.connection;
+  getRpc(): Rpc<SolanaRpcApi> {
+    return this.rpc;
   }
 
   getNetwork(): string {
