@@ -1,1 +1,124 @@
 # DCATgBot
+
+Telegram bot for automated DCA (Dollar Cost Averaging) investing in cryptocurrencies on Solana.
+
+Implements the "Healthy Crypto Index" strategy — a basket of three assets:
+- **BTC (cbBTC)** — 40%
+- **ETH** — 30%
+- **SOL** — 30%
+
+On each purchase, the bot selects the asset whose portfolio share lags furthest behind its target allocation.
+
+## Requirements
+
+- Node.js >= 24.0.0 (LTS)
+- npm >= 10.0.0
+
+## Installation
+
+```bash
+git clone https://github.com/arttttt/DCATgBot.git
+cd DCATgBot
+npm install
+```
+
+## Configuration
+
+Create a `.env` file from the example:
+
+```bash
+cp .env.example .env
+```
+
+Fill in the variables:
+
+```env
+# Telegram Bot (get from @BotFather)
+TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+
+# Solana
+SOLANA_RPC_URL=https://api.devnet.solana.com
+SOLANA_NETWORK=devnet
+
+# Database
+DATABASE_PATH=./data/bot.db
+```
+
+## Running
+
+### Development mode (with hot-reload)
+
+```bash
+npm run dev
+```
+
+### Production
+
+```bash
+npm run build
+npm start
+```
+
+## Build
+
+```bash
+npm run build
+```
+
+Compiled files will appear in the `dist/` directory.
+
+## Type checking
+
+```bash
+npx tsc --noEmit
+```
+
+## Project structure
+
+```
+src/
+├── index.ts           # Entry point
+├── config/
+│   └── index.ts       # Configuration loader from ENV
+├── bot/
+│   └── index.ts       # Telegram bot (grammY)
+├── services/
+│   ├── index.ts       # Services export
+│   ├── solana.ts      # Solana RPC client (@solana/web3.js v2)
+│   └── jupiter.ts     # Jupiter API for swaps
+├── db/
+│   └── index.ts       # SQLite (better-sqlite3)
+└── types/
+    ├── index.ts       # Types export
+    ├── config.ts      # Configuration types
+    └── portfolio.ts   # Portfolio types
+```
+
+## Bot commands
+
+| Command | Description |
+|---------|-------------|
+| `/start` | Welcome message and command list |
+| `/help` | Strategy description |
+| `/status` | Portfolio status |
+| `/balance` | Check balances |
+
+## Tech stack
+
+- **TypeScript** 5.9
+- **grammY** — Telegram Bot Framework
+- **@solana/web3.js** v2 — Solana SDK
+- **better-sqlite3** — Local database
+- **tsx** — Run TypeScript without compilation
+
+## Devnet
+
+This project runs on Solana Devnet only. To get test SOL:
+
+1. Go to [Solana Faucet](https://faucet.solana.com/)
+2. Enter your wallet address
+3. Request test tokens
+
+## License
+
+MIT
