@@ -1,7 +1,11 @@
 import { Bot, Context } from "grammy";
 import { Config } from "../types/index.js";
+import { handleMessage, ServiceContext } from "../handlers/index.js";
 
-export function createBot(config: Config): Bot<Context> {
+export function createBot(
+  config: Config,
+  services: ServiceContext,
+): Bot<Context> {
   const bot = new Bot<Context>(config.telegram.botToken);
 
   // Debug middleware for local development
@@ -26,34 +30,18 @@ export function createBot(config: Config): Bot<Context> {
     });
   }
 
-  // Commands
-  bot.command("start", async (ctx) => {
-    await ctx.reply(
-      "DCA Bot for Solana\n\n" +
-        "Commands:\n" +
-        "/status - Portfolio status\n" +
-        "/balance - Check balances\n" +
-        "/help - Show help",
+  // Handle all text messages through unified handler
+  bot.on("message:text", async (ctx) => {
+    const response = await handleMessage(
+      {
+        userId: String(ctx.from.id),
+        telegramId: ctx.from.id,
+        username: ctx.from.username,
+        text: ctx.message.text,
+      },
+      services,
     );
-  });
-
-  bot.command("help", async (ctx) => {
-    await ctx.reply(
-      "Healthy Crypto Index DCA Bot\n\n" +
-        "Target allocations:\n" +
-        "- BTC: 40%\n" +
-        "- ETH: 30%\n" +
-        "- SOL: 30%\n\n" +
-        "The bot purchases the asset furthest below its target allocation.",
-    );
-  });
-
-  bot.command("status", async (ctx) => {
-    await ctx.reply("Portfolio status: Not implemented yet");
-  });
-
-  bot.command("balance", async (ctx) => {
-    await ctx.reply("Balance check: Not implemented yet");
+    await ctx.reply(response.text);
   });
 
   // Error handling

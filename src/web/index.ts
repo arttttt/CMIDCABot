@@ -3,7 +3,7 @@
  */
 
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
-import { handleMessage } from "../handlers/index.js";
+import { handleMessage, ServiceContext } from "../handlers/index.js";
 import { Config } from "../types/index.js";
 
 const HTML_PAGE = `<!DOCTYPE html>
@@ -152,6 +152,7 @@ const HTML_PAGE = `<!DOCTYPE html>
   <div class="quick-commands">
     <button class="quick-cmd" data-cmd="/start">/start</button>
     <button class="quick-cmd" data-cmd="/help">/help</button>
+    <button class="quick-cmd" data-cmd="/wallet">/wallet</button>
     <button class="quick-cmd" data-cmd="/status">/status</button>
     <button class="quick-cmd" data-cmd="/balance">/balance</button>
   </div>
@@ -232,7 +233,13 @@ function sendHtml(res: ServerResponse, html: string): void {
   res.end(html);
 }
 
-export async function startWebServer(config: Config): Promise<void> {
+// Web user ID for testing (simulates a Telegram user ID)
+const WEB_TEST_USER_ID = 999999999;
+
+export async function startWebServer(
+  config: Config,
+  services: ServiceContext,
+): Promise<void> {
   const port = config.web?.port ?? 3000;
 
   const server = createServer(async (req, res) => {
@@ -256,11 +263,15 @@ export async function startWebServer(config: Config): Promise<void> {
         const body = await parseBody(req);
         const { text } = JSON.parse(body);
 
-        const response = handleMessage({
-          userId: "web-user",
-          username: "Web Tester",
-          text: text ?? "",
-        });
+        const response = await handleMessage(
+          {
+            userId: "web-user",
+            telegramId: WEB_TEST_USER_ID,
+            username: "Web Tester",
+            text: text ?? "",
+          },
+          services,
+        );
 
         sendJson(res, response);
         return;
