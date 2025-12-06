@@ -33,6 +33,9 @@ cp .env.example .env
 Fill in the variables:
 
 ```env
+# Environment (development | production)
+NODE_ENV=development
+
 # Telegram Bot (get from @BotFather)
 TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 
@@ -46,11 +49,16 @@ DATABASE_PATH=./data/bot.db
 
 ## Running
 
-### Development mode (with hot-reload)
+### Development mode
 
 ```bash
 npm run dev
 ```
+
+In development mode (`NODE_ENV=development`):
+- Debug logging for all incoming messages
+- Webhook is automatically deleted to enable polling
+- Hot-reload enabled via tsx
 
 ### Production
 
@@ -71,27 +79,6 @@ Compiled files will appear in the `dist/` directory.
 
 ```bash
 npx tsc --noEmit
-```
-
-## Project structure
-
-```
-src/
-├── index.ts           # Entry point
-├── config/
-│   └── index.ts       # Configuration loader from ENV
-├── bot/
-│   └── index.ts       # Telegram bot (grammY)
-├── services/
-│   ├── index.ts       # Services export
-│   ├── solana.ts      # Solana RPC client (@solana/web3.js v2)
-│   └── jupiter.ts     # Jupiter API for swaps
-├── db/
-│   └── index.ts       # SQLite (better-sqlite3)
-└── types/
-    ├── index.ts       # Types export
-    ├── config.ts      # Configuration types
-    └── portfolio.ts   # Portfolio types
 ```
 
 ## Bot commands

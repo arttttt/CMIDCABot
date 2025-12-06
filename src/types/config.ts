@@ -15,4 +15,5 @@ export interface Config {
   telegram: TelegramConfig;
   solana: SolanaConfig;
   database: DatabaseConfig;
+  isDev: boolean;
 }
