@@ -1,20 +1,20 @@
 # DCATgBot
 
-Telegram-бот для автоматического DCA-инвестирования в криптовалюты на Solana.
+Telegram bot for automated DCA (Dollar Cost Averaging) investing in cryptocurrencies on Solana.
 
-Реализует стратегию "Healthy Crypto Index" — корзину из трёх активов:
+Implements the "Healthy Crypto Index" strategy — a basket of three assets:
 - **BTC (cbBTC)** — 40%
 - **ETH** — 30%
 - **SOL** — 30%
 
-При каждой покупке бот выбирает актив, чья доля в портфеле отстаёт от целевой сильнее всего.
+On each purchase, the bot selects the asset whose portfolio share lags furthest behind its target allocation.
 
-## Требования
+## Requirements
 
 - Node.js >= 20.0.0
 - npm >= 10.0.0
 
-## Установка
+## Installation
 
 ```bash
 git clone https://github.com/arttttt/DCATgBot.git
@@ -22,18 +22,18 @@ cd DCATgBot
 npm install
 ```
 
-## Конфигурация
+## Configuration
 
-Создай файл `.env` на основе примера:
+Create a `.env` file from the example:
 
 ```bash
 cp .env.example .env
 ```
 
-Заполни переменные:
+Fill in the variables:
 
 ```env
-# Telegram Bot (получить у @BotFather)
+# Telegram Bot (get from @BotFather)
 TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 
 # Solana
@@ -44,9 +44,9 @@ SOLANA_NETWORK=devnet
 DATABASE_PATH=./data/bot.db
 ```
 
-## Запуск
+## Running
 
-### Режим разработки (с hot-reload)
+### Development mode (with hot-reload)
 
 ```bash
 npm run dev
@@ -59,66 +59,66 @@ npm run build
 npm start
 ```
 
-## Сборка
+## Build
 
 ```bash
 npm run build
 ```
 
-Собранные файлы появятся в директории `dist/`.
+Compiled files will appear in the `dist/` directory.
 
-## Проверка типов
+## Type checking
 
 ```bash
 npx tsc --noEmit
 ```
 
-## Структура проекта
+## Project structure
 
 ```
 src/
-├── index.ts           # Точка входа
+├── index.ts           # Entry point
 ├── config/
-│   └── index.ts       # Загрузка конфигурации из ENV
+│   └── index.ts       # Configuration loader from ENV
 ├── bot/
-│   └── index.ts       # Telegram-бот (grammY)
+│   └── index.ts       # Telegram bot (grammY)
 ├── services/
-│   ├── index.ts       # Экспорт сервисов
-│   ├── solana.ts      # Работа с Solana RPC (@solana/web3.js v2)
-│   └── jupiter.ts     # Jupiter API для свопов
+│   ├── index.ts       # Services export
+│   ├── solana.ts      # Solana RPC client (@solana/web3.js v2)
+│   └── jupiter.ts     # Jupiter API for swaps
 ├── db/
 │   └── index.ts       # SQLite (better-sqlite3)
 └── types/
-    ├── index.ts       # Экспорт типов
-    ├── config.ts      # Типы конфигурации
-    └── portfolio.ts   # Типы портфеля
+    ├── index.ts       # Types export
+    ├── config.ts      # Configuration types
+    └── portfolio.ts   # Portfolio types
 ```
 
-## Команды бота
+## Bot commands
 
-| Команда | Описание |
-|---------|----------|
-| `/start` | Приветствие и список команд |
-| `/help` | Описание стратегии |
-| `/status` | Статус портфеля |
-| `/balance` | Проверка баланса |
+| Command | Description |
+|---------|-------------|
+| `/start` | Welcome message and command list |
+| `/help` | Strategy description |
+| `/status` | Portfolio status |
+| `/balance` | Check balances |
 
-## Технологии
+## Tech stack
 
 - **TypeScript** 5.9
 - **grammY** — Telegram Bot Framework
 - **@solana/web3.js** v2 — Solana SDK
-- **better-sqlite3** — локальная база данных
-- **tsx** — запуск TypeScript без компиляции
+- **better-sqlite3** — Local database
+- **tsx** — Run TypeScript without compilation
 
 ## Devnet
 
-Проект работает только на Solana Devnet. Для получения тестовых SOL:
+This project runs on Solana Devnet only. To get test SOL:
 
-1. Перейди на [Solana Faucet](https://faucet.solana.com/)
-2. Введи адрес кошелька
-3. Получи тестовые токены
+1. Go to [Solana Faucet](https://faucet.solana.com/)
+2. Enter your wallet address
+3. Request test tokens
 
-## Лицензия
+## License
 
 MIT
