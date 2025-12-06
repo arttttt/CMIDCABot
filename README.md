@@ -11,7 +11,7 @@ On each purchase, the bot selects the asset whose portfolio share lags furthest 
 
 ## Requirements
 
-- Node.js >= 20.0.0
+- Node.js >= 24.0.0 (LTS)
 - npm >= 10.0.0
 
 ## Installation
