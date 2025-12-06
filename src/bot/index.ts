@@ -4,6 +4,28 @@ import { Config } from "../types/index.js";
 export function createBot(config: Config): Bot<Context> {
   const bot = new Bot<Context>(config.telegram.botToken);
 
+  // Debug middleware for local development
+  if (config.isDev) {
+    bot.use(async (ctx, next) => {
+      const start = Date.now();
+      const user = ctx.from;
+      const chat = ctx.chat;
+      const text = ctx.message?.text ?? ctx.callbackQuery?.data ?? "[no text]";
+
+      console.log(
+        `[DEBUG] ${new Date().toISOString()} | ` +
+          `User: ${user?.username ?? user?.id ?? "unknown"} | ` +
+          `Chat: ${chat?.id ?? "unknown"} | ` +
+          `Message: ${text}`,
+      );
+
+      await next();
+
+      const ms = Date.now() - start;
+      console.log(`[DEBUG] Response time: ${ms}ms`);
+    });
+  }
+
   // Commands
   bot.command("start", async (ctx) => {
     await ctx.reply(

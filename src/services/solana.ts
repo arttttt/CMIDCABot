@@ -1,10 +1,8 @@
 import {
   createSolanaRpc,
   address,
-  lamports,
   type Rpc,
   type SolanaRpcApi,
-  type Address,
 } from "@solana/web3.js";
 import { SolanaConfig } from "../types/index.js";
 

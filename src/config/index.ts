@@ -13,6 +13,9 @@ function getEnvOrDefault(key: string, defaultValue: string): string {
 }
 
 export function loadConfig(): Config {
+  const nodeEnv = getEnvOrDefault("NODE_ENV", "development");
+  const isDev = nodeEnv !== "production";
+
   return {
     telegram: {
       botToken: getEnvOrThrow("TELEGRAM_BOT_TOKEN"),
@@ -24,5 +27,6 @@ export function loadConfig(): Config {
     database: {
       path: getEnvOrDefault("DATABASE_PATH", "./data/bot.db"),
     },
+    isDev,
   };
 }
