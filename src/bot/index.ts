@@ -1,6 +1,32 @@
-import { Bot, Context } from "grammy";
+import { Bot, Context, InlineKeyboard } from "grammy";
 import { Config } from "../types/index.js";
-import { handleMessage, ServiceContext } from "../handlers/index.js";
+import {
+  handleMessage,
+  handleCallback,
+  ServiceContext,
+  MessageResponse,
+} from "../handlers/index.js";
+
+/**
+ * Send response with optional inline keyboard
+ */
+async function sendResponse(
+  ctx: Context,
+  response: MessageResponse,
+): Promise<void> {
+  if (response.inlineKeyboard) {
+    const keyboard = new InlineKeyboard();
+    for (const row of response.inlineKeyboard) {
+      for (const button of row) {
+        keyboard.text(button.text, button.callbackData);
+      }
+      keyboard.row();
+    }
+    await ctx.reply(response.text, { reply_markup: keyboard });
+  } else {
+    await ctx.reply(response.text);
+  }
+}
 
 export function createBot(
   config: Config,
@@ -41,7 +67,22 @@ export function createBot(
       },
       services,
     );
-    await ctx.reply(response.text);
+    await sendResponse(ctx, response);
+  });
+
+  // Handle callback queries (inline button clicks)
+  bot.on("callback_query:data", async (ctx) => {
+    const response = await handleCallback(
+      ctx.from.id,
+      ctx.callbackQuery.data,
+      services,
+    );
+
+    // Answer callback to remove loading state
+    await ctx.answerCallbackQuery();
+
+    // Edit the original message with the result
+    await ctx.editMessageText(response.text);
   });
 
   // Error handling

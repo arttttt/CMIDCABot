@@ -17,8 +17,14 @@ export interface MessageContext {
   text: string;
 }
 
+export interface InlineButton {
+  text: string;
+  callbackData: string;
+}
+
 export interface MessageResponse {
   text: string;
+  inlineKeyboard?: InlineButton[][];
 }
 
 /**
@@ -156,25 +162,46 @@ async function handleWalletCommand(
       };
     }
 
-    // Save wallet address
-    services.db.setWalletAddress(ctx.telegramId, walletAddress);
+    // Check if user already has a wallet
+    const user = services.db.getUser(ctx.telegramId);
+    if (user?.walletAddress) {
+      // Same wallet - just inform
+      if (user.walletAddress === walletAddress) {
+        try {
+          const balance = await services.solana.getBalance(walletAddress);
+          return {
+            text:
+              `This wallet is already connected.\n\n` +
+              `Address: ${walletAddress}\n` +
+              `Balance: ${balance.toFixed(4)} SOL`,
+          };
+        } catch {
+          return {
+            text:
+              `This wallet is already connected.\n\n` +
+              `Address: ${walletAddress}`,
+          };
+        }
+      }
 
-    try {
-      const balance = await services.solana.getBalance(walletAddress);
+      // Different wallet - ask for confirmation
       return {
         text:
-          `Wallet connected successfully!\n\n` +
-          `Address: ${walletAddress}\n` +
-          `Balance: ${balance.toFixed(4)} SOL`,
-      };
-    } catch {
-      return {
-        text:
-          `Wallet connected successfully!\n\n` +
-          `Address: ${walletAddress}\n` +
-          `Balance: Unable to fetch (wallet may be new or network issue)`,
+          `You already have a wallet connected:\n` +
+          `${user.walletAddress}\n\n` +
+          `Do you want to replace it with:\n` +
+          `${walletAddress}?`,
+        inlineKeyboard: [
+          [
+            { text: "Yes, replace", callbackData: `wallet_replace:${walletAddress}` },
+            { text: "Cancel", callbackData: "wallet_cancel" },
+          ],
+        ],
       };
     }
+
+    // No existing wallet - save directly
+    return saveWallet(ctx.telegramId, walletAddress, services);
   }
 
   if (subcommand === "remove") {
@@ -228,4 +255,61 @@ async function handleBalanceCommand(
       text: "Failed to fetch balance. Please try again later.",
     };
   }
+}
+
+async function saveWallet(
+  telegramId: number,
+  walletAddress: string,
+  services: ServiceContext,
+): Promise<MessageResponse> {
+  services.db.setWalletAddress(telegramId, walletAddress);
+
+  try {
+    const balance = await services.solana.getBalance(walletAddress);
+    return {
+      text:
+        `Wallet connected successfully!\n\n` +
+        `Address: ${walletAddress}\n` +
+        `Balance: ${balance.toFixed(4)} SOL`,
+    };
+  } catch {
+    return {
+      text:
+        `Wallet connected successfully!\n\n` +
+        `Address: ${walletAddress}\n` +
+        `Balance: Unable to fetch (wallet may be new or network issue)`,
+    };
+  }
+}
+
+/**
+ * Handle callback queries from inline keyboards
+ */
+export async function handleCallback(
+  telegramId: number,
+  callbackData: string,
+  services: ServiceContext,
+): Promise<MessageResponse> {
+  if (callbackData === "wallet_cancel") {
+    return {
+      text: "Wallet replacement cancelled.",
+    };
+  }
+
+  if (callbackData.startsWith("wallet_replace:")) {
+    const walletAddress = callbackData.replace("wallet_replace:", "");
+
+    // Validate address again for security
+    if (!services.solana.isValidAddress(walletAddress)) {
+      return {
+        text: "Invalid wallet address. Please try again.",
+      };
+    }
+
+    return saveWallet(telegramId, walletAddress, services);
+  }
+
+  return {
+    text: "Unknown action.",
+  };
 }

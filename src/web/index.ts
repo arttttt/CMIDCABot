@@ -3,7 +3,7 @@
  */
 
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
-import { handleMessage, ServiceContext } from "../handlers/index.js";
+import { handleMessage, handleCallback, ServiceContext } from "../handlers/index.js";
 import { Config } from "../types/index.js";
 
 const HTML_PAGE = `<!DOCTYPE html>
@@ -141,6 +141,33 @@ const HTML_PAGE = `<!DOCTYPE html>
     .quick-cmd:hover {
       background: #e94560;
     }
+
+    .inline-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .inline-btn {
+      padding: 0.5rem 1rem;
+      background: #0f3460;
+      border: 1px solid #e94560;
+      border-radius: 0.5rem;
+      color: #eee;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .inline-btn:hover {
+      background: #e94560;
+    }
+
+    .inline-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -169,12 +196,53 @@ const HTML_PAGE = `<!DOCTYPE html>
     const input = document.getElementById('messageInput');
     const sendBtn = document.getElementById('sendBtn');
 
-    function addMessage(text, isUser) {
+    function addMessage(text, isUser, inlineKeyboard) {
       const div = document.createElement('div');
       div.className = 'message ' + (isUser ? 'user' : 'bot');
       div.textContent = text;
+
+      // Add inline buttons if present
+      if (inlineKeyboard && inlineKeyboard.length > 0) {
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'inline-buttons';
+
+        for (const row of inlineKeyboard) {
+          for (const button of row) {
+            const btn = document.createElement('button');
+            btn.className = 'inline-btn';
+            btn.textContent = button.text;
+            btn.dataset.callback = button.callbackData;
+            btn.addEventListener('click', () => handleCallback(btn, div));
+            buttonsDiv.appendChild(btn);
+          }
+        }
+
+        div.appendChild(buttonsDiv);
+      }
+
       chat.appendChild(div);
       chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function handleCallback(btn, messageDiv) {
+      const callbackData = btn.dataset.callback;
+
+      // Disable all buttons in this message
+      messageDiv.querySelectorAll('.inline-btn').forEach(b => b.disabled = true);
+
+      try {
+        const res = await fetch('/api/callback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ callbackData })
+        });
+        const data = await res.json();
+
+        // Replace message text and remove buttons
+        messageDiv.textContent = data.text;
+      } catch (err) {
+        addMessage('Error: ' + err.message, false);
+      }
     }
 
     async function sendMessage(text) {
@@ -191,7 +259,7 @@ const HTML_PAGE = `<!DOCTYPE html>
           body: JSON.stringify({ text })
         });
         const data = await res.json();
-        addMessage(data.text, false);
+        addMessage(data.text, false, data.inlineKeyboard);
       } catch (err) {
         addMessage('Error: ' + err.message, false);
       } finally {
@@ -270,6 +338,21 @@ export async function startWebServer(
             username: "Web Tester",
             text: text ?? "",
           },
+          services,
+        );
+
+        sendJson(res, response);
+        return;
+      }
+
+      // API endpoint for callback (inline button clicks)
+      if (url === "/api/callback" && method === "POST") {
+        const body = await parseBody(req);
+        const { callbackData } = JSON.parse(body);
+
+        const response = await handleCallback(
+          WEB_TEST_USER_ID,
+          callbackData ?? "",
           services,
         );
 
