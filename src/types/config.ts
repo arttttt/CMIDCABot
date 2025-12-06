@@ -11,9 +11,15 @@ export interface DatabaseConfig {
   path: string;
 }
 
+export interface WebConfig {
+  enabled: boolean;
+  port: number;
+}
+
 export interface Config {
   telegram: TelegramConfig;
   solana: SolanaConfig;
   database: DatabaseConfig;
+  web?: WebConfig;
   isDev: boolean;
 }

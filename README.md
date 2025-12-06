@@ -60,6 +60,25 @@ In development mode (`NODE_ENV=development`):
 - Webhook is automatically deleted to enable polling
 - Hot-reload enabled via tsx
 
+### Web test interface
+
+For testing without Telegram, use the web interface:
+
+```bash
+npm run dev:web
+```
+
+Then open http://localhost:3000 in your browser. The web interface provides:
+- Chat-like UI that mimics Telegram
+- Quick command buttons for testing
+- No Telegram token required
+
+You can also enable it via environment variable:
+```env
+WEB_ENABLED=true
+WEB_PORT=3000  # optional, default 3000
+```
+
 ### Production
 
 ```bash
