@@ -1,0 +1,33 @@
+{
+  "name": "dca-tg-bot",
+  "version": "0.1.0",
+  "description": "Telegram bot for DCA investing on Solana",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts"
+  },
+  "keywords": [
+    "solana",
+    "dca",
+    "telegram",
+    "bot"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@solana/web3.js": "^1.98.0",
+    "better-sqlite3": "^11.6.0",
+    "grammy": "^1.31.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.10.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
