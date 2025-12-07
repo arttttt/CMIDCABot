@@ -296,9 +296,9 @@ async function handleStatusCommand(
   ctx: MessageContext,
   services: ServiceContext,
 ): Promise<MessageResponse> {
-  if (!services.dca) {
+  if (!services.dca || !services.dca.isMockMode()) {
     return {
-      text: "Portfolio tracking is not available.",
+      text: "Portfolio tracking is only available in development mode.",
     };
   }
 

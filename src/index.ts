@@ -5,7 +5,6 @@ import { DatabaseService } from "./db/index.js";
 import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import { ServiceContext } from "./handlers/index.js";
-import cron from "node-cron";
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -17,8 +16,8 @@ async function main(): Promise<void> {
   const services: ServiceContext = { db, solana, dca };
 
   // Start DCA scheduler in development mode
-  if (config.isDev && config.dca.amountSol > 0) {
-    startDcaScheduler(config.dca.timeUtc, config.dca.amountSol, dca);
+  if (config.isDev && config.dca.amountSol > 0 && config.dca.intervalMs > 0) {
+    startDcaScheduler(config.dca.intervalMs, config.dca.amountSol, dca);
   }
 
   // Web-only mode: just start the web server
@@ -97,20 +96,17 @@ async function main(): Promise<void> {
   });
 }
 
-function startDcaScheduler(timeUtc: string, amountSol: number, dca: DcaService): void {
-  const [hours, minutes] = timeUtc.split(":").map(Number);
+function startDcaScheduler(intervalMs: number, amountSol: number, dca: DcaService): void {
+  const formatInterval = (ms: number): string => {
+    if (ms >= 86400000) return `${(ms / 86400000).toFixed(1)} days`;
+    if (ms >= 3600000) return `${(ms / 3600000).toFixed(1)} hours`;
+    if (ms >= 60000) return `${(ms / 60000).toFixed(1)} minutes`;
+    return `${ms} ms`;
+  };
 
-  if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-    console.error(`[DCA] Invalid time format: ${timeUtc}. Expected HH:MM (e.g., 14:00)`);
-    return;
-  }
+  console.log(`[DCA] Scheduler started: ${amountSol} SOL every ${formatInterval(intervalMs)}`);
 
-  // Cron expression: minute hour * * * (every day at specified time UTC)
-  const cronExpression = `${minutes} ${hours} * * *`;
-
-  console.log(`[DCA] Scheduler started: ${amountSol} SOL daily at ${timeUtc} UTC`);
-
-  cron.schedule(cronExpression, async () => {
+  const runDca = async (): Promise<void> => {
     console.log(`[DCA] Running scheduled purchase at ${new Date().toISOString()}`);
 
     try {
@@ -119,9 +115,21 @@ function startDcaScheduler(timeUtc: string, amountSol: number, dca: DcaService):
     } catch (error) {
       console.error("[DCA] Scheduler error:", error);
     }
-  }, {
-    timezone: "UTC",
-  });
+
+    // Schedule next run
+    const nextRun = Date.now() + intervalMs;
+    console.log(`[DCA] Next run at ${new Date(nextRun).toISOString()}`);
+  };
+
+  // Schedule first run after interval
+  setTimeout(() => {
+    runDca();
+    // Then run at regular intervals
+    setInterval(runDca, intervalMs);
+  }, intervalMs);
+
+  const firstRun = Date.now() + intervalMs;
+  console.log(`[DCA] First run scheduled at ${new Date(firstRun).toISOString()}`);
 }
 
 main().catch((error) => {
