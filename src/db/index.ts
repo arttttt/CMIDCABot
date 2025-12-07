@@ -65,6 +65,17 @@ export class DatabaseService {
       .run(walletAddress, telegramId);
   }
 
+  getAllUsersWithWallet(): { telegramId: number; walletAddress: string }[] {
+    const rows = this.db
+      .prepare("SELECT telegram_id, wallet_address FROM users WHERE wallet_address IS NOT NULL AND wallet_address != ''")
+      .all() as { telegram_id: number; wallet_address: string }[];
+
+    return rows.map(row => ({
+      telegramId: row.telegram_id,
+      walletAddress: row.wallet_address,
+    }));
+  }
+
   close(): void {
     this.db.close();
   }

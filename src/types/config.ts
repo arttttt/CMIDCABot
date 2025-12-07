@@ -9,6 +9,7 @@ export interface SolanaConfig {
 
 export interface DatabaseConfig {
   path: string;
+  mockPath: string;
 }
 
 export interface WebConfig {
@@ -16,10 +17,16 @@ export interface WebConfig {
   port: number;
 }
 
+export interface DcaConfig {
+  amountSol: number;
+  intervalMs: number; // interval between purchases in milliseconds
+}
+
 export interface Config {
   telegram: TelegramConfig;
   solana: SolanaConfig;
   database: DatabaseConfig;
+  dca: DcaConfig;
   web?: WebConfig;
   isDev: boolean;
 }
