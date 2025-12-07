@@ -6,7 +6,6 @@ import { MockDatabaseService } from "./db/mock.js";
 import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import { ServiceContext } from "./handlers/index.js";
-import cron from "node-cron";
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -27,8 +26,8 @@ async function main(): Promise<void> {
   const services: ServiceContext = { db, solana, dca };
 
   // Start DCA scheduler in development mode
-  if (config.isDev && dca && mockDb && config.dca.amountSol > 0) {
-    startDcaScheduler(config.dca.cronSchedule, config.dca.intervalMs, config.dca.amountSol, dca, mockDb);
+  if (config.isDev && dca && mockDb && config.dca.amountSol > 0 && config.dca.intervalMs > 0) {
+    startDcaScheduler(config.dca.intervalMs, config.dca.amountSol, dca, mockDb);
   }
 
   // Web-only mode: just start the web server
@@ -111,23 +110,22 @@ async function main(): Promise<void> {
 }
 
 function startDcaScheduler(
-  cronSchedule: string,
   intervalMs: number,
   amountSol: number,
   dca: DcaService,
   mockDb: MockDatabaseService,
 ): void {
-  // Validate cron expression
-  if (!cron.validate(cronSchedule)) {
-    console.error(`[DCA] Invalid cron expression: ${cronSchedule}`);
-    return;
-  }
+  const formatInterval = (ms: number): string => {
+    if (ms >= 86400000) return `${(ms / 86400000).toFixed(1)} days`;
+    if (ms >= 3600000) return `${(ms / 3600000).toFixed(1)} hours`;
+    if (ms >= 60000) return `${(ms / 60000).toFixed(1)} minutes`;
+    return `${ms} ms`;
+  };
 
-  console.log(`[DCA] Persistent cron scheduler starting: ${amountSol} SOL on schedule "${cronSchedule}"`);
+  console.log(`[DCA] Persistent scheduler starting: ${amountSol} SOL every ${formatInterval(intervalMs)}`);
 
   // Initialize scheduler state in database
-  mockDb.initSchedulerState(cronSchedule, intervalMs);
-  const state = mockDb.getSchedulerState();
+  mockDb.initSchedulerState(intervalMs);
 
   const runDca = async (timestamp: Date): Promise<boolean> => {
     console.log(`[DCA] Running scheduled purchase for ${timestamp.toISOString()}`);
@@ -145,12 +143,44 @@ function startDcaScheduler(
     }
   };
 
-  // Calculate and execute missed intervals on startup
+  // Schedule next run based on last_run_at + intervalMs
+  const scheduleNextRun = (): void => {
+    const state = mockDb.getSchedulerState();
+    const lastRunAt = state?.lastRunAt ? new Date(state.lastRunAt).getTime() : null;
+
+    let nextRunTime: number;
+    if (lastRunAt) {
+      // Next run = last successful run + interval
+      nextRunTime = lastRunAt + intervalMs;
+    } else {
+      // No previous run - schedule for now + interval
+      nextRunTime = Date.now() + intervalMs;
+    }
+
+    const delay = Math.max(0, nextRunTime - Date.now());
+    console.log(`[DCA] Next run scheduled at ${new Date(nextRunTime).toISOString()} (in ${formatInterval(delay)})`);
+
+    setTimeout(async () => {
+      const success = await runDca(new Date());
+      if (success) {
+        // Schedule next run after successful execution
+        scheduleNextRun();
+      } else {
+        // Retry after a short delay on failure
+        console.log("[DCA] Retrying in 1 minute...");
+        setTimeout(scheduleNextRun, 60000);
+      }
+    }, delay);
+  };
+
+  // Catch up missed runs on startup
   const catchUpMissedRuns = async (): Promise<void> => {
+    const state = mockDb.getSchedulerState();
     const lastRunAt = state?.lastRunAt ? new Date(state.lastRunAt).getTime() : null;
 
     if (!lastRunAt) {
-      console.log("[DCA] No previous run found - will start on next cron trigger");
+      console.log("[DCA] No previous run found - scheduling first run");
+      scheduleNextRun();
       return;
     }
 
@@ -159,7 +189,8 @@ function startDcaScheduler(
     const missedIntervals = Math.floor(timeSinceLastRun / intervalMs);
 
     if (missedIntervals <= 0) {
-      console.log("[DCA] No missed intervals - cron job active");
+      console.log("[DCA] No missed intervals - scheduling next run");
+      scheduleNextRun();
       return;
     }
 
@@ -176,25 +207,13 @@ function startDcaScheduler(
       }
     }
 
-    console.log("[DCA] Catch-up complete - cron job will handle future runs");
+    console.log("[DCA] Catch-up complete - scheduling next run");
+    scheduleNextRun();
   };
 
-  // Start the cron job (runs in UTC by default)
-  cron.schedule(
-    cronSchedule,
-    async () => {
-      await runDca(new Date());
-    },
-    {
-      timezone: "UTC",
-    },
-  );
-
-  console.log(`[DCA] Cron job scheduled (UTC): ${cronSchedule}`);
-
-  // Catch up missed runs on startup, then let cron handle future runs
+  // Start the scheduler
   catchUpMissedRuns().catch((error) => {
-    console.error("[DCA] Fatal scheduler error during catch-up:", error);
+    console.error("[DCA] Fatal scheduler error:", error);
   });
 }
 

@@ -17,7 +17,6 @@ export interface PortfolioData {
 
 export interface SchedulerState {
   lastRunAt: string | null; // ISO 8601 timestamp
-  cronSchedule: string;
   intervalMs: number;
 }
 
@@ -61,7 +60,6 @@ export class MockDatabaseService {
       CREATE TABLE IF NOT EXISTS scheduler_state (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         last_run_at TEXT,
-        cron_schedule TEXT NOT NULL,
         interval_ms INTEGER NOT NULL,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
@@ -116,28 +114,27 @@ export class MockDatabaseService {
    */
   getSchedulerState(): SchedulerState | undefined {
     const row = this.db
-      .prepare("SELECT last_run_at, cron_schedule, interval_ms FROM scheduler_state WHERE id = 1")
-      .get() as { last_run_at: string | null; cron_schedule: string; interval_ms: number } | undefined;
+      .prepare("SELECT last_run_at, interval_ms FROM scheduler_state WHERE id = 1")
+      .get() as { last_run_at: string | null; interval_ms: number } | undefined;
 
     if (!row) return undefined;
 
     return {
       lastRunAt: row.last_run_at,
-      cronSchedule: row.cron_schedule,
       intervalMs: row.interval_ms,
     };
   }
 
   /**
-   * Initialize or update scheduler state with cron schedule and interval
+   * Initialize or update scheduler state with interval
    */
-  initSchedulerState(cronSchedule: string, intervalMs: number): void {
+  initSchedulerState(intervalMs: number): void {
     this.db
       .prepare(`
-        INSERT INTO scheduler_state (id, cron_schedule, interval_ms) VALUES (1, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET cron_schedule = ?, interval_ms = ?, updated_at = CURRENT_TIMESTAMP
+        INSERT INTO scheduler_state (id, interval_ms) VALUES (1, ?)
+        ON CONFLICT(id) DO UPDATE SET interval_ms = ?, updated_at = CURRENT_TIMESTAMP
       `)
-      .run(cronSchedule, intervalMs, cronSchedule, intervalMs);
+      .run(intervalMs, intervalMs);
   }
 
   /**
