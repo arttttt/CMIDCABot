@@ -47,7 +47,8 @@ export function loadConfig(): Config {
     },
     dca: {
       amountSol: parseFloat(getEnvOrDefault("DCA_AMOUNT_SOL", "0.01")),
-      intervalMs: getEnvInt("DCA_INTERVAL_MS", 86400000), // default: 24 hours
+      cronSchedule: getEnvOrDefault("DCA_CRON_SCHEDULE", "0 0 * * *"), // default: daily at 00:00 UTC
+      intervalMs: getEnvInt("DCA_INTERVAL_MS", 86400000), // default: 24 hours (for catch-up)
     },
     web: webEnabled
       ? {

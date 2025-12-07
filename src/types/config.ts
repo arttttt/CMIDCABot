@@ -19,7 +19,8 @@ export interface WebConfig {
 
 export interface DcaConfig {
   amountSol: number;
-  intervalMs: number; // interval between purchases in milliseconds
+  cronSchedule: string; // cron expression (e.g., "0 0 * * *" for daily at 00:00 UTC)
+  intervalMs: number; // interval in ms, derived from cron for catch-up calculations
 }
 
 export interface Config {
