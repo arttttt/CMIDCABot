@@ -61,6 +61,13 @@ export class DcaService {
   }
 
   /**
+   * Reset portfolio - clear all balances and purchase history
+   */
+  resetPortfolio(telegramId: number): void {
+    this.mockDb.resetPortfolio(telegramId);
+  }
+
+  /**
    * Get portfolio status with allocations and deviation analysis
    */
   getPortfolioStatus(telegramId: number): PortfolioStatus | null {

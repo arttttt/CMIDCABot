@@ -72,6 +72,7 @@ async function handleCommand(
           "/wallet - Manage your wallet\n" +
           "/status - Portfolio status\n" +
           "/buy <amount> - Mock purchase\n" +
+          "/reset - Reset portfolio\n" +
           "/balance - Check SOL balance\n" +
           "/help - Show help",
       };
@@ -90,6 +91,7 @@ async function handleCommand(
           "/wallet remove - Disconnect wallet\n" +
           "/status - View portfolio & allocations\n" +
           "/buy <amount> - Mock purchase (dev mode)\n" +
+          "/reset - Reset mock portfolio (dev mode)\n" +
           "/balance - Check SOL balance\n\n" +
           "The bot purchases the asset furthest below its target allocation.\n\n" +
           "Note: In development mode, purchases are simulated without real swaps.",
@@ -103,6 +105,9 @@ async function handleCommand(
 
     case "/buy":
       return handleBuyCommand(args, ctx, services);
+
+    case "/reset":
+      return handleResetCommand(ctx, services);
 
     case "/balance":
       return handleBalanceCommand(ctx, services);
@@ -429,6 +434,28 @@ async function handleBuyCommand(
       `Note: This is a mock purchase. No real tokens were swapped.\n` +
       `Your SOL balance was checked but not deducted.\n\n` +
       `Use /status to see your portfolio.`,
+  };
+}
+
+async function handleResetCommand(
+  ctx: MessageContext,
+  services: ServiceContext,
+): Promise<MessageResponse> {
+  if (!services.dca || !services.dca.isMockMode()) {
+    return {
+      text: "Portfolio reset is only available in development mode.",
+    };
+  }
+
+  services.dca.resetPortfolio(ctx.telegramId);
+
+  return {
+    text:
+      "Portfolio Reset Complete\n" +
+      "─".repeat(25) + "\n\n" +
+      "All balances set to 0.\n" +
+      "Purchase history cleared.\n\n" +
+      "Use /buy <amount> to start fresh.",
   };
 }
 

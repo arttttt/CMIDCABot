@@ -88,6 +88,15 @@ export class MockDatabaseService {
       .run(telegramId, asset, amountSol, amountAsset, priceUsd);
   }
 
+  resetPortfolio(telegramId: number): void {
+    this.db
+      .prepare("UPDATE portfolio SET btc_balance = 0, eth_balance = 0, sol_balance = 0, updated_at = CURRENT_TIMESTAMP WHERE telegram_id = ?")
+      .run(telegramId);
+    this.db
+      .prepare("DELETE FROM mock_purchases WHERE telegram_id = ?")
+      .run(telegramId);
+  }
+
   close(): void {
     this.db.close();
   }
