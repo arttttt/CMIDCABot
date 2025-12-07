@@ -2,6 +2,7 @@ import { loadConfig } from "./config/index.js";
 import { createBot } from "./bot/index.js";
 import { startWebServer } from "./web/index.js";
 import { DatabaseService } from "./db/index.js";
+import { MockDatabaseService } from "./db/mock.js";
 import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import { ServiceContext } from "./handlers/index.js";
@@ -12,11 +13,20 @@ async function main(): Promise<void> {
   // Initialize services
   const db = new DatabaseService(config.database.path);
   const solana = new SolanaService(config.solana);
-  const dca = new DcaService(db, solana, config.isDev);
+
+  // Initialize mock database and DCA service only in development mode
+  let dca: DcaService | undefined;
+  let mockDb: MockDatabaseService | undefined;
+
+  if (config.isDev) {
+    mockDb = new MockDatabaseService(config.database.mockPath);
+    dca = new DcaService(db, mockDb, solana, config.isDev);
+  }
+
   const services: ServiceContext = { db, solana, dca };
 
   // Start DCA scheduler in development mode
-  if (config.isDev && config.dca.amountSol > 0 && config.dca.intervalMs > 0) {
+  if (config.isDev && dca && config.dca.amountSol > 0 && config.dca.intervalMs > 0) {
     startDcaScheduler(config.dca.intervalMs, config.dca.amountSol, dca);
   }
 
@@ -37,11 +47,13 @@ async function main(): Promise<void> {
     // Keep process alive
     process.on("SIGINT", () => {
       console.log("\nShutting down...");
+      mockDb?.close();
       db.close();
       process.exit(0);
     });
     process.on("SIGTERM", () => {
       console.log("\nShutting down...");
+      mockDb?.close();
       db.close();
       process.exit(0);
     });
@@ -58,6 +70,7 @@ async function main(): Promise<void> {
   const shutdown = async (): Promise<void> => {
     console.log("\nShutting down...");
     await bot.stop();
+    mockDb?.close();
     db.close();
     process.exit(0);
   };

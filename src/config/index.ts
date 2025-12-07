@@ -43,6 +43,7 @@ export function loadConfig(): Config {
     },
     database: {
       path: getEnvOrDefault("DATABASE_PATH", "./data/bot.db"),
+      mockPath: getEnvOrDefault("MOCK_DATABASE_PATH", "./data/mock.db"),
     },
     dca: {
       amountSol: parseFloat(getEnvOrDefault("DCA_AMOUNT_SOL", "0.01")),

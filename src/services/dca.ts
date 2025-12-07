@@ -3,7 +3,8 @@
  * Works only in NODE_ENV=development
  */
 
-import { DatabaseService, PortfolioData } from "../db/index.js";
+import { DatabaseService } from "../db/index.js";
+import { MockDatabaseService, PortfolioData } from "../db/mock.js";
 import { SolanaService } from "./solana.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../types/portfolio.js";
 
@@ -40,6 +41,7 @@ export interface PortfolioStatus {
 export class DcaService {
   constructor(
     private db: DatabaseService,
+    private mockDb: MockDatabaseService,
     private solana: SolanaService,
     private isDev: boolean,
   ) {}
@@ -52,10 +54,17 @@ export class DcaService {
   }
 
   /**
+   * Create portfolio for user (in mock database)
+   */
+  createPortfolio(telegramId: number): void {
+    this.mockDb.createPortfolio(telegramId);
+  }
+
+  /**
    * Get portfolio status with allocations and deviation analysis
    */
   getPortfolioStatus(telegramId: number): PortfolioStatus | null {
-    const portfolio = this.db.getPortfolio(telegramId);
+    const portfolio = this.mockDb.getPortfolio(telegramId);
     if (!portfolio) {
       return null;
     }
@@ -155,7 +164,7 @@ export class DcaService {
     }
 
     // Ensure portfolio exists
-    this.db.createPortfolio(telegramId);
+    this.mockDb.createPortfolio(telegramId);
 
     // Select asset if not specified
     const selectedAsset = asset || this.selectAssetToBuy(telegramId);
@@ -165,10 +174,10 @@ export class DcaService {
     const priceUsd = MOCK_PRICES[selectedAsset];
 
     // Update portfolio balance
-    this.db.updatePortfolioBalance(telegramId, selectedAsset, amountAsset);
+    this.mockDb.updatePortfolioBalance(telegramId, selectedAsset, amountAsset);
 
     // Record the mock purchase
-    this.db.addMockPurchase(telegramId, selectedAsset, amountSol, amountAsset, priceUsd);
+    this.mockDb.addMockPurchase(telegramId, selectedAsset, amountSol, amountAsset, priceUsd);
 
     return {
       success: true,

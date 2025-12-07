@@ -64,7 +64,7 @@ async function handleCommand(
     case "/start":
       // Ensure user exists in database
       services.db.createUser(ctx.telegramId);
-      services.db.createPortfolio(ctx.telegramId);
+      services.dca?.createPortfolio(ctx.telegramId);
       return {
         text:
           "DCA Bot for Solana\n\n" +
@@ -303,7 +303,7 @@ async function handleStatusCommand(
   }
 
   services.db.createUser(ctx.telegramId);
-  services.db.createPortfolio(ctx.telegramId);
+  services.dca.createPortfolio(ctx.telegramId);
 
   const status = services.dca.getPortfolioStatus(ctx.telegramId);
   if (!status) {

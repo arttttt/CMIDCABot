@@ -9,6 +9,7 @@ export interface SolanaConfig {
 
 export interface DatabaseConfig {
   path: string;
+  mockPath: string;
 }
 
 export interface WebConfig {
