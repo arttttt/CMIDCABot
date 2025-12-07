@@ -16,10 +16,16 @@ export interface WebConfig {
   port: number;
 }
 
+export interface DcaConfig {
+  amountSol: number;
+  timeUtc: string; // "HH:MM" format
+}
+
 export interface Config {
   telegram: TelegramConfig;
   solana: SolanaConfig;
   database: DatabaseConfig;
+  dca: DcaConfig;
   web?: WebConfig;
   isDev: boolean;
 }

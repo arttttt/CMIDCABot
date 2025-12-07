@@ -20,11 +20,13 @@
   "dependencies": {
     "@solana/web3.js": "^2.0.0",
     "better-sqlite3": "^12.5.0",
-    "grammy": "^1.38.4"
+    "grammy": "^1.38.4",
+    "node-cron": "^4.2.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.10.1",
+    "@types/node-cron": "^3.0.11",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },

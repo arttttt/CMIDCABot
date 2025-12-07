@@ -3,7 +3,9 @@ import { createBot } from "./bot/index.js";
 import { startWebServer } from "./web/index.js";
 import { DatabaseService } from "./db/index.js";
 import { SolanaService } from "./services/solana.js";
+import { DcaService } from "./services/dca.js";
 import { ServiceContext } from "./handlers/index.js";
+import cron from "node-cron";
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -11,7 +13,13 @@ async function main(): Promise<void> {
   // Initialize services
   const db = new DatabaseService(config.database.path);
   const solana = new SolanaService(config.solana);
-  const services: ServiceContext = { db, solana };
+  const dca = new DcaService(db, solana, config.isDev);
+  const services: ServiceContext = { db, solana, dca };
+
+  // Start DCA scheduler in development mode
+  if (config.isDev && config.dca.amountSol > 0) {
+    startDcaScheduler(config.dca.timeUtc, config.dca.amountSol, dca);
+  }
 
   // Web-only mode: just start the web server
   if (config.web?.enabled) {
@@ -86,6 +94,33 @@ async function main(): Promise<void> {
         console.log(`Bot @${botInfo.username} is running`);
       }
     },
+  });
+}
+
+function startDcaScheduler(timeUtc: string, amountSol: number, dca: DcaService): void {
+  const [hours, minutes] = timeUtc.split(":").map(Number);
+
+  if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    console.error(`[DCA] Invalid time format: ${timeUtc}. Expected HH:MM (e.g., 14:00)`);
+    return;
+  }
+
+  // Cron expression: minute hour * * * (every day at specified time UTC)
+  const cronExpression = `${minutes} ${hours} * * *`;
+
+  console.log(`[DCA] Scheduler started: ${amountSol} SOL daily at ${timeUtc} UTC`);
+
+  cron.schedule(cronExpression, async () => {
+    console.log(`[DCA] Running scheduled purchase at ${new Date().toISOString()}`);
+
+    try {
+      const result = await dca.executeDcaForAllUsers(amountSol);
+      console.log(`[DCA] Completed: ${result.successful}/${result.processed} users processed successfully`);
+    } catch (error) {
+      console.error("[DCA] Scheduler error:", error);
+    }
+  }, {
+    timezone: "UTC",
   });
 }
 

@@ -44,6 +44,10 @@ export function loadConfig(): Config {
     database: {
       path: getEnvOrDefault("DATABASE_PATH", "./data/bot.db"),
     },
+    dca: {
+      amountSol: parseFloat(getEnvOrDefault("DCA_AMOUNT_SOL", "0.01")),
+      timeUtc: getEnvOrDefault("DCA_TIME_UTC", "14:00"),
+    },
     web: webEnabled
       ? {
           enabled: true,
