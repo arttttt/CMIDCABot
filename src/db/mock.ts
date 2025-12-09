@@ -15,6 +15,11 @@ export interface PortfolioData {
   solBalance: number;
 }
 
+export interface SchedulerState {
+  lastRunAt: string | null; // ISO 8601 timestamp
+  intervalMs: number;
+}
+
 export class MockDatabaseService {
   private db: Database.Database;
 
@@ -51,6 +56,13 @@ export class MockDatabaseService {
 
       CREATE INDEX IF NOT EXISTS idx_mock_purchases_user
         ON mock_purchases(telegram_id);
+
+      CREATE TABLE IF NOT EXISTS scheduler_state (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        last_run_at TEXT,
+        interval_ms INTEGER NOT NULL,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
     `);
   }
 
@@ -95,6 +107,43 @@ export class MockDatabaseService {
     this.db
       .prepare("DELETE FROM mock_purchases WHERE telegram_id = ?")
       .run(telegramId);
+  }
+
+  /**
+   * Get the current scheduler state
+   */
+  getSchedulerState(): SchedulerState | undefined {
+    const row = this.db
+      .prepare("SELECT last_run_at, interval_ms FROM scheduler_state WHERE id = 1")
+      .get() as { last_run_at: string | null; interval_ms: number } | undefined;
+
+    if (!row) return undefined;
+
+    return {
+      lastRunAt: row.last_run_at,
+      intervalMs: row.interval_ms,
+    };
+  }
+
+  /**
+   * Initialize or update scheduler state with interval
+   */
+  initSchedulerState(intervalMs: number): void {
+    this.db
+      .prepare(`
+        INSERT INTO scheduler_state (id, interval_ms) VALUES (1, ?)
+        ON CONFLICT(id) DO UPDATE SET interval_ms = ?, updated_at = CURRENT_TIMESTAMP
+      `)
+      .run(intervalMs, intervalMs);
+  }
+
+  /**
+   * Update the last run timestamp after successful DCA execution
+   */
+  updateLastRunAt(timestamp: string): void {
+    this.db
+      .prepare("UPDATE scheduler_state SET last_run_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1")
+      .run(timestamp);
   }
 
   close(): void {

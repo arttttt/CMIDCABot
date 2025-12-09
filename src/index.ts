@@ -26,8 +26,8 @@ async function main(): Promise<void> {
   const services: ServiceContext = { db, solana, dca };
 
   // Start DCA scheduler in development mode
-  if (config.isDev && dca && config.dca.amountSol > 0 && config.dca.intervalMs > 0) {
-    startDcaScheduler(config.dca.intervalMs, config.dca.amountSol, dca);
+  if (config.isDev && dca && mockDb && config.dca.amountSol > 0 && config.dca.intervalMs > 0) {
+    startDcaScheduler(config.dca.intervalMs, config.dca.amountSol, dca, mockDb);
   }
 
   // Web-only mode: just start the web server
@@ -109,7 +109,12 @@ async function main(): Promise<void> {
   });
 }
 
-function startDcaScheduler(intervalMs: number, amountSol: number, dca: DcaService): void {
+function startDcaScheduler(
+  intervalMs: number,
+  amountSol: number,
+  dca: DcaService,
+  mockDb: MockDatabaseService,
+): void {
   const formatInterval = (ms: number): string => {
     if (ms >= 86400000) return `${(ms / 86400000).toFixed(1)} days`;
     if (ms >= 3600000) return `${(ms / 3600000).toFixed(1)} hours`;
@@ -117,32 +122,99 @@ function startDcaScheduler(intervalMs: number, amountSol: number, dca: DcaServic
     return `${ms} ms`;
   };
 
-  console.log(`[DCA] Scheduler started: ${amountSol} SOL every ${formatInterval(intervalMs)}`);
+  console.log(`[DCA] Persistent scheduler starting: ${amountSol} SOL every ${formatInterval(intervalMs)}`);
 
-  const runDca = async (): Promise<void> => {
-    console.log(`[DCA] Running scheduled purchase at ${new Date().toISOString()}`);
+  // Initialize scheduler state in database
+  mockDb.initSchedulerState(intervalMs);
+
+  const runDca = async (timestamp: Date): Promise<boolean> => {
+    console.log(`[DCA] Running scheduled purchase for ${timestamp.toISOString()}`);
 
     try {
       const result = await dca.executeDcaForAllUsers(amountSol);
       console.log(`[DCA] Completed: ${result.successful}/${result.processed} users processed successfully`);
+
+      // Update last run time after successful execution
+      mockDb.updateLastRunAt(timestamp.toISOString());
+      return true;
     } catch (error) {
       console.error("[DCA] Scheduler error:", error);
+      return false;
     }
-
-    // Schedule next run
-    const nextRun = Date.now() + intervalMs;
-    console.log(`[DCA] Next run at ${new Date(nextRun).toISOString()}`);
   };
 
-  // Schedule first run after interval
-  setTimeout(() => {
-    runDca();
-    // Then run at regular intervals
-    setInterval(runDca, intervalMs);
-  }, intervalMs);
+  // Schedule next run based on last_run_at + intervalMs
+  const scheduleNextRun = (): void => {
+    const state = mockDb.getSchedulerState();
+    const lastRunAt = state?.lastRunAt ? new Date(state.lastRunAt).getTime() : null;
 
-  const firstRun = Date.now() + intervalMs;
-  console.log(`[DCA] First run scheduled at ${new Date(firstRun).toISOString()}`);
+    let nextRunTime: number;
+    if (lastRunAt) {
+      // Next run = last successful run + interval
+      nextRunTime = lastRunAt + intervalMs;
+    } else {
+      // No previous run - schedule for now + interval
+      nextRunTime = Date.now() + intervalMs;
+    }
+
+    const delay = Math.max(0, nextRunTime - Date.now());
+    console.log(`[DCA] Next run scheduled at ${new Date(nextRunTime).toISOString()} (in ${formatInterval(delay)})`);
+
+    setTimeout(async () => {
+      const success = await runDca(new Date());
+      if (success) {
+        // Schedule next run after successful execution
+        scheduleNextRun();
+      } else {
+        // Retry after a short delay on failure
+        console.log("[DCA] Retrying in 1 minute...");
+        setTimeout(scheduleNextRun, 60000);
+      }
+    }, delay);
+  };
+
+  // Catch up missed runs on startup
+  const catchUpMissedRuns = async (): Promise<void> => {
+    const state = mockDb.getSchedulerState();
+    const lastRunAt = state?.lastRunAt ? new Date(state.lastRunAt).getTime() : null;
+
+    if (!lastRunAt) {
+      console.log("[DCA] No previous run found - scheduling first run");
+      scheduleNextRun();
+      return;
+    }
+
+    const now = Date.now();
+    const timeSinceLastRun = now - lastRunAt;
+    const missedIntervals = Math.floor(timeSinceLastRun / intervalMs);
+
+    if (missedIntervals <= 0) {
+      console.log("[DCA] No missed intervals - scheduling next run");
+      scheduleNextRun();
+      return;
+    }
+
+    console.log(`[DCA] Detected ${missedIntervals} missed interval(s) - catching up...`);
+
+    // Execute each missed interval
+    for (let i = 1; i <= missedIntervals; i++) {
+      const missedTimestamp = new Date(lastRunAt + i * intervalMs);
+      console.log(`[DCA] Catching up missed run ${i}/${missedIntervals}`);
+      const success = await runDca(missedTimestamp);
+      if (!success) {
+        console.error(`[DCA] Failed to catch up run ${i} - stopping catch-up`);
+        break;
+      }
+    }
+
+    console.log("[DCA] Catch-up complete - scheduling next run");
+    scheduleNextRun();
+  };
+
+  // Start the scheduler
+  catchUpMissedRuns().catch((error) => {
+    console.error("[DCA] Fatal scheduler error:", error);
+  });
 }
 
 main().catch((error) => {
