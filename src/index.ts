@@ -6,6 +6,7 @@ import { MockDatabaseService } from "./db/mock.js";
 import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import { ServiceContext } from "./handlers/index.js";
+import { createCommandMode } from "./commands/index.js";
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -25,6 +26,10 @@ async function main(): Promise<void> {
 
   const services: ServiceContext = { db, solana, dca };
 
+  // Create command mode based on environment
+  const commandMode = createCommandMode(config.isDev);
+  console.log(`Command mode: ${config.isDev ? "development" : "production"} (${commandMode.getCommands().length} commands available)`);
+
   // Start DCA scheduler in development mode
   if (config.isDev && dca && mockDb && config.dca.amountSol > 0 && config.dca.intervalMs > 0) {
     startDcaScheduler(config.dca.intervalMs, config.dca.amountSol, dca, mockDb);
@@ -40,7 +45,7 @@ async function main(): Promise<void> {
     console.log(`RPC: ${config.solana.rpcUrl}`);
     console.log("─".repeat(50));
 
-    await startWebServer(config, services);
+    await startWebServer(config, services, commandMode);
 
     console.log("Press Ctrl+C to stop.\n");
 
@@ -64,7 +69,7 @@ async function main(): Promise<void> {
   // Telegram bot mode
   console.log("Starting DCA Telegram Bot...");
 
-  const bot = createBot(config, services);
+  const bot = createBot(config, services, commandMode);
 
   // Graceful shutdown
   const shutdown = async (): Promise<void> => {

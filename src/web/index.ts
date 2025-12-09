@@ -3,8 +3,8 @@
  */
 
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
-import { handleMessage, handleCallback, ServiceContext } from "../handlers/index.js";
-import { Config } from "../types/index.js";
+import { handleMessage, handleCallback, ServiceContext, HandlerContext } from "../handlers/index.js";
+import { Config, CommandMode } from "../types/index.js";
 
 const HTML_PAGE = `<!DOCTYPE html>
 <html lang="en">
@@ -307,8 +307,15 @@ const WEB_TEST_USER_ID = 999999999;
 export async function startWebServer(
   config: Config,
   services: ServiceContext,
+  commandMode: CommandMode,
 ): Promise<void> {
   const port = config.web?.port ?? 3000;
+
+  // Create handler context
+  const handlerCtx: HandlerContext = {
+    services,
+    commandMode,
+  };
 
   const server = createServer(async (req, res) => {
     const url = req.url ?? "/";
@@ -338,7 +345,7 @@ export async function startWebServer(
             username: "Web Tester",
             text: text ?? "",
           },
-          services,
+          handlerCtx,
         );
 
         sendJson(res, response);
