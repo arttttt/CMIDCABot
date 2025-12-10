@@ -1,4 +1,4 @@
 /**
  * Data sources barrel export
  */
-export * from "./SQLiteDatabase.js";
+export * from "./KyselyDatabase.js";

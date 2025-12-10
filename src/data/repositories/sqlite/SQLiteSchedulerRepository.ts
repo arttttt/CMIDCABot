@@ -1,9 +1,10 @@
 /**
- * SQLite implementation of Scheduler state repository
+ * SQLite implementation of Scheduler state repository using Kysely
  */
-import { Database } from "../../interfaces/Database.js";
+import { Kysely, sql } from "kysely";
 import { SchedulerRepository } from "../../../domain/repositories/SchedulerRepository.js";
 import { SchedulerState } from "../../../domain/models/SchedulerState.js";
+import type { MockDatabase } from "../../types/database.js";
 
 interface SchedulerStateRow {
   id: number;
@@ -13,20 +14,7 @@ interface SchedulerStateRow {
 }
 
 export class SQLiteSchedulerRepository implements SchedulerRepository {
-  constructor(private db: Database) {
-    this.initSchema();
-  }
-
-  private initSchema(): void {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS scheduler_state (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
-        last_run_at TEXT,
-        interval_ms INTEGER NOT NULL,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-  }
+  constructor(private db: Kysely<MockDatabase>) {}
 
   private rowToModel(row: SchedulerStateRow): SchedulerState {
     return {
@@ -37,26 +25,39 @@ export class SQLiteSchedulerRepository implements SchedulerRepository {
   }
 
   getState(): SchedulerState | undefined {
-    const row = this.db.get<SchedulerStateRow>(
-      "SELECT id, last_run_at, interval_ms, updated_at FROM scheduler_state WHERE id = 1",
-    );
+    const row = this.db
+      .selectFrom("scheduler_state")
+      .selectAll()
+      .where("id", "=", 1)
+      .executeTakeFirst();
 
-    if (!row) return undefined;
-    return this.rowToModel(row);
+    const result = row as unknown as SchedulerStateRow | undefined;
+    if (!result) return undefined;
+
+    return this.rowToModel(result);
   }
 
   initState(intervalMs: number): void {
-    this.db.run(
-      `INSERT INTO scheduler_state (id, interval_ms) VALUES (1, ?)
-       ON CONFLICT(id) DO UPDATE SET interval_ms = ?, updated_at = CURRENT_TIMESTAMP`,
-      [intervalMs, intervalMs],
-    );
+    this.db
+      .insertInto("scheduler_state")
+      .values({ id: 1, interval_ms: intervalMs })
+      .onConflict((oc) =>
+        oc.column("id").doUpdateSet({
+          interval_ms: intervalMs,
+          updated_at: sql`CURRENT_TIMESTAMP`,
+        })
+      )
+      .execute();
   }
 
   updateLastRunAt(timestamp: Date): void {
-    this.db.run(
-      "UPDATE scheduler_state SET last_run_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1",
-      [timestamp.toISOString()],
-    );
+    this.db
+      .updateTable("scheduler_state")
+      .set({
+        last_run_at: timestamp.toISOString(),
+        updated_at: sql`CURRENT_TIMESTAMP`,
+      })
+      .where("id", "=", 1)
+      .execute();
   }
 }

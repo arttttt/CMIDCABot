@@ -5,10 +5,11 @@ try {
   console.log("No .env file found, using environment variables");
 }
 
+import { Kysely } from "kysely";
 import { loadConfig } from "./config/index.js";
 import { createBot } from "./bot/index.js";
 import { startWebServer } from "./web/index.js";
-import { SQLiteDatabase } from "./data/datasources/SQLiteDatabase.js";
+import { createMainDatabase, createMockDatabase } from "./data/datasources/KyselyDatabase.js";
 import { SQLiteUserRepository } from "./data/repositories/sqlite/SQLiteUserRepository.js";
 import { SQLiteTransactionRepository } from "./data/repositories/sqlite/SQLiteTransactionRepository.js";
 import { SQLitePortfolioRepository } from "./data/repositories/sqlite/SQLitePortfolioRepository.js";
@@ -19,12 +20,13 @@ import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import { ServiceContext } from "./handlers/index.js";
 import { createCommandMode } from "./commands/index.js";
+import type { MockDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
   const config = loadConfig();
 
-  // Initialize database connections
-  const mainDb = new SQLiteDatabase(config.database.path);
+  // Initialize database connections using Kysely
+  const mainDb = createMainDatabase(config.database.path);
 
   // Initialize repositories for main database
   const userRepository = new SQLiteUserRepository(mainDb);
@@ -35,11 +37,11 @@ async function main(): Promise<void> {
 
   // Initialize mock database and DCA service only in development mode
   let dca: DcaService | undefined;
-  let mockDb: SQLiteDatabase | undefined;
+  let mockDb: Kysely<MockDatabase> | undefined;
   let schedulerRepository: SchedulerRepository | undefined;
 
   if (config.isDev) {
-    mockDb = new SQLiteDatabase(config.database.mockPath);
+    mockDb = createMockDatabase(config.database.mockPath);
 
     // Initialize repositories for mock database
     const portfolioRepository = new SQLitePortfolioRepository(mockDb);
@@ -81,16 +83,16 @@ async function main(): Promise<void> {
     console.log("Press Ctrl+C to stop.\n");
 
     // Keep process alive
-    process.on("SIGINT", () => {
+    process.on("SIGINT", async () => {
       console.log("\nShutting down...");
-      mockDb?.close();
-      mainDb.close();
+      await mockDb?.destroy();
+      await mainDb.destroy();
       process.exit(0);
     });
-    process.on("SIGTERM", () => {
+    process.on("SIGTERM", async () => {
       console.log("\nShutting down...");
-      mockDb?.close();
-      mainDb.close();
+      await mockDb?.destroy();
+      await mainDb.destroy();
       process.exit(0);
     });
 
@@ -106,8 +108,8 @@ async function main(): Promise<void> {
   const shutdown = async (): Promise<void> => {
     console.log("\nShutting down...");
     await bot.stop();
-    mockDb?.close();
-    mainDb.close();
+    await mockDb?.destroy();
+    await mainDb.destroy();
     process.exit(0);
   };
 
