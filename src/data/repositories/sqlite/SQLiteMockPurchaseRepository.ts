@@ -1,10 +1,11 @@
 /**
- * SQLite implementation of MockPurchase repository (for development mode)
+ * SQLite implementation of MockPurchase repository using Kysely (for development mode)
  */
-import { Database } from "../../interfaces/Database.js";
+import { Kysely } from "kysely";
 import { MockPurchaseRepository } from "../../../domain/repositories/MockPurchaseRepository.js";
 import { MockPurchase, CreateMockPurchaseData } from "../../../domain/models/MockPurchase.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
+import type { MockDatabase } from "../../types/database.js";
 
 interface MockPurchaseRow {
   id: number;
@@ -17,26 +18,7 @@ interface MockPurchaseRow {
 }
 
 export class SQLiteMockPurchaseRepository implements MockPurchaseRepository {
-  constructor(private db: Database) {
-    this.initSchema();
-  }
-
-  private initSchema(): void {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS mock_purchases (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        telegram_id INTEGER NOT NULL,
-        asset_symbol TEXT NOT NULL,
-        amount_sol REAL NOT NULL,
-        amount_asset REAL NOT NULL,
-        price_usd REAL NOT NULL,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_mock_purchases_user
-        ON mock_purchases(telegram_id);
-    `);
-  }
+  constructor(private db: Kysely<MockDatabase>) {}
 
   private rowToModel(row: MockPurchaseRow): MockPurchase {
     return {
@@ -51,33 +33,38 @@ export class SQLiteMockPurchaseRepository implements MockPurchaseRepository {
   }
 
   getByUserId(telegramId: number): MockPurchase[] {
-    const rows = this.db.all<MockPurchaseRow>(
-      "SELECT id, telegram_id, asset_symbol, amount_sol, amount_asset, price_usd, created_at FROM mock_purchases WHERE telegram_id = ? ORDER BY created_at DESC",
-      [telegramId],
-    );
+    const rows = this.db
+      .selectFrom("mock_purchases")
+      .selectAll()
+      .where("telegram_id", "=", telegramId)
+      .orderBy("created_at", "desc")
+      .execute();
 
-    return rows.map((row) => this.rowToModel(row));
+    const results = rows as unknown as MockPurchaseRow[];
+    return results.map((row) => this.rowToModel(row));
   }
 
   create(data: CreateMockPurchaseData): MockPurchase {
-    const result = this.db.run(
-      "INSERT INTO mock_purchases (telegram_id, asset_symbol, amount_sol, amount_asset, price_usd) VALUES (?, ?, ?, ?, ?)",
-      [data.telegramId, data.assetSymbol, data.amountSol, data.amountAsset, data.priceUsd],
-    );
+    const result = this.db
+      .insertInto("mock_purchases")
+      .values({
+        telegram_id: data.telegramId,
+        asset_symbol: data.assetSymbol,
+        amount_sol: data.amountSol,
+        amount_asset: data.amountAsset,
+        price_usd: data.priceUsd,
+      })
+      .returning(["id", "telegram_id", "asset_symbol", "amount_sol", "amount_asset", "price_usd", "created_at"])
+      .executeTakeFirst();
 
-    const id = Number(result.lastInsertRowid);
-    const row = this.db.get<MockPurchaseRow>(
-      "SELECT id, telegram_id, asset_symbol, amount_sol, amount_asset, price_usd, created_at FROM mock_purchases WHERE id = ?",
-      [id],
-    );
-
-    return this.rowToModel(row!);
+    const row = result as unknown as MockPurchaseRow;
+    return this.rowToModel(row);
   }
 
   deleteByUserId(telegramId: number): void {
-    this.db.run(
-      "DELETE FROM mock_purchases WHERE telegram_id = ?",
-      [telegramId],
-    );
+    this.db
+      .deleteFrom("mock_purchases")
+      .where("telegram_id", "=", telegramId)
+      .execute();
   }
 }

@@ -1,10 +1,11 @@
 /**
- * SQLite implementation of Portfolio repository (for mock/development mode)
+ * SQLite implementation of Portfolio repository using Kysely (for mock/development mode)
  */
-import { Database } from "../../interfaces/Database.js";
+import { Kysely, sql } from "kysely";
 import { PortfolioRepository } from "../../../domain/repositories/PortfolioRepository.js";
 import { PortfolioBalances } from "../../../domain/models/Portfolio.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
+import type { MockDatabase } from "../../types/database.js";
 
 interface PortfolioRow {
   telegram_id: number;
@@ -16,22 +17,7 @@ interface PortfolioRow {
 }
 
 export class SQLitePortfolioRepository implements PortfolioRepository {
-  constructor(private db: Database) {
-    this.initSchema();
-  }
-
-  private initSchema(): void {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS portfolio (
-        telegram_id INTEGER PRIMARY KEY,
-        btc_balance REAL DEFAULT 0,
-        eth_balance REAL DEFAULT 0,
-        sol_balance REAL DEFAULT 0,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-  }
+  constructor(private db: Kysely<MockDatabase>) {}
 
   private rowToModel(row: PortfolioRow): PortfolioBalances {
     return {
@@ -43,34 +29,48 @@ export class SQLitePortfolioRepository implements PortfolioRepository {
   }
 
   getById(telegramId: number): PortfolioBalances | undefined {
-    const row = this.db.get<PortfolioRow>(
-      "SELECT telegram_id, btc_balance, eth_balance, sol_balance, created_at, updated_at FROM portfolio WHERE telegram_id = ?",
-      [telegramId],
-    );
+    const row = this.db
+      .selectFrom("portfolio")
+      .selectAll()
+      .where("telegram_id", "=", telegramId)
+      .executeTakeFirst();
 
-    if (!row) return undefined;
-    return this.rowToModel(row);
+    const result = row as unknown as PortfolioRow | undefined;
+    if (!result) return undefined;
+
+    return this.rowToModel(result);
   }
 
   create(telegramId: number): void {
-    this.db.run(
-      "INSERT OR IGNORE INTO portfolio (telegram_id) VALUES (?)",
-      [telegramId],
-    );
+    this.db
+      .insertInto("portfolio")
+      .values({ telegram_id: telegramId })
+      .onConflict((oc) => oc.column("telegram_id").doNothing())
+      .execute();
   }
 
   updateBalance(telegramId: number, asset: AssetSymbol, amountToAdd: number): void {
-    const column = `${asset.toLowerCase()}_balance`;
-    this.db.run(
-      `UPDATE portfolio SET ${column} = ${column} + ?, updated_at = CURRENT_TIMESTAMP WHERE telegram_id = ?`,
-      [amountToAdd, telegramId],
-    );
+    const column = `${asset.toLowerCase()}_balance` as "btc_balance" | "eth_balance" | "sol_balance";
+
+    // Use raw SQL for the increment operation
+    sql`
+      UPDATE portfolio
+      SET ${sql.ref(column)} = ${sql.ref(column)} + ${amountToAdd},
+          updated_at = CURRENT_TIMESTAMP
+      WHERE telegram_id = ${telegramId}
+    `.execute(this.db);
   }
 
   reset(telegramId: number): void {
-    this.db.run(
-      "UPDATE portfolio SET btc_balance = 0, eth_balance = 0, sol_balance = 0, updated_at = CURRENT_TIMESTAMP WHERE telegram_id = ?",
-      [telegramId],
-    );
+    this.db
+      .updateTable("portfolio")
+      .set({
+        btc_balance: 0,
+        eth_balance: 0,
+        sol_balance: 0,
+        updated_at: sql`CURRENT_TIMESTAMP`,
+      })
+      .where("telegram_id", "=", telegramId)
+      .execute();
   }
 }

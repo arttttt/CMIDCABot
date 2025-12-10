@@ -1,74 +1,75 @@
 /**
- * SQLite implementation of User repository
+ * SQLite implementation of User repository using Kysely
  */
-import { Database } from "../../interfaces/Database.js";
+import { Kysely, sql } from "kysely";
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
 import { User, UserWithWallet } from "../../../domain/models/User.js";
-
-interface UserRow {
-  telegram_id: number;
-  wallet_address: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import type { MainDatabase } from "../../types/database.js";
 
 export class SQLiteUserRepository implements UserRepository {
-  constructor(private db: Database) {
-    this.initSchema();
-  }
+  constructor(private db: Kysely<MainDatabase>) {}
 
-  private initSchema(): void {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        telegram_id INTEGER PRIMARY KEY,
-        wallet_address TEXT,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-  }
+  getById(telegramId: number): User | undefined {
+    const row = this.db
+      .selectFrom("users")
+      .selectAll()
+      .where("telegram_id", "=", telegramId)
+      .executeTakeFirst();
 
-  private rowToModel(row: UserRow): User {
+    // Kysely with better-sqlite3 is synchronous
+    const result = row as unknown as {
+      telegram_id: number;
+      wallet_address: string | null;
+      created_at: string;
+      updated_at: string;
+    } | undefined;
+
+    if (!result) return undefined;
+
     return {
-      telegramId: row.telegram_id,
-      walletAddress: row.wallet_address,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at),
+      telegramId: result.telegram_id,
+      walletAddress: result.wallet_address,
+      createdAt: new Date(result.created_at),
+      updatedAt: new Date(result.updated_at),
     };
   }
 
-  getById(telegramId: number): User | undefined {
-    const row = this.db.get<UserRow>(
-      "SELECT telegram_id, wallet_address, created_at, updated_at FROM users WHERE telegram_id = ?",
-      [telegramId],
-    );
-
-    if (!row) return undefined;
-    return this.rowToModel(row);
-  }
-
   create(telegramId: number): void {
-    this.db.run(
-      "INSERT OR IGNORE INTO users (telegram_id) VALUES (?)",
-      [telegramId],
-    );
+    this.db
+      .insertInto("users")
+      .values({ telegram_id: telegramId })
+      .onConflict((oc) => oc.column("telegram_id").doNothing())
+      .execute();
   }
 
   setWalletAddress(telegramId: number, walletAddress: string): void {
-    this.db.run(
-      "UPDATE users SET wallet_address = ?, updated_at = CURRENT_TIMESTAMP WHERE telegram_id = ?",
-      [walletAddress, telegramId],
-    );
+    this.db
+      .updateTable("users")
+      .set({
+        wallet_address: walletAddress,
+        updated_at: sql`CURRENT_TIMESTAMP`,
+      })
+      .where("telegram_id", "=", telegramId)
+      .execute();
   }
 
   getAllWithWallet(): UserWithWallet[] {
-    const rows = this.db.all<UserRow>(
-      "SELECT telegram_id, wallet_address, created_at, updated_at FROM users WHERE wallet_address IS NOT NULL AND wallet_address != ''",
-    );
+    const rows = this.db
+      .selectFrom("users")
+      .select(["telegram_id", "wallet_address"])
+      .where("wallet_address", "is not", null)
+      .where("wallet_address", "!=", "")
+      .execute();
 
-    return rows.map((row) => ({
+    // Kysely with better-sqlite3 is synchronous
+    const results = rows as unknown as Array<{
+      telegram_id: number;
+      wallet_address: string;
+    }>;
+
+    return results.map((row) => ({
       telegramId: row.telegram_id,
-      walletAddress: row.wallet_address!,
+      walletAddress: row.wallet_address,
     }));
   }
 }

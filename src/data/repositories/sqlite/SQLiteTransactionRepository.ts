@@ -1,10 +1,11 @@
 /**
- * SQLite implementation of Transaction repository
+ * SQLite implementation of Transaction repository using Kysely
  */
-import { Database } from "../../interfaces/Database.js";
+import { Kysely } from "kysely";
 import { TransactionRepository } from "../../../domain/repositories/TransactionRepository.js";
 import { Transaction, CreateTransactionData } from "../../../domain/models/Transaction.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
+import type { MainDatabase } from "../../types/database.js";
 
 interface TransactionRow {
   id: number;
@@ -17,27 +18,7 @@ interface TransactionRow {
 }
 
 export class SQLiteTransactionRepository implements TransactionRepository {
-  constructor(private db: Database) {
-    this.initSchema();
-  }
-
-  private initSchema(): void {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        telegram_id INTEGER NOT NULL,
-        tx_signature TEXT NOT NULL,
-        asset_symbol TEXT NOT NULL,
-        amount_sol REAL NOT NULL,
-        amount_asset REAL NOT NULL,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (telegram_id) REFERENCES users(telegram_id)
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_transactions_user
-        ON transactions(telegram_id);
-    `);
-  }
+  constructor(private db: Kysely<MainDatabase>) {}
 
   private rowToModel(row: TransactionRow): Transaction {
     return {
@@ -52,31 +33,44 @@ export class SQLiteTransactionRepository implements TransactionRepository {
   }
 
   getById(id: number): Transaction | undefined {
-    const row = this.db.get<TransactionRow>(
-      "SELECT id, telegram_id, tx_signature, asset_symbol, amount_sol, amount_asset, created_at FROM transactions WHERE id = ?",
-      [id],
-    );
+    const row = this.db
+      .selectFrom("transactions")
+      .selectAll()
+      .where("id", "=", id)
+      .executeTakeFirst();
 
-    if (!row) return undefined;
-    return this.rowToModel(row);
+    const result = row as unknown as TransactionRow | undefined;
+    if (!result) return undefined;
+
+    return this.rowToModel(result);
   }
 
   getByUserId(telegramId: number): Transaction[] {
-    const rows = this.db.all<TransactionRow>(
-      "SELECT id, telegram_id, tx_signature, asset_symbol, amount_sol, amount_asset, created_at FROM transactions WHERE telegram_id = ? ORDER BY created_at DESC",
-      [telegramId],
-    );
+    const rows = this.db
+      .selectFrom("transactions")
+      .selectAll()
+      .where("telegram_id", "=", telegramId)
+      .orderBy("created_at", "desc")
+      .execute();
 
-    return rows.map((row) => this.rowToModel(row));
+    const results = rows as unknown as TransactionRow[];
+    return results.map((row) => this.rowToModel(row));
   }
 
   create(data: CreateTransactionData): Transaction {
-    const result = this.db.run(
-      "INSERT INTO transactions (telegram_id, tx_signature, asset_symbol, amount_sol, amount_asset) VALUES (?, ?, ?, ?, ?)",
-      [data.telegramId, data.txSignature, data.assetSymbol, data.amountSol, data.amountAsset],
-    );
+    const result = this.db
+      .insertInto("transactions")
+      .values({
+        telegram_id: data.telegramId,
+        tx_signature: data.txSignature,
+        asset_symbol: data.assetSymbol,
+        amount_sol: data.amountSol,
+        amount_asset: data.amountAsset,
+      })
+      .returning(["id", "telegram_id", "tx_signature", "asset_symbol", "amount_sol", "amount_asset", "created_at"])
+      .executeTakeFirst();
 
-    const id = Number(result.lastInsertRowid);
-    return this.getById(id)!;
+    const row = result as unknown as TransactionRow;
+    return this.rowToModel(row);
   }
 }
