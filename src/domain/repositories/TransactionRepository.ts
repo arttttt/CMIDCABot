@@ -7,15 +7,15 @@ export interface TransactionRepository {
   /**
    * Get transaction by ID
    */
-  getById(id: number): Transaction | undefined;
+  getById(id: number): Promise<Transaction | undefined>;
 
   /**
    * Get all transactions for a user
    */
-  getByUserId(telegramId: number): Transaction[];
+  getByUserId(telegramId: number): Promise<Transaction[]>;
 
   /**
    * Create a new transaction
    */
-  create(data: CreateTransactionData): Transaction;
+  create(data: CreateTransactionData): Promise<Transaction>;
 }
