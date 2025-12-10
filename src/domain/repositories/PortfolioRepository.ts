@@ -8,20 +8,20 @@ export interface PortfolioRepository {
   /**
    * Get portfolio by Telegram ID
    */
-  getById(telegramId: number): PortfolioBalances | undefined;
+  getById(telegramId: number): Promise<PortfolioBalances | undefined>;
 
   /**
    * Create a new portfolio (or ignore if exists)
    */
-  create(telegramId: number): void;
+  create(telegramId: number): Promise<void>;
 
   /**
    * Update portfolio balance for a specific asset
    */
-  updateBalance(telegramId: number, asset: AssetSymbol, amountToAdd: number): void;
+  updateBalance(telegramId: number, asset: AssetSymbol, amountToAdd: number): Promise<void>;
 
   /**
    * Reset portfolio to zero balances and clear purchase history
    */
-  reset(telegramId: number): void;
+  reset(telegramId: number): Promise<void>;
 }

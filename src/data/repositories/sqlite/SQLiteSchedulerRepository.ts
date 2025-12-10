@@ -1,17 +1,12 @@
 /**
  * SQLite implementation of Scheduler state repository using Kysely
  */
-import { Kysely, sql } from "kysely";
+import { Kysely, sql, Selectable } from "kysely";
 import { SchedulerRepository } from "../../../domain/repositories/SchedulerRepository.js";
 import { SchedulerState } from "../../../domain/models/SchedulerState.js";
-import type { MockDatabase } from "../../types/database.js";
+import type { MockDatabase, SchedulerStateTable } from "../../types/database.js";
 
-interface SchedulerStateRow {
-  id: number;
-  last_run_at: string | null;
-  interval_ms: number;
-  updated_at: string;
-}
+type SchedulerStateRow = Selectable<SchedulerStateTable>;
 
 export class SQLiteSchedulerRepository implements SchedulerRepository {
   constructor(private db: Kysely<MockDatabase>) {}
@@ -24,21 +19,20 @@ export class SQLiteSchedulerRepository implements SchedulerRepository {
     };
   }
 
-  getState(): SchedulerState | undefined {
-    const row = this.db
+  async getState(): Promise<SchedulerState | undefined> {
+    const row = await this.db
       .selectFrom("scheduler_state")
       .selectAll()
       .where("id", "=", 1)
       .executeTakeFirst();
 
-    const result = row as unknown as SchedulerStateRow | undefined;
-    if (!result) return undefined;
+    if (!row) return undefined;
 
-    return this.rowToModel(result);
+    return this.rowToModel(row);
   }
 
-  initState(intervalMs: number): void {
-    this.db
+  async initState(intervalMs: number): Promise<void> {
+    await this.db
       .insertInto("scheduler_state")
       .values({ id: 1, interval_ms: intervalMs })
       .onConflict((oc) =>
@@ -50,8 +44,8 @@ export class SQLiteSchedulerRepository implements SchedulerRepository {
       .execute();
   }
 
-  updateLastRunAt(timestamp: Date): void {
-    this.db
+  async updateLastRunAt(timestamp: Date): Promise<void> {
+    await this.db
       .updateTable("scheduler_state")
       .set({
         last_run_at: timestamp.toISOString(),

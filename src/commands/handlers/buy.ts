@@ -43,10 +43,10 @@ export async function handleBuyCommand(
     };
   }
 
-  services.userRepository.create(ctx.telegramId);
+  await services.userRepository.create(ctx.telegramId);
 
   // Check user has a wallet connected
-  const user = services.userRepository.getById(ctx.telegramId);
+  const user = await services.userRepository.getById(ctx.telegramId);
   if (!user?.walletAddress) {
     return {
       text:
