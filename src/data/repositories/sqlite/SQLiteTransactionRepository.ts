@@ -1,21 +1,13 @@
 /**
  * SQLite implementation of Transaction repository using Kysely
  */
-import { Kysely } from "kysely";
+import { Kysely, Selectable } from "kysely";
 import { TransactionRepository } from "../../../domain/repositories/TransactionRepository.js";
 import { Transaction, CreateTransactionData } from "../../../domain/models/Transaction.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
-import type { MainDatabase } from "../../types/database.js";
+import type { MainDatabase, TransactionsTable } from "../../types/database.js";
 
-interface TransactionRow {
-  id: number;
-  telegram_id: number;
-  tx_signature: string;
-  asset_symbol: string;
-  amount_sol: number;
-  amount_asset: number;
-  created_at: string;
-}
+type TransactionRow = Selectable<TransactionsTable>;
 
 export class SQLiteTransactionRepository implements TransactionRepository {
   constructor(private db: Kysely<MainDatabase>) {}
@@ -32,33 +24,31 @@ export class SQLiteTransactionRepository implements TransactionRepository {
     };
   }
 
-  getById(id: number): Transaction | undefined {
-    const row = this.db
+  async getById(id: number): Promise<Transaction | undefined> {
+    const row = await this.db
       .selectFrom("transactions")
       .selectAll()
       .where("id", "=", id)
       .executeTakeFirst();
 
-    const result = row as unknown as TransactionRow | undefined;
-    if (!result) return undefined;
+    if (!row) return undefined;
 
-    return this.rowToModel(result);
+    return this.rowToModel(row);
   }
 
-  getByUserId(telegramId: number): Transaction[] {
-    const rows = this.db
+  async getByUserId(telegramId: number): Promise<Transaction[]> {
+    const rows = await this.db
       .selectFrom("transactions")
       .selectAll()
       .where("telegram_id", "=", telegramId)
       .orderBy("created_at", "desc")
       .execute();
 
-    const results = rows as unknown as TransactionRow[];
-    return results.map((row) => this.rowToModel(row));
+    return rows.map((row) => this.rowToModel(row));
   }
 
-  create(data: CreateTransactionData): Transaction {
-    const result = this.db
+  async create(data: CreateTransactionData): Promise<Transaction> {
+    const row = await this.db
       .insertInto("transactions")
       .values({
         telegram_id: data.telegramId,
@@ -67,10 +57,9 @@ export class SQLiteTransactionRepository implements TransactionRepository {
         amount_sol: data.amountSol,
         amount_asset: data.amountAsset,
       })
-      .returning(["id", "telegram_id", "tx_signature", "asset_symbol", "amount_sol", "amount_asset", "created_at"])
-      .executeTakeFirst();
+      .returningAll()
+      .executeTakeFirstOrThrow();
 
-    const row = result as unknown as TransactionRow;
     return this.rowToModel(row);
   }
 }
