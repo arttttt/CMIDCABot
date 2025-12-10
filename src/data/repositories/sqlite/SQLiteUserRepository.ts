@@ -1,49 +1,47 @@
 /**
  * SQLite implementation of User repository using Kysely
  */
-import { Kysely, sql } from "kysely";
+import { Kysely, sql, Selectable } from "kysely";
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
 import { User, UserWithWallet } from "../../../domain/models/User.js";
-import type { MainDatabase } from "../../types/database.js";
+import type { MainDatabase, UsersTable } from "../../types/database.js";
+
+type UserRow = Selectable<UsersTable>;
 
 export class SQLiteUserRepository implements UserRepository {
   constructor(private db: Kysely<MainDatabase>) {}
 
-  getById(telegramId: number): User | undefined {
-    const row = this.db
+  private rowToModel(row: UserRow): User {
+    return {
+      telegramId: row.telegram_id,
+      walletAddress: row.wallet_address,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at),
+    };
+  }
+
+  async getById(telegramId: number): Promise<User | undefined> {
+    const row = await this.db
       .selectFrom("users")
       .selectAll()
       .where("telegram_id", "=", telegramId)
       .executeTakeFirst();
 
-    // Kysely with better-sqlite3 is synchronous
-    const result = row as unknown as {
-      telegram_id: number;
-      wallet_address: string | null;
-      created_at: string;
-      updated_at: string;
-    } | undefined;
+    if (!row) return undefined;
 
-    if (!result) return undefined;
-
-    return {
-      telegramId: result.telegram_id,
-      walletAddress: result.wallet_address,
-      createdAt: new Date(result.created_at),
-      updatedAt: new Date(result.updated_at),
-    };
+    return this.rowToModel(row);
   }
 
-  create(telegramId: number): void {
-    this.db
+  async create(telegramId: number): Promise<void> {
+    await this.db
       .insertInto("users")
       .values({ telegram_id: telegramId })
       .onConflict((oc) => oc.column("telegram_id").doNothing())
       .execute();
   }
 
-  setWalletAddress(telegramId: number, walletAddress: string): void {
-    this.db
+  async setWalletAddress(telegramId: number, walletAddress: string): Promise<void> {
+    await this.db
       .updateTable("users")
       .set({
         wallet_address: walletAddress,
@@ -53,23 +51,17 @@ export class SQLiteUserRepository implements UserRepository {
       .execute();
   }
 
-  getAllWithWallet(): UserWithWallet[] {
-    const rows = this.db
+  async getAllWithWallet(): Promise<UserWithWallet[]> {
+    const rows = await this.db
       .selectFrom("users")
       .select(["telegram_id", "wallet_address"])
       .where("wallet_address", "is not", null)
       .where("wallet_address", "!=", "")
       .execute();
 
-    // Kysely with better-sqlite3 is synchronous
-    const results = rows as unknown as Array<{
-      telegram_id: number;
-      wallet_address: string;
-    }>;
-
-    return results.map((row) => ({
+    return rows.map((row) => ({
       telegramId: row.telegram_id,
-      walletAddress: row.wallet_address,
+      walletAddress: row.wallet_address!,
     }));
   }
 }

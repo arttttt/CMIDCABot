@@ -59,23 +59,23 @@ export class DcaService {
   /**
    * Create portfolio for user (in mock database)
    */
-  createPortfolio(telegramId: number): void {
-    this.portfolioRepository.create(telegramId);
+  async createPortfolio(telegramId: number): Promise<void> {
+    await this.portfolioRepository.create(telegramId);
   }
 
   /**
    * Reset portfolio - clear all balances and purchase history
    */
-  resetPortfolio(telegramId: number): void {
-    this.portfolioRepository.reset(telegramId);
-    this.mockPurchaseRepository.deleteByUserId(telegramId);
+  async resetPortfolio(telegramId: number): Promise<void> {
+    await this.portfolioRepository.reset(telegramId);
+    await this.mockPurchaseRepository.deleteByUserId(telegramId);
   }
 
   /**
    * Get portfolio status with allocations and deviation analysis
    */
-  getPortfolioStatus(telegramId: number): PortfolioStatus | null {
-    const portfolio = this.portfolioRepository.getById(telegramId);
+  async getPortfolioStatus(telegramId: number): Promise<PortfolioStatus | null> {
+    const portfolio = await this.portfolioRepository.getById(telegramId);
     if (!portfolio) {
       return null;
     }
@@ -142,8 +142,8 @@ export class DcaService {
   /**
    * Determine which asset to buy based on maximum deviation from target
    */
-  selectAssetToBuy(telegramId: number): AssetSymbol {
-    const status = this.getPortfolioStatus(telegramId);
+  async selectAssetToBuy(telegramId: number): Promise<AssetSymbol> {
+    const status = await this.getPortfolioStatus(telegramId);
     if (!status) {
       // New portfolio - start with BTC (largest target)
       return "BTC";
@@ -175,20 +175,20 @@ export class DcaService {
     }
 
     // Ensure portfolio exists
-    this.portfolioRepository.create(telegramId);
+    await this.portfolioRepository.create(telegramId);
 
     // Select asset if not specified
-    const selectedAsset = asset || this.selectAssetToBuy(telegramId);
+    const selectedAsset = asset || await this.selectAssetToBuy(telegramId);
 
     // Calculate amount of asset to receive
     const amountAsset = amountSol / PRICE_IN_SOL[selectedAsset];
     const priceUsd = MOCK_PRICES[selectedAsset];
 
     // Update portfolio balance
-    this.portfolioRepository.updateBalance(telegramId, selectedAsset, amountAsset);
+    await this.portfolioRepository.updateBalance(telegramId, selectedAsset, amountAsset);
 
     // Record the mock purchase
-    this.mockPurchaseRepository.create({
+    await this.mockPurchaseRepository.create({
       telegramId,
       assetSymbol: selectedAsset,
       amountSol,
@@ -231,7 +231,7 @@ export class DcaService {
       return { processed: 0, successful: 0 };
     }
 
-    const users = this.userRepository.getAllWithWallet();
+    const users = await this.userRepository.getAllWithWallet();
     let processed = 0;
     let successful = 0;
 

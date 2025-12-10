@@ -61,8 +61,8 @@ async function handleCommand(
 
   // Handle special commands that need dynamic content
   if (command === "/start") {
-    services.userRepository.create(ctx.telegramId);
-    services.dca?.createPortfolio(ctx.telegramId);
+    await services.userRepository.create(ctx.telegramId);
+    await services.dca?.createPortfolio(ctx.telegramId);
     return {
       text: commandMode.getStartMessage(),
     };

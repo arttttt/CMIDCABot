@@ -21,10 +21,10 @@ export async function handleStatusCommand(
     };
   }
 
-  services.userRepository.create(ctx.telegramId);
-  services.dca.createPortfolio(ctx.telegramId);
+  await services.userRepository.create(ctx.telegramId);
+  await services.dca.createPortfolio(ctx.telegramId);
 
-  const status = services.dca.getPortfolioStatus(ctx.telegramId);
+  const status = await services.dca.getPortfolioStatus(ctx.telegramId);
   if (!status) {
     return {
       text: "Portfolio not found. Use /buy <amount> to make your first purchase.",

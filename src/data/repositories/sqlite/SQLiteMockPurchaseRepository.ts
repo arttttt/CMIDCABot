@@ -1,21 +1,13 @@
 /**
  * SQLite implementation of MockPurchase repository using Kysely (for development mode)
  */
-import { Kysely } from "kysely";
+import { Kysely, Selectable } from "kysely";
 import { MockPurchaseRepository } from "../../../domain/repositories/MockPurchaseRepository.js";
 import { MockPurchase, CreateMockPurchaseData } from "../../../domain/models/MockPurchase.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
-import type { MockDatabase } from "../../types/database.js";
+import type { MockDatabase, MockPurchasesTable } from "../../types/database.js";
 
-interface MockPurchaseRow {
-  id: number;
-  telegram_id: number;
-  asset_symbol: string;
-  amount_sol: number;
-  amount_asset: number;
-  price_usd: number;
-  created_at: string;
-}
+type MockPurchaseRow = Selectable<MockPurchasesTable>;
 
 export class SQLiteMockPurchaseRepository implements MockPurchaseRepository {
   constructor(private db: Kysely<MockDatabase>) {}
@@ -32,20 +24,19 @@ export class SQLiteMockPurchaseRepository implements MockPurchaseRepository {
     };
   }
 
-  getByUserId(telegramId: number): MockPurchase[] {
-    const rows = this.db
+  async getByUserId(telegramId: number): Promise<MockPurchase[]> {
+    const rows = await this.db
       .selectFrom("mock_purchases")
       .selectAll()
       .where("telegram_id", "=", telegramId)
       .orderBy("created_at", "desc")
       .execute();
 
-    const results = rows as unknown as MockPurchaseRow[];
-    return results.map((row) => this.rowToModel(row));
+    return rows.map((row) => this.rowToModel(row));
   }
 
-  create(data: CreateMockPurchaseData): MockPurchase {
-    const result = this.db
+  async create(data: CreateMockPurchaseData): Promise<MockPurchase> {
+    const row = await this.db
       .insertInto("mock_purchases")
       .values({
         telegram_id: data.telegramId,
@@ -55,14 +46,13 @@ export class SQLiteMockPurchaseRepository implements MockPurchaseRepository {
         price_usd: data.priceUsd,
       })
       .returning(["id", "telegram_id", "asset_symbol", "amount_sol", "amount_asset", "price_usd", "created_at"])
-      .executeTakeFirst();
+      .executeTakeFirstOrThrow();
 
-    const row = result as unknown as MockPurchaseRow;
     return this.rowToModel(row);
   }
 
-  deleteByUserId(telegramId: number): void {
-    this.db
+  async deleteByUserId(telegramId: number): Promise<void> {
+    await this.db
       .deleteFrom("mock_purchases")
       .where("telegram_id", "=", telegramId)
       .execute();

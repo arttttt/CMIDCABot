@@ -1,20 +1,13 @@
 /**
  * SQLite implementation of Portfolio repository using Kysely (for mock/development mode)
  */
-import { Kysely, sql } from "kysely";
+import { Kysely, sql, Selectable } from "kysely";
 import { PortfolioRepository } from "../../../domain/repositories/PortfolioRepository.js";
 import { PortfolioBalances } from "../../../domain/models/Portfolio.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
-import type { MockDatabase } from "../../types/database.js";
+import type { MockDatabase, PortfolioTable } from "../../types/database.js";
 
-interface PortfolioRow {
-  telegram_id: number;
-  btc_balance: number;
-  eth_balance: number;
-  sol_balance: number;
-  created_at: string;
-  updated_at: string;
-}
+type PortfolioRow = Selectable<PortfolioTable>;
 
 export class SQLitePortfolioRepository implements PortfolioRepository {
   constructor(private db: Kysely<MockDatabase>) {}
@@ -28,32 +21,31 @@ export class SQLitePortfolioRepository implements PortfolioRepository {
     };
   }
 
-  getById(telegramId: number): PortfolioBalances | undefined {
-    const row = this.db
+  async getById(telegramId: number): Promise<PortfolioBalances | undefined> {
+    const row = await this.db
       .selectFrom("portfolio")
       .selectAll()
       .where("telegram_id", "=", telegramId)
       .executeTakeFirst();
 
-    const result = row as unknown as PortfolioRow | undefined;
-    if (!result) return undefined;
+    if (!row) return undefined;
 
-    return this.rowToModel(result);
+    return this.rowToModel(row);
   }
 
-  create(telegramId: number): void {
-    this.db
+  async create(telegramId: number): Promise<void> {
+    await this.db
       .insertInto("portfolio")
       .values({ telegram_id: telegramId })
       .onConflict((oc) => oc.column("telegram_id").doNothing())
       .execute();
   }
 
-  updateBalance(telegramId: number, asset: AssetSymbol, amountToAdd: number): void {
+  async updateBalance(telegramId: number, asset: AssetSymbol, amountToAdd: number): Promise<void> {
     const column = `${asset.toLowerCase()}_balance` as "btc_balance" | "eth_balance" | "sol_balance";
 
     // Use raw SQL for the increment operation
-    sql`
+    await sql`
       UPDATE portfolio
       SET ${sql.ref(column)} = ${sql.ref(column)} + ${amountToAdd},
           updated_at = CURRENT_TIMESTAMP
@@ -61,8 +53,8 @@ export class SQLitePortfolioRepository implements PortfolioRepository {
     `.execute(this.db);
   }
 
-  reset(telegramId: number): void {
-    this.db
+  async reset(telegramId: number): Promise<void> {
+    await this.db
       .updateTable("portfolio")
       .set({
         btc_balance: 0,

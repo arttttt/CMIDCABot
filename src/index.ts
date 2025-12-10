@@ -163,7 +163,9 @@ function startDcaScheduler(
   console.log(`[DCA] Persistent scheduler starting: ${amountSol} SOL every ${formatInterval(intervalMs)}`);
 
   // Initialize scheduler state in database
-  schedulerRepository.initState(intervalMs);
+  schedulerRepository.initState(intervalMs).catch((error) => {
+    console.error("[DCA] Failed to initialize scheduler state:", error);
+  });
 
   const runDca = async (timestamp: Date): Promise<boolean> => {
     console.log(`[DCA] Running scheduled purchase for ${timestamp.toISOString()}`);
@@ -173,7 +175,7 @@ function startDcaScheduler(
       console.log(`[DCA] Completed: ${result.successful}/${result.processed} users processed successfully`);
 
       // Update last run time after successful execution
-      schedulerRepository.updateLastRunAt(timestamp);
+      await schedulerRepository.updateLastRunAt(timestamp);
       return true;
     } catch (error) {
       console.error("[DCA] Scheduler error:", error);
@@ -182,8 +184,8 @@ function startDcaScheduler(
   };
 
   // Schedule next run based on last_run_at + intervalMs
-  const scheduleNextRun = (): void => {
-    const state = schedulerRepository.getState();
+  const scheduleNextRun = async (): Promise<void> => {
+    const state = await schedulerRepository.getState();
     const lastRunAt = state?.lastRunAt ? state.lastRunAt.getTime() : null;
 
     let nextRunTime: number;
@@ -202,23 +204,29 @@ function startDcaScheduler(
       const success = await runDca(new Date());
       if (success) {
         // Schedule next run after successful execution
-        scheduleNextRun();
+        scheduleNextRun().catch((error) => {
+          console.error("[DCA] Failed to schedule next run:", error);
+        });
       } else {
         // Retry after a short delay on failure
         console.log("[DCA] Retrying in 1 minute...");
-        setTimeout(scheduleNextRun, 60000);
+        setTimeout(() => {
+          scheduleNextRun().catch((error) => {
+            console.error("[DCA] Failed to schedule next run:", error);
+          });
+        }, 60000);
       }
     }, delay);
   };
 
   // Catch up missed runs on startup
   const catchUpMissedRuns = async (): Promise<void> => {
-    const state = schedulerRepository.getState();
+    const state = await schedulerRepository.getState();
     const lastRunAt = state?.lastRunAt ? state.lastRunAt.getTime() : null;
 
     if (!lastRunAt) {
       console.log("[DCA] No previous run found - scheduling first run");
-      scheduleNextRun();
+      await scheduleNextRun();
       return;
     }
 
@@ -228,7 +236,7 @@ function startDcaScheduler(
 
     if (missedIntervals <= 0) {
       console.log("[DCA] No missed intervals - scheduling next run");
-      scheduleNextRun();
+      await scheduleNextRun();
       return;
     }
 
@@ -246,7 +254,7 @@ function startDcaScheduler(
     }
 
     console.log("[DCA] Catch-up complete - scheduling next run");
-    scheduleNextRun();
+    await scheduleNextRun();
   };
 
   // Start the scheduler

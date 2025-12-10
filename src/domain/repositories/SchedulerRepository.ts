@@ -7,15 +7,15 @@ export interface SchedulerRepository {
   /**
    * Get current scheduler state
    */
-  getState(): SchedulerState | undefined;
+  getState(): Promise<SchedulerState | undefined>;
 
   /**
    * Initialize scheduler state with interval
    */
-  initState(intervalMs: number): void;
+  initState(intervalMs: number): Promise<void>;
 
   /**
    * Update the last run timestamp
    */
-  updateLastRunAt(timestamp: Date): void;
+  updateLastRunAt(timestamp: Date): Promise<void>;
 }
