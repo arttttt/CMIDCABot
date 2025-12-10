@@ -1,10 +1,11 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
-import { Config } from "../types/index.js";
+import { Config, CommandMode } from "../types/index.js";
 import {
   handleMessage,
   handleCallback,
   ServiceContext,
   MessageResponse,
+  HandlerContext,
 } from "../handlers/index.js";
 
 /**
@@ -31,8 +32,15 @@ async function sendResponse(
 export function createBot(
   config: Config,
   services: ServiceContext,
+  commandMode: CommandMode,
 ): Bot<Context> {
   const bot = new Bot<Context>(config.telegram.botToken);
+
+  // Create handler context
+  const handlerCtx: HandlerContext = {
+    services,
+    commandMode,
+  };
 
   // Debug middleware for local development
   if (config.isDev) {
@@ -65,7 +73,7 @@ export function createBot(
         username: ctx.from.username,
         text: ctx.message.text,
       },
-      services,
+      handlerCtx,
     );
     await sendResponse(ctx, response);
   });
