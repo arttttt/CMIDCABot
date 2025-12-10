@@ -1,3 +1,10 @@
+// Load .env file before any config is read
+try {
+  process.loadEnvFile();
+} catch {
+  console.log("No .env file found, using environment variables");
+}
+
 import { loadConfig } from "./config/index.js";
 import { createBot } from "./bot/index.js";
 import { startWebServer } from "./web/index.js";
