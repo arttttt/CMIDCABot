@@ -2,12 +2,12 @@
  * Handler context types
  */
 
-import { DatabaseService } from "../db/index.js";
+import { UserRepository } from "../domain/repositories/UserRepository.js";
 import { SolanaService } from "../services/solana.js";
 import { DcaService } from "../services/dca.js";
 
 export interface ServiceContext {
-  db: DatabaseService;
+  userRepository: UserRepository;
   solana: SolanaService;
   dca?: DcaService;
 }

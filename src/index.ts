@@ -8,8 +8,13 @@ try {
 import { loadConfig } from "./config/index.js";
 import { createBot } from "./bot/index.js";
 import { startWebServer } from "./web/index.js";
-import { DatabaseService } from "./db/index.js";
-import { MockDatabaseService } from "./db/mock.js";
+import { SQLiteDatabase } from "./data/datasources/SQLiteDatabase.js";
+import { SQLiteUserRepository } from "./data/repositories/sqlite/SQLiteUserRepository.js";
+import { SQLiteTransactionRepository } from "./data/repositories/sqlite/SQLiteTransactionRepository.js";
+import { SQLitePortfolioRepository } from "./data/repositories/sqlite/SQLitePortfolioRepository.js";
+import { SQLiteMockPurchaseRepository } from "./data/repositories/sqlite/SQLiteMockPurchaseRepository.js";
+import { SQLiteSchedulerRepository } from "./data/repositories/sqlite/SQLiteSchedulerRepository.js";
+import { SchedulerRepository } from "./domain/repositories/SchedulerRepository.js";
 import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import { ServiceContext } from "./handlers/index.js";
@@ -18,28 +23,47 @@ import { createCommandMode } from "./commands/index.js";
 async function main(): Promise<void> {
   const config = loadConfig();
 
-  // Initialize services
-  const db = new DatabaseService(config.database.path);
+  // Initialize database connections
+  const mainDb = new SQLiteDatabase(config.database.path);
+
+  // Initialize repositories for main database
+  const userRepository = new SQLiteUserRepository(mainDb);
+  new SQLiteTransactionRepository(mainDb); // Initialize schema
+
+  // Initialize Solana service
   const solana = new SolanaService(config.solana);
 
   // Initialize mock database and DCA service only in development mode
   let dca: DcaService | undefined;
-  let mockDb: MockDatabaseService | undefined;
+  let mockDb: SQLiteDatabase | undefined;
+  let schedulerRepository: SchedulerRepository | undefined;
 
   if (config.isDev) {
-    mockDb = new MockDatabaseService(config.database.mockPath);
-    dca = new DcaService(db, mockDb, solana, config.isDev);
+    mockDb = new SQLiteDatabase(config.database.mockPath);
+
+    // Initialize repositories for mock database
+    const portfolioRepository = new SQLitePortfolioRepository(mockDb);
+    const mockPurchaseRepository = new SQLiteMockPurchaseRepository(mockDb);
+    schedulerRepository = new SQLiteSchedulerRepository(mockDb);
+
+    dca = new DcaService(
+      userRepository,
+      portfolioRepository,
+      mockPurchaseRepository,
+      solana,
+      config.isDev,
+    );
   }
 
-  const services: ServiceContext = { db, solana, dca };
+  const services: ServiceContext = { userRepository, solana, dca };
 
   // Create command mode based on environment
   const commandMode = createCommandMode(config.isDev);
   console.log(`Command mode: ${config.isDev ? "development" : "production"} (${commandMode.getCommands().length} commands available)`);
 
   // Start DCA scheduler in development mode
-  if (config.isDev && dca && mockDb && config.dca.amountSol > 0 && config.dca.intervalMs > 0) {
-    startDcaScheduler(config.dca.intervalMs, config.dca.amountSol, dca, mockDb);
+  if (config.isDev && dca && schedulerRepository && config.dca.amountSol > 0 && config.dca.intervalMs > 0) {
+    startDcaScheduler(config.dca.intervalMs, config.dca.amountSol, dca, schedulerRepository);
   }
 
   // Web-only mode: just start the web server
@@ -60,13 +84,13 @@ async function main(): Promise<void> {
     process.on("SIGINT", () => {
       console.log("\nShutting down...");
       mockDb?.close();
-      db.close();
+      mainDb.close();
       process.exit(0);
     });
     process.on("SIGTERM", () => {
       console.log("\nShutting down...");
       mockDb?.close();
-      db.close();
+      mainDb.close();
       process.exit(0);
     });
 
@@ -83,7 +107,7 @@ async function main(): Promise<void> {
     console.log("\nShutting down...");
     await bot.stop();
     mockDb?.close();
-    db.close();
+    mainDb.close();
     process.exit(0);
   };
 
@@ -125,7 +149,7 @@ function startDcaScheduler(
   intervalMs: number,
   amountSol: number,
   dca: DcaService,
-  mockDb: MockDatabaseService,
+  schedulerRepository: SchedulerRepository,
 ): void {
   const formatInterval = (ms: number): string => {
     if (ms >= 86400000) return `${(ms / 86400000).toFixed(1)} days`;
@@ -137,7 +161,7 @@ function startDcaScheduler(
   console.log(`[DCA] Persistent scheduler starting: ${amountSol} SOL every ${formatInterval(intervalMs)}`);
 
   // Initialize scheduler state in database
-  mockDb.initSchedulerState(intervalMs);
+  schedulerRepository.initState(intervalMs);
 
   const runDca = async (timestamp: Date): Promise<boolean> => {
     console.log(`[DCA] Running scheduled purchase for ${timestamp.toISOString()}`);
@@ -147,7 +171,7 @@ function startDcaScheduler(
       console.log(`[DCA] Completed: ${result.successful}/${result.processed} users processed successfully`);
 
       // Update last run time after successful execution
-      mockDb.updateLastRunAt(timestamp.toISOString());
+      schedulerRepository.updateLastRunAt(timestamp);
       return true;
     } catch (error) {
       console.error("[DCA] Scheduler error:", error);
@@ -157,8 +181,8 @@ function startDcaScheduler(
 
   // Schedule next run based on last_run_at + intervalMs
   const scheduleNextRun = (): void => {
-    const state = mockDb.getSchedulerState();
-    const lastRunAt = state?.lastRunAt ? new Date(state.lastRunAt).getTime() : null;
+    const state = schedulerRepository.getState();
+    const lastRunAt = state?.lastRunAt ? state.lastRunAt.getTime() : null;
 
     let nextRunTime: number;
     if (lastRunAt) {
@@ -187,8 +211,8 @@ function startDcaScheduler(
 
   // Catch up missed runs on startup
   const catchUpMissedRuns = async (): Promise<void> => {
-    const state = mockDb.getSchedulerState();
-    const lastRunAt = state?.lastRunAt ? new Date(state.lastRunAt).getTime() : null;
+    const state = schedulerRepository.getState();
+    const lastRunAt = state?.lastRunAt ? state.lastRunAt.getTime() : null;
 
     if (!lastRunAt) {
       console.log("[DCA] No previous run found - scheduling first run");

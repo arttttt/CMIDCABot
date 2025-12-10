@@ -13,8 +13,8 @@ export async function handleBalanceCommand(
   ctx: MessageContext,
   services: ServiceContext,
 ): Promise<MessageResponse> {
-  services.db.createUser(ctx.telegramId);
-  const user = services.db.getUser(ctx.telegramId);
+  services.userRepository.create(ctx.telegramId);
+  const user = services.userRepository.getById(ctx.telegramId);
 
   if (!user?.walletAddress) {
     return {
