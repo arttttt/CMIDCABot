@@ -6,7 +6,7 @@ import { CommandMode } from "../types/commands.js";
 import { handleWalletCallback } from "../commands/handlers/index.js";
 
 // Re-export types for backward compatibility
-export {
+export type {
   ServiceContext,
   MessageContext,
   InlineButton,
