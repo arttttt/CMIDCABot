@@ -2,7 +2,7 @@
 try {
   process.loadEnvFile();
 } catch {
-  // .env file is optional - continue without it
+  console.log("No .env file found, using environment variables");
 }
 
 import { loadConfig } from "./config/index.js";
