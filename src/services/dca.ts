@@ -3,8 +3,10 @@
  * Works only in NODE_ENV=development
  */
 
-import { DatabaseService } from "../db/index.js";
-import { MockDatabaseService, PortfolioData } from "../db/mock.js";
+import { UserRepository } from "../data/repositories/interfaces/UserRepository.js";
+import { PortfolioRepository } from "../data/repositories/interfaces/PortfolioRepository.js";
+import { MockPurchaseRepository } from "../data/repositories/interfaces/MockPurchaseRepository.js";
+import { PortfolioBalances } from "../domain/models/Portfolio.js";
 import { SolanaService } from "./solana.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../types/portfolio.js";
 
@@ -40,8 +42,9 @@ export interface PortfolioStatus {
 
 export class DcaService {
   constructor(
-    private db: DatabaseService,
-    private mockDb: MockDatabaseService,
+    private userRepository: UserRepository,
+    private portfolioRepository: PortfolioRepository,
+    private mockPurchaseRepository: MockPurchaseRepository,
     private solana: SolanaService,
     private isDev: boolean,
   ) {}
@@ -57,21 +60,22 @@ export class DcaService {
    * Create portfolio for user (in mock database)
    */
   createPortfolio(telegramId: number): void {
-    this.mockDb.createPortfolio(telegramId);
+    this.portfolioRepository.create(telegramId);
   }
 
   /**
    * Reset portfolio - clear all balances and purchase history
    */
   resetPortfolio(telegramId: number): void {
-    this.mockDb.resetPortfolio(telegramId);
+    this.portfolioRepository.reset(telegramId);
+    this.mockPurchaseRepository.deleteByUserId(telegramId);
   }
 
   /**
    * Get portfolio status with allocations and deviation analysis
    */
   getPortfolioStatus(telegramId: number): PortfolioStatus | null {
-    const portfolio = this.mockDb.getPortfolio(telegramId);
+    const portfolio = this.portfolioRepository.getById(telegramId);
     if (!portfolio) {
       return null;
     }
@@ -101,7 +105,7 @@ export class DcaService {
   /**
    * Calculate current allocations vs target
    */
-  private calculateAllocations(portfolio: PortfolioData): AllocationInfo[] {
+  private calculateAllocations(portfolio: PortfolioBalances): AllocationInfo[] {
     const assets: { symbol: AssetSymbol; balance: number }[] = [
       { symbol: "BTC", balance: portfolio.btcBalance },
       { symbol: "ETH", balance: portfolio.ethBalance },
@@ -171,7 +175,7 @@ export class DcaService {
     }
 
     // Ensure portfolio exists
-    this.mockDb.createPortfolio(telegramId);
+    this.portfolioRepository.create(telegramId);
 
     // Select asset if not specified
     const selectedAsset = asset || this.selectAssetToBuy(telegramId);
@@ -181,10 +185,16 @@ export class DcaService {
     const priceUsd = MOCK_PRICES[selectedAsset];
 
     // Update portfolio balance
-    this.mockDb.updatePortfolioBalance(telegramId, selectedAsset, amountAsset);
+    this.portfolioRepository.updateBalance(telegramId, selectedAsset, amountAsset);
 
     // Record the mock purchase
-    this.mockDb.addMockPurchase(telegramId, selectedAsset, amountSol, amountAsset, priceUsd);
+    this.mockPurchaseRepository.create({
+      telegramId,
+      assetSymbol: selectedAsset,
+      amountSol,
+      amountAsset,
+      priceUsd,
+    });
 
     return {
       success: true,
@@ -221,7 +231,7 @@ export class DcaService {
       return { processed: 0, successful: 0 };
     }
 
-    const users = this.db.getAllUsersWithWallet();
+    const users = this.userRepository.getAllWithWallet();
     let processed = 0;
     let successful = 0;
 

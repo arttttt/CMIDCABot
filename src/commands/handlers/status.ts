@@ -21,7 +21,7 @@ export async function handleStatusCommand(
     };
   }
 
-  services.db.createUser(ctx.telegramId);
+  services.userRepository.create(ctx.telegramId);
   services.dca.createPortfolio(ctx.telegramId);
 
   const status = services.dca.getPortfolioStatus(ctx.telegramId);

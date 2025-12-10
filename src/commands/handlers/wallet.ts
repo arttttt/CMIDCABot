@@ -13,7 +13,7 @@ async function saveWallet(
   walletAddress: string,
   services: ServiceContext,
 ): Promise<MessageResponse> {
-  services.db.setWalletAddress(telegramId, walletAddress);
+  services.userRepository.setWalletAddress(telegramId, walletAddress);
 
   try {
     const balance = await services.solana.getBalance(walletAddress);
@@ -41,11 +41,11 @@ export async function handleWalletCommand(
   const subcommand = args[0]?.toLowerCase();
 
   // Ensure user exists
-  services.db.createUser(ctx.telegramId);
+  services.userRepository.create(ctx.telegramId);
 
   if (!subcommand) {
     // Show current wallet
-    const user = services.db.getUser(ctx.telegramId);
+    const user = services.userRepository.getById(ctx.telegramId);
     if (!user?.walletAddress) {
       return {
         text:
@@ -92,7 +92,7 @@ export async function handleWalletCommand(
     }
 
     // Check if user already has a wallet
-    const user = services.db.getUser(ctx.telegramId);
+    const user = services.userRepository.getById(ctx.telegramId);
     if (user?.walletAddress) {
       // Same wallet - just inform
       if (user.walletAddress === walletAddress) {
@@ -134,14 +134,14 @@ export async function handleWalletCommand(
   }
 
   if (subcommand === "remove") {
-    const user = services.db.getUser(ctx.telegramId);
+    const user = services.userRepository.getById(ctx.telegramId);
     if (!user?.walletAddress) {
       return {
         text: "No wallet is currently connected.",
       };
     }
 
-    services.db.setWalletAddress(ctx.telegramId, "");
+    services.userRepository.setWalletAddress(ctx.telegramId, "");
     return {
       text: "Wallet disconnected successfully.",
     };
