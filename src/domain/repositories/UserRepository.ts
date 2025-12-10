@@ -1,7 +1,7 @@
 /**
  * User repository interface
  */
-import { User, UserWithWallet } from "../../../domain/models/User.js";
+import { User, UserWithWallet } from "../models/User.js";
 
 export interface UserRepository {
   /**

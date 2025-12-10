@@ -1,7 +1,7 @@
 /**
  * MockPurchase repository interface (for development mode)
  */
-import { MockPurchase, CreateMockPurchaseData } from "../../../domain/models/MockPurchase.js";
+import { MockPurchase, CreateMockPurchaseData } from "../models/MockPurchase.js";
 
 export interface MockPurchaseRepository {
   /**

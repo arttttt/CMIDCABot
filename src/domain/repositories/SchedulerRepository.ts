@@ -1,7 +1,7 @@
 /**
  * Scheduler state repository interface
  */
-import { SchedulerState } from "../../../domain/models/SchedulerState.js";
+import { SchedulerState } from "../models/SchedulerState.js";
 
 export interface SchedulerRepository {
   /**

@@ -1,7 +1,7 @@
 /**
  * Transaction repository interface
  */
-import { Transaction, CreateTransactionData } from "../../../domain/models/Transaction.js";
+import { Transaction, CreateTransactionData } from "../models/Transaction.js";
 
 export interface TransactionRepository {
   /**

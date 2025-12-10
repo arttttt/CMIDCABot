@@ -2,7 +2,7 @@
  * Handler context types
  */
 
-import { UserRepository } from "../data/repositories/interfaces/UserRepository.js";
+import { UserRepository } from "../domain/repositories/UserRepository.js";
 import { SolanaService } from "../services/solana.js";
 import { DcaService } from "../services/dca.js";
 

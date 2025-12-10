@@ -2,7 +2,7 @@
  * SQLite implementation of MockPurchase repository (for development mode)
  */
 import { Database } from "../../interfaces/Database.js";
-import { MockPurchaseRepository } from "../interfaces/MockPurchaseRepository.js";
+import { MockPurchaseRepository } from "../../../domain/repositories/MockPurchaseRepository.js";
 import { MockPurchase, CreateMockPurchaseData } from "../../../domain/models/MockPurchase.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
 

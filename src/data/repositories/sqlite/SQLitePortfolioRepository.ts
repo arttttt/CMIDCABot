@@ -2,7 +2,7 @@
  * SQLite implementation of Portfolio repository (for mock/development mode)
  */
 import { Database } from "../../interfaces/Database.js";
-import { PortfolioRepository } from "../interfaces/PortfolioRepository.js";
+import { PortfolioRepository } from "../../../domain/repositories/PortfolioRepository.js";
 import { PortfolioBalances } from "../../../domain/models/Portfolio.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
 

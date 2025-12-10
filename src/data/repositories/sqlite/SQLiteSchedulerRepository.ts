@@ -2,7 +2,7 @@
  * SQLite implementation of Scheduler state repository
  */
 import { Database } from "../../interfaces/Database.js";
-import { SchedulerRepository } from "../interfaces/SchedulerRepository.js";
+import { SchedulerRepository } from "../../../domain/repositories/SchedulerRepository.js";
 import { SchedulerState } from "../../../domain/models/SchedulerState.js";
 
 interface SchedulerStateRow {

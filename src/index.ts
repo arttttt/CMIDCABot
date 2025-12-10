@@ -14,7 +14,7 @@ import { SQLiteTransactionRepository } from "./data/repositories/sqlite/SQLiteTr
 import { SQLitePortfolioRepository } from "./data/repositories/sqlite/SQLitePortfolioRepository.js";
 import { SQLiteMockPurchaseRepository } from "./data/repositories/sqlite/SQLiteMockPurchaseRepository.js";
 import { SQLiteSchedulerRepository } from "./data/repositories/sqlite/SQLiteSchedulerRepository.js";
-import { SchedulerRepository } from "./data/repositories/interfaces/SchedulerRepository.js";
+import { SchedulerRepository } from "./domain/repositories/SchedulerRepository.js";
 import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import { ServiceContext } from "./handlers/index.js";

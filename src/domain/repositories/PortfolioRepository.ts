@@ -1,8 +1,8 @@
 /**
  * Portfolio repository interface (for mock/development mode)
  */
-import { PortfolioBalances } from "../../../domain/models/Portfolio.js";
-import { AssetSymbol } from "../../../types/portfolio.js";
+import { PortfolioBalances } from "../models/Portfolio.js";
+import { AssetSymbol } from "../../types/portfolio.js";
 
 export interface PortfolioRepository {
   /**

@@ -2,7 +2,7 @@
  * SQLite implementation of User repository
  */
 import { Database } from "../../interfaces/Database.js";
-import { UserRepository } from "../interfaces/UserRepository.js";
+import { UserRepository } from "../../../domain/repositories/UserRepository.js";
 import { User, UserWithWallet } from "../../../domain/models/User.js";
 
 interface UserRow {

@@ -2,7 +2,7 @@
  * SQLite implementation of Transaction repository
  */
 import { Database } from "../../interfaces/Database.js";
-import { TransactionRepository } from "../interfaces/TransactionRepository.js";
+import { TransactionRepository } from "../../../domain/repositories/TransactionRepository.js";
 import { Transaction, CreateTransactionData } from "../../../domain/models/Transaction.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
 

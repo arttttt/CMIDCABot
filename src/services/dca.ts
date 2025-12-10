@@ -3,9 +3,9 @@
  * Works only in NODE_ENV=development
  */
 
-import { UserRepository } from "../data/repositories/interfaces/UserRepository.js";
-import { PortfolioRepository } from "../data/repositories/interfaces/PortfolioRepository.js";
-import { MockPurchaseRepository } from "../data/repositories/interfaces/MockPurchaseRepository.js";
+import { UserRepository } from "../domain/repositories/UserRepository.js";
+import { PortfolioRepository } from "../domain/repositories/PortfolioRepository.js";
+import { MockPurchaseRepository } from "../domain/repositories/MockPurchaseRepository.js";
 import { PortfolioBalances } from "../domain/models/Portfolio.js";
 import { SolanaService } from "./solana.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../types/portfolio.js";
