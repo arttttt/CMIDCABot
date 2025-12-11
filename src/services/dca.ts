@@ -17,17 +17,10 @@ export const MOCK_PRICES: Record<AssetSymbol, number> = {
   SOL: 200,
 };
 
-// Price ratios relative to SOL
-export const PRICE_IN_SOL: Record<AssetSymbol, number> = {
-  BTC: MOCK_PRICES.BTC / MOCK_PRICES.SOL, // 500 SOL per BTC
-  ETH: MOCK_PRICES.ETH / MOCK_PRICES.SOL, // 17.5 SOL per ETH
-  SOL: 1, // 1 SOL per SOL
-};
-
 export interface AllocationInfo {
   symbol: AssetSymbol;
   balance: number;
-  valueInSol: number;
+  valueInUsdc: number;
   currentAllocation: number;
   targetAllocation: number;
   deviation: number; // negative = below target
@@ -35,7 +28,7 @@ export interface AllocationInfo {
 
 export interface PortfolioStatus {
   allocations: AllocationInfo[];
-  totalValueInSol: number;
+  totalValueInUsdc: number;
   assetToBuy: AssetSymbol;
   maxDeviation: number;
 }
@@ -81,7 +74,7 @@ export class DcaService {
     }
 
     const allocations = this.calculateAllocations(portfolio);
-    const totalValueInSol = allocations.reduce((sum, a) => sum + a.valueInSol, 0);
+    const totalValueInUsdc = allocations.reduce((sum, a) => sum + a.valueInUsdc, 0);
 
     // Find asset with maximum negative deviation (most below target)
     let assetToBuy: AssetSymbol = "BTC";
@@ -96,7 +89,7 @@ export class DcaService {
 
     return {
       allocations,
-      totalValueInSol,
+      totalValueInUsdc,
       assetToBuy,
       maxDeviation,
     };
@@ -112,26 +105,26 @@ export class DcaService {
       { symbol: "SOL", balance: portfolio.solBalance },
     ];
 
-    // Calculate total value in SOL
-    let totalValueInSol = 0;
-    const values: { symbol: AssetSymbol; balance: number; valueInSol: number }[] = [];
+    // Calculate total value in USDC
+    let totalValueInUsdc = 0;
+    const values: { symbol: AssetSymbol; balance: number; valueInUsdc: number }[] = [];
 
     for (const asset of assets) {
-      const valueInSol = asset.balance * PRICE_IN_SOL[asset.symbol];
-      totalValueInSol += valueInSol;
-      values.push({ ...asset, valueInSol });
+      const valueInUsdc = asset.balance * MOCK_PRICES[asset.symbol];
+      totalValueInUsdc += valueInUsdc;
+      values.push({ ...asset, valueInUsdc });
     }
 
     // Calculate allocations
     return values.map((v) => {
-      const currentAllocation = totalValueInSol > 0 ? v.valueInSol / totalValueInSol : 0;
+      const currentAllocation = totalValueInUsdc > 0 ? v.valueInUsdc / totalValueInUsdc : 0;
       const targetAllocation = TARGET_ALLOCATIONS[v.symbol];
       const deviation = currentAllocation - targetAllocation;
 
       return {
         symbol: v.symbol,
         balance: v.balance,
-        valueInSol: v.valueInSol,
+        valueInUsdc: v.valueInUsdc,
         currentAllocation,
         targetAllocation,
         deviation,
@@ -150,7 +143,7 @@ export class DcaService {
     }
 
     // If portfolio is empty, buy the one with largest target allocation
-    if (status.totalValueInSol === 0) {
+    if (status.totalValueInUsdc === 0) {
       return "BTC";
     }
 
@@ -162,7 +155,7 @@ export class DcaService {
    */
   async executeMockPurchase(
     telegramId: number,
-    amountSol: number,
+    amountUsdc: number,
     asset?: AssetSymbol,
   ): Promise<{ success: boolean; asset: AssetSymbol; amount: number; message: string }> {
     if (!this.isMockMode()) {
@@ -180,8 +173,8 @@ export class DcaService {
     // Select asset if not specified
     const selectedAsset = asset || await this.selectAssetToBuy(telegramId);
 
-    // Calculate amount of asset to receive
-    const amountAsset = amountSol / PRICE_IN_SOL[selectedAsset];
+    // Calculate amount of asset to receive (amountUsdc / price in USD)
+    const amountAsset = amountUsdc / MOCK_PRICES[selectedAsset];
     const priceUsd = MOCK_PRICES[selectedAsset];
 
     // Update portfolio balance
@@ -191,7 +184,7 @@ export class DcaService {
     await this.purchaseRepository.create({
       telegramId,
       assetSymbol: selectedAsset,
-      amountSol,
+      amountUsdc,
       amountAsset,
       priceUsd,
     });
@@ -200,7 +193,7 @@ export class DcaService {
       success: true,
       asset: selectedAsset,
       amount: amountAsset,
-      message: `Mock purchased ${amountAsset.toFixed(8)} ${selectedAsset} for ${amountSol} SOL`,
+      message: `Mock purchased ${amountAsset.toFixed(8)} ${selectedAsset} for ${amountUsdc} USDC`,
     };
   }
 
@@ -225,7 +218,7 @@ export class DcaService {
   /**
    * Execute DCA for all users with wallets (scheduled task)
    */
-  async executeDcaForAllUsers(amountSol: number): Promise<{ processed: number; successful: number }> {
+  async executeDcaForAllUsers(amountUsdc: number): Promise<{ processed: number; successful: number }> {
     if (!this.isMockMode()) {
       console.log("[DCA] Skipping - not in development mode");
       return { processed: 0, successful: 0 };
@@ -235,18 +228,21 @@ export class DcaService {
     let processed = 0;
     let successful = 0;
 
+    // Convert USDC to SOL equivalent for balance check
+    const requiredSol = amountUsdc / MOCK_PRICES.SOL;
+
     for (const user of users) {
       processed++;
 
       // Check balance (but don't deduct in mock mode)
-      const balanceCheck = await this.checkSolBalance(user.walletAddress, amountSol);
+      const balanceCheck = await this.checkSolBalance(user.walletAddress, requiredSol);
       if (!balanceCheck.sufficient) {
-        console.log(`[DCA] User ${user.telegramId}: Insufficient balance (${balanceCheck.balance} SOL)`);
+        console.log(`[DCA] User ${user.telegramId}: Insufficient balance (${balanceCheck.balance} SOL, need ${requiredSol.toFixed(4)} SOL for ${amountUsdc} USDC)`);
         continue;
       }
 
       // Execute mock purchase
-      const result = await this.executeMockPurchase(user.telegramId, amountSol);
+      const result = await this.executeMockPurchase(user.telegramId, amountUsdc);
       if (result.success) {
         successful++;
         console.log(`[DCA] User ${user.telegramId}: ${result.message}`);

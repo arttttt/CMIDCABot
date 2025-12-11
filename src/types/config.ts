@@ -21,7 +21,7 @@ export interface WebConfig {
 }
 
 export interface DcaConfig {
-  amountSol: number;
+  amountUsdc: number;
   intervalMs: number; // interval between purchases in milliseconds
 }
 

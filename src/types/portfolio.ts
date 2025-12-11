@@ -10,7 +10,7 @@ export type AssetSymbol = keyof typeof TARGET_ALLOCATIONS;
 export interface AssetBalance {
   symbol: AssetSymbol;
   balance: number;
-  valueInSol: number;
+  valueInUsdc: number;
   currentAllocation: number;
   targetAllocation: number;
   deviation: number;
@@ -18,6 +18,6 @@ export interface AssetBalance {
 
 export interface Portfolio {
   assets: AssetBalance[];
-  totalValueInSol: number;
+  totalValueInUsdc: number;
   updatedAt: Date;
 }

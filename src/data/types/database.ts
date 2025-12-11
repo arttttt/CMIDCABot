@@ -38,7 +38,7 @@ export interface TransactionsTable {
   telegram_id: number;
   tx_signature: string;
   asset_symbol: string;
-  amount_sol: number;
+  amount_usdc: number;
   amount_asset: number;
   created_at: Generated<string>;
 }
@@ -62,7 +62,7 @@ export interface PurchasesTable {
   id: Generated<number>;
   telegram_id: number;
   asset_symbol: string;
-  amount_sol: number;
+  amount_usdc: number;
   amount_asset: number;
   price_usd: number;
   created_at: Generated<string>;

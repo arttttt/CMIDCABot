@@ -18,7 +18,7 @@ export class SQLiteTransactionRepository implements TransactionRepository {
       telegramId: row.telegram_id,
       txSignature: row.tx_signature,
       assetSymbol: row.asset_symbol as AssetSymbol,
-      amountSol: row.amount_sol,
+      amountUsdc: row.amount_usdc,
       amountAsset: row.amount_asset,
       createdAt: new Date(row.created_at),
     };
@@ -54,7 +54,7 @@ export class SQLiteTransactionRepository implements TransactionRepository {
         telegram_id: data.telegramId,
         tx_signature: data.txSignature,
         asset_symbol: data.assetSymbol,
-        amount_sol: data.amountSol,
+        amount_usdc: data.amountUsdc,
         amount_asset: data.amountAsset,
       })
       .returningAll()

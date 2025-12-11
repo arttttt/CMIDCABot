@@ -7,7 +7,7 @@ export interface Purchase {
   id: number;
   telegramId: number;
   assetSymbol: AssetSymbol;
-  amountSol: number;
+  amountUsdc: number;
   amountAsset: number;
   priceUsd: number;
   createdAt: Date;
@@ -16,7 +16,7 @@ export interface Purchase {
 export interface CreatePurchaseData {
   telegramId: number;
   assetSymbol: AssetSymbol;
-  amountSol: number;
+  amountUsdc: number;
   amountAsset: number;
   priceUsd: number;
 }
