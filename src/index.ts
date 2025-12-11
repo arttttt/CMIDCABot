@@ -10,48 +10,53 @@ import { loadConfig } from "./config/index.js";
 import { createBot } from "./bot/index.js";
 import { startWebServer } from "./web/index.js";
 import { createMainDatabase, createMockDatabase } from "./data/datasources/KyselyDatabase.js";
-import { SQLiteUserRepository } from "./data/repositories/sqlite/SQLiteUserRepository.js";
-import { SQLiteTransactionRepository } from "./data/repositories/sqlite/SQLiteTransactionRepository.js";
-import { SQLitePortfolioRepository } from "./data/repositories/sqlite/SQLitePortfolioRepository.js";
-import { SQLiteMockPurchaseRepository } from "./data/repositories/sqlite/SQLiteMockPurchaseRepository.js";
-import { SQLiteSchedulerRepository } from "./data/repositories/sqlite/SQLiteSchedulerRepository.js";
+import { createMainRepositories, createMockRepositories } from "./data/factories/RepositoryFactory.js";
 import { SchedulerRepository } from "./domain/repositories/SchedulerRepository.js";
 import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import { ServiceContext } from "./handlers/index.js";
 import { createCommandMode } from "./commands/index.js";
-import type { MockDatabase } from "./data/types/database.js";
+import type { MainDatabase, MockDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
   const config = loadConfig();
+  const dbMode = config.database.mode;
 
-  // Initialize database connections using Kysely
-  const mainDb = createMainDatabase(config.database.path);
+  console.log(`Database mode: ${dbMode}`);
 
-  // Initialize repositories for main database
-  const userRepository = new SQLiteUserRepository(mainDb);
-  new SQLiteTransactionRepository(mainDb); // Initialize schema
+  // Initialize database connections (only for sqlite mode)
+  let mainDb: Kysely<MainDatabase> | undefined;
+  let mockDb: Kysely<MockDatabase> | undefined;
+
+  if (dbMode === "sqlite") {
+    mainDb = createMainDatabase(config.database.path);
+  }
+
+  // Create repositories based on mode
+  const { userRepository, transactionRepository } = createMainRepositories(dbMode, mainDb);
+
+  // Ensure transaction repository schema is initialized (for sqlite)
+  void transactionRepository;
 
   // Initialize Solana service
   const solana = new SolanaService(config.solana);
 
   // Initialize mock database and DCA service only in development mode
   let dca: DcaService | undefined;
-  let mockDb: Kysely<MockDatabase> | undefined;
   let schedulerRepository: SchedulerRepository | undefined;
 
   if (config.isDev) {
-    mockDb = createMockDatabase(config.database.mockPath);
+    if (dbMode === "sqlite") {
+      mockDb = createMockDatabase(config.database.mockPath);
+    }
 
-    // Initialize repositories for mock database
-    const portfolioRepository = new SQLitePortfolioRepository(mockDb);
-    const mockPurchaseRepository = new SQLiteMockPurchaseRepository(mockDb);
-    schedulerRepository = new SQLiteSchedulerRepository(mockDb);
+    const mockRepos = createMockRepositories(dbMode, mockDb);
+    schedulerRepository = mockRepos.schedulerRepository;
 
     dca = new DcaService(
       userRepository,
-      portfolioRepository,
-      mockPurchaseRepository,
+      mockRepos.portfolioRepository,
+      mockRepos.purchaseRepository,
       solana,
       config.isDev,
     );
@@ -67,6 +72,12 @@ async function main(): Promise<void> {
   if (config.isDev && dca && schedulerRepository && config.dca.amountSol > 0 && config.dca.intervalMs > 0) {
     startDcaScheduler(config.dca.intervalMs, config.dca.amountSol, dca, schedulerRepository);
   }
+
+  // Cleanup function
+  const cleanup = async (): Promise<void> => {
+    await mockDb?.destroy();
+    await mainDb?.destroy();
+  };
 
   // Web-only mode: just start the web server
   if (config.web?.enabled) {
@@ -85,14 +96,12 @@ async function main(): Promise<void> {
     // Keep process alive
     process.on("SIGINT", async () => {
       console.log("\nShutting down...");
-      await mockDb?.destroy();
-      await mainDb.destroy();
+      await cleanup();
       process.exit(0);
     });
     process.on("SIGTERM", async () => {
       console.log("\nShutting down...");
-      await mockDb?.destroy();
-      await mainDb.destroy();
+      await cleanup();
       process.exit(0);
     });
 
@@ -108,8 +117,7 @@ async function main(): Promise<void> {
   const shutdown = async (): Promise<void> => {
     console.log("\nShutting down...");
     await bot.stop();
-    await mockDb?.destroy();
-    await mainDb.destroy();
+    await cleanup();
     process.exit(0);
   };
 

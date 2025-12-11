@@ -1,4 +1,4 @@
-import { Config } from "../types/config.js";
+import { Config, DatabaseMode } from "../types/config.js";
 
 function getEnvOrThrow(key: string): string {
   const value = process.env[key];
@@ -42,6 +42,7 @@ export function loadConfig(): Config {
       network: getEnvOrDefault("SOLANA_NETWORK", "devnet") as "devnet" | "mainnet-beta",
     },
     database: {
+      mode: getEnvOrDefault("DB_MODE", "sqlite") as DatabaseMode,
       path: getEnvOrDefault("DATABASE_PATH", "./data/bot.db"),
       mockPath: getEnvOrDefault("MOCK_DATABASE_PATH", "./data/mock.db"),
     },

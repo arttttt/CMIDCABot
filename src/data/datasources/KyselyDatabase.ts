@@ -92,7 +92,7 @@ function initMockSchema(db: Kysely<MockDatabase>): void {
   `.execute(db);
 
   sql`
-    CREATE TABLE IF NOT EXISTS mock_purchases (
+    CREATE TABLE IF NOT EXISTS purchases (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       telegram_id INTEGER NOT NULL,
       asset_symbol TEXT NOT NULL,
@@ -104,7 +104,7 @@ function initMockSchema(db: Kysely<MockDatabase>): void {
   `.execute(db);
 
   sql`
-    CREATE INDEX IF NOT EXISTS idx_mock_purchases_user ON mock_purchases(telegram_id)
+    CREATE INDEX IF NOT EXISTS idx_purchases_user ON purchases(telegram_id)
   `.execute(db);
 
   sql`

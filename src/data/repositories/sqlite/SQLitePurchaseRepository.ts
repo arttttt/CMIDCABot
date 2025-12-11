@@ -1,18 +1,18 @@
 /**
- * SQLite implementation of MockPurchase repository using Kysely (for development mode)
+ * SQLite implementation of Purchase repository using Kysely
  */
 import { Kysely, Selectable } from "kysely";
-import { MockPurchaseRepository } from "../../../domain/repositories/MockPurchaseRepository.js";
-import { MockPurchase, CreateMockPurchaseData } from "../../../domain/models/MockPurchase.js";
+import { PurchaseRepository } from "../../../domain/repositories/PurchaseRepository.js";
+import { Purchase, CreatePurchaseData } from "../../../domain/models/Purchase.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
-import type { MockDatabase, MockPurchasesTable } from "../../types/database.js";
+import type { MockDatabase, PurchasesTable } from "../../types/database.js";
 
-type MockPurchaseRow = Selectable<MockPurchasesTable>;
+type PurchaseRow = Selectable<PurchasesTable>;
 
-export class SQLiteMockPurchaseRepository implements MockPurchaseRepository {
+export class SQLitePurchaseRepository implements PurchaseRepository {
   constructor(private db: Kysely<MockDatabase>) {}
 
-  private rowToModel(row: MockPurchaseRow): MockPurchase {
+  private rowToModel(row: PurchaseRow): Purchase {
     return {
       id: row.id,
       telegramId: row.telegram_id,
@@ -24,9 +24,9 @@ export class SQLiteMockPurchaseRepository implements MockPurchaseRepository {
     };
   }
 
-  async getByUserId(telegramId: number): Promise<MockPurchase[]> {
+  async getByUserId(telegramId: number): Promise<Purchase[]> {
     const rows = await this.db
-      .selectFrom("mock_purchases")
+      .selectFrom("purchases")
       .selectAll()
       .where("telegram_id", "=", telegramId)
       .orderBy("created_at", "desc")
@@ -35,9 +35,9 @@ export class SQLiteMockPurchaseRepository implements MockPurchaseRepository {
     return rows.map((row) => this.rowToModel(row));
   }
 
-  async create(data: CreateMockPurchaseData): Promise<MockPurchase> {
+  async create(data: CreatePurchaseData): Promise<Purchase> {
     const row = await this.db
-      .insertInto("mock_purchases")
+      .insertInto("purchases")
       .values({
         telegram_id: data.telegramId,
         asset_symbol: data.assetSymbol,
@@ -53,7 +53,7 @@ export class SQLiteMockPurchaseRepository implements MockPurchaseRepository {
 
   async deleteByUserId(telegramId: number): Promise<void> {
     await this.db
-      .deleteFrom("mock_purchases")
+      .deleteFrom("purchases")
       .where("telegram_id", "=", telegramId)
       .execute();
   }
