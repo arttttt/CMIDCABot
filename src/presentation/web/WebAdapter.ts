@@ -1,10 +1,10 @@
 /**
- * Web interface for testing the bot without Telegram
+ * Web adapter - HTTP <-> protocol mapping
+ * Pure mapping, no logic
  */
 
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
-import { handleMessage, handleCallback, ServiceContext, HandlerContext } from "../handlers/index.js";
-import { Config, CommandMode } from "../types/index.js";
+import { ProtocolHandler } from "../protocol/index.js";
 
 const HTML_PAGE = `<!DOCTYPE html>
 <html lang="en">
@@ -196,17 +196,16 @@ const HTML_PAGE = `<!DOCTYPE html>
     const input = document.getElementById('messageInput');
     const sendBtn = document.getElementById('sendBtn');
 
-    function addMessage(text, isUser, inlineKeyboard) {
+    function addMessage(text, isUser, buttons) {
       const div = document.createElement('div');
       div.className = 'message ' + (isUser ? 'user' : 'bot');
       div.textContent = text;
 
-      // Add inline buttons if present
-      if (inlineKeyboard && inlineKeyboard.length > 0) {
+      if (buttons && buttons.length > 0) {
         const buttonsDiv = document.createElement('div');
         buttonsDiv.className = 'inline-buttons';
 
-        for (const row of inlineKeyboard) {
+        for (const row of buttons) {
           for (const button of row) {
             const btn = document.createElement('button');
             btn.className = 'inline-btn';
@@ -226,8 +225,6 @@ const HTML_PAGE = `<!DOCTYPE html>
 
     async function handleCallback(btn, messageDiv) {
       const callbackData = btn.dataset.callback;
-
-      // Disable all buttons in this message
       messageDiv.querySelectorAll('.inline-btn').forEach(b => b.disabled = true);
 
       try {
@@ -237,8 +234,6 @@ const HTML_PAGE = `<!DOCTYPE html>
           body: JSON.stringify({ callbackData })
         });
         const data = await res.json();
-
-        // Replace message text and remove buttons
         messageDiv.textContent = data.text;
       } catch (err) {
         addMessage('Error: ' + err.message, false);
@@ -259,7 +254,7 @@ const HTML_PAGE = `<!DOCTYPE html>
           body: JSON.stringify({ text })
         });
         const data = await res.json();
-        addMessage(data.text, false, data.inlineKeyboard);
+        addMessage(data.text, false, data.buttons);
       } catch (err) {
         addMessage('Error: ' + err.message, false);
       } finally {
@@ -282,6 +277,8 @@ const HTML_PAGE = `<!DOCTYPE html>
 </body>
 </html>`;
 
+const WEB_TEST_USER_ID = 999999999;
+
 function parseBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -301,27 +298,15 @@ function sendHtml(res: ServerResponse, html: string): void {
   res.end(html);
 }
 
-// Web user ID for testing (simulates a Telegram user ID)
-const WEB_TEST_USER_ID = 999999999;
-
 export async function startWebServer(
-  config: Config,
-  services: ServiceContext,
-  commandMode: CommandMode,
+  port: number,
+  handler: ProtocolHandler,
 ): Promise<void> {
-  const port = config.web?.port ?? 3000;
-
-  // Create handler context
-  const handlerCtx: HandlerContext = {
-    services,
-    commandMode,
-  };
-
   const server = createServer(async (req, res) => {
     const url = req.url ?? "/";
     const method = req.method ?? "GET";
 
-    // CORS headers for local development
+    // CORS headers
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -333,35 +318,31 @@ export async function startWebServer(
     }
 
     try {
-      // API endpoint for messages
+      // Message endpoint: HTTP -> Protocol -> JSON
       if (url === "/api/message" && method === "POST") {
         const body = await parseBody(req);
         const { text } = JSON.parse(body);
 
-        const response = await handleMessage(
-          {
-            userId: "web-user",
-            telegramId: WEB_TEST_USER_ID,
-            username: "Web Tester",
-            text: text ?? "",
-          },
-          handlerCtx,
-        );
+        const response = await handler.handleMessage({
+          userId: "web-user",
+          telegramId: WEB_TEST_USER_ID,
+          username: "Web Tester",
+          text: text ?? "",
+        });
 
         sendJson(res, response);
         return;
       }
 
-      // API endpoint for callback (inline button clicks)
+      // Callback endpoint: HTTP -> Protocol -> JSON
       if (url === "/api/callback" && method === "POST") {
         const body = await parseBody(req);
         const { callbackData } = JSON.parse(body);
 
-        const response = await handleCallback(
-          WEB_TEST_USER_ID,
-          callbackData ?? "",
-          services,
-        );
+        const response = await handler.handleCallback({
+          telegramId: WEB_TEST_USER_ID,
+          callbackData: callbackData ?? "",
+        });
 
         sendJson(res, response);
         return;
@@ -373,7 +354,7 @@ export async function startWebServer(
         return;
       }
 
-      // Serve HTML page for root and any other path
+      // Serve HTML page
       sendHtml(res, HTML_PAGE);
     } catch (error) {
       console.error("Web server error:", error);
