@@ -69,8 +69,8 @@ async function main(): Promise<void> {
   console.log(`Command mode: ${config.isDev ? "development" : "production"} (${commandMode.getCommands().length} commands available)`);
 
   // Start DCA scheduler in development mode
-  if (config.isDev && dca && schedulerRepository && config.dca.amountSol > 0 && config.dca.intervalMs > 0) {
-    startDcaScheduler(config.dca.intervalMs, config.dca.amountSol, dca, schedulerRepository);
+  if (config.isDev && dca && schedulerRepository && config.dca.amountUsdc > 0 && config.dca.intervalMs > 0) {
+    startDcaScheduler(config.dca.intervalMs, config.dca.amountUsdc, dca, schedulerRepository);
   }
 
   // Cleanup function
@@ -157,7 +157,7 @@ async function main(): Promise<void> {
 
 function startDcaScheduler(
   intervalMs: number,
-  amountSol: number,
+  amountUsdc: number,
   dca: DcaService,
   schedulerRepository: SchedulerRepository,
 ): void {
@@ -168,7 +168,7 @@ function startDcaScheduler(
     return `${ms} ms`;
   };
 
-  console.log(`[DCA] Persistent scheduler starting: ${amountSol} SOL every ${formatInterval(intervalMs)}`);
+  console.log(`[DCA] Persistent scheduler starting: ${amountUsdc} USDC every ${formatInterval(intervalMs)}`);
 
   // Initialize scheduler state in database
   schedulerRepository.initState(intervalMs).catch((error) => {
@@ -179,7 +179,7 @@ function startDcaScheduler(
     console.log(`[DCA] Running scheduled purchase for ${timestamp.toISOString()}`);
 
     try {
-      const result = await dca.executeDcaForAllUsers(amountSol);
+      const result = await dca.executeDcaForAllUsers(amountUsdc);
       console.log(`[DCA] Completed: ${result.successful}/${result.processed} users processed successfully`);
 
       // Update last run time after successful execution

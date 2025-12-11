@@ -17,7 +17,7 @@ export class SQLitePurchaseRepository implements PurchaseRepository {
       id: row.id,
       telegramId: row.telegram_id,
       assetSymbol: row.asset_symbol as AssetSymbol,
-      amountSol: row.amount_sol,
+      amountUsdc: row.amount_usdc,
       amountAsset: row.amount_asset,
       priceUsd: row.price_usd,
       createdAt: new Date(row.created_at),
@@ -41,11 +41,11 @@ export class SQLitePurchaseRepository implements PurchaseRepository {
       .values({
         telegram_id: data.telegramId,
         asset_symbol: data.assetSymbol,
-        amount_sol: data.amountSol,
+        amount_usdc: data.amountUsdc,
         amount_asset: data.amountAsset,
         price_usd: data.priceUsd,
       })
-      .returning(["id", "telegram_id", "asset_symbol", "amount_sol", "amount_asset", "price_usd", "created_at"])
+      .returning(["id", "telegram_id", "asset_symbol", "amount_usdc", "amount_asset", "price_usd", "created_at"])
       .executeTakeFirstOrThrow();
 
     return this.rowToModel(row);

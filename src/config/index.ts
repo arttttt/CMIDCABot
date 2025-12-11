@@ -47,7 +47,7 @@ export function loadConfig(): Config {
       mockPath: getEnvOrDefault("MOCK_DATABASE_PATH", "./data/mock.db"),
     },
     dca: {
-      amountSol: parseFloat(getEnvOrDefault("DCA_AMOUNT_SOL", "0.01")),
+      amountUsdc: parseFloat(getEnvOrDefault("DCA_AMOUNT_USDC", "6")),
       intervalMs: getEnvInt("DCA_INTERVAL_MS", 86400000), // default: 24 hours
     },
     web: webEnabled

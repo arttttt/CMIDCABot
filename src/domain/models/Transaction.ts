@@ -8,7 +8,7 @@ export interface Transaction {
   telegramId: number;
   txSignature: string;
   assetSymbol: AssetSymbol;
-  amountSol: number;
+  amountUsdc: number;
   amountAsset: number;
   createdAt: Date;
 }
@@ -17,6 +17,6 @@ export interface CreateTransactionData {
   telegramId: number;
   txSignature: string;
   assetSymbol: AssetSymbol;
-  amountSol: number;
+  amountUsdc: number;
   amountAsset: number;
 }

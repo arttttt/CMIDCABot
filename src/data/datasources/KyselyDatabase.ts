@@ -64,7 +64,7 @@ function initMainSchema(db: Kysely<MainDatabase>): void {
       telegram_id INTEGER NOT NULL,
       tx_signature TEXT NOT NULL,
       asset_symbol TEXT NOT NULL,
-      amount_sol REAL NOT NULL,
+      amount_usdc REAL NOT NULL,
       amount_asset REAL NOT NULL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (telegram_id) REFERENCES users(telegram_id)
@@ -96,7 +96,7 @@ function initMockSchema(db: Kysely<MockDatabase>): void {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       telegram_id INTEGER NOT NULL,
       asset_symbol TEXT NOT NULL,
-      amount_sol REAL NOT NULL,
+      amount_usdc REAL NOT NULL,
       amount_asset REAL NOT NULL,
       price_usd REAL NOT NULL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP

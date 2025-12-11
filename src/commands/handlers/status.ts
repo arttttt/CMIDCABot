@@ -8,7 +8,6 @@ import {
   MessageResponse,
 } from "../../types/handlers.js";
 import { TARGET_ALLOCATIONS } from "../../types/portfolio.js";
-import { MOCK_PRICES } from "../../services/dca.js";
 
 export async function handleStatusCommand(
   _args: string[],
@@ -31,7 +30,7 @@ export async function handleStatusCommand(
     };
   }
 
-  if (status.totalValueInSol === 0) {
+  if (status.totalValueInUsdc === 0) {
     return {
       text:
         "Your portfolio is empty.\n\n" +
@@ -51,17 +50,15 @@ export async function handleStatusCommand(
     const targetPct = (alloc.targetAllocation * 100).toFixed(0);
     const devPct = (alloc.deviation * 100).toFixed(1);
     const devSign = alloc.deviation >= 0 ? "+" : "";
-    const valueUsd = alloc.balance * MOCK_PRICES[alloc.symbol];
 
     text += `${alloc.symbol}\n`;
     text += `  Balance: ${alloc.balance.toFixed(8)}\n`;
-    text += `  Value: $${valueUsd.toFixed(2)} (${alloc.valueInSol.toFixed(4)} SOL)\n`;
+    text += `  Value: $${alloc.valueInUsdc.toFixed(2)}\n`;
     text += `  Alloc: ${currentPct}% / ${targetPct}% (${devSign}${devPct}%)\n\n`;
   }
 
-  const totalUsd = status.totalValueInSol * MOCK_PRICES.SOL;
   text += "─".repeat(25) + "\n";
-  text += `Total: $${totalUsd.toFixed(2)} (${status.totalValueInSol.toFixed(4)} SOL)\n\n`;
+  text += `Total: $${status.totalValueInUsdc.toFixed(2)}\n\n`;
   text += `Next buy: ${status.assetToBuy} (${(status.maxDeviation * 100).toFixed(1)}% below target)`;
 
   return { text };

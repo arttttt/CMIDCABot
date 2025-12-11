@@ -24,7 +24,7 @@ export class InMemoryPurchaseRepository implements PurchaseRepository {
       id,
       telegramId: data.telegramId,
       assetSymbol: data.assetSymbol,
-      amountSol: data.amountSol,
+      amountUsdc: data.amountUsdc,
       amountAsset: data.amountAsset,
       priceUsd: data.priceUsd,
       createdAt: new Date(),

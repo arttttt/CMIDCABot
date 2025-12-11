@@ -29,7 +29,7 @@ export class InMemoryTransactionRepository implements TransactionRepository {
       telegramId: data.telegramId,
       txSignature: data.txSignature,
       assetSymbol: data.assetSymbol,
-      amountSol: data.amountSol,
+      amountUsdc: data.amountUsdc,
       amountAsset: data.amountAsset,
       createdAt: new Date(),
     };
