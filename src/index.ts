@@ -7,15 +7,21 @@ try {
 
 import { Kysely } from "kysely";
 import { loadConfig } from "./config/index.js";
-import { createBot } from "./bot/index.js";
-import { startWebServer } from "./web/index.js";
 import { createMainDatabase, createMockDatabase } from "./data/datasources/KyselyDatabase.js";
 import { createMainRepositories, createMockRepositories } from "./data/factories/RepositoryFactory.js";
 import { SchedulerRepository } from "./domain/repositories/SchedulerRepository.js";
 import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
-import { ServiceContext } from "./handlers/index.js";
-import { createCommandMode } from "./commands/index.js";
+import {
+  WalletUseCases,
+  BalanceUseCases,
+  PurchaseUseCases,
+  PortfolioUseCases,
+  UserUseCases,
+} from "./domain/usecases/index.js";
+import { ProtocolHandler, UseCases } from "./presentation/protocol/index.js";
+import { createTelegramBot } from "./presentation/telegram/index.js";
+import { startWebServer } from "./presentation/web/index.js";
 import type { MainDatabase, MockDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
@@ -62,11 +68,19 @@ async function main(): Promise<void> {
     );
   }
 
-  const services: ServiceContext = { userRepository, solana, dca };
+  // Create use cases
+  const useCases: UseCases = {
+    wallet: new WalletUseCases(userRepository, solana),
+    balance: new BalanceUseCases(userRepository, solana),
+    purchase: new PurchaseUseCases(userRepository, dca),
+    portfolio: new PortfolioUseCases(userRepository, dca),
+    user: new UserUseCases(userRepository, dca),
+  };
 
-  // Create command mode based on environment
-  const commandMode = createCommandMode(config.isDev);
-  console.log(`Command mode: ${config.isDev ? "development" : "production"} (${commandMode.getCommands().length} commands available)`);
+  // Create protocol handler
+  const handler = new ProtocolHandler(useCases, config.isDev);
+
+  console.log(`Command mode: ${config.isDev ? "development" : "production"} (${handler.getAvailableCommands().length} commands available)`);
 
   // Start DCA scheduler in development mode
   if (config.isDev && dca && schedulerRepository && config.dca.amountUsdc > 0 && config.dca.intervalMs > 0) {
@@ -89,7 +103,7 @@ async function main(): Promise<void> {
     console.log(`RPC: ${config.solana.rpcUrl}`);
     console.log("─".repeat(50));
 
-    await startWebServer(config, services, commandMode);
+    await startWebServer(config.web.port ?? 3000, handler);
 
     console.log("Press Ctrl+C to stop.\n");
 
@@ -111,7 +125,7 @@ async function main(): Promise<void> {
   // Telegram bot mode
   console.log("Starting DCA Telegram Bot...");
 
-  const bot = createBot(config, services, commandMode);
+  const bot = createTelegramBot(config.telegram.botToken, handler, config.isDev);
 
   // Graceful shutdown
   const shutdown = async (): Promise<void> => {
