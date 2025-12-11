@@ -16,7 +16,7 @@ export interface MainDatabase {
  */
 export interface MockDatabase {
   portfolio: PortfolioTable;
-  mock_purchases: MockPurchasesTable;
+  purchases: PurchasesTable;
   scheduler_state: SchedulerStateTable;
 }
 
@@ -56,9 +56,9 @@ export interface PortfolioTable {
 }
 
 /**
- * Mock purchases table (development)
+ * Purchases table
  */
-export interface MockPurchasesTable {
+export interface PurchasesTable {
   id: Generated<number>;
   telegram_id: number;
   asset_symbol: string;

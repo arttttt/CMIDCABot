@@ -7,7 +7,10 @@ export interface SolanaConfig {
   network: "devnet" | "mainnet-beta";
 }
 
+export type DatabaseMode = "sqlite" | "memory";
+
 export interface DatabaseConfig {
+  mode: DatabaseMode;
   path: string;
   mockPath: string;
 }

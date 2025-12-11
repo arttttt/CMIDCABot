@@ -5,7 +5,7 @@
 
 import { UserRepository } from "../domain/repositories/UserRepository.js";
 import { PortfolioRepository } from "../domain/repositories/PortfolioRepository.js";
-import { MockPurchaseRepository } from "../domain/repositories/MockPurchaseRepository.js";
+import { PurchaseRepository } from "../domain/repositories/PurchaseRepository.js";
 import { PortfolioBalances } from "../domain/models/Portfolio.js";
 import { SolanaService } from "./solana.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../types/portfolio.js";
@@ -44,7 +44,7 @@ export class DcaService {
   constructor(
     private userRepository: UserRepository,
     private portfolioRepository: PortfolioRepository,
-    private mockPurchaseRepository: MockPurchaseRepository,
+    private purchaseRepository: PurchaseRepository,
     private solana: SolanaService,
     private isDev: boolean,
   ) {}
@@ -68,7 +68,7 @@ export class DcaService {
    */
   async resetPortfolio(telegramId: number): Promise<void> {
     await this.portfolioRepository.reset(telegramId);
-    await this.mockPurchaseRepository.deleteByUserId(telegramId);
+    await this.purchaseRepository.deleteByUserId(telegramId);
   }
 
   /**
@@ -187,8 +187,8 @@ export class DcaService {
     // Update portfolio balance
     await this.portfolioRepository.updateBalance(telegramId, selectedAsset, amountAsset);
 
-    // Record the mock purchase
-    await this.mockPurchaseRepository.create({
+    // Record the purchase
+    await this.purchaseRepository.create({
       telegramId,
       assetSymbol: selectedAsset,
       amountSol,

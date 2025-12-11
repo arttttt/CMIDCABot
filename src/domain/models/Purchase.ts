@@ -1,9 +1,9 @@
 /**
- * MockPurchase domain model (for development mode)
+ * Purchase domain model
  */
 import { AssetSymbol } from "../../types/portfolio.js";
 
-export interface MockPurchase {
+export interface Purchase {
   id: number;
   telegramId: number;
   assetSymbol: AssetSymbol;
@@ -13,7 +13,7 @@ export interface MockPurchase {
   createdAt: Date;
 }
 
-export interface CreateMockPurchaseData {
+export interface CreatePurchaseData {
   telegramId: number;
   assetSymbol: AssetSymbol;
   amountSol: number;
