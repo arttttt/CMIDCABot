@@ -2,7 +2,7 @@
  * Kysely database factory for SQLite
  */
 import { Kysely, SqliteDialect, sql } from "kysely";
-import SQLite from "better-sqlite3";
+import SQLite, { Database } from "better-sqlite3";
 import { mkdirSync, existsSync } from "fs";
 import { dirname } from "path";
 import type { MainDatabase, MockDatabase } from "../types/database.js";
@@ -35,9 +35,14 @@ export function createMockDatabase(dbPath: string): Kysely<MockDatabase> {
     mkdirSync(dir, { recursive: true });
   }
 
+  const sqliteDb = new SQLite(dbPath);
+
+  // Reset database if schema is outdated
+  resetMockDatabaseIfNeeded(sqliteDb);
+
   const db = new Kysely<MockDatabase>({
     dialect: new SqliteDialect({
-      database: new SQLite(dbPath),
+      database: sqliteDb,
     }),
   });
 
@@ -115,4 +120,65 @@ function initMockSchema(db: Kysely<MockDatabase>): void {
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `.execute(db);
+}
+
+/**
+ * Expected columns for each table in mock database
+ */
+const MOCK_SCHEMA_VERSION = {
+  purchases: ["id", "telegram_id", "asset_symbol", "amount_usdc", "amount_asset", "price_usd", "created_at"],
+  portfolio: ["telegram_id", "btc_balance", "eth_balance", "sol_balance", "created_at", "updated_at"],
+  scheduler_state: ["id", "last_run_at", "interval_ms", "updated_at"],
+};
+
+/**
+ * Reset mock database if schema is outdated - drop all tables and let them be recreated
+ */
+function resetMockDatabaseIfNeeded(db: Database): void {
+  const tables = ["purchases", "portfolio", "scheduler_state"] as const;
+
+  for (const table of tables) {
+    if (isTableSchemaOutdated(db, table, MOCK_SCHEMA_VERSION[table])) {
+      console.log(`[DB] Schema mismatch detected for table '${table}' - resetting database...`);
+      dropAllMockTables(db);
+      return;
+    }
+  }
+}
+
+/**
+ * Check if a table has outdated schema (missing expected columns)
+ */
+function isTableSchemaOutdated(db: Database, tableName: string, expectedColumns: string[]): boolean {
+  try {
+    const tableInfo = db.prepare(`PRAGMA table_info(${tableName})`).all() as { name: string }[];
+    if (tableInfo.length === 0) {
+      // Table doesn't exist - not outdated, will be created fresh
+      return false;
+    }
+
+    const existingColumns = new Set(tableInfo.map((row) => row.name));
+
+    // Check if all expected columns exist
+    for (const col of expectedColumns) {
+      if (!existingColumns.has(col)) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Drop all mock database tables
+ */
+function dropAllMockTables(db: Database): void {
+  db.exec("DROP TABLE IF EXISTS purchases");
+  db.exec("DROP TABLE IF EXISTS portfolio");
+  db.exec("DROP TABLE IF EXISTS scheduler_state");
+  db.exec("DROP INDEX IF EXISTS idx_purchases_user");
+  console.log("[DB] All mock tables dropped - will be recreated with fresh schema");
 }
