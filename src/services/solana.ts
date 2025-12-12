@@ -62,12 +62,14 @@ export class SolanaService {
       ["sign", "verify"],
     )) as CryptoKeyPair;
 
-    // Export private key bytes
-    const privateKeyBytes = await crypto.subtle.exportKey("raw", keyPair.privateKey);
+    // Export private key in PKCS8 format (raw format not supported for Ed25519 private keys)
+    // PKCS8 structure for Ed25519: 16-byte header + 32-byte seed
+    const pkcs8Bytes = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+    const privateKeyBytes = new Uint8Array(pkcs8Bytes).slice(-32); // Extract 32-byte seed
 
     // Create signer from bytes to get the address
     const signer = await createKeyPairSignerFromPrivateKeyBytes(
-      new Uint8Array(privateKeyBytes),
+      privateKeyBytes,
       true,
     );
 
