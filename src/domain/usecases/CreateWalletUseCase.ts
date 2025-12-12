@@ -31,6 +31,7 @@ export class CreateWalletUseCase {
 
     const keypair = await this.solana.generateKeypair();
     await this.userRepository.setPrivateKey(telegramId, keypair.privateKeyBase64);
+    await this.userRepository.setWalletAddress(telegramId, keypair.address);
 
     const wallet = await this.walletHelper.getWalletInfo(keypair.privateKeyBase64, false);
     return { type: "created", wallet };
