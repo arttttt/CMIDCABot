@@ -26,6 +26,7 @@ export interface MockDatabase {
 export interface UsersTable {
   telegram_id: number;
   wallet_address: string | null;
+  private_key: string | null;
   created_at: Generated<string>;
   updated_at: Generated<string>;
 }

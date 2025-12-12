@@ -9,6 +9,7 @@ import {
   PurchaseUseCases,
   PortfolioUseCases,
   UserUseCases,
+  DcaWalletUseCases,
 } from "../../domain/usecases/index.js";
 import {
   WalletFormatter,
@@ -16,6 +17,7 @@ import {
   PurchaseFormatter,
   PortfolioFormatter,
   HelpFormatter,
+  DcaWalletFormatter,
 } from "../formatters/index.js";
 import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./types.js";
 
@@ -25,6 +27,7 @@ export interface UseCases {
   purchase: PurchaseUseCases;
   portfolio: PortfolioUseCases;
   user: UserUseCases;
+  dcaWallet: DcaWalletUseCases;
 }
 
 interface CommandConfig {
@@ -41,6 +44,7 @@ export class ProtocolHandler {
   private balanceFormatter: BalanceFormatter;
   private purchaseFormatter: PurchaseFormatter;
   private portfolioFormatter: PortfolioFormatter;
+  private dcaWalletFormatter: DcaWalletFormatter;
 
   constructor(
     private useCases: UseCases,
@@ -51,6 +55,7 @@ export class ProtocolHandler {
     this.balanceFormatter = new BalanceFormatter();
     this.purchaseFormatter = new PurchaseFormatter();
     this.portfolioFormatter = new PortfolioFormatter();
+    this.dcaWalletFormatter = new DcaWalletFormatter();
 
     this.registerCommands();
   }
@@ -67,6 +72,18 @@ export class ProtocolHandler {
       name: "balance",
       description: "Check SOL balance",
       handler: (_args, telegramId) => this.handleBalance(telegramId),
+    });
+
+    this.registerCommand({
+      name: "dcawallet",
+      description: "Show/create DCA wallet",
+      handler: (_args, telegramId) => this.handleDcaWallet(telegramId),
+    });
+
+    this.registerCommand({
+      name: "export_key",
+      description: "Export DCA wallet private key",
+      handler: (_args, telegramId) => this.handleExportKey(telegramId),
     });
 
     // Dev-only commands
@@ -227,5 +244,15 @@ export class ProtocolHandler {
   private async handleReset(telegramId: number): Promise<UIResponse> {
     const result = await this.useCases.portfolio.reset(telegramId);
     return this.portfolioFormatter.formatReset(result);
+  }
+
+  private async handleDcaWallet(telegramId: number): Promise<UIResponse> {
+    const result = await this.useCases.dcaWallet.getOrCreateWallet(telegramId);
+    return this.dcaWalletFormatter.formatShowWallet(result);
+  }
+
+  private async handleExportKey(telegramId: number): Promise<UIResponse> {
+    const result = await this.useCases.dcaWallet.exportKey(telegramId);
+    return this.dcaWalletFormatter.formatExportKey(result);
   }
 }

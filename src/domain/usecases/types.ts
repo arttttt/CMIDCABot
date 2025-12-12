@@ -62,3 +62,21 @@ export interface ResetResult {
 export interface InitUserResult {
   type: "success";
 }
+
+// DCA Wallet types
+export interface DcaWalletInfo {
+  address: string;
+  balance: number | null;
+  isDevWallet: boolean;
+}
+
+export interface DcaWalletResult {
+  type: "success" | "generated" | "no_wallet";
+  wallet?: DcaWalletInfo;
+}
+
+export interface ExportKeyResult {
+  type: "success" | "no_wallet" | "dev_mode";
+  privateKey?: string;
+  isDevWallet?: boolean;
+}

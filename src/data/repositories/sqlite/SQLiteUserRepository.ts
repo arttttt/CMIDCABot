@@ -3,7 +3,7 @@
  */
 import { Kysely, sql, Selectable } from "kysely";
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
-import { User, UserWithWallet } from "../../../domain/models/User.js";
+import { User, UserWithWallet, UserWithDcaWallet } from "../../../domain/models/User.js";
 import type { MainDatabase, UsersTable } from "../../types/database.js";
 
 type UserRow = Selectable<UsersTable>;
@@ -15,6 +15,7 @@ export class SQLiteUserRepository implements UserRepository {
     return {
       telegramId: row.telegram_id,
       walletAddress: row.wallet_address,
+      privateKey: row.private_key,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -62,6 +63,31 @@ export class SQLiteUserRepository implements UserRepository {
     return rows.map((row) => ({
       telegramId: row.telegram_id,
       walletAddress: row.wallet_address!,
+    }));
+  }
+
+  async setPrivateKey(telegramId: number, privateKey: string): Promise<void> {
+    await this.db
+      .updateTable("users")
+      .set({
+        private_key: privateKey,
+        updated_at: sql`CURRENT_TIMESTAMP`,
+      })
+      .where("telegram_id", "=", telegramId)
+      .execute();
+  }
+
+  async getAllWithDcaWallet(): Promise<UserWithDcaWallet[]> {
+    const rows = await this.db
+      .selectFrom("users")
+      .select(["telegram_id", "private_key"])
+      .where("private_key", "is not", null)
+      .where("private_key", "!=", "")
+      .execute();
+
+    return rows.map((row) => ({
+      telegramId: row.telegram_id,
+      privateKey: row.private_key!,
     }));
   }
 }

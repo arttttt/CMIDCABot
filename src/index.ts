@@ -18,6 +18,7 @@ import {
   PurchaseUseCases,
   PortfolioUseCases,
   UserUseCases,
+  DcaWalletUseCases,
 } from "./domain/usecases/index.js";
 import { ProtocolHandler, UseCases } from "./presentation/protocol/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
@@ -75,6 +76,7 @@ async function main(): Promise<void> {
     purchase: new PurchaseUseCases(userRepository, dca),
     portfolio: new PortfolioUseCases(userRepository, dca),
     user: new UserUseCases(userRepository, dca),
+    dcaWallet: new DcaWalletUseCases(userRepository, solana, config.dcaWallet),
   };
 
   // Create protocol handler
