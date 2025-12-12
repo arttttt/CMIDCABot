@@ -27,6 +27,7 @@ export interface UsersTable {
   telegram_id: number;
   wallet_address: string | null;
   private_key: string | null;
+  is_dca_active: Generated<number>; // SQLite boolean: 0 = false, 1 = true
   created_at: Generated<string>;
   updated_at: Generated<string>;
 }

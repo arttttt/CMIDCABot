@@ -59,6 +59,7 @@ function initMainSchema(db: Kysely<MainDatabase>): void {
       telegram_id INTEGER PRIMARY KEY,
       wallet_address TEXT,
       private_key TEXT,
+      is_dca_active INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )

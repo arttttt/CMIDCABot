@@ -1,21 +1,18 @@
 /**
- * Purchase use cases - domain operations for asset purchases
+ * Execute purchase use case
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
 import { DcaService, MOCK_PRICES } from "../../services/dca.js";
 import { PurchaseResult } from "./types.js";
 
-export class PurchaseUseCases {
+export class ExecutePurchaseUseCase {
   constructor(
     private userRepository: UserRepository,
     private dca: DcaService | undefined,
   ) {}
 
-  /**
-   * Execute a mock purchase
-   */
-  async executePurchase(telegramId: number, amountSol: number): Promise<PurchaseResult> {
+  async execute(telegramId: number, amountSol: number): Promise<PurchaseResult> {
     if (!this.dca) {
       return { type: "unavailable" };
     }
@@ -35,7 +32,6 @@ export class PurchaseUseCases {
       return { type: "no_wallet" };
     }
 
-    // Check SOL balance (but don't deduct in mock mode)
     const balanceCheck = await this.dca.checkSolBalance(user.walletAddress, amountSol);
     if (!balanceCheck.sufficient) {
       return {
@@ -45,7 +41,6 @@ export class PurchaseUseCases {
       };
     }
 
-    // Execute mock purchase
     const result = await this.dca.executeMockPurchase(telegramId, amountSol);
 
     if (!result.success) {

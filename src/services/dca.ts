@@ -217,6 +217,7 @@ export class DcaService {
 
   /**
    * Execute DCA for all users with wallets (scheduled task)
+   * @deprecated Use executeDcaForActiveUsers instead
    */
   async executeDcaForAllUsers(amountUsdc: number): Promise<{ processed: number; successful: number }> {
     if (!this.isMockMode()) {
@@ -227,6 +228,48 @@ export class DcaService {
     const users = await this.userRepository.getAllWithWallet();
     let processed = 0;
     let successful = 0;
+
+    // Convert USDC to SOL equivalent for balance check
+    const requiredSol = amountUsdc / MOCK_PRICES.SOL;
+
+    for (const user of users) {
+      processed++;
+
+      // Check balance (but don't deduct in mock mode)
+      const balanceCheck = await this.checkSolBalance(user.walletAddress, requiredSol);
+      if (!balanceCheck.sufficient) {
+        console.log(`[DCA] User ${user.telegramId}: Insufficient balance (${balanceCheck.balance} SOL, need ${requiredSol.toFixed(4)} SOL for ${amountUsdc} USDC)`);
+        continue;
+      }
+
+      // Execute mock purchase
+      const result = await this.executeMockPurchase(user.telegramId, amountUsdc);
+      if (result.success) {
+        successful++;
+        console.log(`[DCA] User ${user.telegramId}: ${result.message}`);
+      }
+    }
+
+    return { processed, successful };
+  }
+
+  /**
+   * Execute DCA for active users only (have wallet AND DCA is enabled)
+   */
+  async executeDcaForActiveUsers(amountUsdc: number): Promise<{ processed: number; successful: number }> {
+    if (!this.isMockMode()) {
+      console.log("[DCA] Skipping - not in development mode");
+      return { processed: 0, successful: 0 };
+    }
+
+    const users = await this.userRepository.getAllActiveDcaUsers();
+    let processed = 0;
+    let successful = 0;
+
+    if (users.length === 0) {
+      console.log("[DCA] No active users to process");
+      return { processed: 0, successful: 0 };
+    }
 
     // Convert USDC to SOL equivalent for balance check
     const requiredSol = amountUsdc / MOCK_PRICES.SOL;

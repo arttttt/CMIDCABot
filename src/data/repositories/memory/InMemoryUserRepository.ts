@@ -2,7 +2,7 @@
  * In-memory implementation of User repository
  */
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
-import { User, UserWithWallet, UserWithDcaWallet } from "../../../domain/models/User.js";
+import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../../../domain/models/User.js";
 
 export class InMemoryUserRepository implements UserRepository {
   private users = new Map<number, User>();
@@ -21,6 +21,7 @@ export class InMemoryUserRepository implements UserRepository {
       telegramId,
       walletAddress: null,
       privateKey: null,
+      isDcaActive: false,
       createdAt: now,
       updatedAt: now,
     });
@@ -74,5 +75,35 @@ export class InMemoryUserRepository implements UserRepository {
       }
     }
     return result;
+  }
+
+  async setDcaActive(telegramId: number, active: boolean): Promise<void> {
+    const user = this.users.get(telegramId);
+    if (user) {
+      user.isDcaActive = active;
+      user.updatedAt = new Date();
+    }
+  }
+
+  async getAllActiveDcaUsers(): Promise<ActiveDcaUser[]> {
+    const result: ActiveDcaUser[] = [];
+    for (const user of this.users.values()) {
+      if (user.walletAddress && user.isDcaActive) {
+        result.push({
+          telegramId: user.telegramId,
+          walletAddress: user.walletAddress,
+        });
+      }
+    }
+    return result;
+  }
+
+  async hasActiveDcaUsers(): Promise<boolean> {
+    for (const user of this.users.values()) {
+      if (user.walletAddress && user.isDcaActive) {
+        return true;
+      }
+    }
+    return false;
   }
 }

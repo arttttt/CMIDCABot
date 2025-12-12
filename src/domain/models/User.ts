@@ -5,6 +5,7 @@ export interface User {
   telegramId: number;
   walletAddress: string | null;
   privateKey: string | null;
+  isDcaActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,4 +24,12 @@ export interface UserWithWallet {
 export interface UserWithDcaWallet {
   telegramId: number;
   privateKey: string;
+}
+
+/**
+ * Active DCA user - has wallet AND DCA is enabled
+ */
+export interface ActiveDcaUser {
+  telegramId: number;
+  walletAddress: string;
 }

@@ -1,21 +1,18 @@
 /**
- * Portfolio use cases - domain operations for portfolio management
+ * Get portfolio status use case
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
 import { DcaService } from "../../services/dca.js";
-import { PortfolioStatusResult, ResetResult } from "./types.js";
+import { PortfolioStatusResult } from "./types.js";
 
-export class PortfolioUseCases {
+export class GetPortfolioStatusUseCase {
   constructor(
     private userRepository: UserRepository,
     private dca: DcaService | undefined,
   ) {}
 
-  /**
-   * Get portfolio status
-   */
-  async getStatus(telegramId: number): Promise<PortfolioStatusResult> {
+  async execute(telegramId: number): Promise<PortfolioStatusResult> {
     if (!this.dca || !this.dca.isMockMode()) {
       return { type: "unavailable" };
     }
@@ -34,17 +31,5 @@ export class PortfolioUseCases {
     }
 
     return { type: "success", status };
-  }
-
-  /**
-   * Reset portfolio
-   */
-  async reset(telegramId: number): Promise<ResetResult> {
-    if (!this.dca || !this.dca.isMockMode()) {
-      return { type: "unavailable" };
-    }
-
-    await this.dca.resetPortfolio(telegramId);
-    return { type: "success" };
   }
 }
