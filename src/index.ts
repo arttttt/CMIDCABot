@@ -13,9 +13,9 @@ import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import { DcaScheduler } from "./services/DcaScheduler.js";
 import {
-  BalanceUseCases,
-  PurchaseUseCases,
-  UserUseCases,
+  InitUserUseCase,
+  GetBalanceUseCase,
+  ExecutePurchaseUseCase,
   GetPortfolioStatusUseCase,
   ResetPortfolioUseCase,
   WalletInfoHelper,
@@ -99,11 +99,11 @@ async function main(): Promise<void> {
   // Create use cases
   const useCases: UseCases = {
     // User
-    user: new UserUseCases(userRepository, dca),
+    initUser: new InitUserUseCase(userRepository, dca),
     // Balance
-    balance: new BalanceUseCases(userRepository, solana),
+    getBalance: new GetBalanceUseCase(userRepository, solana),
     // Purchase
-    purchase: new PurchaseUseCases(userRepository, dca),
+    executePurchase: new ExecutePurchaseUseCase(userRepository, dca),
     // Portfolio
     getPortfolioStatus: new GetPortfolioStatusUseCase(userRepository, dca),
     resetPortfolio: new ResetPortfolioUseCase(dca),

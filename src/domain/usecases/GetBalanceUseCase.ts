@@ -1,21 +1,18 @@
 /**
- * Balance use cases - domain operations for balance checking
+ * Get balance use case
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
 import { SolanaService } from "../../services/solana.js";
 import { BalanceResult } from "./types.js";
 
-export class BalanceUseCases {
+export class GetBalanceUseCase {
   constructor(
     private userRepository: UserRepository,
     private solana: SolanaService,
   ) {}
 
-  /**
-   * Get wallet balance
-   */
-  async getBalance(telegramId: number): Promise<BalanceResult> {
+  async execute(telegramId: number): Promise<BalanceResult> {
     await this.userRepository.create(telegramId);
     const user = await this.userRepository.getById(telegramId);
 

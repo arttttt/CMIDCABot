@@ -5,13 +5,13 @@
 export * from "./types.js";
 
 // User
-export { UserUseCases } from "./UserUseCases.js";
+export { InitUserUseCase } from "./InitUserUseCase.js";
 
 // Balance
-export { BalanceUseCases } from "./BalanceUseCases.js";
+export { GetBalanceUseCase } from "./GetBalanceUseCase.js";
 
 // Purchase
-export { PurchaseUseCases } from "./PurchaseUseCases.js";
+export { ExecutePurchaseUseCase } from "./ExecutePurchaseUseCase.js";
 
 // Portfolio
 export { GetPortfolioStatusUseCase } from "./GetPortfolioStatusUseCase.js";

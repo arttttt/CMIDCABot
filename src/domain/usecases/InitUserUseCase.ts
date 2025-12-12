@@ -1,21 +1,18 @@
 /**
- * User use cases - domain operations for user management
+ * Init user use case
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
 import { DcaService } from "../../services/dca.js";
 import { InitUserResult } from "./types.js";
 
-export class UserUseCases {
+export class InitUserUseCase {
   constructor(
     private userRepository: UserRepository,
     private dca: DcaService | undefined,
   ) {}
 
-  /**
-   * Initialize user (create user and portfolio if in dev mode)
-   */
-  async initUser(telegramId: number): Promise<InitUserResult> {
+  async execute(telegramId: number): Promise<InitUserResult> {
     await this.userRepository.create(telegramId);
     await this.dca?.createPortfolio(telegramId);
     return { type: "success" };

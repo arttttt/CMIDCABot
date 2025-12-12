@@ -4,9 +4,9 @@
  */
 
 import {
-  BalanceUseCases,
-  PurchaseUseCases,
-  UserUseCases,
+  InitUserUseCase,
+  GetBalanceUseCase,
+  ExecutePurchaseUseCase,
   GetPortfolioStatusUseCase,
   ResetPortfolioUseCase,
   ShowWalletUseCase,
@@ -29,11 +29,11 @@ import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./ty
 
 export interface UseCases {
   // User
-  user: UserUseCases;
+  initUser: InitUserUseCase;
   // Balance
-  balance: BalanceUseCases;
+  getBalance: GetBalanceUseCase;
   // Purchase
-  purchase: PurchaseUseCases;
+  executePurchase: ExecutePurchaseUseCase;
   // Portfolio
   getPortfolioStatus: GetPortfolioStatusUseCase;
   resetPortfolio: ResetPortfolioUseCase;
@@ -158,7 +158,7 @@ export class ProtocolHandler {
   ): Promise<UIResponse> {
     // Special commands
     if (command === "/start") {
-      await this.useCases.user.initUser(telegramId);
+      await this.useCases.initUser.execute(telegramId);
       return {
         text: this.helpFormatter.formatStartMessage(this.getAvailableCommands()),
       };
@@ -220,7 +220,7 @@ export class ProtocolHandler {
   }
 
   private async handleBalance(telegramId: number): Promise<UIResponse> {
-    const result = await this.useCases.balance.getBalance(telegramId);
+    const result = await this.useCases.getBalance.execute(telegramId);
     return this.balanceFormatter.format(result);
   }
 
@@ -236,7 +236,7 @@ export class ProtocolHandler {
     }
 
     const amount = parseFloat(amountStr);
-    const result = await this.useCases.purchase.executePurchase(telegramId, amount);
+    const result = await this.useCases.executePurchase.execute(telegramId, amount);
     return this.purchaseFormatter.format(result);
   }
 
