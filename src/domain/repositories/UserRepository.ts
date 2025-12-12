@@ -50,7 +50,7 @@ export interface UserRepository {
   getAllActiveDcaUsers(): Promise<ActiveDcaUser[]>;
 
   /**
-   * Get count of active DCA users
+   * Check if there are any active DCA users
    */
-  getActiveDcaCount(): Promise<number>;
+  hasActiveDcaUsers(): Promise<boolean>;
 }

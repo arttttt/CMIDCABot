@@ -64,9 +64,9 @@ export class DcaScheduler {
    * Returns true if scheduler was started or already running
    */
   async start(): Promise<boolean> {
-    const activeCount = await this.userRepository.getActiveDcaCount();
+    const hasActive = await this.userRepository.hasActiveDcaUsers();
 
-    if (activeCount === 0) {
+    if (!hasActive) {
       console.log("[DCA Scheduler] No active users - not starting scheduler");
       return false;
     }
@@ -77,7 +77,6 @@ export class DcaScheduler {
     }
 
     console.log(`[DCA Scheduler] Starting scheduler: ${this.config.amountUsdc} USDC every ${this.formatInterval(this.config.intervalMs)}`);
-    console.log(`[DCA Scheduler] Active users: ${activeCount}`);
 
     // Initialize scheduler state in database
     await this.schedulerRepository.initState(this.config.intervalMs);
@@ -115,16 +114,14 @@ export class DcaScheduler {
    * Will start or stop the scheduler based on active user count
    */
   async onUserStatusChanged(): Promise<void> {
-    const activeCount = await this.userRepository.getActiveDcaCount();
+    const hasActive = await this.userRepository.hasActiveDcaUsers();
 
-    if (activeCount === 0 && this.isRunning) {
+    if (!hasActive && this.isRunning) {
       console.log("[DCA Scheduler] No more active users - stopping scheduler");
       this.stop();
-    } else if (activeCount > 0 && !this.isRunning) {
-      console.log(`[DCA Scheduler] ${activeCount} active user(s) - starting scheduler`);
+    } else if (hasActive && !this.isRunning) {
+      console.log("[DCA Scheduler] Active users found - starting scheduler");
       await this.start();
-    } else {
-      console.log(`[DCA Scheduler] Active users: ${activeCount}, running: ${this.isRunning}`);
     }
   }
 

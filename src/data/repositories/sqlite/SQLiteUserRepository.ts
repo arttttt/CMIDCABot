@@ -129,15 +129,16 @@ export class SQLiteUserRepository implements UserRepository {
     }));
   }
 
-  async getActiveDcaCount(): Promise<number> {
+  async hasActiveDcaUsers(): Promise<boolean> {
     const result = await this.db
       .selectFrom("users")
-      .select((eb) => eb.fn.countAll<number>().as("count"))
+      .select("telegram_id")
       .where("wallet_address", "is not", null)
       .where("wallet_address", "!=", "")
       .where("is_dca_active", "=", 1)
+      .limit(1)
       .executeTakeFirst();
 
-    return result?.count ?? 0;
+    return result !== undefined;
   }
 }

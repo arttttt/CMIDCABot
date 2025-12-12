@@ -98,13 +98,12 @@ export class InMemoryUserRepository implements UserRepository {
     return result;
   }
 
-  async getActiveDcaCount(): Promise<number> {
-    let count = 0;
+  async hasActiveDcaUsers(): Promise<boolean> {
     for (const user of this.users.values()) {
       if (user.walletAddress && user.isDcaActive) {
-        count++;
+        return true;
       }
     }
-    return count;
+    return false;
   }
 }
