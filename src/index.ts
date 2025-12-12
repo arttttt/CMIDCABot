@@ -15,10 +15,17 @@ import { DcaScheduler } from "./services/DcaScheduler.js";
 import {
   BalanceUseCases,
   PurchaseUseCases,
-  PortfolioUseCases,
   UserUseCases,
-  DcaWalletUseCases,
-  DcaUseCases,
+  GetPortfolioStatusUseCase,
+  ResetPortfolioUseCase,
+  WalletInfoHelper,
+  ShowWalletUseCase,
+  CreateWalletUseCase,
+  DeleteWalletUseCase,
+  ExportWalletKeyUseCase,
+  StartDcaUseCase,
+  StopDcaUseCase,
+  GetDcaStatusUseCase,
 } from "./domain/usecases/index.js";
 import { ProtocolHandler, UseCases } from "./presentation/protocol/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
@@ -86,14 +93,29 @@ async function main(): Promise<void> {
     }
   }
 
+  // Create helpers
+  const walletHelper = new WalletInfoHelper(solana, config.dcaWallet);
+
   // Create use cases
   const useCases: UseCases = {
-    balance: new BalanceUseCases(userRepository, solana),
-    purchase: new PurchaseUseCases(userRepository, dca),
-    portfolio: new PortfolioUseCases(userRepository, dca),
+    // User
     user: new UserUseCases(userRepository, dca),
-    dcaWallet: new DcaWalletUseCases(userRepository, solana, config.dcaWallet),
-    dca: new DcaUseCases(userRepository, dcaScheduler),
+    // Balance
+    balance: new BalanceUseCases(userRepository, solana),
+    // Purchase
+    purchase: new PurchaseUseCases(userRepository, dca),
+    // Portfolio
+    getPortfolioStatus: new GetPortfolioStatusUseCase(userRepository, dca),
+    resetPortfolio: new ResetPortfolioUseCase(dca),
+    // Wallet
+    showWallet: new ShowWalletUseCase(userRepository, walletHelper),
+    createWallet: new CreateWalletUseCase(userRepository, solana, walletHelper),
+    deleteWallet: new DeleteWalletUseCase(userRepository, walletHelper),
+    exportWalletKey: new ExportWalletKeyUseCase(userRepository, config.dcaWallet),
+    // DCA
+    startDca: new StartDcaUseCase(userRepository, dcaScheduler),
+    stopDca: new StopDcaUseCase(userRepository, dcaScheduler),
+    getDcaStatus: new GetDcaStatusUseCase(userRepository, dcaScheduler),
   };
 
   // Create protocol handler

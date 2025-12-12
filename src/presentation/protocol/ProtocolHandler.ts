@@ -6,10 +6,16 @@
 import {
   BalanceUseCases,
   PurchaseUseCases,
-  PortfolioUseCases,
   UserUseCases,
-  DcaWalletUseCases,
-  DcaUseCases,
+  GetPortfolioStatusUseCase,
+  ResetPortfolioUseCase,
+  ShowWalletUseCase,
+  CreateWalletUseCase,
+  DeleteWalletUseCase,
+  ExportWalletKeyUseCase,
+  StartDcaUseCase,
+  StopDcaUseCase,
+  GetDcaStatusUseCase,
 } from "../../domain/usecases/index.js";
 import {
   BalanceFormatter,
@@ -22,12 +28,24 @@ import {
 import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./types.js";
 
 export interface UseCases {
-  balance: BalanceUseCases;
-  purchase: PurchaseUseCases;
-  portfolio: PortfolioUseCases;
+  // User
   user: UserUseCases;
-  dcaWallet: DcaWalletUseCases;
-  dca: DcaUseCases;
+  // Balance
+  balance: BalanceUseCases;
+  // Purchase
+  purchase: PurchaseUseCases;
+  // Portfolio
+  getPortfolioStatus: GetPortfolioStatusUseCase;
+  resetPortfolio: ResetPortfolioUseCase;
+  // Wallet
+  showWallet: ShowWalletUseCase;
+  createWallet: CreateWalletUseCase;
+  deleteWallet: DeleteWalletUseCase;
+  exportWalletKey: ExportWalletKeyUseCase;
+  // DCA
+  startDca: StartDcaUseCase;
+  stopDca: StopDcaUseCase;
+  getDcaStatus: GetDcaStatusUseCase;
 }
 
 interface CommandConfig {
@@ -179,22 +197,22 @@ export class ProtocolHandler {
     const subcommand = args[0]?.toLowerCase();
 
     if (!subcommand) {
-      const result = await this.useCases.dcaWallet.showWallet(telegramId);
+      const result = await this.useCases.showWallet.execute(telegramId);
       return this.dcaWalletFormatter.formatShowWallet(result);
     }
 
     if (subcommand === "create") {
-      const result = await this.useCases.dcaWallet.createWallet(telegramId);
+      const result = await this.useCases.createWallet.execute(telegramId);
       return this.dcaWalletFormatter.formatCreateWallet(result);
     }
 
     if (subcommand === "export") {
-      const result = await this.useCases.dcaWallet.exportKey(telegramId);
+      const result = await this.useCases.exportWalletKey.execute(telegramId);
       return this.dcaWalletFormatter.formatExportKey(result);
     }
 
     if (subcommand === "delete") {
-      const result = await this.useCases.dcaWallet.deleteWallet(telegramId);
+      const result = await this.useCases.deleteWallet.execute(telegramId);
       return this.dcaWalletFormatter.formatDeleteWallet(result);
     }
 
@@ -207,7 +225,7 @@ export class ProtocolHandler {
   }
 
   private async handleStatus(telegramId: number): Promise<UIResponse> {
-    const result = await this.useCases.portfolio.getStatus(telegramId);
+    const result = await this.useCases.getPortfolioStatus.execute(telegramId);
     return this.portfolioFormatter.formatStatus(result);
   }
 
@@ -223,7 +241,7 @@ export class ProtocolHandler {
   }
 
   private async handleReset(telegramId: number): Promise<UIResponse> {
-    const result = await this.useCases.portfolio.reset(telegramId);
+    const result = await this.useCases.resetPortfolio.execute(telegramId);
     return this.portfolioFormatter.formatReset(result);
   }
 
@@ -231,17 +249,17 @@ export class ProtocolHandler {
     const subcommand = args[0]?.toLowerCase();
 
     if (!subcommand) {
-      const result = await this.useCases.dca.getStatus(telegramId);
+      const result = await this.useCases.getDcaStatus.execute(telegramId);
       return this.dcaFormatter.formatStatus(result);
     }
 
     if (subcommand === "start") {
-      const result = await this.useCases.dca.start(telegramId);
+      const result = await this.useCases.startDca.execute(telegramId);
       return this.dcaFormatter.formatStart(result);
     }
 
     if (subcommand === "stop") {
-      const result = await this.useCases.dca.stop(telegramId);
+      const result = await this.useCases.stopDca.execute(telegramId);
       return this.dcaFormatter.formatStop(result);
     }
 
