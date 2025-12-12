@@ -3,7 +3,6 @@ import {
   address,
   type Rpc,
   type SolanaRpcApi,
-  generateKeyPairSigner,
   createKeyPairSignerFromPrivateKeyBytes,
   type KeyPairSigner,
 } from "@solana/web3.js";
@@ -56,12 +55,20 @@ export class SolanaService {
    * Returns address and private key encoded as base64
    */
   async generateKeypair(): Promise<GeneratedKeypair> {
-    const signer = await generateKeyPairSigner();
+    // Generate extractable Ed25519 keypair via Web Crypto API
+    const keyPair = (await crypto.subtle.generateKey(
+      "Ed25519",
+      true, // extractable = true (required for export)
+      ["sign", "verify"],
+    )) as CryptoKeyPair;
 
-    // Export private key bytes using Web Crypto API
-    const privateKeyBytes = await crypto.subtle.exportKey(
-      "raw",
-      signer.keyPair.privateKey,
+    // Export private key bytes
+    const privateKeyBytes = await crypto.subtle.exportKey("raw", keyPair.privateKey);
+
+    // Create signer from bytes to get the address
+    const signer = await createKeyPairSignerFromPrivateKeyBytes(
+      new Uint8Array(privateKeyBytes),
+      true,
     );
 
     return {
