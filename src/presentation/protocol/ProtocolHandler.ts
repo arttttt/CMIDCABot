@@ -4,27 +4,27 @@
  */
 
 import {
-  WalletUseCases,
   BalanceUseCases,
   PurchaseUseCases,
   PortfolioUseCases,
   UserUseCases,
+  DcaWalletUseCases,
 } from "../../domain/usecases/index.js";
 import {
-  WalletFormatter,
   BalanceFormatter,
   PurchaseFormatter,
   PortfolioFormatter,
   HelpFormatter,
+  DcaWalletFormatter,
 } from "../formatters/index.js";
 import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./types.js";
 
 export interface UseCases {
-  wallet: WalletUseCases;
   balance: BalanceUseCases;
   purchase: PurchaseUseCases;
   portfolio: PortfolioUseCases;
   user: UserUseCases;
+  dcaWallet: DcaWalletUseCases;
 }
 
 interface CommandConfig {
@@ -37,20 +37,20 @@ interface CommandConfig {
 export class ProtocolHandler {
   private commands: Map<string, CommandConfig> = new Map();
   private helpFormatter: HelpFormatter;
-  private walletFormatter: WalletFormatter;
   private balanceFormatter: BalanceFormatter;
   private purchaseFormatter: PurchaseFormatter;
   private portfolioFormatter: PortfolioFormatter;
+  private dcaWalletFormatter: DcaWalletFormatter;
 
   constructor(
     private useCases: UseCases,
     private isDev: boolean,
   ) {
     this.helpFormatter = new HelpFormatter();
-    this.walletFormatter = new WalletFormatter();
     this.balanceFormatter = new BalanceFormatter();
     this.purchaseFormatter = new PurchaseFormatter();
     this.portfolioFormatter = new PortfolioFormatter();
+    this.dcaWalletFormatter = new DcaWalletFormatter();
 
     this.registerCommands();
   }
@@ -59,7 +59,7 @@ export class ProtocolHandler {
     // Base commands (always available)
     this.registerCommand({
       name: "wallet",
-      description: "Manage your wallet",
+      description: "Manage your DCA wallet",
       handler: (args, telegramId) => this.handleWallet(args, telegramId),
     });
 
@@ -157,17 +157,7 @@ export class ProtocolHandler {
   /**
    * Handle callback query (button press)
    */
-  async handleCallback(ctx: UICallbackContext): Promise<UIResponse> {
-    // Try wallet callback
-    const walletResult = await this.useCases.wallet.handleCallback(
-      ctx.telegramId,
-      ctx.callbackData,
-    );
-
-    if (walletResult.type !== "unknown") {
-      return this.walletFormatter.formatCallbackResult(walletResult);
-    }
-
+  async handleCallback(_ctx: UICallbackContext): Promise<UIResponse> {
     return { text: "Unknown action." };
   }
 
@@ -177,30 +167,26 @@ export class ProtocolHandler {
     const subcommand = args[0]?.toLowerCase();
 
     if (!subcommand) {
-      const result = await this.useCases.wallet.showWallet(telegramId);
-      return this.walletFormatter.formatShowWallet(result);
+      const result = await this.useCases.dcaWallet.showWallet(telegramId);
+      return this.dcaWalletFormatter.formatShowWallet(result);
     }
 
-    if (subcommand === "set") {
-      const address = args[1];
-      if (!address) {
-        return this.walletFormatter.formatMissingAddress();
-      }
-
-      if (!this.useCases.wallet.isValidAddress(address)) {
-        return this.walletFormatter.formatInvalidAddress();
-      }
-
-      const result = await this.useCases.wallet.setWallet(telegramId, address);
-      return this.walletFormatter.formatSetWallet(result);
+    if (subcommand === "create") {
+      const result = await this.useCases.dcaWallet.createWallet(telegramId);
+      return this.dcaWalletFormatter.formatCreateWallet(result);
     }
 
-    if (subcommand === "remove") {
-      const result = await this.useCases.wallet.removeWallet(telegramId);
-      return this.walletFormatter.formatRemoveWallet(result);
+    if (subcommand === "export") {
+      const result = await this.useCases.dcaWallet.exportKey(telegramId);
+      return this.dcaWalletFormatter.formatExportKey(result);
     }
 
-    return this.walletFormatter.formatUnknownSubcommand();
+    if (subcommand === "delete") {
+      const result = await this.useCases.dcaWallet.deleteWallet(telegramId);
+      return this.dcaWalletFormatter.formatDeleteWallet(result);
+    }
+
+    return this.dcaWalletFormatter.formatUnknownSubcommand();
   }
 
   private async handleBalance(telegramId: number): Promise<UIResponse> {

@@ -4,6 +4,7 @@
 export interface User {
   telegramId: number;
   walletAddress: string | null;
+  privateKey: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -14,4 +15,12 @@ export interface User {
 export interface UserWithWallet {
   telegramId: number;
   walletAddress: string;
+}
+
+/**
+ * User with DCA wallet (private key available)
+ */
+export interface UserWithDcaWallet {
+  telegramId: number;
+  privateKey: string;
 }

@@ -13,11 +13,11 @@ import { SchedulerRepository } from "./domain/repositories/SchedulerRepository.j
 import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import {
-  WalletUseCases,
   BalanceUseCases,
   PurchaseUseCases,
   PortfolioUseCases,
   UserUseCases,
+  DcaWalletUseCases,
 } from "./domain/usecases/index.js";
 import { ProtocolHandler, UseCases } from "./presentation/protocol/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
@@ -70,11 +70,11 @@ async function main(): Promise<void> {
 
   // Create use cases
   const useCases: UseCases = {
-    wallet: new WalletUseCases(userRepository, solana),
     balance: new BalanceUseCases(userRepository, solana),
     purchase: new PurchaseUseCases(userRepository, dca),
     portfolio: new PortfolioUseCases(userRepository, dca),
     user: new UserUseCases(userRepository, dca),
+    dcaWallet: new DcaWalletUseCases(userRepository, solana, config.dcaWallet),
   };
 
   // Create protocol handler

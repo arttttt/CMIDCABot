@@ -1,7 +1,7 @@
 /**
  * User repository interface
  */
-import { User, UserWithWallet } from "../models/User.js";
+import { User, UserWithWallet, UserWithDcaWallet } from "../models/User.js";
 
 export interface UserRepository {
   /**
@@ -23,4 +23,19 @@ export interface UserRepository {
    * Get all users that have a wallet address set
    */
   getAllWithWallet(): Promise<UserWithWallet[]>;
+
+  /**
+   * Set user's DCA wallet private key
+   */
+  setPrivateKey(telegramId: number, privateKey: string): Promise<void>;
+
+  /**
+   * Clear user's DCA wallet private key
+   */
+  clearPrivateKey(telegramId: number): Promise<void>;
+
+  /**
+   * Get all users that have a DCA wallet (private key) set
+   */
+  getAllWithDcaWallet(): Promise<UserWithDcaWallet[]>;
 }

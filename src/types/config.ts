@@ -25,11 +25,17 @@ export interface DcaConfig {
   intervalMs: number; // interval between purchases in milliseconds
 }
 
+export interface DcaWalletConfig {
+  /** Dev override: use this private key (base64) for all users instead of generating */
+  devPrivateKey?: string;
+}
+
 export interface Config {
   telegram: TelegramConfig;
   solana: SolanaConfig;
   database: DatabaseConfig;
   dca: DcaConfig;
+  dcaWallet: DcaWalletConfig;
   web?: WebConfig;
   isDev: boolean;
 }

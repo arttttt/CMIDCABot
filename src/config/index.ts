@@ -30,6 +30,9 @@ export function loadConfig(): Config {
   const isDev = nodeEnv !== "production";
   const webEnabled = getEnvBool("WEB_ENABLED", false);
 
+  // DEV_WALLET_PRIVATE_KEY is optional, only used in dev mode
+  const devPrivateKey = process.env.DEV_WALLET_PRIVATE_KEY || undefined;
+
   return {
     telegram: {
       // Bot token is optional when running in web-only mode
@@ -49,6 +52,9 @@ export function loadConfig(): Config {
     dca: {
       amountUsdc: parseFloat(getEnvOrDefault("DCA_AMOUNT_USDC", "6")),
       intervalMs: getEnvInt("DCA_INTERVAL_MS", 86400000), // default: 24 hours
+    },
+    dcaWallet: {
+      devPrivateKey: isDev ? devPrivateKey : undefined,
     },
     web: webEnabled
       ? {

@@ -6,26 +6,10 @@
 import { AssetSymbol } from "../../types/portfolio.js";
 import { PortfolioStatus } from "../../services/dca.js";
 
-// Wallet operation results
+// Wallet info (used by balance)
 export interface WalletInfo {
   address: string;
   balance: number | null; // null if fetch failed
-}
-
-export interface SetWalletResult {
-  type: "success" | "already_connected" | "needs_confirmation";
-  wallet?: WalletInfo;
-  existingAddress?: string;
-  newAddress?: string;
-}
-
-export interface RemoveWalletResult {
-  type: "success" | "no_wallet";
-}
-
-export interface WalletCallbackResult {
-  type: "replaced" | "cancelled" | "invalid" | "unknown";
-  wallet?: WalletInfo;
 }
 
 // Balance result
@@ -61,4 +45,31 @@ export interface ResetResult {
 // Init user result
 export interface InitUserResult {
   type: "success";
+}
+
+// DCA Wallet types
+export interface DcaWalletInfo {
+  address: string;
+  balance: number | null;
+  isDevWallet: boolean;
+}
+
+export interface ShowWalletResult {
+  type: "success" | "no_wallet" | "dev_mode";
+  wallet?: DcaWalletInfo;
+}
+
+export interface CreateWalletResult {
+  type: "created" | "already_exists" | "dev_mode";
+  wallet?: DcaWalletInfo;
+}
+
+export interface DeleteWalletResult {
+  type: "deleted" | "no_wallet" | "dev_mode";
+}
+
+export interface ExportKeyResult {
+  type: "success" | "no_wallet" | "dev_mode";
+  privateKey?: string;
+  isDevWallet?: boolean;
 }

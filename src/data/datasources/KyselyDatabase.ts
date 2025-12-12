@@ -58,6 +58,7 @@ function initMainSchema(db: Kysely<MainDatabase>): void {
     CREATE TABLE IF NOT EXISTS users (
       telegram_id INTEGER PRIMARY KEY,
       wallet_address TEXT,
+      private_key TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
