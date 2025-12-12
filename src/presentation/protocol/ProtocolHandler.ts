@@ -9,6 +9,7 @@ import {
   PortfolioUseCases,
   UserUseCases,
   DcaWalletUseCases,
+  DcaUseCases,
 } from "../../domain/usecases/index.js";
 import {
   BalanceFormatter,
@@ -16,6 +17,7 @@ import {
   PortfolioFormatter,
   HelpFormatter,
   DcaWalletFormatter,
+  DcaFormatter,
 } from "../formatters/index.js";
 import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./types.js";
 
@@ -25,6 +27,7 @@ export interface UseCases {
   portfolio: PortfolioUseCases;
   user: UserUseCases;
   dcaWallet: DcaWalletUseCases;
+  dca: DcaUseCases;
 }
 
 interface CommandConfig {
@@ -41,6 +44,7 @@ export class ProtocolHandler {
   private purchaseFormatter: PurchaseFormatter;
   private portfolioFormatter: PortfolioFormatter;
   private dcaWalletFormatter: DcaWalletFormatter;
+  private dcaFormatter: DcaFormatter;
 
   constructor(
     private useCases: UseCases,
@@ -51,6 +55,7 @@ export class ProtocolHandler {
     this.purchaseFormatter = new PurchaseFormatter();
     this.portfolioFormatter = new PortfolioFormatter();
     this.dcaWalletFormatter = new DcaWalletFormatter();
+    this.dcaFormatter = new DcaFormatter();
 
     this.registerCommands();
   }
@@ -67,6 +72,13 @@ export class ProtocolHandler {
       name: "balance",
       description: "Check SOL balance",
       handler: (_args, telegramId) => this.handleBalance(telegramId),
+    });
+
+    this.registerCommand({
+      name: "dca",
+      description: "Manage DCA (start/stop)",
+      handler: (args, telegramId) => this.handleDca(args, telegramId),
+      devOnly: true,
     });
 
     // Dev-only commands
@@ -213,5 +225,26 @@ export class ProtocolHandler {
   private async handleReset(telegramId: number): Promise<UIResponse> {
     const result = await this.useCases.portfolio.reset(telegramId);
     return this.portfolioFormatter.formatReset(result);
+  }
+
+  private async handleDca(args: string[], telegramId: number): Promise<UIResponse> {
+    const subcommand = args[0]?.toLowerCase();
+
+    if (!subcommand) {
+      const result = await this.useCases.dca.getStatus(telegramId);
+      return this.dcaFormatter.formatStatus(result);
+    }
+
+    if (subcommand === "start") {
+      const result = await this.useCases.dca.start(telegramId);
+      return this.dcaFormatter.formatStart(result);
+    }
+
+    if (subcommand === "stop") {
+      const result = await this.useCases.dca.stop(telegramId);
+      return this.dcaFormatter.formatStop(result);
+    }
+
+    return this.dcaFormatter.formatUnknownSubcommand();
   }
 }

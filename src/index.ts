@@ -9,15 +9,16 @@ import { Kysely } from "kysely";
 import { loadConfig } from "./config/index.js";
 import { createMainDatabase, createMockDatabase } from "./data/datasources/KyselyDatabase.js";
 import { createMainRepositories, createMockRepositories } from "./data/factories/RepositoryFactory.js";
-import { SchedulerRepository } from "./domain/repositories/SchedulerRepository.js";
 import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
+import { DcaScheduler } from "./services/DcaScheduler.js";
 import {
   BalanceUseCases,
   PurchaseUseCases,
   PortfolioUseCases,
   UserUseCases,
   DcaWalletUseCases,
+  DcaUseCases,
 } from "./domain/usecases/index.js";
 import { ProtocolHandler, UseCases } from "./presentation/protocol/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
@@ -47,9 +48,9 @@ async function main(): Promise<void> {
   // Initialize Solana service
   const solana = new SolanaService(config.solana);
 
-  // Initialize mock database and DCA service only in development mode
+  // Initialize mock database, DCA service and scheduler only in development mode
   let dca: DcaService | undefined;
-  let schedulerRepository: SchedulerRepository | undefined;
+  let dcaScheduler: DcaScheduler | undefined;
 
   if (config.isDev) {
     if (dbMode === "sqlite") {
@@ -57,7 +58,6 @@ async function main(): Promise<void> {
     }
 
     const mockRepos = createMockRepositories(dbMode, mockDb);
-    schedulerRepository = mockRepos.schedulerRepository;
 
     dca = new DcaService(
       userRepository,
@@ -66,6 +66,24 @@ async function main(): Promise<void> {
       solana,
       config.isDev,
     );
+
+    // Create DCA scheduler if configured
+    if (config.dca.amountUsdc > 0 && config.dca.intervalMs > 0) {
+      dcaScheduler = new DcaScheduler(
+        userRepository,
+        mockRepos.schedulerRepository,
+        dca,
+        {
+          intervalMs: config.dca.intervalMs,
+          amountUsdc: config.dca.amountUsdc,
+        },
+      );
+
+      // Try to start scheduler if there are already active users
+      dcaScheduler.start().catch((error) => {
+        console.error("[DCA Scheduler] Failed to check for active users:", error);
+      });
+    }
   }
 
   // Create use cases
@@ -75,6 +93,7 @@ async function main(): Promise<void> {
     portfolio: new PortfolioUseCases(userRepository, dca),
     user: new UserUseCases(userRepository, dca),
     dcaWallet: new DcaWalletUseCases(userRepository, solana, config.dcaWallet),
+    dca: new DcaUseCases(userRepository, dcaScheduler),
   };
 
   // Create protocol handler
@@ -82,13 +101,9 @@ async function main(): Promise<void> {
 
   console.log(`Command mode: ${config.isDev ? "development" : "production"} (${handler.getAvailableCommands().length} commands available)`);
 
-  // Start DCA scheduler in development mode
-  if (config.isDev && dca && schedulerRepository && config.dca.amountUsdc > 0 && config.dca.intervalMs > 0) {
-    startDcaScheduler(config.dca.intervalMs, config.dca.amountUsdc, dca, schedulerRepository);
-  }
-
   // Cleanup function
   const cleanup = async (): Promise<void> => {
+    dcaScheduler?.stop();
     await mockDb?.destroy();
     await mainDb?.destroy();
   };
@@ -151,6 +166,9 @@ async function main(): Promise<void> {
     console.log(`Network: ${config.solana.network}`);
     console.log(`RPC: ${config.solana.rpcUrl}`);
     console.log(`Mode: Long Polling (local)`);
+    if (dcaScheduler) {
+      console.log(`DCA: ${config.dca.amountUsdc} USDC every ${formatInterval(config.dca.intervalMs)}`);
+    }
     console.log("─".repeat(50));
     console.log("Bot is ready! Send /start in Telegram to test.");
     console.log("Press Ctrl+C to stop.\n");
@@ -169,120 +187,11 @@ async function main(): Promise<void> {
   });
 }
 
-function startDcaScheduler(
-  intervalMs: number,
-  amountUsdc: number,
-  dca: DcaService,
-  schedulerRepository: SchedulerRepository,
-): void {
-  const formatInterval = (ms: number): string => {
-    if (ms >= 86400000) return `${(ms / 86400000).toFixed(1)} days`;
-    if (ms >= 3600000) return `${(ms / 3600000).toFixed(1)} hours`;
-    if (ms >= 60000) return `${(ms / 60000).toFixed(1)} minutes`;
-    return `${ms} ms`;
-  };
-
-  console.log(`[DCA] Persistent scheduler starting: ${amountUsdc} USDC every ${formatInterval(intervalMs)}`);
-
-  // Initialize scheduler state in database
-  schedulerRepository.initState(intervalMs).catch((error) => {
-    console.error("[DCA] Failed to initialize scheduler state:", error);
-  });
-
-  const runDca = async (timestamp: Date): Promise<boolean> => {
-    console.log(`[DCA] Running scheduled purchase for ${timestamp.toISOString()}`);
-
-    try {
-      const result = await dca.executeDcaForAllUsers(amountUsdc);
-      console.log(`[DCA] Completed: ${result.successful}/${result.processed} users processed successfully`);
-
-      // Update last run time after successful execution
-      await schedulerRepository.updateLastRunAt(timestamp);
-      return true;
-    } catch (error) {
-      console.error("[DCA] Scheduler error:", error);
-      return false;
-    }
-  };
-
-  // Schedule next run based on last_run_at + intervalMs
-  const scheduleNextRun = async (): Promise<void> => {
-    const state = await schedulerRepository.getState();
-    const lastRunAt = state?.lastRunAt ? state.lastRunAt.getTime() : null;
-
-    let nextRunTime: number;
-    if (lastRunAt) {
-      // Next run = last successful run + interval
-      nextRunTime = lastRunAt + intervalMs;
-    } else {
-      // No previous run - schedule for now + interval
-      nextRunTime = Date.now() + intervalMs;
-    }
-
-    const delay = Math.max(0, nextRunTime - Date.now());
-    console.log(`[DCA] Next run scheduled at ${new Date(nextRunTime).toISOString()} (in ${formatInterval(delay)})`);
-
-    setTimeout(async () => {
-      const success = await runDca(new Date());
-      if (success) {
-        // Schedule next run after successful execution
-        scheduleNextRun().catch((error) => {
-          console.error("[DCA] Failed to schedule next run:", error);
-        });
-      } else {
-        // Retry after a short delay on failure
-        console.log("[DCA] Retrying in 1 minute...");
-        setTimeout(() => {
-          scheduleNextRun().catch((error) => {
-            console.error("[DCA] Failed to schedule next run:", error);
-          });
-        }, 60000);
-      }
-    }, delay);
-  };
-
-  // Catch up missed runs on startup
-  const catchUpMissedRuns = async (): Promise<void> => {
-    const state = await schedulerRepository.getState();
-    const lastRunAt = state?.lastRunAt ? state.lastRunAt.getTime() : null;
-
-    if (!lastRunAt) {
-      console.log("[DCA] No previous run found - scheduling first run");
-      await scheduleNextRun();
-      return;
-    }
-
-    const now = Date.now();
-    const timeSinceLastRun = now - lastRunAt;
-    const missedIntervals = Math.floor(timeSinceLastRun / intervalMs);
-
-    if (missedIntervals <= 0) {
-      console.log("[DCA] No missed intervals - scheduling next run");
-      await scheduleNextRun();
-      return;
-    }
-
-    console.log(`[DCA] Detected ${missedIntervals} missed interval(s) - catching up...`);
-
-    // Execute each missed interval
-    for (let i = 1; i <= missedIntervals; i++) {
-      const missedTimestamp = new Date(lastRunAt + i * intervalMs);
-      console.log(`[DCA] Catching up missed run ${i}/${missedIntervals}`);
-      const success = await runDca(missedTimestamp);
-      if (!success) {
-        console.error(`[DCA] Failed to catch up run ${i} - stopping catch-up`);
-        break;
-      }
-    }
-
-    console.log("[DCA] Catch-up complete - scheduling next run");
-    await scheduleNextRun();
-  };
-
-  // Start the scheduler
-  catchUpMissedRuns().catch((error) => {
-    console.error("[DCA] Fatal scheduler error:", error);
-  });
+function formatInterval(ms: number): string {
+  if (ms >= 86400000) return `${(ms / 86400000).toFixed(1)} days`;
+  if (ms >= 3600000) return `${(ms / 3600000).toFixed(1)} hours`;
+  if (ms >= 60000) return `${(ms / 60000).toFixed(1)} minutes`;
+  return `${ms} ms`;
 }
 
 main().catch((error) => {

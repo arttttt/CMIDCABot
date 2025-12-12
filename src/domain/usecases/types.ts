@@ -73,3 +73,19 @@ export interface ExportKeyResult {
   privateKey?: string;
   isDevWallet?: boolean;
 }
+
+// DCA start/stop result types
+export interface DcaStartResult {
+  type: "started" | "already_active" | "no_wallet" | "unavailable";
+  isSchedulerRunning?: boolean;
+}
+
+export interface DcaStopResult {
+  type: "stopped" | "not_active" | "unavailable";
+  isSchedulerRunning?: boolean;
+}
+
+export interface DcaStatusResult {
+  type: "active" | "inactive" | "no_wallet" | "unavailable";
+  isSchedulerRunning?: boolean;
+}

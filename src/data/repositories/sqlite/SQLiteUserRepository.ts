@@ -3,7 +3,7 @@
  */
 import { Kysely, sql, Selectable } from "kysely";
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
-import { User, UserWithWallet, UserWithDcaWallet } from "../../../domain/models/User.js";
+import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../../../domain/models/User.js";
 import type { MainDatabase, UsersTable } from "../../types/database.js";
 
 type UserRow = Selectable<UsersTable>;
@@ -16,6 +16,7 @@ export class SQLiteUserRepository implements UserRepository {
       telegramId: row.telegram_id,
       walletAddress: row.wallet_address,
       privateKey: row.private_key,
+      isDcaActive: row.is_dca_active === 1,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -100,5 +101,43 @@ export class SQLiteUserRepository implements UserRepository {
       telegramId: row.telegram_id,
       privateKey: row.private_key!,
     }));
+  }
+
+  async setDcaActive(telegramId: number, active: boolean): Promise<void> {
+    await this.db
+      .updateTable("users")
+      .set({
+        is_dca_active: active ? 1 : 0,
+        updated_at: sql`CURRENT_TIMESTAMP`,
+      })
+      .where("telegram_id", "=", telegramId)
+      .execute();
+  }
+
+  async getAllActiveDcaUsers(): Promise<ActiveDcaUser[]> {
+    const rows = await this.db
+      .selectFrom("users")
+      .select(["telegram_id", "wallet_address"])
+      .where("wallet_address", "is not", null)
+      .where("wallet_address", "!=", "")
+      .where("is_dca_active", "=", 1)
+      .execute();
+
+    return rows.map((row) => ({
+      telegramId: row.telegram_id,
+      walletAddress: row.wallet_address!,
+    }));
+  }
+
+  async getActiveDcaCount(): Promise<number> {
+    const result = await this.db
+      .selectFrom("users")
+      .select((eb) => eb.fn.countAll<number>().as("count"))
+      .where("wallet_address", "is not", null)
+      .where("wallet_address", "!=", "")
+      .where("is_dca_active", "=", 1)
+      .executeTakeFirst();
+
+    return result?.count ?? 0;
   }
 }

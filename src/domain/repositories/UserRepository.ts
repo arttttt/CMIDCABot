@@ -1,7 +1,7 @@
 /**
  * User repository interface
  */
-import { User, UserWithWallet, UserWithDcaWallet } from "../models/User.js";
+import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../models/User.js";
 
 export interface UserRepository {
   /**
@@ -38,4 +38,19 @@ export interface UserRepository {
    * Get all users that have a DCA wallet (private key) set
    */
   getAllWithDcaWallet(): Promise<UserWithDcaWallet[]>;
+
+  /**
+   * Set user's DCA active status
+   */
+  setDcaActive(telegramId: number, active: boolean): Promise<void>;
+
+  /**
+   * Get all active DCA users (have wallet AND DCA is enabled)
+   */
+  getAllActiveDcaUsers(): Promise<ActiveDcaUser[]>;
+
+  /**
+   * Get count of active DCA users
+   */
+  getActiveDcaCount(): Promise<number>;
 }

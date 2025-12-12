@@ -8,3 +8,4 @@ export { PurchaseUseCases } from "./PurchaseUseCases.js";
 export { PortfolioUseCases } from "./PortfolioUseCases.js";
 export { UserUseCases } from "./UserUseCases.js";
 export { DcaWalletUseCases } from "./DcaWalletUseCases.js";
+export { DcaUseCases } from "./DcaUseCases.js";
