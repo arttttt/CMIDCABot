@@ -77,6 +77,17 @@ export class SQLiteUserRepository implements UserRepository {
       .execute();
   }
 
+  async clearPrivateKey(telegramId: number): Promise<void> {
+    await this.db
+      .updateTable("users")
+      .set({
+        private_key: null,
+        updated_at: sql`CURRENT_TIMESTAMP`,
+      })
+      .where("telegram_id", "=", telegramId)
+      .execute();
+  }
+
   async getAllWithDcaWallet(): Promise<UserWithDcaWallet[]> {
     const rows = await this.db
       .selectFrom("users")

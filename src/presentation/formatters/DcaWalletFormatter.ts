@@ -2,7 +2,13 @@
  * DCA Wallet formatter - domain objects to UI response
  */
 
-import { DcaWalletResult, ExportKeyResult, DcaWalletInfo } from "../../domain/usecases/types.js";
+import {
+  ShowWalletResult,
+  CreateWalletResult,
+  DeleteWalletResult,
+  ExportKeyResult,
+  DcaWalletInfo,
+} from "../../domain/usecases/types.js";
 import { UIResponse } from "../protocol/types.js";
 
 export class DcaWalletFormatter {
@@ -24,9 +30,10 @@ export class DcaWalletFormatter {
     return lines.join("\n");
   }
 
-  formatShowWallet(result: DcaWalletResult): UIResponse {
+  formatShowWallet(result: ShowWalletResult): UIResponse {
     switch (result.type) {
       case "success":
+      case "dev_mode":
         return {
           text:
             `**DCA Wallet**\n\n` +
@@ -34,25 +41,73 @@ export class DcaWalletFormatter {
             `\n\nDeposit SOL to this address to fund your DCA purchases.`,
         };
 
-      case "generated":
+      case "no_wallet":
         return {
           text:
-            `**New DCA Wallet Created!**\n\n` +
+            `No wallet found.\n\n` +
+            `Use /wallet create to generate a new wallet.`,
+        };
+
+      default:
+        return { text: "Unable to retrieve wallet information." };
+    }
+  }
+
+  formatCreateWallet(result: CreateWalletResult): UIResponse {
+    switch (result.type) {
+      case "created":
+        return {
+          text:
+            `**Wallet Created!**\n\n` +
             this.formatWalletInfo(result.wallet!) +
-            `\n\nThis wallet was just generated for you. ` +
-            `Deposit SOL to this address to fund your DCA purchases.\n\n` +
-            `Use /export_key to backup your private key.`,
+            `\n\nDeposit SOL to this address to fund your DCA purchases.\n\n` +
+            `**Important:** Use /wallet export to backup your private key.`,
+        };
+
+      case "already_exists":
+        return {
+          text:
+            `Wallet already exists.\n\n` +
+            this.formatWalletInfo(result.wallet!) +
+            `\n\nTo create a new wallet, first delete the existing one with /wallet delete.`,
+        };
+
+      case "dev_mode":
+        return {
+          text:
+            `[DEV MODE] Cannot create wallets.\n\n` +
+            `Using shared development wallet:\n` +
+            this.formatWalletInfo(result.wallet!),
+        };
+
+      default:
+        return { text: "Unable to create wallet." };
+    }
+  }
+
+  formatDeleteWallet(result: DeleteWalletResult): UIResponse {
+    switch (result.type) {
+      case "deleted":
+        return {
+          text:
+            `Wallet deleted.\n\n` +
+            `Your private key has been removed. ` +
+            `Make sure you have backed it up if you need to recover funds.\n\n` +
+            `Use /wallet create to generate a new wallet.`,
         };
 
       case "no_wallet":
         return {
-          text:
-            `No DCA wallet found.\n\n` +
-            `Use /dcawallet to create one automatically.`,
+          text: `No wallet to delete.`,
+        };
+
+      case "dev_mode":
+        return {
+          text: `[DEV MODE] Cannot delete shared development wallet.`,
         };
 
       default:
-        return { text: "Unable to retrieve DCA wallet information." };
+        return { text: "Unable to delete wallet." };
     }
   }
 
@@ -84,12 +139,24 @@ export class DcaWalletFormatter {
       case "no_wallet":
         return {
           text:
-            `No DCA wallet found.\n\n` +
-            `Use /dcawallet to create a wallet first.`,
+            `No wallet found.\n\n` +
+            `Use /wallet create to generate a wallet first.`,
         };
 
       default:
         return { text: "Unable to export private key." };
     }
+  }
+
+  formatUnknownSubcommand(): UIResponse {
+    return {
+      text:
+        `Unknown wallet command.\n\n` +
+        `Available commands:\n` +
+        `/wallet - Show current wallet\n` +
+        `/wallet create - Create new wallet\n` +
+        `/wallet export - Export private key\n` +
+        `/wallet delete - Delete wallet`,
+    };
   }
 }

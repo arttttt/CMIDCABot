@@ -64,13 +64,6 @@ function initMainSchema(db: Kysely<MainDatabase>): void {
     )
   `.execute(db);
 
-  // Migration: add private_key column if not exists (for existing databases)
-  sql`
-    ALTER TABLE users ADD COLUMN private_key TEXT
-  `.execute(db).catch(() => {
-    // Column already exists - ignore error
-  });
-
   sql`
     CREATE TABLE IF NOT EXISTS transactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -30,6 +30,11 @@ export interface UserRepository {
   setPrivateKey(telegramId: number, privateKey: string): Promise<void>;
 
   /**
+   * Clear user's DCA wallet private key
+   */
+  clearPrivateKey(telegramId: number): Promise<void>;
+
+  /**
    * Get all users that have a DCA wallet (private key) set
    */
   getAllWithDcaWallet(): Promise<UserWithDcaWallet[]>;

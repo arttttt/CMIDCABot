@@ -13,7 +13,6 @@ import { SchedulerRepository } from "./domain/repositories/SchedulerRepository.j
 import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import {
-  WalletUseCases,
   BalanceUseCases,
   PurchaseUseCases,
   PortfolioUseCases,
@@ -71,7 +70,6 @@ async function main(): Promise<void> {
 
   // Create use cases
   const useCases: UseCases = {
-    wallet: new WalletUseCases(userRepository, solana),
     balance: new BalanceUseCases(userRepository, solana),
     purchase: new PurchaseUseCases(userRepository, dca),
     portfolio: new PortfolioUseCases(userRepository, dca),

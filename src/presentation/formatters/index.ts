@@ -2,7 +2,6 @@
  * Formatters - domain objects to UI response
  */
 
-export { WalletFormatter } from "./WalletFormatter.js";
 export { BalanceFormatter } from "./BalanceFormatter.js";
 export { PurchaseFormatter } from "./PurchaseFormatter.js";
 export { PortfolioFormatter } from "./PortfolioFormatter.js";

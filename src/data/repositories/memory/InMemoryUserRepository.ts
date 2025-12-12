@@ -55,6 +55,14 @@ export class InMemoryUserRepository implements UserRepository {
     }
   }
 
+  async clearPrivateKey(telegramId: number): Promise<void> {
+    const user = this.users.get(telegramId);
+    if (user) {
+      user.privateKey = null;
+      user.updatedAt = new Date();
+    }
+  }
+
   async getAllWithDcaWallet(): Promise<UserWithDcaWallet[]> {
     const result: UserWithDcaWallet[] = [];
     for (const user of this.users.values()) {
