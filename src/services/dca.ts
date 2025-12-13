@@ -1,6 +1,6 @@
 /**
- * DCA Service - Mock portfolio management for development/testing
- * Works only in NODE_ENV=development
+ * DCA Service - Portfolio management for DCA investing
+ * Supports both mock prices (development) and real Jupiter prices (production)
  */
 
 import { UserRepository } from "../domain/repositories/UserRepository.js";
@@ -8,9 +8,11 @@ import { PortfolioRepository } from "../domain/repositories/PortfolioRepository.
 import { PurchaseRepository } from "../domain/repositories/PurchaseRepository.js";
 import { PortfolioBalances } from "../domain/models/Portfolio.js";
 import { SolanaService } from "./solana.js";
+import { PriceService } from "./price.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../types/portfolio.js";
+import { PriceSource } from "../types/config.js";
 
-// Hardcoded mock prices (USD) - no real API calls
+// Mock prices (USD) - used when PRICE_SOURCE=mock
 export const MOCK_PRICES: Record<AssetSymbol, number> = {
   BTC: 100000,
   ETH: 3500,
@@ -34,13 +36,45 @@ export interface PortfolioStatus {
 }
 
 export class DcaService {
+  private priceService: PriceService | null;
+  private priceSource: PriceSource;
+
   constructor(
     private userRepository: UserRepository,
     private portfolioRepository: PortfolioRepository,
     private purchaseRepository: PurchaseRepository,
     private solana: SolanaService,
     private isDev: boolean,
-  ) {}
+    priceSource: PriceSource,
+    priceService?: PriceService,
+  ) {
+    this.priceSource = priceSource;
+    this.priceService = priceSource === "jupiter" ? (priceService ?? null) : null;
+  }
+
+  /**
+   * Get current prices based on configured source (jupiter or mock)
+   */
+  async getCurrentPrices(): Promise<Record<AssetSymbol, number>> {
+    if (this.priceSource === "jupiter" && this.priceService) {
+      return await this.priceService.getPricesRecord();
+    }
+    return MOCK_PRICES;
+  }
+
+  /**
+   * Get price source type
+   */
+  getPriceSource(): PriceSource {
+    return this.priceSource;
+  }
+
+  /**
+   * Check if using real prices from Jupiter
+   */
+  isUsingRealPrices(): boolean {
+    return this.priceSource === "jupiter";
+  }
 
   /**
    * Check if mock mode is active (only in development)
@@ -73,7 +107,8 @@ export class DcaService {
       return null;
     }
 
-    const allocations = this.calculateAllocations(portfolio);
+    const prices = await this.getCurrentPrices();
+    const allocations = this.calculateAllocations(portfolio, prices);
     const totalValueInUsdc = allocations.reduce((sum, a) => sum + a.valueInUsdc, 0);
 
     // Find asset with maximum negative deviation (most below target)
@@ -98,7 +133,7 @@ export class DcaService {
   /**
    * Calculate current allocations vs target
    */
-  private calculateAllocations(portfolio: PortfolioBalances): AllocationInfo[] {
+  private calculateAllocations(portfolio: PortfolioBalances, prices: Record<AssetSymbol, number>): AllocationInfo[] {
     const assets: { symbol: AssetSymbol; balance: number }[] = [
       { symbol: "BTC", balance: portfolio.btcBalance },
       { symbol: "ETH", balance: portfolio.ethBalance },
@@ -110,7 +145,7 @@ export class DcaService {
     const values: { symbol: AssetSymbol; balance: number; valueInUsdc: number }[] = [];
 
     for (const asset of assets) {
-      const valueInUsdc = asset.balance * MOCK_PRICES[asset.symbol];
+      const valueInUsdc = asset.balance * prices[asset.symbol];
       totalValueInUsdc += valueInUsdc;
       values.push({ ...asset, valueInUsdc });
     }
@@ -157,12 +192,13 @@ export class DcaService {
     telegramId: number,
     amountUsdc: number,
     asset?: AssetSymbol,
-  ): Promise<{ success: boolean; asset: AssetSymbol; amount: number; message: string }> {
+  ): Promise<{ success: boolean; asset: AssetSymbol; amount: number; priceUsd: number; message: string }> {
     if (!this.isMockMode()) {
       return {
         success: false,
         asset: "BTC",
         amount: 0,
+        priceUsd: 0,
         message: "Mock purchases only available in development mode",
       };
     }
@@ -173,9 +209,12 @@ export class DcaService {
     // Select asset if not specified
     const selectedAsset = asset || await this.selectAssetToBuy(telegramId);
 
+    // Get current prices (real or mock)
+    const prices = await this.getCurrentPrices();
+
     // Calculate amount of asset to receive (amountUsdc / price in USD)
-    const amountAsset = amountUsdc / MOCK_PRICES[selectedAsset];
-    const priceUsd = MOCK_PRICES[selectedAsset];
+    const priceUsd = prices[selectedAsset];
+    const amountAsset = amountUsdc / priceUsd;
 
     // Update portfolio balance
     await this.portfolioRepository.updateBalance(telegramId, selectedAsset, amountAsset);
@@ -189,11 +228,13 @@ export class DcaService {
       priceUsd,
     });
 
+    const priceSource = this.isUsingRealPrices() ? "Jupiter" : "mock";
     return {
       success: true,
       asset: selectedAsset,
       amount: amountAsset,
-      message: `Mock purchased ${amountAsset.toFixed(8)} ${selectedAsset} for ${amountUsdc} USDC`,
+      priceUsd,
+      message: `Purchased ${amountAsset.toFixed(8)} ${selectedAsset} for ${amountUsdc} USDC @ $${priceUsd.toFixed(2)} (${priceSource})`,
     };
   }
 
@@ -229,8 +270,9 @@ export class DcaService {
     let processed = 0;
     let successful = 0;
 
-    // Convert USDC to SOL equivalent for balance check
-    const requiredSol = amountUsdc / MOCK_PRICES.SOL;
+    // Get current prices for SOL conversion
+    const prices = await this.getCurrentPrices();
+    const requiredSol = amountUsdc / prices.SOL;
 
     for (const user of users) {
       processed++;
@@ -271,8 +313,9 @@ export class DcaService {
       return { processed: 0, successful: 0 };
     }
 
-    // Convert USDC to SOL equivalent for balance check
-    const requiredSol = amountUsdc / MOCK_PRICES.SOL;
+    // Get current prices for SOL conversion
+    const prices = await this.getCurrentPrices();
+    const requiredSol = amountUsdc / prices.SOL;
 
     for (const user of users) {
       processed++;

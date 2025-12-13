@@ -8,3 +8,4 @@ export { PortfolioFormatter } from "./PortfolioFormatter.js";
 export { HelpFormatter } from "./HelpFormatter.js";
 export { DcaWalletFormatter } from "./DcaWalletFormatter.js";
 export { DcaFormatter } from "./DcaFormatter.js";
+export { PriceFormatter } from "./PriceFormatter.js";

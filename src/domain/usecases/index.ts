@@ -28,3 +28,6 @@ export { ExportWalletKeyUseCase } from "./ExportWalletKeyUseCase.js";
 export { StartDcaUseCase } from "./StartDcaUseCase.js";
 export { StopDcaUseCase } from "./StopDcaUseCase.js";
 export { GetDcaStatusUseCase } from "./GetDcaStatusUseCase.js";
+
+// Prices
+export { GetPricesUseCase } from "./GetPricesUseCase.js";

@@ -12,6 +12,7 @@ import { createMainRepositories, createMockRepositories } from "./data/factories
 import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import { DcaScheduler } from "./services/DcaScheduler.js";
+import { PriceService } from "./services/price.js";
 import {
   InitUserUseCase,
   GetBalanceUseCase,
@@ -26,6 +27,7 @@ import {
   StartDcaUseCase,
   StopDcaUseCase,
   GetDcaStatusUseCase,
+  GetPricesUseCase,
 } from "./domain/usecases/index.js";
 import { ProtocolHandler, UseCases } from "./presentation/protocol/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
@@ -55,6 +57,16 @@ async function main(): Promise<void> {
   // Initialize Solana service
   const solana = new SolanaService(config.solana);
 
+  // Initialize PriceService (only when using Jupiter prices)
+  let priceService: PriceService | undefined;
+
+  if (config.price.source === "jupiter") {
+    if (!config.price.jupiterApiKey) {
+      throw new Error("JUPITER_API_KEY is required when PRICE_SOURCE=jupiter");
+    }
+    priceService = new PriceService(config.price.jupiterApiKey);
+  }
+
   // Initialize mock database, DCA service and scheduler only in development mode
   let dca: DcaService | undefined;
   let dcaScheduler: DcaScheduler | undefined;
@@ -72,6 +84,8 @@ async function main(): Promise<void> {
       mockRepos.purchaseRepository,
       solana,
       config.isDev,
+      config.price.source,
+      priceService,
     );
 
     // Create DCA scheduler if configured
@@ -116,6 +130,8 @@ async function main(): Promise<void> {
     startDca: new StartDcaUseCase(userRepository, dcaScheduler),
     stopDca: new StopDcaUseCase(userRepository, dcaScheduler),
     getDcaStatus: new GetDcaStatusUseCase(userRepository, dcaScheduler),
+    // Prices
+    getPrices: new GetPricesUseCase(dca),
   };
 
   // Create protocol handler
@@ -191,6 +207,7 @@ async function main(): Promise<void> {
     if (dcaScheduler) {
       console.log(`DCA: ${config.dca.amountUsdc} USDC every ${formatInterval(config.dca.intervalMs)}`);
     }
+    console.log(`Prices: ${config.price.source === "jupiter" ? "Jupiter API (real-time)" : "Mock (static)"}`)
     console.log("─".repeat(50));
     console.log("Bot is ready! Send /start in Telegram to test.");
     console.log("Press Ctrl+C to stop.\n");
