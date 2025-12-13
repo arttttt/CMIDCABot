@@ -58,6 +58,7 @@ export function loadConfig(): Config {
     },
     price: {
       source: getEnvOrDefault("PRICE_SOURCE", "jupiter") as PriceSource,
+      jupiterApiKey: process.env.JUPITER_API_KEY,
     },
     web: webEnabled
       ? {

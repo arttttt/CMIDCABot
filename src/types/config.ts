@@ -34,6 +34,7 @@ export interface DcaWalletConfig {
 
 export interface PriceConfig {
   source: PriceSource;
+  jupiterApiKey?: string;
 }
 
 export interface Config {

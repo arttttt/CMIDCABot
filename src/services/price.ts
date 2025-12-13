@@ -1,12 +1,15 @@
 /**
- * Jupiter Price Service - Fetches real-time prices from Jupiter Price API v2
- * https://station.jup.ag/docs/apis/price-api-v2
+ * Price Service - Fetches real-time prices from Jupiter Price API v3
+ * https://dev.jup.ag/docs/price
+ *
+ * Note: Jupiter Price API v3 requires an API key from https://portal.jup.ag
+ * Set JUPITER_API_KEY environment variable to use this service.
  */
 
 import { AssetSymbol } from "../types/portfolio.js";
 
-// Jupiter Price API v2
-const JUPITER_PRICE_API = "https://api.jup.ag/price/v2";
+// Jupiter Price API v3
+const JUPITER_PRICE_API = "https://api.jup.ag/price/v3";
 
 // Token mint addresses on Solana mainnet
 export const TOKEN_MINTS = {
@@ -15,20 +18,20 @@ export const TOKEN_MINTS = {
   // USDC (Circle)
   USDC: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
   // cbBTC (Coinbase Wrapped Bitcoin)
-  BTC: "cbBTCn3BWKsb4yjBQ6bBKwKECvG28mkoGd17bqkbePJS",
+  BTC: "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
   // Wormhole Wrapped ETH
   ETH: "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
 } as const;
 
-export interface TokenPrice {
-  id: string;
-  type: string;
-  price: string;
+export interface JupiterPriceData {
+  decimals: number;
+  usdPrice: number;
+  blockId?: number | null;
+  priceChange24h?: number | null;
 }
 
-export interface PriceApiResponse {
-  data: Record<string, TokenPrice>;
-  timeTaken: number;
+export interface JupiterPriceResponse {
+  [mint: string]: JupiterPriceData;
 }
 
 export interface AssetPrices {
@@ -40,10 +43,12 @@ export interface AssetPrices {
 
 export class PriceService {
   private baseUrl: string;
+  private apiKey: string;
   private cachedPrices: AssetPrices | null = null;
   private cacheMaxAgeMs: number;
 
-  constructor(baseUrl: string = JUPITER_PRICE_API, cacheMaxAgeMs: number = 60000) {
+  constructor(apiKey: string, baseUrl: string = JUPITER_PRICE_API, cacheMaxAgeMs: number = 60000) {
+    this.apiKey = apiKey;
     this.baseUrl = baseUrl;
     this.cacheMaxAgeMs = cacheMaxAgeMs; // Default: 1 minute cache
   }
@@ -60,22 +65,25 @@ export class PriceService {
 
     // Fetch fresh prices from Jupiter
     const mints = [TOKEN_MINTS.BTC, TOKEN_MINTS.ETH, TOKEN_MINTS.SOL];
-    const url = new URL(this.baseUrl);
-    url.searchParams.set("ids", mints.join(","));
+    const url = `${this.baseUrl}?ids=${mints.join(",")}`;
 
-    const response = await fetch(url.toString());
+    const response = await fetch(url, {
+      headers: {
+        "x-api-key": this.apiKey,
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`Jupiter Price API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = (await response.json()) as PriceApiResponse;
+    const data = (await response.json()) as JupiterPriceResponse;
 
     // Parse prices from response
     const prices: AssetPrices = {
-      BTC: this.parsePrice(data, TOKEN_MINTS.BTC),
-      ETH: this.parsePrice(data, TOKEN_MINTS.ETH),
-      SOL: this.parsePrice(data, TOKEN_MINTS.SOL),
+      BTC: data[TOKEN_MINTS.BTC]?.usdPrice ?? 0,
+      ETH: data[TOKEN_MINTS.ETH]?.usdPrice ?? 0,
+      SOL: data[TOKEN_MINTS.SOL]?.usdPrice ?? 0,
       fetchedAt: new Date(),
     };
 
@@ -115,15 +123,6 @@ export class PriceService {
    */
   clearCache(): void {
     this.cachedPrices = null;
-  }
-
-  private parsePrice(data: PriceApiResponse, mint: string): number {
-    const tokenData = data.data[mint];
-    if (!tokenData?.price) {
-      console.warn(`[PriceService] No price data for mint: ${mint}`);
-      return 0;
-    }
-    return parseFloat(tokenData.price);
   }
 
   private isCacheValid(): boolean {
