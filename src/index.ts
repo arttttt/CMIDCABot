@@ -57,17 +57,14 @@ async function main(): Promise<void> {
   // Initialize Solana service
   const solana = new SolanaService(config.solana);
 
-  // Initialize PriceService (only when using Jupiter prices with API key)
+  // Initialize PriceService (only when using Jupiter prices)
   let priceService: PriceService | undefined;
-  let effectivePriceSource = config.price.source;
 
   if (config.price.source === "jupiter") {
-    if (config.price.jupiterApiKey) {
-      priceService = new PriceService(config.price.jupiterApiKey);
-    } else {
-      console.warn("[Price] JUPITER_API_KEY not set, falling back to mock prices");
-      effectivePriceSource = "mock";
+    if (!config.price.jupiterApiKey) {
+      throw new Error("JUPITER_API_KEY is required when PRICE_SOURCE=jupiter");
     }
+    priceService = new PriceService(config.price.jupiterApiKey);
   }
 
   // Initialize mock database, DCA service and scheduler only in development mode
@@ -87,7 +84,7 @@ async function main(): Promise<void> {
       mockRepos.purchaseRepository,
       solana,
       config.isDev,
-      effectivePriceSource,
+      config.price.source,
       priceService,
     );
 
@@ -210,10 +207,7 @@ async function main(): Promise<void> {
     if (dcaScheduler) {
       console.log(`DCA: ${config.dca.amountUsdc} USDC every ${formatInterval(config.dca.intervalMs)}`);
     }
-    console.log(`Prices: ${effectivePriceSource === "jupiter" ? "Jupiter API (real-time)" : "Mock (static)"}`);
-    if (effectivePriceSource === "mock" && config.price.source === "jupiter") {
-      console.log(`Hint: Set JUPITER_API_KEY to enable Jupiter prices`);
-    }
+    console.log(`Prices: ${config.price.source === "jupiter" ? "Jupiter API (real-time)" : "Mock (static)"}`)
     console.log("─".repeat(50));
     console.log("Bot is ready! Send /start in Telegram to test.");
     console.log("Press Ctrl+C to stop.\n");
