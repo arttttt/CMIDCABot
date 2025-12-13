@@ -2,13 +2,13 @@
  * Price Service - Fetches real-time prices from Jupiter Price API v3
  * https://dev.jup.ag/docs/price
  *
- * Note: Jupiter Price API v3 requires an API key from https://portal.jup.ag
+ * Requires API key from https://portal.jup.ag (free Basic plan available)
  * Set JUPITER_API_KEY environment variable to use this service.
  */
 
 import { AssetSymbol } from "../types/portfolio.js";
 
-// Jupiter Price API v3
+// Jupiter Price API v3 endpoint (requires API key from https://portal.jup.ag)
 const JUPITER_PRICE_API = "https://api.jup.ag/price/v3";
 
 // Token mint addresses on Solana mainnet
