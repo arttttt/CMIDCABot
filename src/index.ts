@@ -12,6 +12,7 @@ import { createMainRepositories, createMockRepositories } from "./data/factories
 import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import { DcaScheduler } from "./services/DcaScheduler.js";
+import { PriceService } from "./services/price.js";
 import {
   InitUserUseCase,
   GetBalanceUseCase,
@@ -55,6 +56,9 @@ async function main(): Promise<void> {
   // Initialize Solana service
   const solana = new SolanaService(config.solana);
 
+  // Initialize PriceService (always available for real prices)
+  const priceService = new PriceService();
+
   // Initialize mock database, DCA service and scheduler only in development mode
   let dca: DcaService | undefined;
   let dcaScheduler: DcaScheduler | undefined;
@@ -72,6 +76,7 @@ async function main(): Promise<void> {
       mockRepos.purchaseRepository,
       solana,
       config.isDev,
+      priceService, // Use real Jupiter prices
     );
 
     // Create DCA scheduler if configured
@@ -191,6 +196,7 @@ async function main(): Promise<void> {
     if (dcaScheduler) {
       console.log(`DCA: ${config.dca.amountUsdc} USDC every ${formatInterval(config.dca.intervalMs)}`);
     }
+    console.log(`Prices: Jupiter API (real-time)`);
     console.log("─".repeat(50));
     console.log("Bot is ready! Send /start in Telegram to test.");
     console.log("Press Ctrl+C to stop.\n");
