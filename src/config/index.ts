@@ -1,4 +1,4 @@
-import { Config, DatabaseMode } from "../types/config.js";
+import { Config, DatabaseMode, PriceSource } from "../types/config.js";
 
 function getEnvOrThrow(key: string): string {
   const value = process.env[key];
@@ -55,6 +55,9 @@ export function loadConfig(): Config {
     },
     dcaWallet: {
       devPrivateKey: isDev ? devPrivateKey : undefined,
+    },
+    price: {
+      source: getEnvOrDefault("PRICE_SOURCE", "jupiter") as PriceSource,
     },
     web: webEnabled
       ? {

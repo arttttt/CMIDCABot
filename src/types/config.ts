@@ -9,6 +9,8 @@ export interface SolanaConfig {
 
 export type DatabaseMode = "sqlite" | "memory";
 
+export type PriceSource = "jupiter" | "mock";
+
 export interface DatabaseConfig {
   mode: DatabaseMode;
   path: string;
@@ -30,12 +32,17 @@ export interface DcaWalletConfig {
   devPrivateKey?: string;
 }
 
+export interface PriceConfig {
+  source: PriceSource;
+}
+
 export interface Config {
   telegram: TelegramConfig;
   solana: SolanaConfig;
   database: DatabaseConfig;
   dca: DcaConfig;
   dcaWallet: DcaWalletConfig;
+  price: PriceConfig;
   web?: WebConfig;
   isDev: boolean;
 }

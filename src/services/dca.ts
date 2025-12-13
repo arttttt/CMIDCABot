@@ -10,8 +10,9 @@ import { PortfolioBalances } from "../domain/models/Portfolio.js";
 import { SolanaService } from "./solana.js";
 import { PriceService } from "./price.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../types/portfolio.js";
+import { PriceSource } from "../types/config.js";
 
-// Fallback mock prices (USD) - used when PriceService is not available
+// Mock prices (USD) - used when PRICE_SOURCE=mock
 export const MOCK_PRICES: Record<AssetSymbol, number> = {
   BTC: 100000,
   ETH: 3500,
@@ -36,6 +37,7 @@ export interface PortfolioStatus {
 
 export class DcaService {
   private priceService: PriceService | null;
+  private priceSource: PriceSource;
 
   constructor(
     private userRepository: UserRepository,
@@ -43,31 +45,35 @@ export class DcaService {
     private purchaseRepository: PurchaseRepository,
     private solana: SolanaService,
     private isDev: boolean,
+    priceSource: PriceSource,
     priceService?: PriceService,
   ) {
-    this.priceService = priceService ?? null;
+    this.priceSource = priceSource;
+    this.priceService = priceSource === "jupiter" ? (priceService ?? null) : null;
   }
 
   /**
-   * Get current prices - uses Jupiter API if PriceService is available, otherwise fallback to mock
+   * Get current prices based on configured source (jupiter or mock)
    */
   async getCurrentPrices(): Promise<Record<AssetSymbol, number>> {
-    if (this.priceService) {
-      try {
-        return await this.priceService.getPricesRecord();
-      } catch (error) {
-        console.warn("[DCA] Failed to fetch prices from Jupiter, using fallback:", error);
-        return MOCK_PRICES;
-      }
+    if (this.priceSource === "jupiter" && this.priceService) {
+      return await this.priceService.getPricesRecord();
     }
     return MOCK_PRICES;
+  }
+
+  /**
+   * Get price source type
+   */
+  getPriceSource(): PriceSource {
+    return this.priceSource;
   }
 
   /**
    * Check if using real prices from Jupiter
    */
   isUsingRealPrices(): boolean {
-    return this.priceService !== null;
+    return this.priceSource === "jupiter";
   }
 
   /**

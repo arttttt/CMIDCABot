@@ -27,6 +27,7 @@ import {
   StartDcaUseCase,
   StopDcaUseCase,
   GetDcaStatusUseCase,
+  GetPricesUseCase,
 } from "./domain/usecases/index.js";
 import { ProtocolHandler, UseCases } from "./presentation/protocol/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
@@ -56,8 +57,8 @@ async function main(): Promise<void> {
   // Initialize Solana service
   const solana = new SolanaService(config.solana);
 
-  // Initialize PriceService (always available for real prices)
-  const priceService = new PriceService();
+  // Initialize PriceService (only when using Jupiter prices)
+  const priceService = config.price.source === "jupiter" ? new PriceService() : undefined;
 
   // Initialize mock database, DCA service and scheduler only in development mode
   let dca: DcaService | undefined;
@@ -76,7 +77,8 @@ async function main(): Promise<void> {
       mockRepos.purchaseRepository,
       solana,
       config.isDev,
-      priceService, // Use real Jupiter prices
+      config.price.source,
+      priceService,
     );
 
     // Create DCA scheduler if configured
@@ -121,6 +123,8 @@ async function main(): Promise<void> {
     startDca: new StartDcaUseCase(userRepository, dcaScheduler),
     stopDca: new StopDcaUseCase(userRepository, dcaScheduler),
     getDcaStatus: new GetDcaStatusUseCase(userRepository, dcaScheduler),
+    // Prices
+    getPrices: new GetPricesUseCase(dca),
   };
 
   // Create protocol handler
@@ -196,7 +200,8 @@ async function main(): Promise<void> {
     if (dcaScheduler) {
       console.log(`DCA: ${config.dca.amountUsdc} USDC every ${formatInterval(config.dca.intervalMs)}`);
     }
-    console.log(`Prices: Jupiter API (real-time)`);
+    console.log(`Prices: ${config.price.source === "jupiter" ? "Jupiter API (real-time)" : "Mock (static)"}`);
+    console.log(`Hint: Set PRICE_SOURCE=mock to use static prices`);
     console.log("─".repeat(50));
     console.log("Bot is ready! Send /start in Telegram to test.");
     console.log("Press Ctrl+C to stop.\n");

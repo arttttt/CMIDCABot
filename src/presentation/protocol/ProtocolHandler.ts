@@ -16,6 +16,7 @@ import {
   StartDcaUseCase,
   StopDcaUseCase,
   GetDcaStatusUseCase,
+  GetPricesUseCase,
 } from "../../domain/usecases/index.js";
 import {
   BalanceFormatter,
@@ -24,6 +25,7 @@ import {
   HelpFormatter,
   DcaWalletFormatter,
   DcaFormatter,
+  PriceFormatter,
 } from "../formatters/index.js";
 import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./types.js";
 
@@ -46,6 +48,8 @@ export interface UseCases {
   startDca: StartDcaUseCase;
   stopDca: StopDcaUseCase;
   getDcaStatus: GetDcaStatusUseCase;
+  // Prices
+  getPrices: GetPricesUseCase;
 }
 
 interface CommandConfig {
@@ -63,6 +67,7 @@ export class ProtocolHandler {
   private portfolioFormatter: PortfolioFormatter;
   private dcaWalletFormatter: DcaWalletFormatter;
   private dcaFormatter: DcaFormatter;
+  private priceFormatter: PriceFormatter;
 
   constructor(
     private useCases: UseCases,
@@ -74,6 +79,7 @@ export class ProtocolHandler {
     this.portfolioFormatter = new PortfolioFormatter();
     this.dcaWalletFormatter = new DcaWalletFormatter();
     this.dcaFormatter = new DcaFormatter();
+    this.priceFormatter = new PriceFormatter();
 
     this.registerCommands();
   }
@@ -118,6 +124,13 @@ export class ProtocolHandler {
       name: "reset",
       description: "Reset portfolio (dev mode)",
       handler: (_args, telegramId) => this.handleReset(telegramId),
+      devOnly: true,
+    });
+
+    this.registerCommand({
+      name: "prices",
+      description: "Show current asset prices (dev mode)",
+      handler: () => this.handlePrices(),
       devOnly: true,
     });
   }
@@ -264,5 +277,10 @@ export class ProtocolHandler {
     }
 
     return this.dcaFormatter.formatUnknownSubcommand();
+  }
+
+  private async handlePrices(): Promise<UIResponse> {
+    const result = await this.useCases.getPrices.execute();
+    return this.priceFormatter.format(result);
   }
 }
