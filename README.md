@@ -30,22 +30,27 @@ Create a `.env` file from the example:
 cp .env.example .env
 ```
 
-Fill in the variables:
+### Environment Variables
 
-```env
-# Environment (development | production)
-NODE_ENV=development
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `NODE_ENV` | No | `development` | Environment mode (`development` \| `production`) |
+| `TELEGRAM_BOT_TOKEN` | Yes* | - | Telegram bot token from @BotFather |
+| `SOLANA_RPC_URL` | No | `https://api.devnet.solana.com` | Solana RPC endpoint |
+| `SOLANA_NETWORK` | No | `devnet` | Solana network (`devnet` \| `mainnet-beta`) |
+| `DB_MODE` | No | `sqlite` | Database mode (`sqlite` \| `memory`) |
+| `DATABASE_PATH` | No | `./data/bot.db` | Path to SQLite database |
+| `MOCK_DATABASE_PATH` | No | `./data/mock.db` | Path to mock database (dev only) |
+| `DCA_AMOUNT_USDC` | No | `6` | Purchase amount in USDC equivalent |
+| `DCA_INTERVAL_MS` | No | `86400000` | Interval between purchases in ms (24h) |
+| `DEV_WALLET_PRIVATE_KEY` | No | - | Base64-encoded private key (dev only) |
+| `PRICE_SOURCE` | No | `jupiter` | Price source (`jupiter` \| `mock`) |
+| `JUPITER_API_KEY` | Yes** | - | Jupiter API key from portal.jup.ag |
+| `WEB_ENABLED` | No | `false` | Enable web test interface |
+| `WEB_PORT` | No | `3000` | Port for web interface |
 
-# Telegram Bot (get from @BotFather)
-TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
-
-# Solana
-SOLANA_RPC_URL=https://api.devnet.solana.com
-SOLANA_NETWORK=devnet
-
-# Database
-DATABASE_PATH=./data/bot.db
-```
+\* Not required if `WEB_ENABLED=true`
+\** Required when `PRICE_SOURCE=jupiter`
 
 ## Running
 
@@ -59,6 +64,7 @@ In development mode (`NODE_ENV=development`):
 - Debug logging for all incoming messages
 - Webhook is automatically deleted to enable polling
 - Hot-reload enabled via tsx
+- Additional dev-only commands available
 
 ### Web test interface
 
@@ -102,12 +108,29 @@ npx tsc --noEmit
 
 ## Bot commands
 
+### Always available
+
 | Command | Description |
 |---------|-------------|
 | `/start` | Welcome message and command list |
 | `/help` | Strategy description |
+| `/wallet` | Show DCA wallet info |
+| `/wallet create` | Create new DCA wallet |
+| `/wallet export` | Export private key |
+| `/wallet delete` | Delete DCA wallet |
+| `/balance` | Check SOL balance |
+
+### Development mode only
+
+| Command | Description |
+|---------|-------------|
 | `/status` | Portfolio status |
-| `/balance` | Check balances |
+| `/buy <amount>` | Mock purchase |
+| `/reset` | Reset portfolio |
+| `/dca` | Show DCA status |
+| `/dca start` | Start DCA automation |
+| `/dca stop` | Stop DCA automation |
+| `/prices` | Show current asset prices |
 
 ## Tech stack
 
