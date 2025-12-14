@@ -61,6 +61,63 @@ export class SolanaService {
     return Number(value) / Number(LAMPORTS_PER_SOL);
   }
 
+  /**
+   * Get SPL token balance for a wallet
+   * @param walletAddress - Wallet address to check
+   * @param tokenMint - Token mint address
+   * @param decimals - Token decimals (default 9)
+   * @returns Token balance or 0 if no account exists
+   */
+  async getTokenBalance(walletAddress: string, tokenMint: string, _decimals: number = 9): Promise<number> {
+    try {
+      const owner = address(walletAddress);
+      const mint = address(tokenMint);
+
+      const result = await this.rpc
+        .getTokenAccountsByOwner(
+          owner,
+          { mint },
+          { encoding: "jsonParsed" },
+        )
+        .send();
+
+      if (result.value.length === 0) {
+        return 0;
+      }
+
+      // Get the first token account (there should only be one per mint)
+      const accountData = result.value[0].account.data;
+
+      // Type guard for parsed data
+      if (typeof accountData === "object" && "parsed" in accountData) {
+        const parsed = accountData.parsed as {
+          info: { tokenAmount: { uiAmount: number } };
+        };
+        return parsed.info.tokenAmount.uiAmount ?? 0;
+      }
+
+      return 0;
+    } catch (error) {
+      logger.debug("Solana", "Failed to get token balance", {
+        wallet: walletAddress,
+        mint: tokenMint,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return 0;
+    }
+  }
+
+  /**
+   * Get USDC balance for a wallet
+   * @param walletAddress - Wallet address to check
+   * @returns USDC balance
+   */
+  async getUsdcBalance(walletAddress: string): Promise<number> {
+    // Circle USDC on Solana mainnet
+    const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+    return this.getTokenBalance(walletAddress, USDC_MINT, 6);
+  }
+
   isValidAddress(walletAddress: string): boolean {
     try {
       address(walletAddress);

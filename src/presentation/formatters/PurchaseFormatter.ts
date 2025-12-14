@@ -10,48 +10,63 @@ export class PurchaseFormatter {
     switch (result.type) {
       case "unavailable":
         return {
-          text: "Mock purchases are not available in this mode.",
+          text: "Portfolio purchases are not available. JUPITER_API_KEY is required.",
         };
 
       case "invalid_amount":
         return {
-          text: "Invalid amount. Please provide a positive number.\n\nExample: /portfolio buy 0.5",
+          text: result.error
+            ? `Invalid amount: ${result.error}`
+            : "Invalid amount. Please provide a positive number.\n\nExample: /portfolio buy 10",
         };
 
       case "no_wallet":
         return {
           text:
             "No wallet connected.\n\n" +
-            "Use /wallet set <address> to connect your Solana wallet first.",
+            "Use /wallet create to create a new wallet first.",
         };
 
       case "insufficient_balance":
         return {
           text:
-            `Insufficient SOL balance.\n\n` +
-            `Required: ${result.requiredBalance} SOL\n` +
-            `Available: ${result.availableBalance!.toFixed(4)} SOL`,
+            `Insufficient USDC balance.\n\n` +
+            `Required: ${result.requiredBalance} USDC\n` +
+            `Available: ${result.availableBalance?.toFixed(2) ?? "0"} USDC`,
         };
 
-      case "failed":
+      case "quote_error":
         return {
-          text: `Purchase failed: ${result.error}`,
+          text: `Failed to get quote: ${result.error}`,
         };
 
-      case "success":
+      case "build_error":
+        return {
+          text: `Failed to build transaction: ${result.error}`,
+        };
+
+      case "send_error":
+        return {
+          text: `Transaction failed: ${result.error}`,
+        };
+
+      case "success": {
+        const confirmStatus = result.confirmed ? "Confirmed" : "Pending";
+        const explorerUrl = `https://solscan.io/tx/${result.signature}`;
+
         return {
           text:
-            `Mock Purchase Complete\n` +
+            `Purchase Complete\n` +
             `${"─".repeat(25)}\n\n` +
             `Asset: ${result.asset}\n` +
             `Amount: ${result.amountAsset!.toFixed(8)} ${result.asset}\n` +
-            `Cost: ${result.amountSol} SOL\n` +
-            `Value: $${result.valueUsd!.toFixed(2)}\n` +
+            `Cost: ${result.amountUsdc} USDC\n` +
             `Price: $${result.priceUsd!.toLocaleString()}\n\n` +
-            `Note: This is a mock purchase. No real tokens were swapped.\n` +
-            `Your SOL balance was checked but not deducted.\n\n` +
-            `Use /portfolio to see your portfolio.`,
+            `Status: ${confirmStatus}\n` +
+            `[View on Solscan](${explorerUrl})\n\n` +
+            `Use /portfolio to see your updated portfolio.`,
         };
+      }
 
       default:
         return { text: "Unable to execute purchase." };
@@ -61,9 +76,9 @@ export class PurchaseFormatter {
   formatUsage(): UIResponse {
     return {
       text:
-        "Usage: /portfolio buy <amount_in_sol>\n\n" +
-        "Example: /portfolio buy 0.5\n\n" +
-        "This will mock-purchase the asset furthest below its target allocation.",
+        "Usage: /portfolio buy <amount_usdc>\n\n" +
+        "Example: /portfolio buy 10\n\n" +
+        "This will purchase the asset furthest below its target allocation.",
     };
   }
 }

@@ -18,14 +18,15 @@ export interface BalanceResult {
   wallet?: WalletInfo;
 }
 
-// Purchase result
+// Purchase result (real swap via Jupiter)
 export interface PurchaseResult {
-  type: "success" | "invalid_amount" | "no_wallet" | "insufficient_balance" | "failed" | "unavailable";
+  type: "success" | "invalid_amount" | "no_wallet" | "insufficient_balance" | "quote_error" | "build_error" | "send_error" | "unavailable";
   asset?: AssetSymbol;
   amountAsset?: number;
-  amountSol?: number;
+  amountUsdc?: number;
   priceUsd?: number;
-  valueUsd?: number;
+  signature?: string;
+  confirmed?: boolean;
   requiredBalance?: number;
   availableBalance?: number;
   error?: string;
@@ -35,11 +36,6 @@ export interface PurchaseResult {
 export interface PortfolioStatusResult {
   type: "success" | "empty" | "not_found" | "unavailable";
   status?: PortfolioStatus;
-}
-
-// Reset result
-export interface ResetResult {
-  type: "success" | "unavailable";
 }
 
 // Init user result

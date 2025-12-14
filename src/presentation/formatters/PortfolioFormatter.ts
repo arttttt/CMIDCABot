@@ -2,7 +2,7 @@
  * Portfolio formatter - domain objects to UI response
  */
 
-import { PortfolioStatusResult, ResetResult } from "../../domain/usecases/types.js";
+import { PortfolioStatusResult } from "../../domain/usecases/types.js";
 import { TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { UIResponse } from "../protocol/types.js";
 
@@ -11,12 +11,14 @@ export class PortfolioFormatter {
     switch (result.type) {
       case "unavailable":
         return {
-          text: "Portfolio tracking is only available in development mode.",
+          text: "Portfolio tracking is not available. JUPITER_API_KEY is required.",
         };
 
       case "not_found":
         return {
-          text: "Portfolio not found. Use /portfolio buy <amount> to make your first purchase.",
+          text:
+            "No wallet connected.\n\n" +
+            "Use /wallet create to create a wallet first.",
         };
 
       case "empty":
@@ -24,32 +26,39 @@ export class PortfolioFormatter {
           text:
             "Your portfolio is empty.\n\n" +
             "Target allocations:\n" +
-            `- BTC: ${(TARGET_ALLOCATIONS.BTC * 100).toFixed(0)}%\n` +
-            `- ETH: ${(TARGET_ALLOCATIONS.ETH * 100).toFixed(0)}%\n` +
-            `- SOL: ${(TARGET_ALLOCATIONS.SOL * 100).toFixed(0)}%\n\n` +
-            "Use /portfolio buy <amount> to make a mock purchase.",
+            `• BTC: ${(TARGET_ALLOCATIONS.BTC * 100).toFixed(0)}%\n` +
+            `• ETH: ${(TARGET_ALLOCATIONS.ETH * 100).toFixed(0)}%\n` +
+            `• SOL: ${(TARGET_ALLOCATIONS.SOL * 100).toFixed(0)}%\n\n` +
+            "Use /portfolio buy <amount_usdc> to start building your portfolio.",
         };
 
       case "success": {
         const status = result.status!;
-        let text = "Portfolio Status (Mock)\n";
+        let text = "Portfolio Status\n";
         text += "─".repeat(25) + "\n\n";
 
         for (const alloc of status.allocations) {
           const currentPct = (alloc.currentAllocation * 100).toFixed(1);
           const targetPct = (alloc.targetAllocation * 100).toFixed(0);
-          const devPct = (alloc.deviation * 100).toFixed(1);
-          const devSign = alloc.deviation >= 0 ? "+" : "";
+          const devPct = Math.abs(alloc.deviation * 100).toFixed(1);
+          const devIndicator = alloc.deviation >= 0 ? "▲" : "▼";
+          const devSign = alloc.deviation >= 0 ? "+" : "-";
 
           text += `${alloc.symbol}\n`;
-          text += `  Balance: ${alloc.balance.toFixed(8)}\n`;
+          text += `  Balance: ${this.formatBalance(alloc.balance, alloc.symbol)}\n`;
           text += `  Value: $${alloc.valueInUsdc.toFixed(2)}\n`;
-          text += `  Alloc: ${currentPct}% / ${targetPct}% (${devSign}${devPct}%)\n\n`;
+          text += `  Alloc: ${currentPct}% / ${targetPct}% ${devIndicator} ${devSign}${devPct}%\n\n`;
         }
 
         text += "─".repeat(25) + "\n";
         text += `Total: $${status.totalValueInUsdc.toFixed(2)}\n\n`;
-        text += `Next buy: ${status.assetToBuy} (${(status.maxDeviation * 100).toFixed(1)}% below target)`;
+
+        if (status.maxDeviation < 0) {
+          const deviationPct = Math.abs(status.maxDeviation * 100).toFixed(1);
+          text += `Next buy: ${status.assetToBuy} (${deviationPct}% below target)`;
+        } else {
+          text += `Portfolio is balanced`;
+        }
 
         return { text };
       }
@@ -59,31 +68,24 @@ export class PortfolioFormatter {
     }
   }
 
-  formatReset(result: ResetResult): UIResponse {
-    if (result.type === "unavailable") {
-      return {
-        text: "Portfolio reset is only available in development mode.",
-      };
-    }
-
-    return {
-      text:
-        "Portfolio Reset Complete\n" +
-        "─".repeat(25) + "\n\n" +
-        "All balances set to 0.\n" +
-        "Purchase history cleared.\n\n" +
-        "Use /portfolio buy <amount> to start fresh.",
-    };
-  }
-
   formatUnknownSubcommand(): UIResponse {
     return {
       text:
         "Unknown portfolio command.\n\n" +
         "Available commands:\n" +
         "/portfolio - Show portfolio status\n" +
-        "/portfolio buy <amount> - Mock purchase\n" +
-        "/portfolio reset - Reset portfolio",
+        "/portfolio buy <amount> - Buy asset (USDC)",
     };
+  }
+
+  private formatBalance(balance: number, symbol: string): string {
+    // Format based on asset type
+    if (symbol === "BTC") {
+      return balance.toFixed(8);
+    } else if (symbol === "ETH") {
+      return balance.toFixed(6);
+    } else {
+      return balance.toFixed(4);
+    }
   }
 }
