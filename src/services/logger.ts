@@ -1,70 +1,123 @@
 /**
- * Logger service for detailed dev mode logging
- * Only logs when NODE_ENV=development
+ * Logger interface for dependency injection
+ * Implementations can be swapped based on environment
  */
 
-const isDev = process.env.NODE_ENV !== "production";
-
-type LogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR";
-
-function formatTimestamp(): string {
-  return new Date().toISOString();
+export interface Logger {
+  debug(component: string, message: string, data?: Record<string, unknown>): void;
+  info(component: string, message: string, data?: Record<string, unknown>): void;
+  warn(component: string, message: string, data?: Record<string, unknown>): void;
+  error(component: string, message: string, data?: Record<string, unknown>): void;
+  step(component: string, stepNumber: number, totalSteps: number, description: string): void;
+  api(component: string, method: string, url: string, status?: number, duration?: number): void;
+  tx(component: string, event: string, data?: Record<string, unknown>): void;
 }
 
-function log(level: LogLevel, component: string, message: string, data?: Record<string, unknown>): void {
-  if (!isDev) return;
-
-  const timestamp = formatTimestamp();
-  const prefix = `[${level}] ${timestamp} [${component}]`;
-
-  if (data) {
-    console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
-  } else {
-    console.log(`${prefix} ${message}`);
+/**
+ * Debug logger for development mode
+ * Outputs detailed logs to console
+ */
+export class DebugLogger implements Logger {
+  private formatTimestamp(): string {
+    return new Date().toISOString();
   }
-}
 
-export const logger = {
-  debug: (component: string, message: string, data?: Record<string, unknown>) =>
-    log("DEBUG", component, message, data),
+  debug(component: string, message: string, data?: Record<string, unknown>): void {
+    const timestamp = this.formatTimestamp();
+    if (data) {
+      console.log(`[DEBUG] ${timestamp} [${component}] ${message}`, JSON.stringify(data, null, 2));
+    } else {
+      console.log(`[DEBUG] ${timestamp} [${component}] ${message}`);
+    }
+  }
 
-  info: (component: string, message: string, data?: Record<string, unknown>) =>
-    log("INFO", component, message, data),
+  info(component: string, message: string, data?: Record<string, unknown>): void {
+    const timestamp = this.formatTimestamp();
+    if (data) {
+      console.log(`[INFO] ${timestamp} [${component}] ${message}`, JSON.stringify(data, null, 2));
+    } else {
+      console.log(`[INFO] ${timestamp} [${component}] ${message}`);
+    }
+  }
 
-  warn: (component: string, message: string, data?: Record<string, unknown>) =>
-    log("WARN", component, message, data),
+  warn(component: string, message: string, data?: Record<string, unknown>): void {
+    const timestamp = this.formatTimestamp();
+    if (data) {
+      console.log(`[WARN] ${timestamp} [${component}] ${message}`, JSON.stringify(data, null, 2));
+    } else {
+      console.log(`[WARN] ${timestamp} [${component}] ${message}`);
+    }
+  }
 
-  error: (component: string, message: string, data?: Record<string, unknown>) =>
-    log("ERROR", component, message, data),
+  error(component: string, message: string, data?: Record<string, unknown>): void {
+    const timestamp = this.formatTimestamp();
+    if (data) {
+      console.error(`[ERROR] ${timestamp} [${component}] ${message}`, JSON.stringify(data, null, 2));
+    } else {
+      console.error(`[ERROR] ${timestamp} [${component}] ${message}`);
+    }
+  }
 
-  /**
-   * Log a step in a multi-step operation
-   */
-  step: (component: string, stepNumber: number, totalSteps: number, description: string) => {
-    if (!isDev) return;
-    console.log(`[STEP] ${formatTimestamp()} [${component}] (${stepNumber}/${totalSteps}) ${description}`);
-  },
+  step(component: string, stepNumber: number, totalSteps: number, description: string): void {
+    const timestamp = this.formatTimestamp();
+    console.log(`[STEP] ${timestamp} [${component}] (${stepNumber}/${totalSteps}) ${description}`);
+  }
 
-  /**
-   * Log API request/response
-   */
-  api: (component: string, method: string, url: string, status?: number, duration?: number) => {
-    if (!isDev) return;
+  api(component: string, method: string, url: string, status?: number, duration?: number): void {
+    const timestamp = this.formatTimestamp();
     const statusStr = status ? ` → ${status}` : "";
     const durationStr = duration ? ` (${duration}ms)` : "";
-    console.log(`[API] ${formatTimestamp()} [${component}] ${method} ${url}${statusStr}${durationStr}`);
-  },
+    console.log(`[API] ${timestamp} [${component}] ${method} ${url}${statusStr}${durationStr}`);
+  }
 
-  /**
-   * Log transaction-related events
-   */
-  tx: (component: string, event: string, data?: Record<string, unknown>) => {
-    if (!isDev) return;
-    const timestamp = formatTimestamp();
+  tx(component: string, event: string, data?: Record<string, unknown>): void {
+    const timestamp = this.formatTimestamp();
     if (data) {
       console.log(`[TX] ${timestamp} [${component}] ${event}`, JSON.stringify(data, null, 2));
     } else {
       console.log(`[TX] ${timestamp} [${component}] ${event}`);
     }
-  },
+  }
+}
+
+/**
+ * No-op logger for production mode
+ * Does nothing - can be replaced with analytics service later
+ */
+export class NoOpLogger implements Logger {
+  debug(): void {}
+  info(): void {}
+  warn(): void {}
+  error(): void {}
+  step(): void {}
+  api(): void {}
+  tx(): void {}
+}
+
+/**
+ * Global logger instance
+ * Set via setLogger() at application startup
+ */
+let globalLogger: Logger = new NoOpLogger();
+
+export function setLogger(logger: Logger): void {
+  globalLogger = logger;
+}
+
+export function getLogger(): Logger {
+  return globalLogger;
+}
+
+/**
+ * Convenience export for direct usage
+ * Uses the global logger instance
+ */
+export const logger: Logger = {
+  debug: (...args) => globalLogger.debug(...args),
+  info: (...args) => globalLogger.info(...args),
+  warn: (...args) => globalLogger.warn(...args),
+  error: (...args) => globalLogger.error(...args),
+  step: (...args) => globalLogger.step(...args),
+  api: (...args) => globalLogger.api(...args),
+  tx: (...args) => globalLogger.tx(...args),
 };
