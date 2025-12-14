@@ -1,4 +1,4 @@
-# CMI DCA
+# CMI DCA Bot
 
 Telegram bot for automated DCA (Dollar Cost Averaging) investing in cryptocurrencies on Solana.
 
