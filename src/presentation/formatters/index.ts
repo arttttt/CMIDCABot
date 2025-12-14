@@ -10,3 +10,4 @@ export { DcaWalletFormatter } from "./DcaWalletFormatter.js";
 export { DcaFormatter } from "./DcaFormatter.js";
 export { PriceFormatter } from "./PriceFormatter.js";
 export { QuoteFormatter } from "./QuoteFormatter.js";
+export { SimulateFormatter } from "./SimulateFormatter.js";

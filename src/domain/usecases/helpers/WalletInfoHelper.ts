@@ -32,4 +32,11 @@ export class WalletInfoHelper {
   async getDevWalletInfo(): Promise<DcaWalletInfo> {
     return this.getWalletInfo(this.config.devPrivateKey!, true);
   }
+
+  async getDevWalletAddress(): Promise<string | undefined> {
+    if (!this.config.devPrivateKey) {
+      return undefined;
+    }
+    return this.solana.getAddressFromPrivateKey(this.config.devPrivateKey);
+  }
 }

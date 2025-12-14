@@ -30,6 +30,7 @@ import {
   GetDcaStatusUseCase,
   GetPricesUseCase,
   GetQuoteUseCase,
+  SimulateSwapUseCase,
 } from "./domain/usecases/index.js";
 import { ProtocolHandler, UseCases } from "./presentation/protocol/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
@@ -143,6 +144,13 @@ async function main(): Promise<void> {
     getPrices: new GetPricesUseCase(dca),
     // Quote
     getQuote: new GetQuoteUseCase(jupiterSwap),
+    // Simulate
+    simulateSwap: new SimulateSwapUseCase(
+      jupiterSwap,
+      solana,
+      userRepository,
+      config.dcaWallet.devPrivateKey,
+    ),
   };
 
   // Create protocol handler
