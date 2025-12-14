@@ -37,7 +37,6 @@ cp .env.example .env
 | `NODE_ENV` | No | `development` | Environment mode (`development` \| `production`) |
 | `TELEGRAM_BOT_TOKEN` | Yes* | - | Telegram bot token from @BotFather |
 | `SOLANA_RPC_URL` | No | `https://api.devnet.solana.com` | Solana RPC endpoint |
-| `SOLANA_NETWORK` | No | `devnet` | Solana network (`devnet` \| `mainnet-beta`) |
 | `DB_MODE` | No | `sqlite` | Database mode (`sqlite` \| `memory`) |
 | `DATABASE_PATH` | No | `./data/bot.db` | Path to SQLite database |
 | `MOCK_DATABASE_PATH` | No | `./data/mock.db` | Path to mock database (dev only) |

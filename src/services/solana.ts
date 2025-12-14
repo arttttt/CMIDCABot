@@ -58,10 +58,8 @@ export interface ValidatePrivateKeyResult {
 
 export class SolanaService {
   private rpc: Rpc<SolanaRpcApi>;
-  private config: SolanaConfig;
 
   constructor(config: SolanaConfig) {
-    this.config = config;
     this.rpc = createSolanaRpc(config.rpcUrl);
   }
 
@@ -150,10 +148,6 @@ export class SolanaService {
 
   getRpc(): Rpc<SolanaRpcApi> {
     return this.rpc;
-  }
-
-  getNetwork(): string {
-    return this.config.network;
   }
 
   /**

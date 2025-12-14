@@ -42,7 +42,6 @@ export function loadConfig(): Config {
     },
     solana: {
       rpcUrl: getEnvOrDefault("SOLANA_RPC_URL", "https://api.devnet.solana.com"),
-      network: getEnvOrDefault("SOLANA_NETWORK", "devnet") as "devnet" | "mainnet-beta",
     },
     database: {
       mode: getEnvOrDefault("DB_MODE", "sqlite") as DatabaseMode,
