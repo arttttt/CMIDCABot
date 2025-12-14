@@ -17,6 +17,7 @@ import {
   StopDcaUseCase,
   GetDcaStatusUseCase,
   GetPricesUseCase,
+  GetQuoteUseCase,
 } from "../../domain/usecases/index.js";
 import {
   BalanceFormatter,
@@ -26,6 +27,7 @@ import {
   DcaWalletFormatter,
   DcaFormatter,
   PriceFormatter,
+  QuoteFormatter,
 } from "../formatters/index.js";
 import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./types.js";
 
@@ -50,6 +52,8 @@ export interface UseCases {
   getDcaStatus: GetDcaStatusUseCase;
   // Prices
   getPrices: GetPricesUseCase;
+  // Quote
+  getQuote: GetQuoteUseCase;
 }
 
 interface CommandConfig {
@@ -68,6 +72,7 @@ export class ProtocolHandler {
   private dcaWalletFormatter: DcaWalletFormatter;
   private dcaFormatter: DcaFormatter;
   private priceFormatter: PriceFormatter;
+  private quoteFormatter: QuoteFormatter;
 
   constructor(
     private useCases: UseCases,
@@ -80,6 +85,7 @@ export class ProtocolHandler {
     this.dcaWalletFormatter = new DcaWalletFormatter();
     this.dcaFormatter = new DcaFormatter();
     this.priceFormatter = new PriceFormatter();
+    this.quoteFormatter = new QuoteFormatter();
 
     this.registerCommands();
   }
@@ -131,6 +137,13 @@ export class ProtocolHandler {
       name: "prices",
       description: "Show current asset prices (dev mode)",
       handler: () => this.handlePrices(),
+      devOnly: true,
+    });
+
+    this.registerCommand({
+      name: "quote",
+      description: "Get swap quote USDC→asset (dev mode)",
+      handler: (args) => this.handleQuote(args),
       devOnly: true,
     });
   }
@@ -282,5 +295,17 @@ export class ProtocolHandler {
   private async handlePrices(): Promise<UIResponse> {
     const result = await this.useCases.getPrices.execute();
     return this.priceFormatter.format(result);
+  }
+
+  private async handleQuote(args: string[]): Promise<UIResponse> {
+    const amountStr = args[0];
+    if (!amountStr) {
+      return this.quoteFormatter.formatUsage();
+    }
+
+    const amount = parseFloat(amountStr);
+    const asset = args[1] || "SOL";
+    const result = await this.useCases.getQuote.execute(amount, asset);
+    return this.quoteFormatter.format(result);
   }
 }

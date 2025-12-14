@@ -13,6 +13,7 @@ import { SolanaService } from "./services/solana.js";
 import { DcaService } from "./services/dca.js";
 import { DcaScheduler } from "./services/DcaScheduler.js";
 import { PriceService } from "./services/price.js";
+import { JupiterSwapService } from "./services/jupiter-swap.js";
 import {
   InitUserUseCase,
   GetBalanceUseCase,
@@ -28,6 +29,7 @@ import {
   StopDcaUseCase,
   GetDcaStatusUseCase,
   GetPricesUseCase,
+  GetQuoteUseCase,
 } from "./domain/usecases/index.js";
 import { ProtocolHandler, UseCases } from "./presentation/protocol/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
@@ -65,6 +67,13 @@ async function main(): Promise<void> {
       throw new Error("JUPITER_API_KEY is required when PRICE_SOURCE=jupiter");
     }
     priceService = new PriceService(config.price.jupiterApiKey);
+  }
+
+  // Initialize JupiterSwapService (for quote/swap operations, requires API key)
+  let jupiterSwap: JupiterSwapService | undefined;
+
+  if (config.price.jupiterApiKey) {
+    jupiterSwap = new JupiterSwapService(config.price.jupiterApiKey);
   }
 
   // Initialize mock database, DCA service and scheduler only in development mode
@@ -132,6 +141,8 @@ async function main(): Promise<void> {
     getDcaStatus: new GetDcaStatusUseCase(userRepository, dcaScheduler),
     // Prices
     getPrices: new GetPricesUseCase(dca),
+    // Quote
+    getQuote: new GetQuoteUseCase(jupiterSwap),
   };
 
   // Create protocol handler

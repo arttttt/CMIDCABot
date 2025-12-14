@@ -31,3 +31,6 @@ export { GetDcaStatusUseCase } from "./GetDcaStatusUseCase.js";
 
 // Prices
 export { GetPricesUseCase } from "./GetPricesUseCase.js";
+
+// Quote
+export { GetQuoteUseCase } from "./GetQuoteUseCase.js";
