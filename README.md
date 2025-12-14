@@ -37,7 +37,6 @@ cp .env.example .env
 | `NODE_ENV` | No | `development` | Environment mode (`development` \| `production`) |
 | `TELEGRAM_BOT_TOKEN` | Yes* | - | Telegram bot token from @BotFather |
 | `SOLANA_RPC_URL` | No | `https://api.devnet.solana.com` | Solana RPC endpoint |
-| `SOLANA_NETWORK` | No | `devnet` | Solana network (`devnet` \| `mainnet-beta`) |
 | `DB_MODE` | No | `sqlite` | Database mode (`sqlite` \| `memory`) |
 | `DATABASE_PATH` | No | `./data/bot.db` | Path to SQLite database |
 | `MOCK_DATABASE_PATH` | No | `./data/mock.db` | Path to mock database (dev only) |
@@ -141,14 +140,6 @@ npx tsc --noEmit
 - **@solana/web3.js** v2 — Solana SDK
 - **better-sqlite3** + **Kysely** — Local database with type-safe query builder
 - **tsx** — Run TypeScript without compilation
-
-## Devnet
-
-This project runs on Solana Devnet only. To get test SOL:
-
-1. Go to [Solana Faucet](https://faucet.solana.com/)
-2. Enter your wallet address
-3. Request test tokens
 
 ## License
 

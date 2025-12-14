@@ -4,7 +4,6 @@ export interface TelegramConfig {
 
 export interface SolanaConfig {
   rpcUrl: string;
-  network: "devnet" | "mainnet-beta";
 }
 
 export type DatabaseMode = "sqlite" | "memory";

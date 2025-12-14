@@ -193,7 +193,6 @@ async function main(): Promise<void> {
     console.log("─".repeat(50));
     console.log("WEB TEST INTERFACE");
     console.log("─".repeat(50));
-    console.log(`Network: ${config.solana.network}`);
     console.log(`RPC: ${config.solana.rpcUrl}`);
     console.log("─".repeat(50));
 
@@ -249,7 +248,6 @@ async function main(): Promise<void> {
     console.log("DEVELOPMENT MODE");
     console.log("─".repeat(50));
     console.log(`Bot: @${botInfo.username}`);
-    console.log(`Network: ${config.solana.network}`);
     console.log(`RPC: ${config.solana.rpcUrl}`);
     console.log(`Mode: Long Polling (local)`);
     if (dcaScheduler) {
@@ -261,7 +259,6 @@ async function main(): Promise<void> {
     console.log("Press Ctrl+C to stop.\n");
   } else {
     console.log(`Bot @${botInfo.username} starting...`);
-    console.log(`Network: ${config.solana.network}`);
     console.log(`RPC: ${config.solana.rpcUrl}`);
   }
 

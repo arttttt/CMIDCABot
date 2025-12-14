@@ -126,7 +126,6 @@ Correctness over completeness. A compact, accurate patch beats a broad, speculat
 ```env
 TELEGRAM_BOT_TOKEN=           # from @BotFather
 SOLANA_RPC_URL=https://api.devnet.solana.com
-SOLANA_NETWORK=devnet
 ```
 
 ## Useful Links
