@@ -63,6 +63,36 @@ export interface SwapQuote {
   minOutputAmount: number;
   route: string[];
   fetchedAt: Date;
+  // Raw response needed for building swap transaction
+  rawQuoteResponse: JupiterQuoteResponse;
+}
+
+export interface JupiterSwapResponse {
+  swapTransaction: string; // Base64 encoded transaction
+  lastValidBlockHeight: number;
+  prioritizationFeeLamports: number;
+  computeUnitLimit: number;
+  prioritizationType: {
+    computeBudget: {
+      microLamports: number;
+      estimatedMicroLamports: number;
+    };
+  };
+  dynamicSlippageReport?: {
+    slippageBps: number;
+    otherAmount: number;
+    simulatedIncurredSlippageBps: number;
+    amplificationRatio: string;
+  };
+}
+
+export interface SwapTransaction {
+  // Base64 encoded serialized transaction
+  transactionBase64: string;
+  // Block height after which transaction is invalid
+  lastValidBlockHeight: number;
+  // Estimated priority fee in lamports
+  priorityFeeLamports: number;
 }
 
 export interface QuoteParams {
@@ -135,6 +165,50 @@ export class JupiterSwapService {
       minOutputAmount,
       route,
       fetchedAt: new Date(),
+      rawQuoteResponse: data,
+    };
+  }
+
+  /**
+   * Build a swap transaction from a quote
+   * Returns a serialized transaction ready for signing
+   */
+  async buildSwapTransaction(
+    quote: SwapQuote,
+    userPublicKey: string,
+  ): Promise<SwapTransaction> {
+    const response = await fetch(`${this.baseUrl}/swap`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": this.apiKey,
+      },
+      body: JSON.stringify({
+        quoteResponse: quote.rawQuoteResponse,
+        userPublicKey,
+        // Use dynamic slippage for better execution
+        dynamicSlippage: { maxBps: 300 }, // Max 3% slippage
+        // Priority fee settings
+        prioritizationFeeLamports: {
+          priorityLevelWithMaxLamports: {
+            maxLamports: 1000000, // Max 0.001 SOL for priority
+            priorityLevel: "medium",
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Jupiter Swap API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const data = (await response.json()) as JupiterSwapResponse;
+
+    return {
+      transactionBase64: data.swapTransaction,
+      lastValidBlockHeight: data.lastValidBlockHeight,
+      priorityFeeLamports: data.prioritizationFeeLamports,
     };
   }
 
