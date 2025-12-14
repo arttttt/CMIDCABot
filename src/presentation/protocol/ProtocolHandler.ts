@@ -224,13 +224,10 @@ export class ProtocolHandler {
 
     // Look up command
     const config = this.commands.get(command);
-    if (!config) {
-      return { text: `Unknown command: ${command}\nUse /help to see available commands.` };
-    }
 
-    // Check dev-only access
-    if (config.devOnly && !this.isDev) {
-      return { text: `This command is only available in development mode.` };
+    // Command not found OR dev-only command in production mode
+    if (!config || (config.devOnly && !this.isDev)) {
+      return { text: `Unknown command: ${command}\nUse /help to see available commands.` };
     }
 
     return config.handler(args, telegramId);
