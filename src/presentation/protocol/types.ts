@@ -17,6 +17,8 @@ export interface UIButton {
 export interface UIResponse {
   text: string;
   buttons?: UIButton[][];
+  /** If true, the adapter should delete the user's original message (for sensitive data like private keys) */
+  deleteUserMessage?: boolean;
 }
 
 /**

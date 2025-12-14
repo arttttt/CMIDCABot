@@ -46,6 +46,16 @@ export interface SendTransactionResult {
   confirmed: boolean;
 }
 
+/**
+ * Result of private key validation
+ */
+export interface ValidatePrivateKeyResult {
+  valid: boolean;
+  address?: string;
+  normalizedKey?: string;
+  error?: string;
+}
+
 export class SolanaService {
   private rpc: Rpc<SolanaRpcApi>;
   private config: SolanaConfig;
@@ -189,6 +199,57 @@ export class SolanaService {
   async getAddressFromPrivateKey(privateKeyBase64: string): Promise<string> {
     const signer = await this.createSignerFromPrivateKey(privateKeyBase64);
     return signer.address;
+  }
+
+  /**
+   * Validates that a string is a valid Solana Ed25519 private key
+   *
+   * Solana uses Ed25519 keys with 32-byte seeds.
+   * This function checks:
+   * 1. Valid base64 encoding
+   * 2. Correct length (32 bytes for seed, or 64 bytes for full keypair)
+   * 3. Can derive a valid Solana address
+   *
+   * Note: This naturally rejects Ethereum keys (secp256k1) because:
+   * - ETH keys are typically hex-encoded, not base64
+   * - Even if base64-encoded, Ed25519 derivation would fail
+   */
+  async validatePrivateKey(privateKeyBase64: string): Promise<ValidatePrivateKeyResult> {
+    try {
+      // Check valid base64
+      const decoded = Buffer.from(privateKeyBase64, "base64");
+
+      // Re-encode to verify it's proper base64 (not just any string)
+      const reencoded = decoded.toString("base64");
+      if (reencoded !== privateKeyBase64) {
+        return { valid: false, error: "Invalid base64 encoding" };
+      }
+
+      // Check length: Solana Ed25519 seed is 32 bytes, full keypair is 64 bytes
+      if (decoded.length !== 32 && decoded.length !== 64) {
+        return {
+          valid: false,
+          error: `Invalid key length: ${decoded.length} bytes (expected 32 or 64)`,
+        };
+      }
+
+      // Normalize: if 64 bytes, use only the first 32 (the seed)
+      const seed = decoded.length === 64 ? decoded.slice(0, 32) : decoded;
+      const normalizedKey = seed.toString("base64");
+
+      // Try to derive address - this validates the key can create a valid Ed25519 keypair
+      const address = await this.getAddressFromPrivateKey(normalizedKey);
+
+      // Verify the address is valid Solana format (base58, 32-44 chars)
+      if (!this.isValidAddress(address)) {
+        return { valid: false, error: "Derived address is not a valid Solana address" };
+      }
+
+      return { valid: true, address, normalizedKey };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { valid: false, error: `Invalid Solana private key: ${message}` };
+    }
   }
 
   /**

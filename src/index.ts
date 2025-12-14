@@ -22,6 +22,7 @@ import {
   WalletInfoHelper,
   ShowWalletUseCase,
   CreateWalletUseCase,
+  ImportWalletUseCase,
   DeleteWalletUseCase,
   ExportWalletKeyUseCase,
   StartDcaUseCase,
@@ -152,6 +153,7 @@ async function main(): Promise<void> {
     // Wallet
     showWallet: new ShowWalletUseCase(userRepository, walletHelper),
     createWallet: new CreateWalletUseCase(userRepository, solana, walletHelper),
+    importWallet: new ImportWalletUseCase(userRepository, solana, walletHelper),
     deleteWallet: new DeleteWalletUseCase(userRepository, walletHelper),
     exportWalletKey: new ExportWalletKeyUseCase(userRepository, config.dcaWallet),
     // DCA

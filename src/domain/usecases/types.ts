@@ -70,6 +70,12 @@ export interface ExportKeyResult {
   isDevWallet?: boolean;
 }
 
+export interface ImportWalletResult {
+  type: "imported" | "already_exists" | "invalid_key" | "dev_mode";
+  wallet?: DcaWalletInfo;
+  error?: string;
+}
+
 // DCA start/stop result types
 export interface DcaStartResult {
   type: "started" | "already_active" | "no_wallet" | "unavailable";
