@@ -100,35 +100,35 @@ export class ProtocolHandler {
     // Base commands (always available)
     this.registerCommand({
       name: "wallet",
-      description: "Manage your DCA wallet",
+      description: "Wallet management (create/import/export/delete)",
       handler: (args, telegramId) => this.handleWallet(args, telegramId),
     });
 
     // Dev-only commands
     this.registerCommand({
       name: "dca",
-      description: "Manage DCA (start/stop)",
+      description: "Automatic purchases (status/start/stop)",
       handler: (args, telegramId) => this.handleDca(args, telegramId),
       devOnly: true,
     });
 
     this.registerCommand({
       name: "portfolio",
-      description: "Portfolio status and DCA buy",
+      description: "Portfolio status and manual buy",
       handler: (args, telegramId) => this.handlePortfolio(args, telegramId),
       devOnly: true,
     });
 
     this.registerCommand({
       name: "prices",
-      description: "Show current asset prices",
+      description: "Current prices for BTC, ETH, SOL",
       handler: () => this.handlePrices(),
       devOnly: true,
     });
 
     this.registerCommand({
       name: "swap",
-      description: "Swap operations (quote/simulate/execute)",
+      description: "Swap USDC to assets (quote/simulate/execute)",
       handler: (args, telegramId) => this.handleSwap(args, telegramId),
       devOnly: true,
     });
@@ -172,13 +172,13 @@ export class ProtocolHandler {
     if (command === "/start") {
       await this.useCases.initUser.execute(telegramId);
       return {
-        text: this.helpFormatter.formatStartMessage(this.getAvailableCommands()),
+        text: this.helpFormatter.formatStartMessage(this.isDev),
       };
     }
 
     if (command === "/help") {
       return {
-        text: this.helpFormatter.formatHelp(this.getAvailableCommands(), this.isDev),
+        text: this.helpFormatter.formatHelp(this.isDev),
       };
     }
 

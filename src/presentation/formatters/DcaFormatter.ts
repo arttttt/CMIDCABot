@@ -80,7 +80,7 @@ export class DcaFormatter {
             `**DCA Status: Active**\n\n` +
             `Your automatic purchases are enabled.\n` +
             `Scheduler: ${result.isSchedulerRunning ? "Running" : "Waiting"}\n\n` +
-            `Use /dca stop to disable.`,
+            `_Command: /dca stop to disable_`,
         };
 
       case "inactive":
@@ -89,15 +89,15 @@ export class DcaFormatter {
             `**DCA Status: Inactive**\n\n` +
             `Your automatic purchases are disabled.\n` +
             `Scheduler: ${result.isSchedulerRunning ? "Running (other users)" : "Stopped"}\n\n` +
-            `Use /dca start to enable.`,
+            `_Command: /dca start to enable_`,
         };
 
       case "no_wallet":
         return {
           text:
             `**DCA Status: No Wallet**\n\n` +
-            `You need to connect a wallet first.\n\n` +
-            `Use /wallet create to create a wallet.`,
+            `You need a wallet first.\n\n` +
+            `_Command: /wallet create or /wallet import <key>_`,
         };
 
       case "unavailable":

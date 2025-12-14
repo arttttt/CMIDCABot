@@ -2,37 +2,136 @@
  * Help formatter - format help and start messages
  */
 
-import { UICommand } from "../protocol/types.js";
+interface SubcommandInfo {
+  command: string;
+  description: string;
+}
+
+interface CommandHelpDetails {
+  name: string;
+  description: string;
+  subcommands?: SubcommandInfo[];
+}
 
 export class HelpFormatter {
-  formatHelp(commands: UICommand[], isDev: boolean): string {
-    const commandList = commands
-      .map((cmd) => `/${cmd.name} - ${cmd.description}`)
-      .join("\n");
-
-    let text =
-      "Healthy Crypto Index DCA Bot\n\n" +
-      "Target allocations:\n" +
-      "- BTC: 40%\n" +
-      "- ETH: 30%\n" +
-      "- SOL: 30%\n\n" +
-      "Commands:\n" +
-      commandList +
-      "\n\n" +
-      "The bot purchases the asset furthest below its target allocation.";
+  private getCommandDetails(isDev: boolean): CommandHelpDetails[] {
+    const commands: CommandHelpDetails[] = [
+      {
+        name: "wallet",
+        description: "Manage your DCA wallet",
+        subcommands: [
+          { command: "/wallet", description: "Show current wallet" },
+          { command: "/wallet create", description: "Create new wallet" },
+          { command: "/wallet import <key>", description: "Import existing wallet" },
+          { command: "/wallet export", description: "Export private key" },
+          { command: "/wallet delete", description: "Delete wallet" },
+        ],
+      },
+    ];
 
     if (isDev) {
-      text += "\n\nNote: In development mode, purchases are simulated without real swaps.";
+      commands.push(
+        {
+          name: "dca",
+          description: "Manage automatic purchases",
+          subcommands: [
+            { command: "/dca", description: "Show DCA status" },
+            { command: "/dca start", description: "Start automatic purchases" },
+            { command: "/dca stop", description: "Stop automatic purchases" },
+          ],
+        },
+        {
+          name: "portfolio",
+          description: "Portfolio status and manual purchases",
+          subcommands: [
+            { command: "/portfolio", description: "Show portfolio status" },
+            { command: "/portfolio buy <usdc>", description: "Buy asset for USDC amount" },
+          ],
+        },
+        {
+          name: "prices",
+          description: "Show current asset prices (BTC, ETH, SOL)",
+        },
+        {
+          name: "swap",
+          description: "Manual swap operations via Jupiter",
+          subcommands: [
+            { command: "/swap quote <usdc> [asset]", description: "Get swap quote (read-only)" },
+            { command: "/swap simulate <usdc> [asset]", description: "Simulate swap transaction" },
+            { command: "/swap execute <usdc> [asset]", description: "Execute real swap" },
+          ],
+        },
+      );
+    }
+
+    return commands;
+  }
+
+  formatHelp(isDev: boolean): string {
+    const details = this.getCommandDetails(isDev);
+
+    let text = "**Healthy Crypto Index DCA Bot**\n\n";
+    text += "Target allocations:\n";
+    text += "- BTC: 40%\n";
+    text += "- ETH: 30%\n";
+    text += "- SOL: 30%\n\n";
+    text += "The bot purchases the asset furthest below its target allocation.\n\n";
+    text += "─".repeat(30) + "\n";
+    text += "**Commands**\n";
+    text += "─".repeat(30) + "\n\n";
+
+    for (const cmd of details) {
+      text += `**/${cmd.name}** - ${cmd.description}\n`;
+      if (cmd.subcommands) {
+        for (const sub of cmd.subcommands) {
+          text += `  \`${sub.command}\`\n`;
+          text += `    ${sub.description}\n`;
+        }
+      }
+      text += "\n";
+    }
+
+    if (isDev) {
+      text += "─".repeat(30) + "\n";
+      text += "_Development mode: purchases are simulated._";
     }
 
     return text;
   }
 
-  formatStartMessage(commands: UICommand[]): string {
-    const commandList = commands
-      .map((cmd) => `/${cmd.name} - ${cmd.description}`)
-      .join("\n");
+  formatStartMessage(isDev: boolean = false): string {
+    let text = "**DCA Bot for Solana**\n\n";
+    text += "Automated dollar-cost averaging into BTC, ETH, and SOL.\n\n";
+    text += "**Quick Start:**\n";
+    text += "1. `/wallet create` - Create your wallet\n";
+    text += "2. Deposit SOL to fund transactions\n";
+    if (isDev) {
+      text += "3. `/dca start` - Enable automatic purchases\n";
+    }
+    text += "\nUse `/help` for full command reference.";
+    return text;
+  }
 
-    return "DCA Bot for Solana\n\n" + "Commands:\n" + commandList;
+  formatCommandHelp(commandName: string, isDev: boolean): string | null {
+    const details = this.getCommandDetails(isDev);
+    const cmd = details.find((c) => c.name === commandName);
+
+    if (!cmd) {
+      return null;
+    }
+
+    let text = `**/${cmd.name}** - ${cmd.description}\n\n`;
+
+    if (cmd.subcommands) {
+      text += "**Subcommands:**\n";
+      for (const sub of cmd.subcommands) {
+        text += `\`${sub.command}\`\n`;
+        text += `  ${sub.description}\n\n`;
+      }
+    } else {
+      text += `Usage: \`/${cmd.name}\``;
+    }
+
+    return text;
   }
 }
