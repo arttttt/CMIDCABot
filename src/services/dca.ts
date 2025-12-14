@@ -11,6 +11,7 @@ import { SolanaService } from "./solana.js";
 import { PriceService } from "./price.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../types/portfolio.js";
 import { PriceSource } from "../types/config.js";
+import { logger } from "./logger.js";
 
 // Mock prices (USD) - used when PRICE_SOURCE=mock
 export const MOCK_PRICES: Record<AssetSymbol, number> = {
@@ -262,7 +263,7 @@ export class DcaService {
    */
   async executeDcaForAllUsers(amountUsdc: number): Promise<{ processed: number; successful: number }> {
     if (!this.isMockMode()) {
-      console.log("[DCA] Skipping - not in development mode");
+      logger.debug("DcaService", "Skipping - not in development mode");
       return { processed: 0, successful: 0 };
     }
 
@@ -280,7 +281,11 @@ export class DcaService {
       // Check balance (but don't deduct in mock mode)
       const balanceCheck = await this.checkSolBalance(user.walletAddress, requiredSol);
       if (!balanceCheck.sufficient) {
-        console.log(`[DCA] User ${user.telegramId}: Insufficient balance (${balanceCheck.balance} SOL, need ${requiredSol.toFixed(4)} SOL for ${amountUsdc} USDC)`);
+        logger.warn("DcaService", "Insufficient balance", {
+          telegramId: user.telegramId,
+          balance: balanceCheck.balance,
+          required: requiredSol,
+        });
         continue;
       }
 
@@ -288,7 +293,11 @@ export class DcaService {
       const result = await this.executeMockPurchase(user.telegramId, amountUsdc);
       if (result.success) {
         successful++;
-        console.log(`[DCA] User ${user.telegramId}: ${result.message}`);
+        logger.info("DcaService", "Mock purchase executed", {
+          telegramId: user.telegramId,
+          asset: result.asset,
+          amount: result.amount,
+        });
       }
     }
 
@@ -300,7 +309,7 @@ export class DcaService {
    */
   async executeDcaForActiveUsers(amountUsdc: number): Promise<{ processed: number; successful: number }> {
     if (!this.isMockMode()) {
-      console.log("[DCA] Skipping - not in development mode");
+      logger.debug("DcaService", "Skipping - not in development mode");
       return { processed: 0, successful: 0 };
     }
 
@@ -309,9 +318,11 @@ export class DcaService {
     let successful = 0;
 
     if (users.length === 0) {
-      console.log("[DCA] No active users to process");
+      logger.debug("DcaService", "No active users to process");
       return { processed: 0, successful: 0 };
     }
+
+    logger.info("DcaService", "Processing active users", { count: users.length });
 
     // Get current prices for SOL conversion
     const prices = await this.getCurrentPrices();
@@ -323,7 +334,11 @@ export class DcaService {
       // Check balance (but don't deduct in mock mode)
       const balanceCheck = await this.checkSolBalance(user.walletAddress, requiredSol);
       if (!balanceCheck.sufficient) {
-        console.log(`[DCA] User ${user.telegramId}: Insufficient balance (${balanceCheck.balance} SOL, need ${requiredSol.toFixed(4)} SOL for ${amountUsdc} USDC)`);
+        logger.warn("DcaService", "Insufficient balance", {
+          telegramId: user.telegramId,
+          balance: balanceCheck.balance,
+          required: requiredSol,
+        });
         continue;
       }
 
@@ -331,7 +346,11 @@ export class DcaService {
       const result = await this.executeMockPurchase(user.telegramId, amountUsdc);
       if (result.success) {
         successful++;
-        console.log(`[DCA] User ${user.telegramId}: ${result.message}`);
+        logger.info("DcaService", "Mock purchase executed", {
+          telegramId: user.telegramId,
+          asset: result.asset,
+          amount: result.amount,
+        });
       }
     }
 

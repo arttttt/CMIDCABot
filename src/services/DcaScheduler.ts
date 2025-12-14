@@ -6,6 +6,7 @@
 import { UserRepository } from "../domain/repositories/UserRepository.js";
 import { SchedulerRepository } from "../domain/repositories/SchedulerRepository.js";
 import { DcaService } from "./dca.js";
+import { logger } from "./logger.js";
 
 export interface DcaSchedulerConfig {
   intervalMs: number;
@@ -67,16 +68,19 @@ export class DcaScheduler {
     const hasActive = await this.userRepository.hasActiveDcaUsers();
 
     if (!hasActive) {
-      console.log("[DCA Scheduler] No active users - not starting scheduler");
+      logger.info("DcaScheduler", "No active users - not starting scheduler");
       return false;
     }
 
     if (this.isRunning) {
-      console.log("[DCA Scheduler] Already running");
+      logger.debug("DcaScheduler", "Already running");
       return true;
     }
 
-    console.log(`[DCA Scheduler] Starting scheduler: ${this.config.amountUsdc} USDC every ${this.formatInterval(this.config.intervalMs)}`);
+    logger.info("DcaScheduler", "Starting scheduler", {
+      amountUsdc: this.config.amountUsdc,
+      interval: this.formatInterval(this.config.intervalMs),
+    });
 
     // Initialize scheduler state in database
     await this.schedulerRepository.initState(this.config.intervalMs);
@@ -95,7 +99,7 @@ export class DcaScheduler {
    */
   stop(): void {
     if (!this.isRunning) {
-      console.log("[DCA Scheduler] Already stopped");
+      logger.debug("DcaScheduler", "Already stopped");
       return;
     }
 
@@ -106,7 +110,7 @@ export class DcaScheduler {
 
     this.isRunning = false;
     this.notifyStatusChange();
-    console.log("[DCA Scheduler] Stopped");
+    logger.info("DcaScheduler", "Stopped");
   }
 
   /**
@@ -117,10 +121,10 @@ export class DcaScheduler {
     const hasActive = await this.userRepository.hasActiveDcaUsers();
 
     if (!hasActive && this.isRunning) {
-      console.log("[DCA Scheduler] No more active users - stopping scheduler");
+      logger.info("DcaScheduler", "No more active users - stopping scheduler");
       this.stop();
     } else if (hasActive && !this.isRunning) {
-      console.log("[DCA Scheduler] Active users found - starting scheduler");
+      logger.info("DcaScheduler", "Active users found - starting scheduler");
       await this.start();
     }
   }
@@ -129,17 +133,23 @@ export class DcaScheduler {
    * Run DCA for a specific timestamp
    */
   private async runDca(timestamp: Date): Promise<boolean> {
-    console.log(`[DCA Scheduler] Running scheduled purchase for ${timestamp.toISOString()}`);
+    logger.info("DcaScheduler", "Running scheduled purchase", {
+      timestamp: timestamp.toISOString(),
+    });
 
     try {
       const result = await this.dcaService.executeDcaForActiveUsers(this.config.amountUsdc);
-      console.log(`[DCA Scheduler] Completed: ${result.successful}/${result.processed} users processed successfully`);
+      logger.info("DcaScheduler", "Completed", {
+        successful: result.successful,
+        processed: result.processed,
+      });
 
       // Update last run time after successful execution
       await this.schedulerRepository.updateLastRunAt(timestamp);
       return true;
     } catch (error) {
-      console.error("[DCA Scheduler] Error:", error);
+      const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("DcaScheduler", "Error running DCA", { error: message });
       return false;
     }
   }
@@ -163,7 +173,10 @@ export class DcaScheduler {
     }
 
     const delay = Math.max(0, nextRunTime - Date.now());
-    console.log(`[DCA Scheduler] Next run scheduled at ${new Date(nextRunTime).toISOString()} (in ${this.formatInterval(delay)})`);
+    logger.info("DcaScheduler", "Next run scheduled", {
+      nextRunAt: new Date(nextRunTime).toISOString(),
+      delay: this.formatInterval(delay),
+    });
 
     this.timeoutId = setTimeout(async () => {
       if (!this.isRunning) {
@@ -173,13 +186,15 @@ export class DcaScheduler {
       const success = await this.runDca(new Date());
       if (success) {
         this.scheduleNextRun().catch((error) => {
-          console.error("[DCA Scheduler] Failed to schedule next run:", error);
+          const message = error instanceof Error ? error.message : "Unknown error";
+          logger.error("DcaScheduler", "Failed to schedule next run", { error: message });
         });
       } else {
-        console.log("[DCA Scheduler] Retrying in 1 minute...");
+        logger.warn("DcaScheduler", "Retrying in 1 minute...");
         this.timeoutId = setTimeout(() => {
           this.scheduleNextRun().catch((error) => {
-            console.error("[DCA Scheduler] Failed to schedule next run:", error);
+            const message = error instanceof Error ? error.message : "Unknown error";
+            logger.error("DcaScheduler", "Failed to schedule next run", { error: message });
           });
         }, 60000);
       }
@@ -194,7 +209,7 @@ export class DcaScheduler {
     const lastRunAt = state?.lastRunAt ? state.lastRunAt.getTime() : null;
 
     if (!lastRunAt) {
-      console.log("[DCA Scheduler] No previous run found - scheduling first run");
+      logger.info("DcaScheduler", "No previous run found - scheduling first run");
       await this.scheduleNextRun();
       return;
     }
@@ -204,29 +219,36 @@ export class DcaScheduler {
     const missedIntervals = Math.floor(timeSinceLastRun / this.config.intervalMs);
 
     if (missedIntervals <= 0) {
-      console.log("[DCA Scheduler] No missed intervals - scheduling next run");
+      logger.debug("DcaScheduler", "No missed intervals - scheduling next run");
       await this.scheduleNextRun();
       return;
     }
 
-    console.log(`[DCA Scheduler] Detected ${missedIntervals} missed interval(s) - catching up...`);
+    logger.info("DcaScheduler", "Catching up missed intervals", {
+      missedIntervals,
+    });
 
     for (let i = 1; i <= missedIntervals; i++) {
       if (!this.isRunning) {
-        console.log("[DCA Scheduler] Stopped during catch-up");
+        logger.warn("DcaScheduler", "Stopped during catch-up");
         return;
       }
 
       const missedTimestamp = new Date(lastRunAt + i * this.config.intervalMs);
-      console.log(`[DCA Scheduler] Catching up missed run ${i}/${missedIntervals}`);
+      logger.debug("DcaScheduler", "Catching up missed run", {
+        current: i,
+        total: missedIntervals,
+      });
       const success = await this.runDca(missedTimestamp);
       if (!success) {
-        console.error(`[DCA Scheduler] Failed to catch up run ${i} - stopping catch-up`);
+        logger.error("DcaScheduler", "Failed to catch up run - stopping catch-up", {
+          failedRun: i,
+        });
         break;
       }
     }
 
-    console.log("[DCA Scheduler] Catch-up complete - scheduling next run");
+    logger.info("DcaScheduler", "Catch-up complete - scheduling next run");
     await this.scheduleNextRun();
   }
 }

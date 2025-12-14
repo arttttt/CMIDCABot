@@ -5,6 +5,7 @@
 import { UserRepository } from "../repositories/UserRepository.js";
 import { DcaScheduler } from "../../services/DcaScheduler.js";
 import { DcaStartResult } from "./types.js";
+import { logger } from "../../services/logger.js";
 
 export class StartDcaUseCase {
   constructor(
@@ -13,7 +14,10 @@ export class StartDcaUseCase {
   ) {}
 
   async execute(telegramId: number): Promise<DcaStartResult> {
+    logger.info("StartDca", "Starting DCA", { telegramId });
+
     if (!this.dcaScheduler) {
+      logger.warn("StartDca", "DCA scheduler unavailable");
       return { type: "unavailable" };
     }
 
@@ -21,10 +25,12 @@ export class StartDcaUseCase {
     const user = await this.userRepository.getById(telegramId);
 
     if (!user?.walletAddress) {
+      logger.warn("StartDca", "No wallet connected", { telegramId });
       return { type: "no_wallet" };
     }
 
     if (user.isDcaActive) {
+      logger.debug("StartDca", "DCA already active", { telegramId });
       return {
         type: "already_active",
         isSchedulerRunning: this.dcaScheduler.getIsRunning(),
@@ -33,6 +39,11 @@ export class StartDcaUseCase {
 
     await this.userRepository.setDcaActive(telegramId, true);
     await this.dcaScheduler.onUserStatusChanged();
+
+    logger.info("StartDca", "DCA started", {
+      telegramId,
+      isSchedulerRunning: this.dcaScheduler.getIsRunning(),
+    });
 
     return {
       type: "started",

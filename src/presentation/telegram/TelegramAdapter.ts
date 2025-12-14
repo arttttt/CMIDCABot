@@ -6,6 +6,7 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { ProtocolHandler } from "../protocol/index.js";
 import { UIResponse } from "../protocol/types.js";
+import { logger } from "../../services/logger.js";
 
 function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
   if (!response.buttons?.length) return undefined;
@@ -44,17 +45,16 @@ export function createTelegramBot(
       const chat = ctx.chat;
       const text = ctx.message?.text ?? ctx.callbackQuery?.data ?? "[no text]";
 
-      console.log(
-        `[DEBUG] ${new Date().toISOString()} | ` +
-          `User: ${user?.username ?? user?.id ?? "unknown"} | ` +
-          `Chat: ${chat?.id ?? "unknown"} | ` +
-          `Message: ${text}`,
-      );
+      logger.debug("TelegramBot", "Incoming message", {
+        user: user?.username ?? user?.id ?? "unknown",
+        chatId: chat?.id ?? "unknown",
+        message: text,
+      });
 
       await next();
 
       const ms = Date.now() - start;
-      console.log(`[DEBUG] Response time: ${ms}ms`);
+      logger.debug("TelegramBot", "Response sent", { responseTimeMs: ms });
     });
   }
 
@@ -82,7 +82,8 @@ export function createTelegramBot(
 
   // Error handling
   bot.catch((err) => {
-    console.error("Bot error:", err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    logger.error("TelegramBot", "Bot error", { error: message });
   });
 
   return bot;

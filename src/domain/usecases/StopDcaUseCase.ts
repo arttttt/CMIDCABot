@@ -5,6 +5,7 @@
 import { UserRepository } from "../repositories/UserRepository.js";
 import { DcaScheduler } from "../../services/DcaScheduler.js";
 import { DcaStopResult } from "./types.js";
+import { logger } from "../../services/logger.js";
 
 export class StopDcaUseCase {
   constructor(
@@ -13,13 +14,17 @@ export class StopDcaUseCase {
   ) {}
 
   async execute(telegramId: number): Promise<DcaStopResult> {
+    logger.info("StopDca", "Stopping DCA", { telegramId });
+
     if (!this.dcaScheduler) {
+      logger.warn("StopDca", "DCA scheduler unavailable");
       return { type: "unavailable" };
     }
 
     const user = await this.userRepository.getById(telegramId);
 
     if (!user?.isDcaActive) {
+      logger.debug("StopDca", "DCA not active", { telegramId });
       return {
         type: "not_active",
         isSchedulerRunning: this.dcaScheduler.getIsRunning(),
@@ -28,6 +33,11 @@ export class StopDcaUseCase {
 
     await this.userRepository.setDcaActive(telegramId, false);
     await this.dcaScheduler.onUserStatusChanged();
+
+    logger.info("StopDca", "DCA stopped", {
+      telegramId,
+      isSchedulerRunning: this.dcaScheduler.getIsRunning(),
+    });
 
     return {
       type: "stopped",

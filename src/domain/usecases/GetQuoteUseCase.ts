@@ -6,6 +6,7 @@
 import { JupiterSwapService, SwapQuote } from "../../services/jupiter-swap.js";
 import { TOKEN_MINTS } from "../../services/price.js";
 import { AssetSymbol } from "../../types/portfolio.js";
+import { logger } from "../../services/logger.js";
 
 export type GetQuoteResult =
   | { status: "success"; quote: SwapQuote }
@@ -25,12 +26,16 @@ export class GetQuoteUseCase {
    * @param asset Target asset (BTC, ETH, SOL). Defaults to SOL.
    */
   async execute(amountUsdc: number, asset: string = "SOL"): Promise<GetQuoteResult> {
+    logger.info("GetQuote", "Getting swap quote", { amountUsdc, asset });
+
     if (!this.jupiterSwap) {
+      logger.warn("GetQuote", "Jupiter service unavailable");
       return { status: "unavailable" };
     }
 
     // Validate amount
     if (isNaN(amountUsdc) || amountUsdc <= 0) {
+      logger.warn("GetQuote", "Invalid amount", { amountUsdc });
       return {
         status: "invalid_amount",
         message: "Amount must be a positive number",
@@ -39,6 +44,7 @@ export class GetQuoteUseCase {
 
     // Minimum amount check
     if (amountUsdc < 0.01) {
+      logger.warn("GetQuote", "Amount below minimum", { amountUsdc });
       return {
         status: "invalid_amount",
         message: "Minimum amount is 0.01 USDC",
@@ -48,6 +54,7 @@ export class GetQuoteUseCase {
     // Validate asset
     const assetUpper = asset.toUpperCase() as AssetSymbol;
     if (!SUPPORTED_ASSETS.includes(assetUpper)) {
+      logger.warn("GetQuote", "Invalid asset", { asset });
       return {
         status: "invalid_asset",
         message: `Unsupported asset: ${asset}. Supported: ${SUPPORTED_ASSETS.join(", ")}`,
@@ -58,9 +65,15 @@ export class GetQuoteUseCase {
 
     try {
       const quote = await this.jupiterSwap.getQuoteUsdcToToken(amountUsdc, outputMint);
+      logger.info("GetQuote", "Quote received", {
+        inputAmount: quote.inputAmount,
+        outputAmount: quote.outputAmount,
+        priceImpact: quote.priceImpactPct,
+      });
       return { status: "success", quote };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("GetQuote", "Quote failed", { error: message });
       return { status: "error", message };
     }
   }

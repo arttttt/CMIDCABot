@@ -5,6 +5,7 @@
 
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { ProtocolHandler } from "../protocol/index.js";
+import { logger } from "../../services/logger.js";
 
 const HTML_PAGE = `<!DOCTYPE html>
 <html lang="en">
@@ -357,14 +358,15 @@ export async function startWebServer(
       // Serve HTML page
       sendHtml(res, HTML_PAGE);
     } catch (error) {
-      console.error("Web server error:", error);
+      const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("WebServer", "Web server error", { error: message });
       sendJson(res, { error: "Internal server error" }, 500);
     }
   });
 
   return new Promise((resolve) => {
     server.listen(port, () => {
-      console.log(`Web interface running at http://localhost:${port}`);
+      logger.info("WebServer", "Web interface running", { port, url: `http://localhost:${port}` });
       resolve();
     });
   });
