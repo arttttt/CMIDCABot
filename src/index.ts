@@ -7,6 +7,7 @@ try {
 
 import { Kysely } from "kysely";
 import { loadConfig } from "./config/index.js";
+import { setLogger, DebugLogger, NoOpLogger } from "./services/logger.js";
 import { createMainDatabase, createMockDatabase } from "./data/datasources/KyselyDatabase.js";
 import { createMainRepositories, createMockRepositories } from "./data/factories/RepositoryFactory.js";
 import { SolanaService } from "./services/solana.js";
@@ -41,6 +42,9 @@ import type { MainDatabase, MockDatabase } from "./data/types/database.js";
 async function main(): Promise<void> {
   const config = loadConfig();
   const dbMode = config.database.mode;
+
+  // Initialize logger based on environment
+  setLogger(config.isDev ? new DebugLogger() : new NoOpLogger());
 
   console.log(`Database mode: ${dbMode}`);
 

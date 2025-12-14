@@ -14,6 +14,7 @@ import {
   signTransaction,
 } from "@solana/transactions";
 import { SolanaConfig } from "../types/index.js";
+import { logger } from "./logger.js";
 
 const LAMPORTS_PER_SOL = 1_000_000_000n;
 
@@ -130,7 +131,11 @@ export class SolanaService {
    * @returns SimulationResult with success status, error, compute units, and logs
    */
   async simulateTransaction(transactionBase64: string): Promise<SimulationResult> {
+    logger.step("Solana", 2, 2, "Simulating transaction...");
+
     try {
+      const startTime = Date.now();
+
       // Call simulateTransaction RPC method
       // The transaction is already base64 encoded from Jupiter
       // Cast to branded type - Jupiter returns valid base64 transactions
@@ -142,6 +147,7 @@ export class SolanaService {
         })
         .send();
 
+      const duration = Date.now() - startTime;
       const { value } = result;
 
       // Check if simulation succeeded
@@ -157,15 +163,36 @@ export class SolanaService {
         }
       }
 
-      return {
+      const simulationResult = {
         success,
         error: errorMessage,
         unitsConsumed: value.unitsConsumed ? Number(value.unitsConsumed) : null,
         logs: value.logs ?? [],
       };
+
+      if (success) {
+        logger.tx("Solana", "Simulation SUCCESS", {
+          unitsConsumed: simulationResult.unitsConsumed,
+          duration: `${duration}ms`,
+        });
+      } else {
+        logger.tx("Solana", "Simulation FAILED", {
+          error: errorMessage,
+          duration: `${duration}ms`,
+        });
+        // Log relevant transaction logs for debugging
+        if (value.logs && value.logs.length > 0) {
+          logger.debug("Solana", "Simulation logs", {
+            logs: value.logs.slice(-10), // Last 10 logs
+          });
+        }
+      }
+
+      return simulationResult;
     } catch (error) {
       // Handle RPC errors
       const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error("Solana", "Simulation RPC error", { error: errorMessage });
       return {
         success: false,
         error: `Simulation RPC error: ${errorMessage}`,
@@ -188,9 +215,12 @@ export class SolanaService {
   ): Promise<SendTransactionResult> {
     try {
       // 1. Create signer from private key
+      logger.step("Solana", 1, 4, "Creating signer from private key...");
       const signer = await this.createSignerFromPrivateKey(privateKeyBase64);
+      logger.debug("Solana", "Signer created", { address: signer.address });
 
       // 2. Decode base64 transaction to bytes
+      logger.step("Solana", 2, 4, "Decoding and signing transaction...");
       const transactionBytes = Buffer.from(transactionBase64, "base64");
 
       // 3. Decode bytes to Transaction object
@@ -206,6 +236,9 @@ export class SolanaService {
       const signedBase64 = Buffer.from(signedBytes).toString("base64") as Base64EncodedWireTransaction;
 
       // 6. Send the transaction
+      logger.step("Solana", 3, 4, "Sending transaction to network...");
+      const sendStartTime = Date.now();
+
       const signature = await this.rpc
         .sendTransaction(signedBase64, {
           encoding: "base64",
@@ -214,8 +247,29 @@ export class SolanaService {
         })
         .send();
 
+      const sendDuration = Date.now() - sendStartTime;
+      logger.tx("Solana", "Transaction sent", {
+        signature,
+        duration: `${sendDuration}ms`,
+      });
+
       // 7. Wait for confirmation (poll for status)
+      logger.step("Solana", 4, 4, "Waiting for confirmation...");
+      const confirmStartTime = Date.now();
       const confirmed = await this.waitForConfirmation(signature, 30000); // 30 second timeout
+      const confirmDuration = Date.now() - confirmStartTime;
+
+      if (confirmed) {
+        logger.tx("Solana", "Transaction CONFIRMED", {
+          signature,
+          confirmationTime: `${confirmDuration}ms`,
+        });
+      } else {
+        logger.warn("Solana", "Transaction confirmation timeout", {
+          signature,
+          timeout: "30s",
+        });
+      }
 
       return {
         success: true,
@@ -225,6 +279,7 @@ export class SolanaService {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error("Solana", "Transaction failed", { error: errorMessage });
       return {
         success: false,
         signature: null,

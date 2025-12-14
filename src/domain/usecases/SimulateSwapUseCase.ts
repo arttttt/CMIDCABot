@@ -14,6 +14,7 @@ import { SolanaService, SimulationResult } from "../../services/solana.js";
 import { TOKEN_MINTS } from "../../services/price.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
+import { logger } from "../../services/logger.js";
 
 export type SimulateSwapResult =
   | {
@@ -50,8 +51,15 @@ export class SimulateSwapUseCase {
     amountUsdc: number,
     asset: string = "SOL",
   ): Promise<SimulateSwapResult> {
+    logger.info("SimulateSwap", "Starting simulation", {
+      telegramId,
+      amountUsdc,
+      asset,
+    });
+
     // Check if Jupiter is available
     if (!this.jupiterSwap) {
+      logger.warn("SimulateSwap", "Jupiter service unavailable");
       return { status: "unavailable" };
     }
 
@@ -97,31 +105,47 @@ export class SimulateSwapUseCase {
     const outputMint = TOKEN_MINTS[assetUpper];
 
     // Step 1: Get quote
+    logger.step("SimulateSwap", 1, 3, "Getting quote from Jupiter...");
     let quote: SwapQuote;
     try {
       quote = await this.jupiterSwap.getQuoteUsdcToToken(amountUsdc, outputMint);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("SimulateSwap", "Quote failed", { error: message });
       return { status: "quote_error", message };
     }
 
     // Step 2: Build transaction
+    logger.step("SimulateSwap", 2, 3, "Building transaction...");
     let transactionBase64: string;
     try {
       const swapTx = await this.jupiterSwap.buildSwapTransaction(quote, walletAddress);
       transactionBase64 = swapTx.transactionBase64;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("SimulateSwap", "Build failed", { error: message });
       return { status: "build_error", message };
     }
 
     // Step 3: Simulate transaction
+    logger.step("SimulateSwap", 3, 3, "Running simulation...");
     let simulation: SimulationResult;
     try {
       simulation = await this.solanaService.simulateTransaction(transactionBase64);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("SimulateSwap", "Simulation error", { error: message });
       return { status: "simulation_error", message };
+    }
+
+    if (simulation.success) {
+      logger.info("SimulateSwap", "Simulation completed successfully", {
+        unitsConsumed: simulation.unitsConsumed,
+      });
+    } else {
+      logger.warn("SimulateSwap", "Simulation failed", {
+        error: simulation.error,
+      });
     }
 
     return {
