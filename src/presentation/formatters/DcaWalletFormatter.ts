@@ -150,6 +150,10 @@ export class DcaWalletFormatter {
   }
 
   formatImportWallet(result: ImportWalletResult): UIResponse {
+    // Always delete user's message containing private key for security
+    const deleteUserMessage = true;
+    const securityNotice = `\n\n**Security:** Your message with the private key has been deleted.`;
+
     switch (result.type) {
       case "imported":
         return {
@@ -157,7 +161,9 @@ export class DcaWalletFormatter {
             `**Wallet Imported!**\n\n` +
             this.formatWalletInfo(result.wallet!) +
             `\n\nYour wallet has been successfully imported.\n\n` +
-            `**Note:** Your private key is stored securely for DCA operations.`,
+            `**Note:** Your private key is stored securely for DCA operations.` +
+            securityNotice,
+          deleteUserMessage,
         };
 
       case "already_exists":
@@ -165,7 +171,9 @@ export class DcaWalletFormatter {
           text:
             `Wallet already exists.\n\n` +
             this.formatWalletInfo(result.wallet!) +
-            `\n\nTo import a different wallet, first delete the existing one with /wallet delete.`,
+            `\n\nTo import a different wallet, first delete the existing one with /wallet delete.` +
+            securityNotice,
+          deleteUserMessage,
         };
 
       case "invalid_key":
@@ -176,7 +184,9 @@ export class DcaWalletFormatter {
             `**Expected format:**\n` +
             `- Base64-encoded Ed25519 private key (32 or 64 bytes)\n` +
             `- Example: \`/wallet import ABC123...xyz=\`\n\n` +
-            `**Note:** Only Solana wallets are supported. Ethereum and other chain keys will not work.`,
+            `**Note:** Only Solana wallets are supported. Ethereum and other chain keys will not work.` +
+            securityNotice,
+          deleteUserMessage,
         };
 
       case "dev_mode":
@@ -184,11 +194,13 @@ export class DcaWalletFormatter {
           text:
             `[DEV MODE] Cannot import wallets.\n\n` +
             `Using shared development wallet:\n` +
-            this.formatWalletInfo(result.wallet!),
+            this.formatWalletInfo(result.wallet!) +
+            securityNotice,
+          deleteUserMessage,
         };
 
       default:
-        return { text: "Unable to import wallet." };
+        return { text: "Unable to import wallet.", deleteUserMessage };
     }
   }
 
@@ -200,10 +212,10 @@ export class DcaWalletFormatter {
         `Provide your Solana private key in base64 format.\n\n` +
         `**Example:**\n` +
         `/wallet import ABC123...xyz=\n\n` +
-        `**Security Warning:**\n` +
+        `**Security:**\n` +
+        `- Your message with the key will be automatically deleted\n` +
         `- Only import keys you trust\n` +
-        `- Never share your private key\n` +
-        `- The key will be stored for DCA operations`,
+        `- The key will be stored securely for DCA operations`,
     };
   }
 

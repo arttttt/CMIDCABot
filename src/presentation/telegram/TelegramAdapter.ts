@@ -66,6 +66,19 @@ export function createTelegramBot(
       username: ctx.from.username,
       text: ctx.message.text,
     });
+
+    // Delete user's message if it contains sensitive data (e.g., private keys)
+    if (response.deleteUserMessage) {
+      try {
+        await ctx.deleteMessage();
+      } catch (error) {
+        // Deletion may fail if bot lacks permissions or message is too old
+        logger.debug("TelegramBot", "Failed to delete user message", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
     await sendResponse(ctx, response);
   });
 
