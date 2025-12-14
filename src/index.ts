@@ -130,7 +130,7 @@ async function main(): Promise<void> {
     // User
     initUser: new InitUserUseCase(userRepository, dca),
     // Balance
-    getBalance: new GetBalanceUseCase(userRepository, solana),
+    getBalance: new GetBalanceUseCase(userRepository, solana, walletHelper),
     // Purchase
     executePurchase: new ExecutePurchaseUseCase(userRepository, dca),
     // Portfolio
