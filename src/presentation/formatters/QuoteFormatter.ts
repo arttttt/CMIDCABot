@@ -15,23 +15,27 @@ export class QuoteFormatter {
       return { text: `❌ Invalid amount: ${result.message}` };
     }
 
+    if (result.status === "invalid_asset") {
+      return { text: `❌ Invalid asset: ${result.message}` };
+    }
+
     if (result.status === "error") {
       return { text: `❌ Failed to get quote: ${result.message}` };
     }
 
     const { quote } = result;
 
-    const pricePerSol = quote.outputAmount / quote.inputAmount;
+    const pricePerUnit = quote.inputAmount / quote.outputAmount;
     const slippagePct = quote.slippageBps / 100;
 
     const lines = [
       "📊 *Swap Quote*",
       "",
-      `*Input:* ${this.formatAmount(quote.inputAmount)} ${quote.inputSymbol}`,
-      `*Output:* ${this.formatAmount(quote.outputAmount)} ${quote.outputSymbol}`,
+      `*Spend:* ${this.formatAmount(quote.inputAmount)} ${quote.inputSymbol}`,
+      `*Receive:* ${this.formatAmount(quote.outputAmount)} ${quote.outputSymbol}`,
       "",
-      `*Rate:* 1 ${quote.inputSymbol} = ${this.formatPrice(pricePerSol)} ${quote.outputSymbol}`,
-      `*Min Output:* ${this.formatAmount(quote.minOutputAmount)} ${quote.outputSymbol}`,
+      `*Price:* 1 ${quote.outputSymbol} = ${this.formatPrice(pricePerUnit)} USDC`,
+      `*Min Receive:* ${this.formatAmount(quote.minOutputAmount)} ${quote.outputSymbol}`,
       "",
       `*Price Impact:* ${this.formatPercent(quote.priceImpactPct)}`,
       `*Slippage:* ${slippagePct}%`,
@@ -51,8 +55,14 @@ export class QuoteFormatter {
         "",
         "Get a swap quote without executing the trade.",
         "",
-        "*Usage:* `/quote <amount>`",
-        "*Example:* `/quote 0.1` - quote for 0.1 SOL → USDC",
+        "*Usage:* `/quote <usdc> [asset]`",
+        "",
+        "*Examples:*",
+        "• `/quote 10` - buy SOL for 10 USDC",
+        "• `/quote 10 BTC` - buy BTC for 10 USDC",
+        "• `/quote 10 ETH` - buy ETH for 10 USDC",
+        "",
+        "*Supported assets:* BTC, ETH, SOL",
         "",
         "_This is a read-only operation, no funds are moved._",
       ].join("\n"),
@@ -66,7 +76,10 @@ export class QuoteFormatter {
     if (amount >= 1) {
       return amount.toFixed(4);
     }
-    return amount.toFixed(6);
+    if (amount >= 0.0001) {
+      return amount.toFixed(6);
+    }
+    return amount.toFixed(8);
   }
 
   private formatPrice(price: number): string {

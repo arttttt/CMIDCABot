@@ -142,7 +142,7 @@ export class ProtocolHandler {
 
     this.registerCommand({
       name: "quote",
-      description: "Get swap quote SOL→USDC (dev mode)",
+      description: "Get swap quote USDC→asset (dev mode)",
       handler: (args) => this.handleQuote(args),
       devOnly: true,
     });
@@ -304,7 +304,8 @@ export class ProtocolHandler {
     }
 
     const amount = parseFloat(amountStr);
-    const result = await this.useCases.getQuote.execute(amount);
+    const asset = args[1] || "SOL";
+    const result = await this.useCases.getQuote.execute(amount, asset);
     return this.quoteFormatter.format(result);
   }
 }
