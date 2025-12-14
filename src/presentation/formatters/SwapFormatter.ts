@@ -63,21 +63,48 @@ export class SwapFormatter {
   formatUsage(): UIResponse {
     return {
       text: [
-        "*Swap Command*",
+        "*Swap Execute*",
         "",
         "Execute a real swap on Solana mainnet.",
         "",
-        "*Usage:* `/swap <usdc> [asset]`",
+        "*Usage:* `/swap execute <usdc> [asset]`",
+        "        `/swap <usdc> [asset]` (shortcut)",
         "",
         "*Examples:*",
-        "  `/swap 1` - swap 1 USDC for SOL",
+        "  `/swap execute 1` - swap 1 USDC for SOL",
         "  `/swap 5 BTC` - swap 5 USDC for BTC",
-        "  `/swap 10 ETH` - swap 10 USDC for ETH",
-        "",
-        "*Supported assets:* BTC, ETH, SOL",
         "",
         "*WARNING:* This executes a REAL transaction!",
-        "Funds will be spent. Use /simulate first to test.",
+        "Use `/swap simulate` first to test.",
+      ].join("\n"),
+    };
+  }
+
+  formatUnifiedUsage(): UIResponse {
+    return {
+      text: [
+        "*Swap Command*",
+        "",
+        "Manage swaps on Solana mainnet via Jupiter.",
+        "",
+        "*Subcommands:*",
+        "",
+        "`/swap quote <usdc> [asset]`",
+        "  Get swap quote (read-only)",
+        "",
+        "`/swap simulate <usdc> [asset]`",
+        "  Simulate swap transaction",
+        "",
+        "`/swap execute <usdc> [asset]`",
+        "`/swap <usdc> [asset]` (shortcut)",
+        "  Execute real swap (spends funds!)",
+        "",
+        "*Supported assets:* BTC, ETH, SOL (default)",
+        "",
+        "*Examples:*",
+        "  `/swap quote 10` - quote 10 USDC → SOL",
+        "  `/swap simulate 5 ETH` - simulate 5 USDC → ETH",
+        "  `/swap 1 BTC` - execute 1 USDC → BTC",
       ].join("\n"),
     };
   }

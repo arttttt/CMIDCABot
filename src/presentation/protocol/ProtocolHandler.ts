@@ -5,7 +5,6 @@
 
 import {
   InitUserUseCase,
-  GetBalanceUseCase,
   ExecutePurchaseUseCase,
   GetPortfolioStatusUseCase,
   ResetPortfolioUseCase,
@@ -22,7 +21,6 @@ import {
   ExecuteSwapUseCase,
 } from "../../domain/usecases/index.js";
 import {
-  BalanceFormatter,
   PurchaseFormatter,
   PortfolioFormatter,
   HelpFormatter,
@@ -38,8 +36,6 @@ import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./ty
 export interface UseCases {
   // User
   initUser: InitUserUseCase;
-  // Balance
-  getBalance: GetBalanceUseCase;
   // Purchase
   executePurchase: ExecutePurchaseUseCase;
   // Portfolio
@@ -74,7 +70,6 @@ interface CommandConfig {
 export class ProtocolHandler {
   private commands: Map<string, CommandConfig> = new Map();
   private helpFormatter: HelpFormatter;
-  private balanceFormatter: BalanceFormatter;
   private purchaseFormatter: PurchaseFormatter;
   private portfolioFormatter: PortfolioFormatter;
   private dcaWalletFormatter: DcaWalletFormatter;
@@ -89,7 +84,6 @@ export class ProtocolHandler {
     private isDev: boolean,
   ) {
     this.helpFormatter = new HelpFormatter();
-    this.balanceFormatter = new BalanceFormatter();
     this.purchaseFormatter = new PurchaseFormatter();
     this.portfolioFormatter = new PortfolioFormatter();
     this.dcaWalletFormatter = new DcaWalletFormatter();
@@ -110,12 +104,7 @@ export class ProtocolHandler {
       handler: (args, telegramId) => this.handleWallet(args, telegramId),
     });
 
-    this.registerCommand({
-      name: "balance",
-      description: "Check SOL balance",
-      handler: (_args, telegramId) => this.handleBalance(telegramId),
-    });
-
+    // Dev-only commands
     this.registerCommand({
       name: "dca",
       description: "Manage DCA (start/stop)",
@@ -123,52 +112,23 @@ export class ProtocolHandler {
       devOnly: true,
     });
 
-    // Dev-only commands
     this.registerCommand({
-      name: "status",
-      description: "Portfolio status (dev mode)",
-      handler: (_args, telegramId) => this.handleStatus(telegramId),
-      devOnly: true,
-    });
-
-    this.registerCommand({
-      name: "buy",
-      description: "Mock purchase (dev mode)",
-      handler: (args, telegramId) => this.handleBuy(args, telegramId),
-      devOnly: true,
-    });
-
-    this.registerCommand({
-      name: "reset",
-      description: "Reset portfolio (dev mode)",
-      handler: (_args, telegramId) => this.handleReset(telegramId),
+      name: "portfolio",
+      description: "Mock portfolio (status/buy/reset)",
+      handler: (args, telegramId) => this.handlePortfolio(args, telegramId),
       devOnly: true,
     });
 
     this.registerCommand({
       name: "prices",
-      description: "Show current asset prices (dev mode)",
+      description: "Show current asset prices",
       handler: () => this.handlePrices(),
       devOnly: true,
     });
 
     this.registerCommand({
-      name: "quote",
-      description: "Get swap quote USDC→asset (dev mode)",
-      handler: (args) => this.handleQuote(args),
-      devOnly: true,
-    });
-
-    this.registerCommand({
-      name: "simulate",
-      description: "Simulate swap transaction (dev mode)",
-      handler: (args, telegramId) => this.handleSimulate(args, telegramId),
-      devOnly: true,
-    });
-
-    this.registerCommand({
       name: "swap",
-      description: "Execute real swap (dev mode)",
+      description: "Swap operations (quote/simulate/execute)",
       handler: (args, telegramId) => this.handleSwap(args, telegramId),
       devOnly: true,
     });
@@ -271,32 +231,6 @@ export class ProtocolHandler {
     return this.dcaWalletFormatter.formatUnknownSubcommand();
   }
 
-  private async handleBalance(telegramId: number): Promise<UIResponse> {
-    const result = await this.useCases.getBalance.execute(telegramId);
-    return this.balanceFormatter.format(result);
-  }
-
-  private async handleStatus(telegramId: number): Promise<UIResponse> {
-    const result = await this.useCases.getPortfolioStatus.execute(telegramId);
-    return this.portfolioFormatter.formatStatus(result);
-  }
-
-  private async handleBuy(args: string[], telegramId: number): Promise<UIResponse> {
-    const amountStr = args[0];
-    if (!amountStr) {
-      return this.purchaseFormatter.formatUsage();
-    }
-
-    const amount = parseFloat(amountStr);
-    const result = await this.useCases.executePurchase.execute(telegramId, amount);
-    return this.purchaseFormatter.format(result);
-  }
-
-  private async handleReset(telegramId: number): Promise<UIResponse> {
-    const result = await this.useCases.resetPortfolio.execute(telegramId);
-    return this.portfolioFormatter.formatReset(result);
-  }
-
   private async handleDca(args: string[], telegramId: number): Promise<UIResponse> {
     const subcommand = args[0]?.toLowerCase();
 
@@ -318,44 +252,92 @@ export class ProtocolHandler {
     return this.dcaFormatter.formatUnknownSubcommand();
   }
 
+  private async handlePortfolio(args: string[], telegramId: number): Promise<UIResponse> {
+    const subcommand = args[0]?.toLowerCase();
+
+    // /portfolio or /portfolio status - show portfolio status
+    if (!subcommand || subcommand === "status") {
+      const result = await this.useCases.getPortfolioStatus.execute(telegramId);
+      return this.portfolioFormatter.formatStatus(result);
+    }
+
+    // /portfolio buy <amount> - mock purchase
+    if (subcommand === "buy") {
+      const amountStr = args[1];
+      if (!amountStr) {
+        return this.purchaseFormatter.formatUsage();
+      }
+      const amount = parseFloat(amountStr);
+      const result = await this.useCases.executePurchase.execute(telegramId, amount);
+      return this.purchaseFormatter.format(result);
+    }
+
+    // /portfolio reset - reset portfolio
+    if (subcommand === "reset") {
+      const result = await this.useCases.resetPortfolio.execute(telegramId);
+      return this.portfolioFormatter.formatReset(result);
+    }
+
+    return this.portfolioFormatter.formatUnknownSubcommand();
+  }
+
   private async handlePrices(): Promise<UIResponse> {
     const result = await this.useCases.getPrices.execute();
     return this.priceFormatter.format(result);
   }
 
-  private async handleQuote(args: string[]): Promise<UIResponse> {
-    const amountStr = args[0];
-    if (!amountStr) {
-      return this.quoteFormatter.formatUsage();
-    }
-
-    const amount = parseFloat(amountStr);
-    const asset = args[1] || "SOL";
-    const result = await this.useCases.getQuote.execute(amount, asset);
-    return this.quoteFormatter.format(result);
-  }
-
-  private async handleSimulate(args: string[], telegramId: number): Promise<UIResponse> {
-    const amountStr = args[0];
-    if (!amountStr) {
-      return this.simulateFormatter.formatUsage();
-    }
-
-    const amount = parseFloat(amountStr);
-    const asset = args[1] || "SOL";
-    const result = await this.useCases.simulateSwap.execute(telegramId, amount, asset);
-    return this.simulateFormatter.format(result);
-  }
-
   private async handleSwap(args: string[], telegramId: number): Promise<UIResponse> {
-    const amountStr = args[0];
-    if (!amountStr) {
-      return this.swapFormatter.formatUsage();
+    const subcommand = args[0]?.toLowerCase();
+
+    // /swap without args - show usage
+    if (!subcommand) {
+      return this.swapFormatter.formatUnifiedUsage();
     }
 
-    const amount = parseFloat(amountStr);
-    const asset = args[1] || "SOL";
-    const result = await this.useCases.executeSwap.execute(telegramId, amount, asset);
-    return this.swapFormatter.format(result);
+    // /swap quote <amount> [asset] - get quote
+    if (subcommand === "quote") {
+      const amountStr = args[1];
+      if (!amountStr) {
+        return this.quoteFormatter.formatUsage();
+      }
+      const amount = parseFloat(amountStr);
+      const asset = args[2] || "SOL";
+      const result = await this.useCases.getQuote.execute(amount, asset);
+      return this.quoteFormatter.format(result);
+    }
+
+    // /swap simulate <amount> [asset] - simulate swap
+    if (subcommand === "simulate") {
+      const amountStr = args[1];
+      if (!amountStr) {
+        return this.simulateFormatter.formatUsage();
+      }
+      const amount = parseFloat(amountStr);
+      const asset = args[2] || "SOL";
+      const result = await this.useCases.simulateSwap.execute(telegramId, amount, asset);
+      return this.simulateFormatter.format(result);
+    }
+
+    // /swap <amount> [asset] or /swap execute <amount> [asset] - execute real swap
+    if (subcommand === "execute") {
+      const amountStr = args[1];
+      if (!amountStr) {
+        return this.swapFormatter.formatUsage();
+      }
+      const amount = parseFloat(amountStr);
+      const asset = args[2] || "SOL";
+      const result = await this.useCases.executeSwap.execute(telegramId, amount, asset);
+      return this.swapFormatter.format(result);
+    }
+
+    // Direct /swap <amount> [asset] - execute real swap (shortcut)
+    const amount = parseFloat(subcommand);
+    if (!isNaN(amount)) {
+      const asset = args[1] || "SOL";
+      const result = await this.useCases.executeSwap.execute(telegramId, amount, asset);
+      return this.swapFormatter.format(result);
+    }
+
+    return this.swapFormatter.formatUnifiedUsage();
   }
 }

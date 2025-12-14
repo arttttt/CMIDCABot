@@ -88,17 +88,17 @@ export class SimulateFormatter {
   formatUsage(): UIResponse {
     return {
       text: [
-        "*Simulate Command*",
+        "*Swap Simulate*",
         "",
         "Simulate a swap transaction without executing it.",
         "Tests the full swap path: quote -> build -> simulate.",
         "",
-        "*Usage:* `/simulate <usdc> [asset]`",
+        "*Usage:* `/swap simulate <usdc> [asset]`",
         "",
         "*Examples:*",
-        "  `/simulate 1` - simulate buying SOL for 1 USDC",
-        "  `/simulate 5 BTC` - simulate buying BTC for 5 USDC",
-        "  `/simulate 10 ETH` - simulate buying ETH for 10 USDC",
+        "  `/swap simulate 1` - simulate buying SOL for 1 USDC",
+        "  `/swap simulate 5 BTC` - simulate buying BTC for 5 USDC",
+        "  `/swap simulate 10 ETH` - simulate buying ETH for 10 USDC",
         "",
         "*Supported assets:* BTC, ETH, SOL",
         "",

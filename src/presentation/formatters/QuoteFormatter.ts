@@ -51,16 +51,16 @@ export class QuoteFormatter {
   formatUsage(): UIResponse {
     return {
       text: [
-        "📊 *Quote Command*",
+        "*Swap Quote*",
         "",
         "Get a swap quote without executing the trade.",
         "",
-        "*Usage:* `/quote <usdc> [asset]`",
+        "*Usage:* `/swap quote <usdc> [asset]`",
         "",
         "*Examples:*",
-        "• `/quote 10` - buy SOL for 10 USDC",
-        "• `/quote 10 BTC` - buy BTC for 10 USDC",
-        "• `/quote 10 ETH` - buy ETH for 10 USDC",
+        "• `/swap quote 10` - quote SOL for 10 USDC",
+        "• `/swap quote 10 BTC` - quote BTC for 10 USDC",
+        "• `/swap quote 10 ETH` - quote ETH for 10 USDC",
         "",
         "*Supported assets:* BTC, ETH, SOL",
         "",
