@@ -318,7 +318,7 @@ export class ProtocolHandler {
       return this.simulateFormatter.format(result);
     }
 
-    // /swap <amount> [asset] or /swap execute <amount> [asset] - execute real swap
+    // /swap execute <amount> [asset] - execute real swap
     if (subcommand === "execute") {
       const amountStr = args[1];
       if (!amountStr) {
@@ -326,14 +326,6 @@ export class ProtocolHandler {
       }
       const amount = parseFloat(amountStr);
       const asset = args[2] || "SOL";
-      const result = await this.useCases.executeSwap.execute(telegramId, amount, asset);
-      return this.swapFormatter.format(result);
-    }
-
-    // Direct /swap <amount> [asset] - execute real swap (shortcut)
-    const amount = parseFloat(subcommand);
-    if (!isNaN(amount)) {
-      const asset = args[1] || "SOL";
       const result = await this.useCases.executeSwap.execute(telegramId, amount, asset);
       return this.swapFormatter.format(result);
     }
