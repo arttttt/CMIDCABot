@@ -224,6 +224,12 @@ async function main(): Promise<void> {
   // Graceful shutdown
   const shutdown = async (): Promise<void> => {
     console.log("\nShutting down...");
+    try {
+      // Close bot session to release getUpdates lock
+      await bot.api.close();
+    } catch {
+      // Ignore close errors
+    }
     await bot.stop();
     await cleanup();
     process.exit(0);
@@ -259,13 +265,43 @@ async function main(): Promise<void> {
     console.log(`RPC: ${config.solana.rpcUrl}`);
   }
 
-  await bot.start({
-    onStart: (botInfo) => {
-      if (!config.isDev) {
-        console.log(`Bot @${botInfo.username} is running`);
+  // Start bot with retry on 409 Conflict
+  const maxRetries = 5;
+  const baseDelayMs = 2000;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await bot.start({
+        onStart: (botInfo) => {
+          if (!config.isDev) {
+            console.log(`Bot @${botInfo.username} is running`);
+          }
+        },
+      });
+      break; // Success, exit retry loop
+    } catch (error) {
+      const is409 = error instanceof Error &&
+        error.message.includes("409") &&
+        error.message.includes("Conflict");
+
+      if (is409 && attempt < maxRetries) {
+        const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
+        console.log(`Bot instance conflict detected (attempt ${attempt}/${maxRetries}), retrying in ${delayMs / 1000}s...`);
+
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+        // Try to release any existing session
+        try {
+          await bot.api.close();
+        } catch {
+          // Ignore
+        }
+        await bot.api.deleteWebhook({ drop_pending_updates: true });
+      } else {
+        throw error;
       }
-    },
-  });
+    }
+  }
 }
 
 function formatInterval(ms: number): string {
