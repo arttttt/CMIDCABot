@@ -16,7 +16,7 @@ export class PortfolioFormatter {
 
       case "not_found":
         return {
-          text: "Portfolio not found. Use /buy <amount> to make your first purchase.",
+          text: "Portfolio not found. Use /portfolio buy <amount> to make your first purchase.",
         };
 
       case "empty":
@@ -27,7 +27,7 @@ export class PortfolioFormatter {
             `- BTC: ${(TARGET_ALLOCATIONS.BTC * 100).toFixed(0)}%\n` +
             `- ETH: ${(TARGET_ALLOCATIONS.ETH * 100).toFixed(0)}%\n` +
             `- SOL: ${(TARGET_ALLOCATIONS.SOL * 100).toFixed(0)}%\n\n` +
-            "Use /buy <amount> to make a mock purchase.",
+            "Use /portfolio buy <amount> to make a mock purchase.",
         };
 
       case "success": {
@@ -72,7 +72,18 @@ export class PortfolioFormatter {
         "─".repeat(25) + "\n\n" +
         "All balances set to 0.\n" +
         "Purchase history cleared.\n\n" +
-        "Use /buy <amount> to start fresh.",
+        "Use /portfolio buy <amount> to start fresh.",
+    };
+  }
+
+  formatUnknownSubcommand(): UIResponse {
+    return {
+      text:
+        "Unknown portfolio command.\n\n" +
+        "Available commands:\n" +
+        "/portfolio - Show portfolio status\n" +
+        "/portfolio buy <amount> - Mock purchase\n" +
+        "/portfolio reset - Reset portfolio",
     };
   }
 }

@@ -7,9 +7,6 @@ export * from "./types.js";
 // User
 export { InitUserUseCase } from "./InitUserUseCase.js";
 
-// Balance
-export { GetBalanceUseCase } from "./GetBalanceUseCase.js";
-
 // Purchase
 export { ExecutePurchaseUseCase } from "./ExecutePurchaseUseCase.js";
 

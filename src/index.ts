@@ -17,7 +17,6 @@ import { PriceService } from "./services/price.js";
 import { JupiterSwapService } from "./services/jupiter-swap.js";
 import {
   InitUserUseCase,
-  GetBalanceUseCase,
   ExecutePurchaseUseCase,
   GetPortfolioStatusUseCase,
   ResetPortfolioUseCase,
@@ -129,8 +128,6 @@ async function main(): Promise<void> {
   const useCases: UseCases = {
     // User
     initUser: new InitUserUseCase(userRepository, dca),
-    // Balance
-    getBalance: new GetBalanceUseCase(userRepository, solana, walletHelper),
     // Purchase
     executePurchase: new ExecutePurchaseUseCase(userRepository, dca),
     // Portfolio

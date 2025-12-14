@@ -15,7 +15,7 @@ export class PurchaseFormatter {
 
       case "invalid_amount":
         return {
-          text: "Invalid amount. Please provide a positive number.\n\nExample: /buy 0.5",
+          text: "Invalid amount. Please provide a positive number.\n\nExample: /portfolio buy 0.5",
         };
 
       case "no_wallet":
@@ -50,7 +50,7 @@ export class PurchaseFormatter {
             `Price: $${result.priceUsd!.toLocaleString()}\n\n` +
             `Note: This is a mock purchase. No real tokens were swapped.\n` +
             `Your SOL balance was checked but not deducted.\n\n` +
-            `Use /status to see your portfolio.`,
+            `Use /portfolio to see your portfolio.`,
         };
 
       default:
@@ -61,8 +61,8 @@ export class PurchaseFormatter {
   formatUsage(): UIResponse {
     return {
       text:
-        "Usage: /buy <amount_in_sol>\n\n" +
-        "Example: /buy 0.5\n\n" +
+        "Usage: /portfolio buy <amount_in_sol>\n\n" +
+        "Example: /portfolio buy 0.5\n\n" +
         "This will mock-purchase the asset furthest below its target allocation.",
     };
   }
