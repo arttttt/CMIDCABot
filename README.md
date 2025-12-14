@@ -118,26 +118,28 @@ npx tsc --noEmit
 | `/wallet create` | Create new DCA wallet |
 | `/wallet export` | Export private key |
 | `/wallet delete` | Delete DCA wallet |
-| `/balance` | Check SOL balance |
 
 ### Development mode only
 
 | Command | Description |
 |---------|-------------|
-| `/status` | Portfolio status |
-| `/buy <amount>` | Mock purchase |
-| `/reset` | Reset portfolio |
 | `/dca` | Show DCA status |
 | `/dca start` | Start DCA automation |
 | `/dca stop` | Stop DCA automation |
+| `/portfolio` | Portfolio status |
+| `/portfolio buy <amount>` | Purchase asset using DCA strategy |
 | `/prices` | Show current asset prices |
+| `/swap` | Show swap usage |
+| `/swap quote <amount> [asset]` | Get swap quote (default: SOL) |
+| `/swap simulate <amount> [asset]` | Simulate swap without executing |
+| `/swap execute <amount> [asset]` | Execute real swap on Solana |
 
 ## Tech stack
 
 - **TypeScript** 5.9
 - **grammY** — Telegram Bot Framework
 - **@solana/web3.js** v2 — Solana SDK
-- **better-sqlite3** — Local database
+- **better-sqlite3** + **Kysely** — Local database with type-safe query builder
 - **tsx** — Run TypeScript without compilation
 
 ## Devnet
