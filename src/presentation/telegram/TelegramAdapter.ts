@@ -23,9 +23,9 @@ function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
 async function sendResponse(ctx: Context, response: UIResponse): Promise<void> {
   const keyboard = toInlineKeyboard(response);
   if (keyboard) {
-    await ctx.reply(response.text, { reply_markup: keyboard });
+    await ctx.reply(response.text, { reply_markup: keyboard, parse_mode: "Markdown" });
   } else {
-    await ctx.reply(response.text);
+    await ctx.reply(response.text, { parse_mode: "Markdown" });
   }
 }
 
@@ -77,7 +77,7 @@ export function createTelegramBot(
     });
 
     await ctx.answerCallbackQuery();
-    await ctx.editMessageText(response.text);
+    await ctx.editMessageText(response.text, { parse_mode: "Markdown" });
   });
 
   // Error handling
