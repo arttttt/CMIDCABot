@@ -216,6 +216,10 @@ export class JupiterSwapService {
       body: JSON.stringify({
         quoteResponse: quote.rawQuoteResponse,
         userPublicKey,
+        // wrapAndUnwrapSol defaults to true in Jupiter API:
+        // - When input is SOL mint: Jupiter wraps native SOL → WSOL automatically
+        // - When output is SOL mint: Jupiter unwraps WSOL → native SOL automatically
+        // This means we receive/spend native SOL, not WSOL token accounts
         // Use dynamic slippage for better execution
         dynamicSlippage: { maxBps: 300 }, // Max 3% slippage
         // Priority fee settings
@@ -259,6 +263,10 @@ export class JupiterSwapService {
 
   /**
    * Get quote for SOL → USDC swap
+   *
+   * Note: We pass TOKEN_MINTS.SOL (WSOL mint) as inputMint, but the user pays
+   * with native SOL. Jupiter's wrapAndUnwrapSol=true (default) handles the
+   * conversion automatically in the swap transaction.
    */
   async getQuoteSolToUsdc(amountSol: number, slippageBps?: number): Promise<SwapQuote> {
     const amountLamports = Math.floor(amountSol * Math.pow(10, TOKEN_DECIMALS.SOL));

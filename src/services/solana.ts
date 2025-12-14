@@ -55,6 +55,17 @@ export class SolanaService {
     this.rpc = createSolanaRpc(config.rpcUrl);
   }
 
+  /**
+   * Get native SOL balance for a wallet address
+   *
+   * Note: This returns NATIVE SOL (lamports), not WSOL token balance.
+   * Native SOL is used for:
+   * - Transaction fees (priority fees, rent)
+   * - Jupiter swaps (auto-wrapped to WSOL when needed)
+   *
+   * WSOL is a separate SPL token that we don't manage directly —
+   * Jupiter handles wrap/unwrap automatically during swaps.
+   */
   async getBalance(walletAddress: string): Promise<number> {
     const addr = address(walletAddress);
     const { value } = await this.rpc.getBalance(addr).send();
