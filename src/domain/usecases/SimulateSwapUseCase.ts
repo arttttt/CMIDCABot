@@ -26,6 +26,7 @@ export type SimulateSwapResult =
   | { status: "no_wallet" }
   | { status: "invalid_amount"; message: string }
   | { status: "invalid_asset"; message: string }
+  | { status: "insufficient_balance"; required: number; available: number }
   | { status: "quote_error"; message: string }
   | { status: "build_error"; message: string }
   | { status: "simulation_error"; message: string };
@@ -100,6 +101,20 @@ export class SimulateSwapUseCase {
 
     if (!walletAddress) {
       return { status: "no_wallet" };
+    }
+
+    // Check USDC balance before calling Jupiter API
+    const usdcBalance = await this.solanaService.getUsdcBalance(walletAddress);
+    if (usdcBalance < amountUsdc) {
+      logger.warn("SimulateSwap", "Insufficient USDC balance", {
+        required: amountUsdc,
+        available: usdcBalance,
+      });
+      return {
+        status: "insufficient_balance",
+        required: amountUsdc,
+        available: usdcBalance,
+      };
     }
 
     const outputMint = TOKEN_MINTS[assetUpper];

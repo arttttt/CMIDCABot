@@ -17,6 +17,12 @@ export class SimulateFormatter {
       };
     }
 
+    if (result.status === "insufficient_balance") {
+      return {
+        text: `Insufficient USDC balance.\nRequired: ${result.required} USDC\nAvailable: ${result.available} USDC`,
+      };
+    }
+
     if (result.status === "invalid_amount") {
       return { text: `Invalid amount: ${result.message}` };
     }
