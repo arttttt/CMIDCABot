@@ -176,11 +176,17 @@ export class ExecutePurchaseUseCase {
 
   /**
    * Select asset to buy based on portfolio allocation
-   * Returns the asset that is furthest below its target allocation
+   *
+   * Uses "Healthy Crypto Index" rebalancing strategy:
+   * - Target: BTC 40%, ETH 30%, SOL 30%
+   * - Buys the asset furthest below its target allocation
+   *
+   * This approach naturally rebalances the portfolio over time:
+   * each purchase reduces the deviation of the most underweight asset.
    */
   private async selectAssetToBuy(walletAddress: string): Promise<AssetSymbol> {
     try {
-      // Fetch balances in parallel
+      // Fetch all balances and prices in parallel for efficiency
       const [solBalance, btcBalance, ethBalance, prices] = await Promise.all([
         this.solanaService.getBalance(walletAddress),
         this.solanaService.getTokenBalance(walletAddress, TOKEN_MINTS.BTC, TOKEN_DECIMALS.BTC),
@@ -188,7 +194,7 @@ export class ExecutePurchaseUseCase {
         this.priceService!.getPricesRecord(),
       ]);
 
-      // Calculate values in USD
+      // Calculate USD value of each asset holding
       const assets: { symbol: AssetSymbol; valueInUsdc: number }[] = [
         { symbol: "BTC", valueInUsdc: btcBalance * prices.BTC },
         { symbol: "ETH", valueInUsdc: ethBalance * prices.ETH },
@@ -197,18 +203,20 @@ export class ExecutePurchaseUseCase {
 
       const totalValueInUsdc = assets.reduce((sum, a) => sum + a.valueInUsdc, 0);
 
-      // If portfolio is empty, buy BTC (largest target allocation)
+      // Empty portfolio: start with BTC (largest target at 40%)
       if (totalValueInUsdc === 0) {
         return "BTC";
       }
 
-      // Find asset with maximum negative deviation (most below target)
+      // Find asset with maximum negative deviation (most below target).
+      // Negative deviation = asset is underweight and needs buying.
       let assetToBuy: AssetSymbol = "BTC";
       let maxNegativeDeviation = 0;
 
       for (const asset of assets) {
         const currentAllocation = asset.valueInUsdc / totalValueInUsdc;
         const targetAllocation = TARGET_ALLOCATIONS[asset.symbol];
+        // deviation < 0 means underweight, deviation > 0 means overweight
         const deviation = currentAllocation - targetAllocation;
 
         if (deviation < maxNegativeDeviation) {
