@@ -12,7 +12,7 @@ const HTML_PAGE = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DCA Bot - Test Interface</title>
+  <title>CMI DCA - Test Interface</title>
   <style>
     * {
       box-sizing: border-box;
@@ -173,7 +173,7 @@ const HTML_PAGE = `<!DOCTYPE html>
 </head>
 <body>
   <header>
-    <h1>DCA Bot - Test Interface</h1>
+    <h1>CMI DCA - Test Interface</h1>
     <p>Web interface for testing without Telegram</p>
   </header>
 

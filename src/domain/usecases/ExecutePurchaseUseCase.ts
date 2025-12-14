@@ -128,7 +128,7 @@ export class ExecutePurchaseUseCase {
   /**
    * Select asset to buy based on portfolio allocation
    *
-   * Uses "Healthy Crypto Index" rebalancing strategy:
+   * Uses "Crypto Majors Index" rebalancing strategy:
    * - Target: BTC 40%, ETH 30%, SOL 30%
    * - Buys the asset furthest below its target allocation
    *

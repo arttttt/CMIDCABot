@@ -1,8 +1,8 @@
-# DCATgBot
+# CMI DCA
 
 Telegram bot for automated DCA (Dollar Cost Averaging) investing in cryptocurrencies on Solana.
 
-Implements the "Healthy Crypto Index" strategy — a basket of three assets:
+Implements the "Crypto Majors Index" strategy — a basket of three assets:
 - **BTC (cbBTC)** — 40%
 - **ETH** — 30%
 - **SOL** — 30%
@@ -17,8 +17,8 @@ On each purchase, the bot selects the asset whose portfolio share lags furthest 
 ## Installation
 
 ```bash
-git clone https://github.com/arttttt/DCATgBot.git
-cd DCATgBot
+git clone https://github.com/arttttt/cmi-dca-bot.git
+cd cmi-dca-bot
 npm install
 ```
 
