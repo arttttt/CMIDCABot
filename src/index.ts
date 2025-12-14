@@ -19,7 +19,6 @@ import {
   InitUserUseCase,
   ExecutePurchaseUseCase,
   GetPortfolioStatusUseCase,
-  ResetPortfolioUseCase,
   WalletInfoHelper,
   ShowWalletUseCase,
   CreateWalletUseCase,
@@ -58,19 +57,13 @@ async function main(): Promise<void> {
   // Create repositories based on mode
   const { userRepository, transactionRepository } = createMainRepositories(dbMode, mainDb);
 
-  // Ensure transaction repository schema is initialized (for sqlite)
-  void transactionRepository;
-
   // Initialize Solana service
   const solana = new SolanaService(config.solana);
 
-  // Initialize PriceService (only when using Jupiter prices)
+  // Initialize PriceService (required for portfolio and swap operations)
   let priceService: PriceService | undefined;
 
-  if (config.price.source === "jupiter") {
-    if (!config.price.jupiterApiKey) {
-      throw new Error("JUPITER_API_KEY is required when PRICE_SOURCE=jupiter");
-    }
+  if (config.price.jupiterApiKey) {
     priceService = new PriceService(config.price.jupiterApiKey);
   }
 
@@ -128,11 +121,26 @@ async function main(): Promise<void> {
   const useCases: UseCases = {
     // User
     initUser: new InitUserUseCase(userRepository, dca),
-    // Purchase
-    executePurchase: new ExecutePurchaseUseCase(userRepository, dca),
-    // Portfolio
-    getPortfolioStatus: new GetPortfolioStatusUseCase(userRepository, dca),
-    resetPortfolio: new ResetPortfolioUseCase(dca),
+    // Purchase (requires Jupiter for real swaps)
+    executePurchase: jupiterSwap && priceService
+      ? new ExecutePurchaseUseCase(
+          userRepository,
+          transactionRepository,
+          jupiterSwap,
+          solana,
+          priceService,
+          config.dcaWallet.devPrivateKey,
+        )
+      : (undefined as unknown as ExecutePurchaseUseCase),
+    // Portfolio (requires PriceService)
+    getPortfolioStatus: priceService
+      ? new GetPortfolioStatusUseCase(
+          userRepository,
+          solana,
+          priceService,
+          config.dcaWallet.devPrivateKey,
+        )
+      : (undefined as unknown as GetPortfolioStatusUseCase),
     // Wallet
     showWallet: new ShowWalletUseCase(userRepository, walletHelper),
     createWallet: new CreateWalletUseCase(userRepository, solana, walletHelper),
@@ -158,6 +166,7 @@ async function main(): Promise<void> {
       jupiterSwap,
       solana,
       userRepository,
+      transactionRepository,
       config.dcaWallet.devPrivateKey,
     ),
   };

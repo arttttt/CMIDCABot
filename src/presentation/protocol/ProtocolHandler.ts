@@ -7,7 +7,6 @@ import {
   InitUserUseCase,
   ExecutePurchaseUseCase,
   GetPortfolioStatusUseCase,
-  ResetPortfolioUseCase,
   ShowWalletUseCase,
   CreateWalletUseCase,
   DeleteWalletUseCase,
@@ -40,7 +39,6 @@ export interface UseCases {
   executePurchase: ExecutePurchaseUseCase;
   // Portfolio
   getPortfolioStatus: GetPortfolioStatusUseCase;
-  resetPortfolio: ResetPortfolioUseCase;
   // Wallet
   showWallet: ShowWalletUseCase;
   createWallet: CreateWalletUseCase;
@@ -114,7 +112,7 @@ export class ProtocolHandler {
 
     this.registerCommand({
       name: "portfolio",
-      description: "Mock portfolio (status/buy/reset)",
+      description: "Portfolio status and DCA buy",
       handler: (args, telegramId) => this.handlePortfolio(args, telegramId),
       devOnly: true,
     });
@@ -261,7 +259,7 @@ export class ProtocolHandler {
       return this.portfolioFormatter.formatStatus(result);
     }
 
-    // /portfolio buy <amount> - mock purchase
+    // /portfolio buy <amount> - purchase asset
     if (subcommand === "buy") {
       const amountStr = args[1];
       if (!amountStr) {
@@ -270,12 +268,6 @@ export class ProtocolHandler {
       const amount = parseFloat(amountStr);
       const result = await this.useCases.executePurchase.execute(telegramId, amount);
       return this.purchaseFormatter.format(result);
-    }
-
-    // /portfolio reset - reset portfolio
-    if (subcommand === "reset") {
-      const result = await this.useCases.resetPortfolio.execute(telegramId);
-      return this.portfolioFormatter.formatReset(result);
     }
 
     return this.portfolioFormatter.formatUnknownSubcommand();

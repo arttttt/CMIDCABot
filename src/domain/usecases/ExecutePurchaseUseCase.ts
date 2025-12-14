@@ -1,87 +1,228 @@
 /**
- * Execute purchase use case
+ * Execute purchase use case - real swap via Jupiter
+ * Automatically selects the asset furthest below target allocation
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
-import { DcaService, MOCK_PRICES } from "../../services/dca.js";
+import { TransactionRepository } from "../repositories/TransactionRepository.js";
+import { JupiterSwapService, SwapQuote } from "../../services/jupiter-swap.js";
+import { SolanaService, SendTransactionResult } from "../../services/solana.js";
+import { PriceService, TOKEN_MINTS } from "../../services/price.js";
+import { TOKEN_DECIMALS } from "../../services/jupiter-swap.js";
+import { AssetSymbol, TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { PurchaseResult } from "./types.js";
 import { logger } from "../../services/logger.js";
 
 export class ExecutePurchaseUseCase {
   constructor(
     private userRepository: UserRepository,
-    private dca: DcaService | undefined,
+    private transactionRepository: TransactionRepository,
+    private jupiterSwap: JupiterSwapService | undefined,
+    private solanaService: SolanaService,
+    private priceService: PriceService | undefined,
+    private devPrivateKey?: string,
   ) {}
 
-  async execute(telegramId: number, amountSol: number): Promise<PurchaseResult> {
-    logger.info("ExecutePurchase", "Executing mock purchase", {
+  async execute(telegramId: number, amountUsdc: number): Promise<PurchaseResult> {
+    logger.info("ExecutePurchase", "Executing portfolio purchase", {
       telegramId,
-      amountSol,
+      amountUsdc,
     });
 
-    if (!this.dca) {
-      logger.warn("ExecutePurchase", "DCA service unavailable");
+    // Check if Jupiter is available
+    if (!this.jupiterSwap || !this.priceService) {
+      logger.warn("ExecutePurchase", "Jupiter or Price service unavailable");
       return { type: "unavailable" };
     }
 
-    if (!this.dca.isMockMode()) {
-      logger.warn("ExecutePurchase", "Not in mock mode");
-      return { type: "unavailable" };
-    }
-
-    if (isNaN(amountSol) || amountSol <= 0) {
-      logger.warn("ExecutePurchase", "Invalid amount", { amountSol });
+    // Validate amount
+    if (isNaN(amountUsdc) || amountUsdc <= 0) {
+      logger.warn("ExecutePurchase", "Invalid amount", { amountUsdc });
       return { type: "invalid_amount" };
     }
 
-    await this.userRepository.create(telegramId);
-    const user = await this.userRepository.getById(telegramId);
+    if (amountUsdc < 0.01) {
+      return {
+        type: "invalid_amount",
+        error: "Minimum amount is 0.01 USDC",
+      };
+    }
 
-    if (!user?.walletAddress) {
+    // Get user's wallet info
+    let walletAddress: string | undefined;
+    let privateKey: string | undefined;
+
+    if (this.devPrivateKey) {
+      // In dev mode, use dev wallet
+      privateKey = this.devPrivateKey;
+      walletAddress = await this.solanaService.getAddressFromPrivateKey(this.devPrivateKey);
+    } else {
+      // Get user's wallet from database
+      const user = await this.userRepository.getById(telegramId);
+      if (user?.privateKey) {
+        privateKey = user.privateKey;
+        walletAddress = user.walletAddress ?? undefined;
+      }
+    }
+
+    if (!walletAddress || !privateKey) {
       logger.warn("ExecutePurchase", "No wallet connected", { telegramId });
       return { type: "no_wallet" };
     }
 
-    const balanceCheck = await this.dca.checkSolBalance(user.walletAddress, amountSol);
-    if (!balanceCheck.sufficient) {
-      logger.warn("ExecutePurchase", "Insufficient balance", {
-        required: amountSol,
-        available: balanceCheck.balance,
+    // Check USDC balance
+    const usdcBalance = await this.solanaService.getUsdcBalance(walletAddress);
+    if (usdcBalance < amountUsdc) {
+      logger.warn("ExecutePurchase", "Insufficient USDC balance", {
+        required: amountUsdc,
+        available: usdcBalance,
       });
       return {
         type: "insufficient_balance",
-        requiredBalance: amountSol,
-        availableBalance: balanceCheck.balance,
+        requiredBalance: amountUsdc,
+        availableBalance: usdcBalance,
       };
     }
 
-    const result = await this.dca.executeMockPurchase(telegramId, amountSol);
+    // Determine which asset to buy based on portfolio allocation
+    const assetToBuy = await this.selectAssetToBuy(walletAddress);
+    logger.info("ExecutePurchase", "Selected asset to buy", { asset: assetToBuy });
 
-    if (!result.success) {
-      logger.error("ExecutePurchase", "Purchase failed", { error: result.message });
+    const outputMint = TOKEN_MINTS[assetToBuy];
+
+    // Step 1: Get quote
+    logger.step("ExecutePurchase", 1, 3, "Getting quote from Jupiter...");
+    let quote: SwapQuote;
+    try {
+      quote = await this.jupiterSwap.getQuoteUsdcToToken(amountUsdc, outputMint);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("ExecutePurchase", "Quote failed", { error: message });
+      return { type: "quote_error", error: message };
+    }
+
+    // Step 2: Build transaction
+    logger.step("ExecutePurchase", 2, 3, "Building transaction...");
+    let transactionBase64: string;
+    try {
+      const swapTx = await this.jupiterSwap.buildSwapTransaction(quote, walletAddress);
+      transactionBase64 = swapTx.transactionBase64;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("ExecutePurchase", "Build failed", { error: message });
+      return { type: "build_error", error: message };
+    }
+
+    // Step 3: Sign and send transaction
+    logger.step("ExecutePurchase", 3, 3, "Signing and sending transaction...");
+    let sendResult: SendTransactionResult;
+    try {
+      sendResult = await this.solanaService.signAndSendTransaction(transactionBase64, privateKey);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("ExecutePurchase", "Send failed", { error: message });
+      return { type: "send_error", error: message };
+    }
+
+    if (!sendResult.success || !sendResult.signature) {
+      logger.error("ExecutePurchase", "Transaction failed", {
+        error: sendResult.error,
+      });
       return {
-        type: "failed",
-        error: result.message,
+        type: "send_error",
+        error: sendResult.error ?? "Transaction failed",
       };
     }
 
-    const priceUsd = MOCK_PRICES[result.asset];
-    const valueUsd = result.amount * priceUsd;
+    // Calculate price from quote
+    const priceUsd = amountUsdc / quote.outputAmount;
+
+    // Save transaction to database
+    try {
+      await this.transactionRepository.create({
+        telegramId,
+        txSignature: sendResult.signature,
+        assetSymbol: assetToBuy,
+        amountUsdc,
+        amountAsset: quote.outputAmount,
+      });
+      logger.debug("ExecutePurchase", "Transaction saved to database");
+    } catch (error) {
+      // Don't fail the purchase if saving fails - the swap already happened
+      logger.warn("ExecutePurchase", "Failed to save transaction to database", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
 
     logger.info("ExecutePurchase", "Purchase completed", {
-      telegramId,
-      asset: result.asset,
-      amount: result.amount,
-      valueUsd,
+      signature: sendResult.signature,
+      confirmed: sendResult.confirmed,
+      asset: assetToBuy,
+      amount: quote.outputAmount,
+      amountUsdc,
+      priceUsd,
     });
 
     return {
       type: "success",
-      asset: result.asset,
-      amountAsset: result.amount,
-      amountSol,
+      asset: assetToBuy,
+      amountAsset: quote.outputAmount,
+      amountUsdc,
       priceUsd,
-      valueUsd,
+      signature: sendResult.signature,
+      confirmed: sendResult.confirmed,
     };
+  }
+
+  /**
+   * Select asset to buy based on portfolio allocation
+   * Returns the asset that is furthest below its target allocation
+   */
+  private async selectAssetToBuy(walletAddress: string): Promise<AssetSymbol> {
+    try {
+      // Fetch balances in parallel
+      const [solBalance, btcBalance, ethBalance, prices] = await Promise.all([
+        this.solanaService.getBalance(walletAddress),
+        this.solanaService.getTokenBalance(walletAddress, TOKEN_MINTS.BTC, TOKEN_DECIMALS.BTC),
+        this.solanaService.getTokenBalance(walletAddress, TOKEN_MINTS.ETH, TOKEN_DECIMALS.ETH),
+        this.priceService!.getPricesRecord(),
+      ]);
+
+      // Calculate values in USD
+      const assets: { symbol: AssetSymbol; valueInUsdc: number }[] = [
+        { symbol: "BTC", valueInUsdc: btcBalance * prices.BTC },
+        { symbol: "ETH", valueInUsdc: ethBalance * prices.ETH },
+        { symbol: "SOL", valueInUsdc: solBalance * prices.SOL },
+      ];
+
+      const totalValueInUsdc = assets.reduce((sum, a) => sum + a.valueInUsdc, 0);
+
+      // If portfolio is empty, buy BTC (largest target allocation)
+      if (totalValueInUsdc === 0) {
+        return "BTC";
+      }
+
+      // Find asset with maximum negative deviation (most below target)
+      let assetToBuy: AssetSymbol = "BTC";
+      let maxNegativeDeviation = 0;
+
+      for (const asset of assets) {
+        const currentAllocation = asset.valueInUsdc / totalValueInUsdc;
+        const targetAllocation = TARGET_ALLOCATIONS[asset.symbol];
+        const deviation = currentAllocation - targetAllocation;
+
+        if (deviation < maxNegativeDeviation) {
+          maxNegativeDeviation = deviation;
+          assetToBuy = asset.symbol;
+        }
+      }
+
+      return assetToBuy;
+    } catch (error) {
+      logger.warn("ExecutePurchase", "Failed to calculate allocations, defaulting to BTC", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return "BTC";
+    }
   }
 }
