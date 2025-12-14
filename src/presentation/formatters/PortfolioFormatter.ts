@@ -29,7 +29,7 @@ export class PortfolioFormatter {
             `• BTC: ${(TARGET_ALLOCATIONS.BTC * 100).toFixed(0)}%\n` +
             `• ETH: ${(TARGET_ALLOCATIONS.ETH * 100).toFixed(0)}%\n` +
             `• SOL: ${(TARGET_ALLOCATIONS.SOL * 100).toFixed(0)}%\n\n` +
-            "Use /portfolio buy <amount_usdc> to start building your portfolio.",
+            "Use /portfolio buy {amount} to start building your portfolio.",
         };
 
       case "success": {
@@ -74,7 +74,7 @@ export class PortfolioFormatter {
         "Unknown portfolio command.\n\n" +
         "Available commands:\n" +
         "/portfolio - Show portfolio status\n" +
-        "/portfolio buy <amount> - Buy asset (USDC)",
+        "/portfolio buy {amount} - Buy asset (USDC)",
     };
   }
 

@@ -12,7 +12,7 @@ export class BalanceFormatter {
         return {
           text:
             "No wallet connected.\n\n" +
-            "Use /wallet set <address> to connect your Solana wallet first.",
+            "Use /wallet set {address} to connect your Solana wallet first.",
         };
 
       case "fetch_error":
