@@ -1,10 +1,10 @@
-# Solana DCA Bot
+# CMI DCA Bot
 
 ## Purpose
 
 Telegram bot for automated DCA (Dollar Cost Averaging) investing in cryptocurrencies on Solana.
 
-Implements "Healthy Crypto Index" — a basket of three assets with target allocations:
+Implements "Crypto Majors Index" — a basket of three assets with target allocations:
 - **BTC (cbBTC)** — 40%
 - **ETH** — 30%
 - **SOL** — 30%

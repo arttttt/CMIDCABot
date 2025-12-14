@@ -149,7 +149,7 @@ export class DcaService {
    *   currentAllocation = valueInUsdc / totalPortfolioValue
    *   deviation = currentAllocation - targetAllocation
    *
-   * Target allocations: BTC 40%, ETH 30%, SOL 30%
+   * Crypto Majors Index target allocations: BTC 40%, ETH 30%, SOL 30%
    */
   private calculateAllocations(portfolio: PortfolioBalances, prices: Record<AssetSymbol, number>): AllocationInfo[] {
     const assets: { symbol: AssetSymbol; balance: number }[] = [

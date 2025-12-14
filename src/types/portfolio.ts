@@ -1,4 +1,4 @@
-// Target allocations for Healthy Crypto Index
+// Target allocations for Crypto Majors Index
 export const TARGET_ALLOCATIONS = {
   BTC: 0.4, // 40%
   ETH: 0.3, // 30%

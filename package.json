@@ -1,7 +1,7 @@
 {
-  "name": "dca-tg-bot",
+  "name": "cmi-dca-bot",
   "version": "0.1.0",
-  "description": "Telegram bot for DCA investing on Solana",
+  "description": "CMI DCA - Crypto Majors Index DCA bot for Solana",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {

@@ -78,7 +78,7 @@ export class PurchaseFormatter {
       text:
         "Usage: /portfolio buy {amount}\n\n" +
         "Example: /portfolio buy 10\n\n" +
-        "This will purchase the asset furthest below its target allocation.",
+        "Purchases the asset furthest below target in the Crypto Majors Index.",
     };
   }
 }

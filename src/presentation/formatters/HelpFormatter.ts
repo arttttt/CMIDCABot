@@ -70,7 +70,7 @@ export class HelpFormatter {
   formatHelp(isDev: boolean): string {
     const details = this.getCommandDetails(isDev);
 
-    let text = "**Healthy Crypto Index DCA Bot**\n\n";
+    let text = "**CMI DCA Bot**\n\n";
     text += "Target allocations:\n";
     text += "- BTC: 40%\n";
     text += "- ETH: 30%\n";
@@ -100,8 +100,8 @@ export class HelpFormatter {
   }
 
   formatStartMessage(isDev: boolean = false): string {
-    let text = "**DCA Bot for Solana**\n\n";
-    text += "Automated dollar-cost averaging into BTC, ETH, and SOL.\n\n";
+    let text = "**CMI DCA Bot**\n\n";
+    text += "Automated Crypto Majors Index DCA on Solana.\n\n";
     text += "**Quick Start:**\n";
     text += "1. `/wallet create` - Create your wallet\n";
     text += "2. Deposit SOL to fund transactions\n";
