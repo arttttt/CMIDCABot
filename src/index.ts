@@ -57,9 +57,6 @@ async function main(): Promise<void> {
   // Create repositories based on mode
   const { userRepository, transactionRepository } = createMainRepositories(dbMode, mainDb);
 
-  // Ensure transaction repository schema is initialized (for sqlite)
-  void transactionRepository;
-
   // Initialize Solana service
   const solana = new SolanaService(config.solana);
 
@@ -128,6 +125,7 @@ async function main(): Promise<void> {
     executePurchase: jupiterSwap && priceService
       ? new ExecutePurchaseUseCase(
           userRepository,
+          transactionRepository,
           jupiterSwap,
           solana,
           priceService,

@@ -4,6 +4,7 @@
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
+import { TransactionRepository } from "../repositories/TransactionRepository.js";
 import { JupiterSwapService, SwapQuote } from "../../services/jupiter-swap.js";
 import { SolanaService, SendTransactionResult } from "../../services/solana.js";
 import { PriceService, TOKEN_MINTS } from "../../services/price.js";
@@ -15,6 +16,7 @@ import { logger } from "../../services/logger.js";
 export class ExecutePurchaseUseCase {
   constructor(
     private userRepository: UserRepository,
+    private transactionRepository: TransactionRepository,
     private jupiterSwap: JupiterSwapService | undefined,
     private solanaService: SolanaService,
     private priceService: PriceService | undefined,
@@ -134,6 +136,23 @@ export class ExecutePurchaseUseCase {
 
     // Calculate price from quote
     const priceUsd = amountUsdc / quote.outputAmount;
+
+    // Save transaction to database
+    try {
+      await this.transactionRepository.create({
+        telegramId,
+        txSignature: sendResult.signature,
+        assetSymbol: assetToBuy,
+        amountUsdc,
+        amountAsset: quote.outputAmount,
+      });
+      logger.debug("ExecutePurchase", "Transaction saved to database");
+    } catch (error) {
+      // Don't fail the purchase if saving fails - the swap already happened
+      logger.warn("ExecutePurchase", "Failed to save transaction to database", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
 
     logger.info("ExecutePurchase", "Purchase completed", {
       signature: sendResult.signature,
