@@ -142,14 +142,6 @@ npx tsc --noEmit
 - **better-sqlite3** + **Kysely** — Local database with type-safe query builder
 - **tsx** — Run TypeScript without compilation
 
-## Devnet
-
-This project runs on Solana Devnet only. To get test SOL:
-
-1. Go to [Solana Faucet](https://faucet.solana.com/)
-2. Enter your wallet address
-3. Request test tokens
-
 ## License
 
 MIT
