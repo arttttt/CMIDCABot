@@ -34,3 +34,6 @@ export { GetPricesUseCase } from "./GetPricesUseCase.js";
 
 // Quote
 export { GetQuoteUseCase } from "./GetQuoteUseCase.js";
+
+// Simulate
+export { SimulateSwapUseCase } from "./SimulateSwapUseCase.js";

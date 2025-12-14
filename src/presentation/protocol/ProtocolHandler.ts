@@ -18,6 +18,7 @@ import {
   GetDcaStatusUseCase,
   GetPricesUseCase,
   GetQuoteUseCase,
+  SimulateSwapUseCase,
 } from "../../domain/usecases/index.js";
 import {
   BalanceFormatter,
@@ -28,6 +29,7 @@ import {
   DcaFormatter,
   PriceFormatter,
   QuoteFormatter,
+  SimulateFormatter,
 } from "../formatters/index.js";
 import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./types.js";
 
@@ -54,6 +56,8 @@ export interface UseCases {
   getPrices: GetPricesUseCase;
   // Quote
   getQuote: GetQuoteUseCase;
+  // Simulate
+  simulateSwap: SimulateSwapUseCase;
 }
 
 interface CommandConfig {
@@ -73,6 +77,7 @@ export class ProtocolHandler {
   private dcaFormatter: DcaFormatter;
   private priceFormatter: PriceFormatter;
   private quoteFormatter: QuoteFormatter;
+  private simulateFormatter: SimulateFormatter;
 
   constructor(
     private useCases: UseCases,
@@ -86,6 +91,7 @@ export class ProtocolHandler {
     this.dcaFormatter = new DcaFormatter();
     this.priceFormatter = new PriceFormatter();
     this.quoteFormatter = new QuoteFormatter();
+    this.simulateFormatter = new SimulateFormatter();
 
     this.registerCommands();
   }
@@ -144,6 +150,13 @@ export class ProtocolHandler {
       name: "quote",
       description: "Get swap quote USDC→asset (dev mode)",
       handler: (args) => this.handleQuote(args),
+      devOnly: true,
+    });
+
+    this.registerCommand({
+      name: "simulate",
+      description: "Simulate swap transaction (dev mode)",
+      handler: (args, telegramId) => this.handleSimulate(args, telegramId),
       devOnly: true,
     });
   }
@@ -307,5 +320,17 @@ export class ProtocolHandler {
     const asset = args[1] || "SOL";
     const result = await this.useCases.getQuote.execute(amount, asset);
     return this.quoteFormatter.format(result);
+  }
+
+  private async handleSimulate(args: string[], telegramId: number): Promise<UIResponse> {
+    const amountStr = args[0];
+    if (!amountStr) {
+      return this.simulateFormatter.formatUsage();
+    }
+
+    const amount = parseFloat(amountStr);
+    const asset = args[1] || "SOL";
+    const result = await this.useCases.simulateSwap.execute(telegramId, amount, asset);
+    return this.simulateFormatter.format(result);
   }
 }
