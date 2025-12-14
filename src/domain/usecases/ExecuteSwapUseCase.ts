@@ -14,6 +14,7 @@ import { JupiterSwapService, SwapQuote } from "../../services/jupiter-swap.js";
 import { SolanaService, SendTransactionResult } from "../../services/solana.js";
 import { TOKEN_MINTS } from "../../services/price.js";
 import { UserRepository } from "../repositories/UserRepository.js";
+import { TransactionRepository } from "../repositories/TransactionRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../services/logger.js";
 
@@ -39,6 +40,7 @@ export class ExecuteSwapUseCase {
     private jupiterSwap: JupiterSwapService | undefined,
     private solanaService: SolanaService,
     private userRepository: UserRepository,
+    private transactionRepository: TransactionRepository,
     private devPrivateKey?: string,
   ) {}
 
@@ -154,6 +156,23 @@ export class ExecuteSwapUseCase {
         status: "send_error",
         message: sendResult.error ?? "Transaction failed",
       };
+    }
+
+    // Save transaction to database
+    try {
+      await this.transactionRepository.create({
+        telegramId,
+        txSignature: sendResult.signature,
+        assetSymbol: assetUpper,
+        amountUsdc,
+        amountAsset: quote.outputAmount,
+      });
+      logger.debug("ExecuteSwap", "Transaction saved to database");
+    } catch (error) {
+      // Don't fail the swap if saving fails - the swap already happened
+      logger.warn("ExecuteSwap", "Failed to save transaction to database", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     logger.info("ExecuteSwap", "Swap completed", {

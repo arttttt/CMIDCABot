@@ -166,6 +166,7 @@ async function main(): Promise<void> {
       jupiterSwap,
       solana,
       userRepository,
+      transactionRepository,
       config.dcaWallet.devPrivateKey,
     ),
   };
