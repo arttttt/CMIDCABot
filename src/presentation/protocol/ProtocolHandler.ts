@@ -9,6 +9,7 @@ import {
   GetPortfolioStatusUseCase,
   ShowWalletUseCase,
   CreateWalletUseCase,
+  ImportWalletUseCase,
   DeleteWalletUseCase,
   ExportWalletKeyUseCase,
   StartDcaUseCase,
@@ -42,6 +43,7 @@ export interface UseCases {
   // Wallet
   showWallet: ShowWalletUseCase;
   createWallet: CreateWalletUseCase;
+  importWallet: ImportWalletUseCase;
   deleteWallet: DeleteWalletUseCase;
   exportWalletKey: ExportWalletKeyUseCase;
   // DCA
@@ -214,6 +216,15 @@ export class ProtocolHandler {
     if (subcommand === "create") {
       const result = await this.useCases.createWallet.execute(telegramId);
       return this.dcaWalletFormatter.formatCreateWallet(result);
+    }
+
+    if (subcommand === "import") {
+      const privateKey = args[1];
+      if (!privateKey) {
+        return this.dcaWalletFormatter.formatImportUsage();
+      }
+      const result = await this.useCases.importWallet.execute(telegramId, privateKey);
+      return this.dcaWalletFormatter.formatImportWallet(result);
     }
 
     if (subcommand === "export") {
