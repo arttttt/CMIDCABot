@@ -6,6 +6,7 @@ import SQLite, { Database } from "better-sqlite3";
 import { mkdirSync, existsSync } from "fs";
 import { dirname } from "path";
 import type { MainDatabase, MockDatabase } from "../types/database.js";
+import { logger } from "../../services/logger.js";
 
 /**
  * Create a Kysely instance for the main database
@@ -141,7 +142,7 @@ function resetMockDatabaseIfNeeded(db: Database): void {
 
   for (const table of tables) {
     if (isTableSchemaOutdated(db, table, MOCK_SCHEMA_VERSION[table])) {
-      console.log(`[DB] Schema mismatch detected for table '${table}' - resetting database...`);
+      logger.info("Database", "Schema mismatch detected - resetting database", { table });
       dropAllMockTables(db);
       return;
     }
@@ -182,5 +183,5 @@ function dropAllMockTables(db: Database): void {
   db.exec("DROP TABLE IF EXISTS portfolio");
   db.exec("DROP TABLE IF EXISTS scheduler_state");
   db.exec("DROP INDEX IF EXISTS idx_purchases_user");
-  console.log("[DB] All mock tables dropped - will be recreated with fresh schema");
+  logger.info("Database", "All mock tables dropped - will be recreated with fresh schema");
 }

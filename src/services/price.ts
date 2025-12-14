@@ -7,6 +7,7 @@
  */
 
 import { AssetSymbol } from "../types/portfolio.js";
+import { logger } from "./logger.js";
 
 // Jupiter Price API v3 endpoint (requires API key from https://portal.jup.ag)
 const JUPITER_PRICE_API = "https://api.jup.ag/price/v3";
@@ -60,6 +61,7 @@ export class PriceService {
   async getPrices(): Promise<AssetPrices> {
     // Check cache
     if (this.cachedPrices && this.isCacheValid()) {
+      logger.debug("PriceService", "Using cached prices");
       return this.cachedPrices;
     }
 
@@ -67,6 +69,7 @@ export class PriceService {
     const mints = [TOKEN_MINTS.BTC, TOKEN_MINTS.ETH, TOKEN_MINTS.SOL];
     const url = `${this.baseUrl}?ids=${mints.join(",")}`;
 
+    logger.debug("PriceService", "Fetching prices from Jupiter");
     const response = await fetch(url, {
       headers: {
         "x-api-key": this.apiKey,
@@ -74,6 +77,10 @@ export class PriceService {
     });
 
     if (!response.ok) {
+      logger.error("PriceService", "Jupiter API error", {
+        status: response.status,
+        statusText: response.statusText,
+      });
       throw new Error(`Jupiter Price API error: ${response.status} ${response.statusText}`);
     }
 
@@ -89,8 +96,15 @@ export class PriceService {
 
     // Validate all prices were fetched
     if (prices.BTC === 0 || prices.ETH === 0 || prices.SOL === 0) {
+      logger.error("PriceService", "Failed to fetch some asset prices");
       throw new Error("Failed to fetch some asset prices from Jupiter");
     }
+
+    logger.debug("PriceService", "Prices fetched", {
+      BTC: prices.BTC,
+      ETH: prices.ETH,
+      SOL: prices.SOL,
+    });
 
     // Update cache
     this.cachedPrices = prices;
