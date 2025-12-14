@@ -12,7 +12,17 @@ import { logger } from "./logger.js";
 // Jupiter Swap API v1 endpoint
 const JUPITER_SWAP_API = "https://api.jup.ag/swap/v1";
 
-// SOL has 9 decimals, USDC has 6 decimals
+/**
+ * Token decimal places for amount conversion.
+ *
+ * Solana tokens store amounts as integers in smallest units:
+ *   actual_amount = raw_amount / 10^decimals
+ *
+ * Examples:
+ *   1 SOL = 1,000,000,000 lamports (9 decimals)
+ *   1 USDC = 1,000,000 units (6 decimals)
+ *   1 BTC (cbBTC) = 100,000,000 satoshis (8 decimals)
+ */
 export const TOKEN_DECIMALS = {
   SOL: 9,
   USDC: 6,

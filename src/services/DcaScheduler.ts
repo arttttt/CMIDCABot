@@ -156,6 +156,12 @@ export class DcaScheduler {
 
   /**
    * Schedule the next run
+   *
+   * Calculates next execution time based on last run timestamp to maintain
+   * consistent intervals. If no previous run exists, schedules from now.
+   *
+   * On execution failure, retries after 60 seconds instead of waiting
+   * full interval to minimize missed purchases.
    */
   private async scheduleNextRun(): Promise<void> {
     if (!this.isRunning) {
@@ -165,6 +171,8 @@ export class DcaScheduler {
     const state = await this.schedulerRepository.getState();
     const lastRunAt = state?.lastRunAt ? state.lastRunAt.getTime() : null;
 
+    // Calculate next run relative to last execution, not current time.
+    // This ensures consistent intervals even if execution takes time.
     let nextRunTime: number;
     if (lastRunAt) {
       nextRunTime = lastRunAt + this.config.intervalMs;
@@ -172,6 +180,8 @@ export class DcaScheduler {
       nextRunTime = Date.now() + this.config.intervalMs;
     }
 
+    // If next run time is in the past (shouldn't happen normally),
+    // execute immediately (delay = 0)
     const delay = Math.max(0, nextRunTime - Date.now());
     logger.info("DcaScheduler", "Next run scheduled", {
       nextRunAt: new Date(nextRunTime).toISOString(),
@@ -202,7 +212,17 @@ export class DcaScheduler {
   }
 
   /**
-   * Catch up on missed runs
+   * Catch up on missed runs after bot restart
+   *
+   * Algorithm:
+   * 1. Calculate how many intervals were missed during downtime
+   *    missedIntervals = floor((now - lastRunAt) / intervalMs)
+   * 2. Execute each missed interval sequentially with its original timestamp
+   * 3. If any execution fails, stop catch-up to prevent cascading errors
+   * 4. After catch-up (or if nothing missed), schedule the next regular run
+   *
+   * Example: If interval is 24h, last run was 50h ago, bot will execute
+   * 2 catch-up runs (for hours 24 and 48), then schedule next at hour 72.
    */
   private async catchUpMissedRuns(): Promise<void> {
     const state = await this.schedulerRepository.getState();
@@ -216,6 +236,7 @@ export class DcaScheduler {
 
     const now = Date.now();
     const timeSinceLastRun = now - lastRunAt;
+    // Integer division: counts only complete intervals that passed
     const missedIntervals = Math.floor(timeSinceLastRun / this.config.intervalMs);
 
     if (missedIntervals <= 0) {
@@ -228,6 +249,7 @@ export class DcaScheduler {
       missedIntervals,
     });
 
+    // Execute missed runs sequentially, each with its scheduled timestamp
     for (let i = 1; i <= missedIntervals; i++) {
       if (!this.isRunning) {
         logger.warn("DcaScheduler", "Stopped during catch-up");

@@ -101,6 +101,12 @@ export class DcaService {
 
   /**
    * Get portfolio status with allocations and deviation analysis
+   *
+   * Deviation = currentAllocation - targetAllocation
+   *   - Negative deviation means asset is BELOW target (needs buying)
+   *   - Positive deviation means asset is ABOVE target (overweight)
+   *
+   * The asset with the most negative deviation is selected for the next purchase.
    */
   async getPortfolioStatus(telegramId: number): Promise<PortfolioStatus | null> {
     const portfolio = await this.portfolioRepository.getById(telegramId);
@@ -112,7 +118,11 @@ export class DcaService {
     const allocations = this.calculateAllocations(portfolio, prices);
     const totalValueInUsdc = allocations.reduce((sum, a) => sum + a.valueInUsdc, 0);
 
-    // Find asset with maximum negative deviation (most below target)
+    // Find asset with maximum negative deviation (most below target).
+    // Example: BTC target 40%, current 30% → deviation -10%
+    //          ETH target 30%, current 35% → deviation +5%
+    //          SOL target 30%, current 35% → deviation +5%
+    // Result: Buy BTC (deviation -10% is most negative)
     let assetToBuy: AssetSymbol = "BTC";
     let maxDeviation = 0;
 
@@ -133,6 +143,13 @@ export class DcaService {
 
   /**
    * Calculate current allocations vs target
+   *
+   * Formula for each asset:
+   *   valueInUsdc = balance × price
+   *   currentAllocation = valueInUsdc / totalPortfolioValue
+   *   deviation = currentAllocation - targetAllocation
+   *
+   * Target allocations: BTC 40%, ETH 30%, SOL 30%
    */
   private calculateAllocations(portfolio: PortfolioBalances, prices: Record<AssetSymbol, number>): AllocationInfo[] {
     const assets: { symbol: AssetSymbol; balance: number }[] = [
@@ -141,7 +158,7 @@ export class DcaService {
       { symbol: "SOL", balance: portfolio.solBalance },
     ];
 
-    // Calculate total value in USDC
+    // Step 1: Calculate USD value of each asset
     let totalValueInUsdc = 0;
     const values: { symbol: AssetSymbol; balance: number; valueInUsdc: number }[] = [];
 
@@ -151,8 +168,9 @@ export class DcaService {
       values.push({ ...asset, valueInUsdc });
     }
 
-    // Calculate allocations
+    // Step 2: Calculate allocation percentage and deviation from target
     return values.map((v) => {
+      // Avoid division by zero for empty portfolios
       const currentAllocation = totalValueInUsdc > 0 ? v.valueInUsdc / totalValueInUsdc : 0;
       const targetAllocation = TARGET_ALLOCATIONS[v.symbol];
       const deviation = currentAllocation - targetAllocation;

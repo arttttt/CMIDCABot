@@ -273,6 +273,14 @@ export class SolanaService {
   /**
    * Sign and send a transaction to the network.
    *
+   * Pipeline:
+   * 1. Create signer from private key bytes
+   * 2. Decode base64 transaction → bytes → Transaction object
+   * 3. Sign with user's keypair (adds signature to transaction)
+   * 4. Encode back: Transaction → bytes → base64
+   * 5. Send to network via RPC
+   * 6. Poll for confirmation (up to 30 seconds)
+   *
    * @param transactionBase64 - Base64 encoded serialized transaction (from Jupiter API)
    * @param privateKeyBase64 - Base64 encoded private key for signing
    * @returns SendTransactionResult with signature, confirmation status, and any errors
@@ -360,6 +368,14 @@ export class SolanaService {
   /**
    * Wait for transaction confirmation by polling getSignatureStatuses.
    *
+   * Solana commitment levels (in order of finality):
+   * - processed: Transaction is in a block (may be rolled back)
+   * - confirmed: Block has been voted on by supermajority (very unlikely to rollback)
+   * - finalized: Block is rooted, 31+ confirmations (irreversible)
+   *
+   * We accept "confirmed" as sufficient - it's safe for most use cases
+   * and much faster than waiting for "finalized" (~400ms vs ~13s).
+   *
    * @param signature - Transaction signature to check
    * @param timeoutMs - Maximum time to wait in milliseconds
    * @returns true if confirmed, false if timed out or failed
@@ -377,12 +393,12 @@ export class SolanaService {
         const status = result.value[0];
 
         if (status !== null) {
-          // Check if transaction failed
+          // Transaction explicitly failed (e.g., insufficient funds, program error)
           if (status.err !== null) {
             return false;
           }
 
-          // Check if confirmed or finalized
+          // Accept both confirmed and finalized as success
           if (status.confirmationStatus === "confirmed" || status.confirmationStatus === "finalized") {
             return true;
           }
