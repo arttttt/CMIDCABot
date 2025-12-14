@@ -4,20 +4,18 @@
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
-import { TransactionRepository } from "../repositories/TransactionRepository.js";
-import { JupiterSwapService, SwapQuote } from "../../services/jupiter-swap.js";
-import { SolanaService, SendTransactionResult } from "../../services/solana.js";
+import { SolanaService } from "../../services/solana.js";
 import { PriceService, TOKEN_MINTS } from "../../services/price.js";
 import { TOKEN_DECIMALS } from "../../services/jupiter-swap.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { PurchaseResult } from "./types.js";
+import { ExecuteSwapUseCase, ExecuteSwapResult } from "./ExecuteSwapUseCase.js";
 import { logger } from "../../services/logger.js";
 
 export class ExecutePurchaseUseCase {
   constructor(
     private userRepository: UserRepository,
-    private transactionRepository: TransactionRepository,
-    private jupiterSwap: JupiterSwapService | undefined,
+    private executeSwapUseCase: ExecuteSwapUseCase,
     private solanaService: SolanaService,
     private priceService: PriceService | undefined,
     private devPrivateKey?: string,
@@ -29,9 +27,9 @@ export class ExecutePurchaseUseCase {
       amountUsdc,
     });
 
-    // Check if Jupiter is available
-    if (!this.jupiterSwap || !this.priceService) {
-      logger.warn("ExecutePurchase", "Jupiter or Price service unavailable");
+    // Check if PriceService is available (needed for selectAssetToBuy)
+    if (!this.priceService) {
+      logger.warn("ExecutePurchase", "Price service unavailable");
       return { type: "unavailable" };
     }
 
@@ -48,130 +46,83 @@ export class ExecutePurchaseUseCase {
       };
     }
 
-    // Get user's wallet info
+    // Get wallet address for portfolio selection
     let walletAddress: string | undefined;
-    let privateKey: string | undefined;
 
     if (this.devPrivateKey) {
-      // In dev mode, use dev wallet
-      privateKey = this.devPrivateKey;
       walletAddress = await this.solanaService.getAddressFromPrivateKey(this.devPrivateKey);
     } else {
-      // Get user's wallet from database
       const user = await this.userRepository.getById(telegramId);
-      if (user?.privateKey) {
-        privateKey = user.privateKey;
-        walletAddress = user.walletAddress ?? undefined;
-      }
+      walletAddress = user?.walletAddress ?? undefined;
     }
 
-    if (!walletAddress || !privateKey) {
+    if (!walletAddress) {
       logger.warn("ExecutePurchase", "No wallet connected", { telegramId });
       return { type: "no_wallet" };
-    }
-
-    // Check USDC balance
-    const usdcBalance = await this.solanaService.getUsdcBalance(walletAddress);
-    if (usdcBalance < amountUsdc) {
-      logger.warn("ExecutePurchase", "Insufficient USDC balance", {
-        required: amountUsdc,
-        available: usdcBalance,
-      });
-      return {
-        type: "insufficient_balance",
-        requiredBalance: amountUsdc,
-        availableBalance: usdcBalance,
-      };
     }
 
     // Determine which asset to buy based on portfolio allocation
     const assetToBuy = await this.selectAssetToBuy(walletAddress);
     logger.info("ExecutePurchase", "Selected asset to buy", { asset: assetToBuy });
 
-    const outputMint = TOKEN_MINTS[assetToBuy];
+    // Delegate to ExecuteSwapUseCase
+    const swapResult = await this.executeSwapUseCase.execute(telegramId, amountUsdc, assetToBuy);
 
-    // Step 1: Get quote
-    logger.step("ExecutePurchase", 1, 3, "Getting quote from Jupiter...");
-    let quote: SwapQuote;
-    try {
-      quote = await this.jupiterSwap.getQuoteUsdcToToken(amountUsdc, outputMint);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      logger.error("ExecutePurchase", "Quote failed", { error: message });
-      return { type: "quote_error", error: message };
+    // Map ExecuteSwapResult to PurchaseResult
+    return this.mapSwapResultToPurchaseResult(swapResult, assetToBuy, amountUsdc);
+  }
+
+  /**
+   * Map ExecuteSwapResult to PurchaseResult
+   */
+  private mapSwapResultToPurchaseResult(
+    swapResult: ExecuteSwapResult,
+    asset: AssetSymbol,
+    amountUsdc: number,
+  ): PurchaseResult {
+    switch (swapResult.status) {
+      case "success": {
+        const priceUsd = amountUsdc / swapResult.quote.outputAmount;
+        logger.info("ExecutePurchase", "Purchase completed", {
+          signature: swapResult.signature,
+          confirmed: swapResult.confirmed,
+          asset,
+          amount: swapResult.quote.outputAmount,
+          amountUsdc,
+          priceUsd,
+        });
+        return {
+          type: "success",
+          asset,
+          amountAsset: swapResult.quote.outputAmount,
+          amountUsdc,
+          priceUsd,
+          signature: swapResult.signature,
+          confirmed: swapResult.confirmed,
+        };
+      }
+      case "unavailable":
+        return { type: "unavailable" };
+      case "no_wallet":
+        return { type: "no_wallet" };
+      case "invalid_amount":
+        return { type: "invalid_amount", error: swapResult.message };
+      case "invalid_asset":
+        // This should not happen since we control the asset selection
+        return { type: "invalid_amount", error: swapResult.message };
+      case "insufficient_balance":
+        return {
+          type: "insufficient_balance",
+          requiredBalance: swapResult.required,
+          availableBalance: swapResult.available,
+        };
+      case "quote_error":
+        return { type: "quote_error", error: swapResult.message };
+      case "build_error":
+        return { type: "build_error", error: swapResult.message };
+      case "send_error":
+        return { type: "send_error", error: swapResult.message };
     }
-
-    // Step 2: Build transaction
-    logger.step("ExecutePurchase", 2, 3, "Building transaction...");
-    let transactionBase64: string;
-    try {
-      const swapTx = await this.jupiterSwap.buildSwapTransaction(quote, walletAddress);
-      transactionBase64 = swapTx.transactionBase64;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      logger.error("ExecutePurchase", "Build failed", { error: message });
-      return { type: "build_error", error: message };
-    }
-
-    // Step 3: Sign and send transaction
-    logger.step("ExecutePurchase", 3, 3, "Signing and sending transaction...");
-    let sendResult: SendTransactionResult;
-    try {
-      sendResult = await this.solanaService.signAndSendTransaction(transactionBase64, privateKey);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      logger.error("ExecutePurchase", "Send failed", { error: message });
-      return { type: "send_error", error: message };
-    }
-
-    if (!sendResult.success || !sendResult.signature) {
-      logger.error("ExecutePurchase", "Transaction failed", {
-        error: sendResult.error,
-      });
-      return {
-        type: "send_error",
-        error: sendResult.error ?? "Transaction failed",
-      };
-    }
-
-    // Calculate price from quote
-    const priceUsd = amountUsdc / quote.outputAmount;
-
-    // Save transaction to database
-    try {
-      await this.transactionRepository.create({
-        telegramId,
-        txSignature: sendResult.signature,
-        assetSymbol: assetToBuy,
-        amountUsdc,
-        amountAsset: quote.outputAmount,
-      });
-      logger.debug("ExecutePurchase", "Transaction saved to database");
-    } catch (error) {
-      // Don't fail the purchase if saving fails - the swap already happened
-      logger.warn("ExecutePurchase", "Failed to save transaction to database", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-
-    logger.info("ExecutePurchase", "Purchase completed", {
-      signature: sendResult.signature,
-      confirmed: sendResult.confirmed,
-      asset: assetToBuy,
-      amount: quote.outputAmount,
-      amountUsdc,
-      priceUsd,
-    });
-
-    return {
-      type: "success",
-      asset: assetToBuy,
-      amountAsset: quote.outputAmount,
-      amountUsdc,
-      priceUsd,
-      signature: sendResult.signature,
-      confirmed: sendResult.confirmed,
-    };
   }
 
   /**

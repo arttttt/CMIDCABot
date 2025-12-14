@@ -117,6 +117,15 @@ async function main(): Promise<void> {
   // Create helpers
   const walletHelper = new WalletInfoHelper(solana, config.dcaWallet);
 
+  // Create ExecuteSwapUseCase first (used by ExecutePurchaseUseCase)
+  const executeSwapUseCase = new ExecuteSwapUseCase(
+    jupiterSwap,
+    solana,
+    userRepository,
+    transactionRepository,
+    config.dcaWallet.devPrivateKey,
+  );
+
   // Create use cases
   const useCases: UseCases = {
     // User
@@ -125,8 +134,7 @@ async function main(): Promise<void> {
     executePurchase: jupiterSwap && priceService
       ? new ExecutePurchaseUseCase(
           userRepository,
-          transactionRepository,
-          jupiterSwap,
+          executeSwapUseCase,
           solana,
           priceService,
           config.dcaWallet.devPrivateKey,
@@ -162,13 +170,7 @@ async function main(): Promise<void> {
       config.dcaWallet.devPrivateKey,
     ),
     // Swap
-    executeSwap: new ExecuteSwapUseCase(
-      jupiterSwap,
-      solana,
-      userRepository,
-      transactionRepository,
-      config.dcaWallet.devPrivateKey,
-    ),
+    executeSwap: executeSwapUseCase,
   };
 
   // Create protocol handler
