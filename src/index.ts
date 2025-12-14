@@ -221,9 +221,10 @@ async function main(): Promise<void> {
   // Get bot info and prepare for polling
   const botInfo = await bot.api.getMe();
 
+  // Delete any existing webhook to ensure polling works
+  await bot.api.deleteWebhook({ drop_pending_updates: true });
+
   if (config.isDev) {
-    // Delete any existing webhook to ensure polling works
-    await bot.api.deleteWebhook({ drop_pending_updates: true });
     console.log("─".repeat(50));
     console.log("DEVELOPMENT MODE");
     console.log("─".repeat(50));
