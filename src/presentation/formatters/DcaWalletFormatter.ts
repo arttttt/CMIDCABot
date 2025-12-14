@@ -39,14 +39,16 @@ export class DcaWalletFormatter {
           text:
             `**DCA Wallet**\n\n` +
             this.formatWalletInfo(result.wallet!) +
-            `\n\nDeposit SOL to this address to fund your DCA purchases.`,
+            `\n\nDeposit SOL to this address to fund your DCA purchases.\n\n` +
+            `_Commands: /wallet export | /wallet delete_`,
         };
 
       case "no_wallet":
         return {
           text:
             `No wallet found.\n\n` +
-            `Use /wallet create to generate a new wallet.`,
+            `Use /wallet create to generate a new wallet\n` +
+            `or /wallet import <key> to import existing one.`,
         };
 
       default:

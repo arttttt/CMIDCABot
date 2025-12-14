@@ -34,7 +34,7 @@ export class PortfolioFormatter {
 
       case "success": {
         const status = result.status!;
-        let text = "Portfolio Status\n";
+        let text = "**Portfolio Status**\n";
         text += "─".repeat(25) + "\n\n";
 
         for (const alloc of status.allocations) {
@@ -55,7 +55,8 @@ export class PortfolioFormatter {
 
         if (status.maxDeviation < 0) {
           const deviationPct = Math.abs(status.maxDeviation * 100).toFixed(1);
-          text += `Next buy: ${status.assetToBuy} (${deviationPct}% below target)`;
+          text += `Next buy: ${status.assetToBuy} (${deviationPct}% below target)\n\n`;
+          text += `_Command: /portfolio buy <usdc>_`;
         } else {
           text += `Portfolio is balanced`;
         }
