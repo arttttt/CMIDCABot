@@ -76,7 +76,7 @@ export class PurchaseFormatter {
   formatUsage(): UIResponse {
     return {
       text:
-        "Usage: /portfolio buy <amount_usdc>\n\n" +
+        "Usage: /portfolio buy {amount}\n\n" +
         "Example: /portfolio buy 10\n\n" +
         "This will purchase the asset furthest below its target allocation.",
     };
