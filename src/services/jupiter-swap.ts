@@ -7,6 +7,7 @@
  */
 
 import { TOKEN_MINTS } from "./price.js";
+import { logger } from "./logger.js";
 
 // Jupiter Swap API v1 endpoint
 const JUPITER_SWAP_API = "https://api.jup.ag/swap/v1";
@@ -123,18 +124,30 @@ export class JupiterSwapService {
     url.searchParams.set("amount", params.amount);
     url.searchParams.set("slippageBps", slippageBps.toString());
 
+    logger.api("Jupiter", "GET", url.toString());
+    const startTime = Date.now();
+
     const response = await fetch(url.toString(), {
       headers: {
         "x-api-key": this.apiKey,
       },
     });
 
+    const duration = Date.now() - startTime;
+
     if (!response.ok) {
       const errorText = await response.text();
+      logger.error("Jupiter", "Quote API error", {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+        duration,
+      });
       throw new Error(`Jupiter Quote API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = (await response.json()) as JupiterQuoteResponse;
+    logger.api("Jupiter", "GET", "/quote", response.status, duration);
 
     // Determine symbols from mints
     const inputSymbol = this.getSymbolFromMint(data.inputMint);
@@ -151,7 +164,7 @@ export class JupiterSwapService {
     // Extract route labels
     const route = data.routePlan.map((step) => step.swapInfo.label);
 
-    return {
+    const quote = {
       inputMint: data.inputMint,
       inputSymbol,
       inputAmount,
@@ -167,6 +180,15 @@ export class JupiterSwapService {
       fetchedAt: new Date(),
       rawQuoteResponse: data,
     };
+
+    logger.info("Jupiter", "Quote received", {
+      input: `${inputAmount} ${inputSymbol}`,
+      output: `${outputAmount} ${outputSymbol}`,
+      priceImpact: `${quote.priceImpactPct}%`,
+      route: route.join(" → "),
+    });
+
+    return quote;
   }
 
   /**
@@ -177,6 +199,14 @@ export class JupiterSwapService {
     quote: SwapQuote,
     userPublicKey: string,
   ): Promise<SwapTransaction> {
+    logger.step("Jupiter", 1, 2, "Building swap transaction...");
+    logger.debug("Jupiter", "Build request", {
+      userPublicKey,
+      inputAmount: quote.inputAmount,
+      outputAmount: quote.outputAmount,
+    });
+
+    const startTime = Date.now();
     const response = await fetch(`${this.baseUrl}/swap`, {
       method: "POST",
       headers: {
@@ -198,12 +228,27 @@ export class JupiterSwapService {
       }),
     });
 
+    const duration = Date.now() - startTime;
+
     if (!response.ok) {
       const errorText = await response.text();
+      logger.error("Jupiter", "Swap build API error", {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+        duration,
+      });
       throw new Error(`Jupiter Swap API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = (await response.json()) as JupiterSwapResponse;
+
+    logger.api("Jupiter", "POST", "/swap", response.status, duration);
+    logger.info("Jupiter", "Transaction built", {
+      lastValidBlockHeight: data.lastValidBlockHeight,
+      priorityFee: `${data.prioritizationFeeLamports} lamports`,
+      computeUnitLimit: data.computeUnitLimit,
+    });
 
     return {
       transactionBase64: data.swapTransaction,

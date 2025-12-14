@@ -15,6 +15,7 @@ import { SolanaService, SendTransactionResult } from "../../services/solana.js";
 import { TOKEN_MINTS } from "../../services/price.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
+import { logger } from "../../services/logger.js";
 
 export type ExecuteSwapResult =
   | {
@@ -52,8 +53,15 @@ export class ExecuteSwapUseCase {
     amountUsdc: number,
     asset: string = "SOL",
   ): Promise<ExecuteSwapResult> {
+    logger.info("ExecuteSwap", "Starting swap execution", {
+      telegramId,
+      amountUsdc,
+      asset,
+    });
+
     // Check if Jupiter is available
     if (!this.jupiterSwap) {
+      logger.warn("ExecuteSwap", "Jupiter service unavailable");
       return { status: "unavailable" };
     }
 
@@ -105,39 +113,55 @@ export class ExecuteSwapUseCase {
     const outputMint = TOKEN_MINTS[assetUpper];
 
     // Step 1: Get quote
+    logger.step("ExecuteSwap", 1, 3, "Getting quote from Jupiter...");
     let quote: SwapQuote;
     try {
       quote = await this.jupiterSwap.getQuoteUsdcToToken(amountUsdc, outputMint);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("ExecuteSwap", "Quote failed", { error: message });
       return { status: "quote_error", message };
     }
 
     // Step 2: Build transaction
+    logger.step("ExecuteSwap", 2, 3, "Building transaction...");
     let transactionBase64: string;
     try {
       const swapTx = await this.jupiterSwap.buildSwapTransaction(quote, walletAddress);
       transactionBase64 = swapTx.transactionBase64;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("ExecuteSwap", "Build failed", { error: message });
       return { status: "build_error", message };
     }
 
     // Step 3: Sign and send transaction
+    logger.step("ExecuteSwap", 3, 3, "Signing and sending transaction...");
     let sendResult: SendTransactionResult;
     try {
       sendResult = await this.solanaService.signAndSendTransaction(transactionBase64, privateKey);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("ExecuteSwap", "Send failed", { error: message });
       return { status: "send_error", message };
     }
 
     if (!sendResult.success || !sendResult.signature) {
+      logger.error("ExecuteSwap", "Transaction failed", {
+        error: sendResult.error,
+      });
       return {
         status: "send_error",
         message: sendResult.error ?? "Transaction failed",
       };
     }
+
+    logger.info("ExecuteSwap", "Swap completed", {
+      signature: sendResult.signature,
+      confirmed: sendResult.confirmed,
+      inputAmount: `${quote.inputAmount} ${quote.inputSymbol}`,
+      outputAmount: `${quote.outputAmount} ${quote.outputSymbol}`,
+    });
 
     return {
       status: "success",
