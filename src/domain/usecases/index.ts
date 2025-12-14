@@ -37,3 +37,6 @@ export { GetQuoteUseCase } from "./GetQuoteUseCase.js";
 
 // Simulate
 export { SimulateSwapUseCase } from "./SimulateSwapUseCase.js";
+
+// Swap
+export { ExecuteSwapUseCase } from "./ExecuteSwapUseCase.js";

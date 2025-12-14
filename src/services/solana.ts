@@ -5,8 +5,14 @@ import {
   type SolanaRpcApi,
   createKeyPairSignerFromPrivateKeyBytes,
   type KeyPairSigner,
+  type Signature,
 } from "@solana/web3.js";
-import type { Base64EncodedWireTransaction } from "@solana/transactions";
+import {
+  type Base64EncodedWireTransaction,
+  getTransactionDecoder,
+  getTransactionEncoder,
+  signTransaction,
+} from "@solana/transactions";
 import { SolanaConfig } from "../types/index.js";
 
 const LAMPORTS_PER_SOL = 1_000_000_000n;
@@ -27,6 +33,16 @@ export interface SimulationResult {
   error: string | null;
   unitsConsumed: number | null;
   logs: string[];
+}
+
+/**
+ * Result of sending a transaction
+ */
+export interface SendTransactionResult {
+  success: boolean;
+  signature: string | null;
+  error: string | null;
+  confirmed: boolean;
 }
 
 export class SolanaService {
@@ -157,5 +173,107 @@ export class SolanaService {
         logs: [],
       };
     }
+  }
+
+  /**
+   * Sign and send a transaction to the network.
+   *
+   * @param transactionBase64 - Base64 encoded serialized transaction (from Jupiter API)
+   * @param privateKeyBase64 - Base64 encoded private key for signing
+   * @returns SendTransactionResult with signature, confirmation status, and any errors
+   */
+  async signAndSendTransaction(
+    transactionBase64: string,
+    privateKeyBase64: string,
+  ): Promise<SendTransactionResult> {
+    try {
+      // 1. Create signer from private key
+      const signer = await this.createSignerFromPrivateKey(privateKeyBase64);
+
+      // 2. Decode base64 transaction to bytes
+      const transactionBytes = Buffer.from(transactionBase64, "base64");
+
+      // 3. Decode bytes to Transaction object
+      const decoder = getTransactionDecoder();
+      const transaction = decoder.decode(transactionBytes);
+
+      // 4. Sign the transaction with the signer's keypair
+      const signedTransaction = await signTransaction([signer.keyPair], transaction);
+
+      // 5. Encode signed transaction back to base64
+      const encoder = getTransactionEncoder();
+      const signedBytes = encoder.encode(signedTransaction);
+      const signedBase64 = Buffer.from(signedBytes).toString("base64") as Base64EncodedWireTransaction;
+
+      // 6. Send the transaction
+      const signature = await this.rpc
+        .sendTransaction(signedBase64, {
+          encoding: "base64",
+          skipPreflight: false,
+          preflightCommitment: "confirmed",
+        })
+        .send();
+
+      // 7. Wait for confirmation (poll for status)
+      const confirmed = await this.waitForConfirmation(signature, 30000); // 30 second timeout
+
+      return {
+        success: true,
+        signature: signature,
+        error: null,
+        confirmed,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        success: false,
+        signature: null,
+        error: errorMessage,
+        confirmed: false,
+      };
+    }
+  }
+
+  /**
+   * Wait for transaction confirmation by polling getSignatureStatuses.
+   *
+   * @param signature - Transaction signature to check
+   * @param timeoutMs - Maximum time to wait in milliseconds
+   * @returns true if confirmed, false if timed out or failed
+   */
+  private async waitForConfirmation(signature: Signature, timeoutMs: number): Promise<boolean> {
+    const startTime = Date.now();
+    const pollIntervalMs = 1000; // Poll every second
+
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        const result = await this.rpc
+          .getSignatureStatuses([signature])
+          .send();
+
+        const status = result.value[0];
+
+        if (status !== null) {
+          // Check if transaction failed
+          if (status.err !== null) {
+            return false;
+          }
+
+          // Check if confirmed or finalized
+          if (status.confirmationStatus === "confirmed" || status.confirmationStatus === "finalized") {
+            return true;
+          }
+        }
+
+        // Wait before next poll
+        await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+      } catch {
+        // Ignore errors and keep polling
+        await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+      }
+    }
+
+    // Timeout reached
+    return false;
   }
 }

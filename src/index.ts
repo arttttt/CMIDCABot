@@ -31,6 +31,7 @@ import {
   GetPricesUseCase,
   GetQuoteUseCase,
   SimulateSwapUseCase,
+  ExecuteSwapUseCase,
 } from "./domain/usecases/index.js";
 import { ProtocolHandler, UseCases } from "./presentation/protocol/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
@@ -146,6 +147,13 @@ async function main(): Promise<void> {
     getQuote: new GetQuoteUseCase(jupiterSwap),
     // Simulate
     simulateSwap: new SimulateSwapUseCase(
+      jupiterSwap,
+      solana,
+      userRepository,
+      config.dcaWallet.devPrivateKey,
+    ),
+    // Swap
+    executeSwap: new ExecuteSwapUseCase(
       jupiterSwap,
       solana,
       userRepository,
