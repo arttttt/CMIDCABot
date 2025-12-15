@@ -72,21 +72,6 @@ MASTER_ENCRYPTION_KEY=<your-generated-key>
 - Do not change this key after users have created wallets
 - Back up this key securely (e.g., in a password manager or secure vault)
 
-### Migrating Existing Data
-
-If you have an existing database with unencrypted private keys, run the migration script:
-
-```bash
-npx tsx src/scripts/migrate-encrypt-keys.ts
-```
-
-The script will:
-- Find all unencrypted private keys in the database
-- Encrypt them using your master key
-- Skip already-encrypted keys (idempotent)
-
-Always backup your database before running migrations.
-
 ## Running
 
 ### Development mode
