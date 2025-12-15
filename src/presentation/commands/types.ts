@@ -36,6 +36,14 @@ export type CommandHandler = (
 ) => Promise<UIResponse>;
 
 /**
+ * Command entry - definition + handler pair
+ */
+export interface CommandEntry {
+  definition: CommandDefinition;
+  handler: CommandHandler;
+}
+
+/**
  * Mode information for display
  */
 export interface ModeInfo {

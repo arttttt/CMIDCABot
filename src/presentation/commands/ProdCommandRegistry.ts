@@ -9,6 +9,7 @@ import {
   CommandRegistry,
   CommandDefinition,
   CommandHandler,
+  CommandEntry,
   ModeInfo,
 } from "./types.js";
 import { Definitions } from "./definitions.js";
@@ -33,31 +34,24 @@ export interface ProdCommandRegistryDeps {
  * Other commands (portfolio, dca, prices, swap) require dev mode.
  */
 export class ProdCommandRegistry implements CommandRegistry {
-  private definitions: Map<string, CommandDefinition>;
-  private handlers: Map<string, CommandHandler>;
+  private commands: Map<string, CommandEntry>;
 
   constructor(deps: ProdCommandRegistryDeps) {
-    // Compose definitions for prod mode - limited set
-    this.definitions = new Map<string, CommandDefinition>([
-      [Definitions.wallet.name, Definitions.wallet],
-    ]);
-
-    // Compose handlers for prod mode
-    this.handlers = new Map([
-      ["wallet", createWalletHandler(deps.wallet)],
+    this.commands = new Map([
+      ["wallet", { definition: Definitions.wallet, handler: createWalletHandler(deps.wallet) }],
     ]);
   }
 
   getDefinitions(): CommandDefinition[] {
-    return Array.from(this.definitions.values());
+    return Array.from(this.commands.values()).map((entry) => entry.definition);
   }
 
   getDefinition(name: string): CommandDefinition | undefined {
-    return this.definitions.get(name);
+    return this.commands.get(name)?.definition;
   }
 
   getHandler(name: string): CommandHandler | undefined {
-    return this.handlers.get(name);
+    return this.commands.get(name)?.handler;
   }
 
   getModeInfo(): ModeInfo {

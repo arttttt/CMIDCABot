@@ -9,6 +9,7 @@ import {
   CommandRegistry,
   CommandDefinition,
   CommandHandler,
+  CommandEntry,
   ModeInfo,
 } from "./types.js";
 import { Definitions } from "./definitions.js";
@@ -47,39 +48,28 @@ export interface DevCommandRegistryDeps {
  * - swap: Quote/simulate/execute swaps
  */
 export class DevCommandRegistry implements CommandRegistry {
-  private definitions: Map<string, CommandDefinition>;
-  private handlers: Map<string, CommandHandler>;
+  private commands: Map<string, CommandEntry>;
 
   constructor(deps: DevCommandRegistryDeps) {
-    // Compose definitions for dev mode - all commands available
-    this.definitions = new Map<string, CommandDefinition>([
-      [Definitions.wallet.name, Definitions.wallet],
-      [Definitions.portfolio.name, Definitions.portfolio],
-      [Definitions.dca.name, Definitions.dca],
-      [Definitions.prices.name, Definitions.prices],
-      [Definitions.swap.name, Definitions.swap],
-    ]);
-
-    // Compose handlers for dev mode
-    this.handlers = new Map([
-      ["wallet", createWalletHandler(deps.wallet)],
-      ["portfolio", createPortfolioHandler(deps.portfolio)],
-      ["dca", createDcaHandler(deps.dca)],
-      ["prices", createPricesHandler(deps.prices)],
-      ["swap", createSwapHandler(deps.swap)],
+    this.commands = new Map([
+      ["wallet", { definition: Definitions.wallet, handler: createWalletHandler(deps.wallet) }],
+      ["portfolio", { definition: Definitions.portfolio, handler: createPortfolioHandler(deps.portfolio) }],
+      ["dca", { definition: Definitions.dca, handler: createDcaHandler(deps.dca) }],
+      ["prices", { definition: Definitions.prices, handler: createPricesHandler(deps.prices) }],
+      ["swap", { definition: Definitions.swap, handler: createSwapHandler(deps.swap) }],
     ]);
   }
 
   getDefinitions(): CommandDefinition[] {
-    return Array.from(this.definitions.values());
+    return Array.from(this.commands.values()).map((entry) => entry.definition);
   }
 
   getDefinition(name: string): CommandDefinition | undefined {
-    return this.definitions.get(name);
+    return this.commands.get(name)?.definition;
   }
 
   getHandler(name: string): CommandHandler | undefined {
-    return this.handlers.get(name);
+    return this.commands.get(name)?.handler;
   }
 
   getModeInfo(): ModeInfo {

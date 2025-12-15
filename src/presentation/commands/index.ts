@@ -11,6 +11,7 @@
 export type {
   CommandDefinition,
   CommandHandler,
+  CommandEntry,
   CommandRegistry,
   ModeInfo,
   SubcommandDefinition,
