@@ -33,14 +33,14 @@ export interface ProdCommandRegistryDeps {
  * Other commands (portfolio, dca, prices, swap) require dev mode.
  */
 export class ProdCommandRegistry implements CommandRegistry {
-  private definitions: CommandDefinition[];
+  private definitions: Map<string, CommandDefinition>;
   private handlers: Map<string, CommandHandler>;
 
   constructor(deps: ProdCommandRegistryDeps) {
     // Compose definitions for prod mode - limited set
-    this.definitions = [
-      Definitions.wallet,
-    ];
+    this.definitions = new Map<string, CommandDefinition>([
+      [Definitions.wallet.name, Definitions.wallet],
+    ]);
 
     // Compose handlers for prod mode
     this.handlers = new Map([
@@ -49,7 +49,11 @@ export class ProdCommandRegistry implements CommandRegistry {
   }
 
   getDefinitions(): CommandDefinition[] {
-    return this.definitions;
+    return Array.from(this.definitions.values());
+  }
+
+  getDefinition(name: string): CommandDefinition | undefined {
+    return this.definitions.get(name);
   }
 
   getHandler(name: string): CommandHandler | undefined {

@@ -4,7 +4,7 @@
  * Uses CommandDefinition from registry to generate help.
  */
 
-import { CommandDefinition, ModeInfo } from "../commands/types.js";
+import { CommandDefinition, CommandRegistry, ModeInfo } from "../commands/types.js";
 
 export class HelpFormatter {
   /**
@@ -58,10 +58,10 @@ export class HelpFormatter {
   }
 
   /**
-   * Format help for a specific command
+   * Format help for a specific command (O(1) lookup via registry)
    */
-  formatCommandHelp(commandName: string, definitions: CommandDefinition[]): string | null {
-    const cmd = definitions.find((c) => c.name === commandName);
+  formatCommandHelp(commandName: string, registry: CommandRegistry): string | null {
+    const cmd = registry.getDefinition(commandName);
 
     if (!cmd) {
       return null;

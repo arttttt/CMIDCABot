@@ -47,18 +47,18 @@ export interface DevCommandRegistryDeps {
  * - swap: Quote/simulate/execute swaps
  */
 export class DevCommandRegistry implements CommandRegistry {
-  private definitions: CommandDefinition[];
+  private definitions: Map<string, CommandDefinition>;
   private handlers: Map<string, CommandHandler>;
 
   constructor(deps: DevCommandRegistryDeps) {
     // Compose definitions for dev mode - all commands available
-    this.definitions = [
-      Definitions.wallet,
-      Definitions.portfolio,
-      Definitions.dca,
-      Definitions.prices,
-      Definitions.swap,
-    ];
+    this.definitions = new Map<string, CommandDefinition>([
+      [Definitions.wallet.name, Definitions.wallet],
+      [Definitions.portfolio.name, Definitions.portfolio],
+      [Definitions.dca.name, Definitions.dca],
+      [Definitions.prices.name, Definitions.prices],
+      [Definitions.swap.name, Definitions.swap],
+    ]);
 
     // Compose handlers for dev mode
     this.handlers = new Map([
@@ -71,7 +71,11 @@ export class DevCommandRegistry implements CommandRegistry {
   }
 
   getDefinitions(): CommandDefinition[] {
-    return this.definitions;
+    return Array.from(this.definitions.values());
+  }
+
+  getDefinition(name: string): CommandDefinition | undefined {
+    return this.definitions.get(name);
   }
 
   getHandler(name: string): CommandHandler | undefined {
