@@ -1,14 +1,43 @@
 /**
  * In-memory implementation of User repository
+ *
+ * Private keys are encrypted before storage and decrypted on retrieval.
+ * This maintains consistency with SQLite implementation.
  */
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
 import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../../../domain/models/User.js";
+import { KeyEncryptionService } from "../../../services/encryption.js";
 
 export class InMemoryUserRepository implements UserRepository {
   private users = new Map<number, User>();
 
+  constructor(private encryptionService: KeyEncryptionService) {}
+
+  /**
+   * Decrypt a private key from storage.
+   * Returns null if key is null/empty.
+   */
+  private async decryptPrivateKey(encryptedKey: string | null): Promise<string | null> {
+    if (!encryptedKey) return null;
+    return this.encryptionService.decrypt(encryptedKey);
+  }
+
+  /**
+   * Encrypt a private key for storage.
+   */
+  private async encryptPrivateKey(plainKey: string): Promise<string> {
+    return this.encryptionService.encrypt(plainKey);
+  }
+
   async getById(telegramId: number): Promise<User | undefined> {
-    return this.users.get(telegramId);
+    const user = this.users.get(telegramId);
+    if (!user) return undefined;
+
+    // Return a copy with decrypted private key
+    return {
+      ...user,
+      privateKey: await this.decryptPrivateKey(user.privateKey),
+    };
   }
 
   async create(telegramId: number): Promise<void> {
@@ -51,7 +80,8 @@ export class InMemoryUserRepository implements UserRepository {
   async setPrivateKey(telegramId: number, privateKey: string): Promise<void> {
     const user = this.users.get(telegramId);
     if (user) {
-      user.privateKey = privateKey;
+      // Encrypt private key before storage
+      user.privateKey = await this.encryptPrivateKey(privateKey);
       user.updatedAt = new Date();
     }
   }
@@ -68,10 +98,14 @@ export class InMemoryUserRepository implements UserRepository {
     const result: UserWithDcaWallet[] = [];
     for (const user of this.users.values()) {
       if (user.privateKey) {
-        result.push({
-          telegramId: user.telegramId,
-          privateKey: user.privateKey,
-        });
+        // Decrypt private key for use
+        const decryptedKey = await this.decryptPrivateKey(user.privateKey);
+        if (decryptedKey) {
+          result.push({
+            telegramId: user.telegramId,
+            privateKey: decryptedKey,
+          });
+        }
       }
     }
     return result;

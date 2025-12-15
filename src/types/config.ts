@@ -31,6 +31,11 @@ export interface DcaWalletConfig {
   devPrivateKey?: string;
 }
 
+export interface EncryptionConfig {
+  /** Master key for encrypting private keys (base64-encoded 32 bytes) */
+  masterKey: string;
+}
+
 export interface PriceConfig {
   source: PriceSource;
   jupiterApiKey?: string;
@@ -42,6 +47,7 @@ export interface Config {
   database: DatabaseConfig;
   dca: DcaConfig;
   dcaWallet: DcaWalletConfig;
+  encryption: EncryptionConfig;
   price: PriceConfig;
   web?: WebConfig;
   isDev: boolean;

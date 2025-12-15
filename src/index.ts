@@ -11,6 +11,7 @@ import { setLogger, DebugLogger, NoOpLogger } from "./services/logger.js";
 import { createMainDatabase, createMockDatabase } from "./data/datasources/KyselyDatabase.js";
 import { createMainRepositories, createMockRepositories } from "./data/factories/RepositoryFactory.js";
 import { SolanaService } from "./services/solana.js";
+import { getEncryptionService, initializeEncryption } from "./services/encryption.js";
 import { DcaService } from "./services/dca.js";
 import { DcaScheduler } from "./services/DcaScheduler.js";
 import { PriceService } from "./services/price.js";
@@ -64,6 +65,10 @@ async function main(): Promise<void> {
 
   console.log(`Database mode: ${dbMode}`);
 
+  // Initialize encryption service (required for private key protection)
+  await initializeEncryption(config.encryption.masterKey);
+  const encryptionService = getEncryptionService();
+
   // Initialize database connections (only for sqlite mode)
   let mainDb: Kysely<MainDatabase> | undefined;
   let mockDb: Kysely<MockDatabase> | undefined;
@@ -73,7 +78,7 @@ async function main(): Promise<void> {
   }
 
   // Create repositories based on mode
-  const { userRepository, transactionRepository } = createMainRepositories(dbMode, mainDb);
+  const { userRepository, transactionRepository } = createMainRepositories(dbMode, encryptionService, mainDb);
 
   // Initialize Solana service
   const solana = new SolanaService(config.solana);

@@ -23,6 +23,8 @@ import { InMemoryPortfolioRepository } from "../repositories/memory/InMemoryPort
 import { InMemoryPurchaseRepository } from "../repositories/memory/InMemoryPurchaseRepository.js";
 import { InMemorySchedulerRepository } from "../repositories/memory/InMemorySchedulerRepository.js";
 
+import { KeyEncryptionService } from "../../services/encryption.js";
+
 export interface MainRepositories {
   userRepository: UserRepository;
   transactionRepository: TransactionRepository;
@@ -39,11 +41,12 @@ export interface MockRepositories {
  */
 export function createMainRepositories(
   mode: DatabaseMode,
+  encryptionService: KeyEncryptionService,
   db?: Kysely<MainDatabase>,
 ): MainRepositories {
   if (mode === "memory") {
     return {
-      userRepository: new InMemoryUserRepository(),
+      userRepository: new InMemoryUserRepository(encryptionService),
       transactionRepository: new InMemoryTransactionRepository(),
     };
   }
@@ -53,7 +56,7 @@ export function createMainRepositories(
   }
 
   return {
-    userRepository: new SQLiteUserRepository(db),
+    userRepository: new SQLiteUserRepository(db, encryptionService),
     transactionRepository: new SQLiteTransactionRepository(db),
   };
 }

@@ -180,11 +180,19 @@ export class SolanaService {
   }
 
   /**
-   * Create a signer from a base64-encoded private key
+   * Create a signer from a base64-encoded private key.
+   * The input buffer is zeroed immediately after the signer is created
+   * to minimize the time sensitive data remains in JS heap.
    */
   async createSignerFromPrivateKey(privateKeyBase64: string): Promise<KeyPairSigner> {
     const privateKeyBytes = Buffer.from(privateKeyBase64, "base64");
-    return createKeyPairSignerFromPrivateKeyBytes(privateKeyBytes, true);
+    try {
+      const signer = await createKeyPairSignerFromPrivateKeyBytes(privateKeyBytes, true);
+      return signer;
+    } finally {
+      // Zero the buffer to minimize exposure window
+      privateKeyBytes.fill(0);
+    }
   }
 
   /**
