@@ -64,6 +64,7 @@ Clean Architecture with explicit layer separation.
 
 ## Strict Rules (MANDATORY)
 
+- **Always ask for confirmation before taking action** — do not implement, modify, or execute anything without explicit user approval. Propose the plan first, wait for confirmation.
 - No tests unless explicitly requested
 - No long prefaces or introductions
 - No repeating the question — brief context only (1–2 lines)
