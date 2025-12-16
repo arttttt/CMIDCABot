@@ -30,13 +30,15 @@ export class ShowWalletUseCase {
 
     const user = await this.userRepository.getById(telegramId);
 
-    if (!user?.privateKey) {
+    // Check if user has a wallet (privateKey is stored encrypted, walletAddress is plaintext)
+    if (!user?.privateKey || !user?.walletAddress) {
       logger.warn("ShowWallet", "No wallet found", { telegramId });
       return { type: "no_wallet" };
     }
 
-    logger.debug("ShowWallet", "Fetching wallet info");
-    const wallet = await this.walletHelper.getWalletInfo(user.privateKey, false);
+    // Use stored walletAddress instead of decrypting the key
+    logger.debug("ShowWallet", "Fetching wallet info by address");
+    const wallet = await this.walletHelper.getWalletInfoByAddress(user.walletAddress, false);
     logger.info("ShowWallet", "Wallet info retrieved", {
       address: wallet.address,
       balance: wallet.balance,

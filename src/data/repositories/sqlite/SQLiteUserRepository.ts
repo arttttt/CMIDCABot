@@ -1,8 +1,9 @@
 /**
  * SQLite implementation of User repository using Kysely
  *
- * Private keys are encrypted before storage and decrypted on retrieval.
- * This provides data-at-rest encryption for sensitive key material.
+ * Private keys are encrypted at rest using AES-256-GCM.
+ * Keys are stored encrypted and returned encrypted - decryption happens
+ * only at the moment of signing (in SolanaService) to minimize exposure.
  */
 import { Kysely, sql, Selectable } from "kysely";
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
@@ -20,26 +21,17 @@ export class SQLiteUserRepository implements UserRepository {
 
   /**
    * Convert database row to domain model.
-   * Note: privateKey remains encrypted here - use decryptPrivateKey() when needed.
+   * privateKey remains ENCRYPTED - decryption happens only at signing time.
    */
   private rowToModel(row: UserRow): User {
     return {
       telegramId: row.telegram_id,
       walletAddress: row.wallet_address,
-      privateKey: row.private_key, // Still encrypted at this point
+      privateKey: row.private_key, // Encrypted
       isDcaActive: row.is_dca_active === 1,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
-  }
-
-  /**
-   * Decrypt a private key from storage.
-   * Returns null if key is null/empty.
-   */
-  private async decryptPrivateKey(encryptedKey: string | null): Promise<string | null> {
-    if (!encryptedKey) return null;
-    return this.encryptionService.decrypt(encryptedKey);
   }
 
   /**
@@ -49,6 +41,10 @@ export class SQLiteUserRepository implements UserRepository {
     return this.encryptionService.encrypt(plainKey);
   }
 
+  /**
+   * Get user by Telegram ID.
+   * Note: privateKey is returned ENCRYPTED for security.
+   */
   async getById(telegramId: number): Promise<User | undefined> {
     const row = await this.db
       .selectFrom("users")
@@ -58,10 +54,7 @@ export class SQLiteUserRepository implements UserRepository {
 
     if (!row) return undefined;
 
-    const user = this.rowToModel(row);
-    // Decrypt private key if present
-    user.privateKey = await this.decryptPrivateKey(user.privateKey);
-    return user;
+    return this.rowToModel(row);
   }
 
   async create(telegramId: number): Promise<void> {
@@ -122,6 +115,10 @@ export class SQLiteUserRepository implements UserRepository {
       .execute();
   }
 
+  /**
+   * Get all users with DCA wallets.
+   * Note: privateKey is returned ENCRYPTED for security.
+   */
   async getAllWithDcaWallet(): Promise<UserWithDcaWallet[]> {
     const rows = await this.db
       .selectFrom("users")
@@ -130,18 +127,10 @@ export class SQLiteUserRepository implements UserRepository {
       .where("private_key", "!=", "")
       .execute();
 
-    // Decrypt all private keys
-    const results: UserWithDcaWallet[] = [];
-    for (const row of rows) {
-      const decryptedKey = await this.decryptPrivateKey(row.private_key);
-      if (decryptedKey) {
-        results.push({
-          telegramId: row.telegram_id,
-          privateKey: decryptedKey,
-        });
-      }
-    }
-    return results;
+    return rows.map((row) => ({
+      telegramId: row.telegram_id,
+      privateKey: row.private_key!, // Encrypted
+    }));
   }
 
   async setDcaActive(telegramId: number, active: boolean): Promise<void> {

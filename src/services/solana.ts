@@ -15,6 +15,7 @@ import {
 } from "@solana/transactions";
 import { SolanaConfig } from "../types/index.js";
 import { logger } from "./logger.js";
+import type { KeyEncryptionService } from "./encryption.js";
 
 const LAMPORTS_PER_SOL = 1_000_000_000n;
 
@@ -396,6 +397,112 @@ export class SolanaService {
       logger.step("Solana", 4, 4, "Waiting for confirmation...");
       const confirmStartTime = Date.now();
       const confirmed = await this.waitForConfirmation(signature, 30000); // 30 second timeout
+      const confirmDuration = Date.now() - confirmStartTime;
+
+      if (confirmed) {
+        logger.tx("Solana", "Transaction CONFIRMED", {
+          signature,
+          confirmationTime: `${confirmDuration}ms`,
+        });
+      } else {
+        logger.warn("Solana", "Transaction confirmation timeout", {
+          signature,
+          timeout: "30s",
+        });
+      }
+
+      return {
+        success: true,
+        signature: signature,
+        error: null,
+        confirmed,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error("Solana", "Transaction failed", { error: errorMessage });
+      return {
+        success: false,
+        signature: null,
+        error: errorMessage,
+        confirmed: false,
+      };
+    }
+  }
+
+  /**
+   * Sign and send a transaction with ENCRYPTED private key.
+   *
+   * This is the secure signing method that minimizes private key exposure:
+   * 1. Decrypt the encrypted key to a Buffer
+   * 2. Create signer from bytes
+   * 3. IMMEDIATELY zero the buffer (microseconds exposure)
+   * 4. Sign and send transaction
+   *
+   * @param transactionBase64 - Base64 encoded serialized transaction (from Jupiter API)
+   * @param encryptedPrivateKey - AES-256-GCM encrypted private key from database
+   * @param encryptionService - Service to decrypt the key
+   * @returns SendTransactionResult with signature, confirmation status, and any errors
+   */
+  async signAndSendTransactionSecure(
+    transactionBase64: string,
+    encryptedPrivateKey: string,
+    encryptionService: KeyEncryptionService,
+  ): Promise<SendTransactionResult> {
+    try {
+      // 1. Decrypt to buffer and create signer atomically
+      logger.step("Solana", 1, 4, "Decrypting key and creating signer...");
+
+      const decryptedBase64 = await encryptionService.decrypt(encryptedPrivateKey);
+      const privateKeyBytes = Buffer.from(decryptedBase64, "base64");
+
+      let signer: KeyPairSigner;
+      try {
+        signer = await createKeyPairSignerFromPrivateKeyBytes(privateKeyBytes, true);
+      } finally {
+        // IMMEDIATELY zero the buffer - minimize exposure window
+        privateKeyBytes.fill(0);
+      }
+
+      logger.debug("Solana", "Signer created securely", { address: signer.address });
+
+      // 2. Decode base64 transaction to bytes
+      logger.step("Solana", 2, 4, "Decoding and signing transaction...");
+      const transactionBytes = Buffer.from(transactionBase64, "base64");
+
+      // 3. Decode bytes to Transaction object
+      const decoder = getTransactionDecoder();
+      const transaction = decoder.decode(transactionBytes);
+
+      // 4. Sign the transaction with the signer's keypair
+      const signedTransaction = await signTransaction([signer.keyPair], transaction);
+
+      // 5. Encode signed transaction back to base64
+      const encoder = getTransactionEncoder();
+      const signedBytes = encoder.encode(signedTransaction);
+      const signedBase64 = Buffer.from(signedBytes).toString("base64") as Base64EncodedWireTransaction;
+
+      // 6. Send the transaction
+      logger.step("Solana", 3, 4, "Sending transaction to network...");
+      const sendStartTime = Date.now();
+
+      const signature = await this.rpc
+        .sendTransaction(signedBase64, {
+          encoding: "base64",
+          skipPreflight: false,
+          preflightCommitment: "confirmed",
+        })
+        .send();
+
+      const sendDuration = Date.now() - sendStartTime;
+      logger.tx("Solana", "Transaction sent", {
+        signature,
+        duration: `${sendDuration}ms`,
+      });
+
+      // 7. Wait for confirmation (poll for status)
+      logger.step("Solana", 4, 4, "Waiting for confirmation...");
+      const confirmStartTime = Date.now();
+      const confirmed = await this.waitForConfirmation(signature, 30000);
       const confirmDuration = Date.now() - confirmStartTime;
 
       if (confirmed) {

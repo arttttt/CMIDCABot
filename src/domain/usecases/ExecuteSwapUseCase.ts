@@ -17,6 +17,7 @@ import { UserRepository } from "../repositories/UserRepository.js";
 import { TransactionRepository } from "../repositories/TransactionRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../services/logger.js";
+import type { KeyEncryptionService } from "../../services/encryption.js";
 
 export type ExecuteSwapResult =
   | {
@@ -42,6 +43,7 @@ export class ExecuteSwapUseCase {
     private solanaService: SolanaService,
     private userRepository: UserRepository,
     private transactionRepository: TransactionRepository,
+    private encryptionService: KeyEncryptionService,
     private devPrivateKey?: string,
   ) {}
 
@@ -94,22 +96,23 @@ export class ExecuteSwapUseCase {
 
     // Get user's wallet info
     let walletAddress: string | undefined;
-    let privateKey: string | undefined;
+    let encryptedPrivateKey: string | undefined;
+    let useDevKey = false;
 
     if (this.devPrivateKey) {
-      // In dev mode, use dev wallet
-      privateKey = this.devPrivateKey;
+      // In dev mode, use dev wallet (key is plaintext from env)
+      useDevKey = true;
       walletAddress = await this.solanaService.getAddressFromPrivateKey(this.devPrivateKey);
     } else {
-      // Get user's wallet from database
+      // Get user's wallet from database (key is encrypted)
       const user = await this.userRepository.getById(telegramId);
       if (user?.privateKey) {
-        privateKey = user.privateKey;
+        encryptedPrivateKey = user.privateKey;
         walletAddress = user.walletAddress ?? undefined;
       }
     }
 
-    if (!walletAddress || !privateKey) {
+    if (!walletAddress || (!useDevKey && !encryptedPrivateKey)) {
       return { status: "no_wallet" };
     }
 
@@ -156,7 +159,17 @@ export class ExecuteSwapUseCase {
     logger.step("ExecuteSwap", 3, 3, "Signing and sending transaction...");
     let sendResult: SendTransactionResult;
     try {
-      sendResult = await this.solanaService.signAndSendTransaction(transactionBase64, privateKey);
+      if (useDevKey && this.devPrivateKey) {
+        // Dev mode: use plaintext key
+        sendResult = await this.solanaService.signAndSendTransaction(transactionBase64, this.devPrivateKey);
+      } else {
+        // Production: use encrypted key with secure signing
+        sendResult = await this.solanaService.signAndSendTransactionSecure(
+          transactionBase64,
+          encryptedPrivateKey!,
+          this.encryptionService,
+        );
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Send failed", { error: message });

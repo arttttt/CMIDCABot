@@ -146,6 +146,7 @@ async function main(): Promise<void> {
     solana,
     userRepository,
     transactionRepository,
+    encryptionService,
     config.dcaWallet.devPrivateKey,
   );
 
@@ -155,7 +156,7 @@ async function main(): Promise<void> {
   const createWallet = new CreateWalletUseCase(userRepository, solana, walletHelper);
   const importWallet = new ImportWalletUseCase(userRepository, solana, walletHelper);
   const deleteWallet = new DeleteWalletUseCase(userRepository, walletHelper);
-  const exportWalletKey = new ExportWalletKeyUseCase(userRepository, config.dcaWallet);
+  const exportWalletKey = new ExportWalletKeyUseCase(userRepository, encryptionService, config.dcaWallet);
   const startDca = new StartDcaUseCase(userRepository, dcaScheduler);
   const stopDca = new StopDcaUseCase(userRepository, dcaScheduler);
   const getDcaStatus = new GetDcaStatusUseCase(userRepository, dcaScheduler);

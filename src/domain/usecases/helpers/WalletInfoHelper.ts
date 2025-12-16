@@ -16,9 +16,28 @@ export class WalletInfoHelper {
     return !!this.config.devPrivateKey;
   }
 
+  /**
+   * Get wallet info from plaintext private key.
+   * Used for newly created/imported wallets before encryption.
+   */
   async getWalletInfo(privateKeyBase64: string, isDevWallet: boolean): Promise<DcaWalletInfo> {
     const address = await this.solana.getAddressFromPrivateKey(privateKeyBase64);
 
+    let balance: number | null = null;
+    try {
+      balance = await this.solana.getBalance(address);
+    } catch {
+      // Balance fetch failed - wallet may be new or network issue
+    }
+
+    return { address, balance, isDevWallet };
+  }
+
+  /**
+   * Get wallet info from address only.
+   * Used for existing wallets where we don't want to decrypt the key.
+   */
+  async getWalletInfoByAddress(address: string, isDevWallet: boolean): Promise<DcaWalletInfo> {
     let balance: number | null = null;
     try {
       balance = await this.solana.getBalance(address);
