@@ -108,11 +108,13 @@ function createWalletImportCommand(deps: WalletCommandDeps): Command {
 }
 
 function createWalletExportCommand(deps: WalletCommandDeps): Command {
+  const commandPath = "wallet/export";
+
   return {
     definition: { name: "export", description: "Export private key" },
     handler: async (_args, telegramId) => {
       const result = await deps.exportWalletKey.execute(telegramId);
-      return deps.formatter.formatExportKey(result);
+      return deps.formatter.formatExportKey(result, commandPath);
     },
     callbacks: new Map([
       [

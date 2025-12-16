@@ -114,7 +114,7 @@ export class DcaWalletFormatter {
     }
   }
 
-  formatExportKey(result: ExportKeyResult): UIResponse {
+  formatExportKey(result: ExportKeyResult, commandPath: string): UIResponse {
     // First step: show confirmation screen (don't show key yet)
     switch (result.type) {
       case "success":
@@ -128,7 +128,7 @@ export class DcaWalletFormatter {
             `- Anyone with access to this chat can see it\n` +
             `- Never share your private key with anyone\n\n` +
             `Are you sure you want to export?`,
-          buttons: [[{ text: "Yes, show my private key", callbackData: "confirm_export" }]],
+          buttons: [[{ text: "Yes, show my private key", callbackData: `${commandPath}:confirm_export` }]],
         };
 
       case "no_wallet":

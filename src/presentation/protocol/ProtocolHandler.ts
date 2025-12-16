@@ -8,7 +8,7 @@
 import { InitUserUseCase } from "../../domain/usecases/index.js";
 import { HelpFormatter } from "../formatters/index.js";
 import { CommandRegistry } from "../commands/types.js";
-import { routeCommand, findCallbackInRegistry } from "../commands/router.js";
+import { routeCommand, findCallbackByPath } from "../commands/router.js";
 import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./types.js";
 
 export class ProtocolHandler {
@@ -91,7 +91,7 @@ export class ProtocolHandler {
    * Handle callback query (button press)
    */
   async handleCallback(ctx: UICallbackContext): Promise<UIResponse> {
-    const handler = findCallbackInRegistry(this.registry.getCommands(), ctx.callbackData);
+    const handler = findCallbackByPath(this.registry.getCommands(), ctx.callbackData);
     if (handler) {
       return handler(ctx.telegramId);
     }

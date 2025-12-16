@@ -18,6 +18,7 @@ import {
   PricesCommandDeps,
   SwapCommandDeps,
 } from "./handlers.js";
+import { prefixCallbacks } from "./router.js";
 
 /**
  * Dependencies required for DevCommandRegistry
@@ -51,6 +52,7 @@ export class DevCommandRegistry implements CommandRegistry {
       ["prices", createPricesCommand(deps.prices)],
       ["swap", createSwapCommand(deps.swap)],
     ]);
+    prefixCallbacks(this.commands);
   }
 
   getCommand(name: string): Command | undefined {

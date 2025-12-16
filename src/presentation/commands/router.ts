@@ -1,5 +1,5 @@
 /**
- * Command router - recursive command execution
+ * Command router - recursive command execution and callback routing
  */
 
 import { Command, CallbackHandler } from "./types.js";
@@ -38,42 +38,61 @@ export async function routeCommand(
 }
 
 /**
- * Find callback handler in command tree (recursive search)
+ * Prefix all callbacks in command tree with their path
+ * Mutates the command tree in place
  *
- * @param cmd - Command to search in
- * @param callbackData - Callback data to find
- * @returns CallbackHandler if found
+ * @param commands - Map of commands to prefix
+ * @param prefix - Current path prefix
  */
-export function findCallback(cmd: Command, callbackData: string): CallbackHandler | undefined {
-  // Check this command's callbacks
-  const handler = cmd.callbacks?.get(callbackData);
-  if (handler) return handler;
+export function prefixCallbacks(commands: Map<string, Command>, prefix = ""): void {
+  for (const [name, cmd] of commands) {
+    const path = prefix ? `${prefix}/${name}` : name;
 
-  // Search in subcommands
-  if (cmd.subcommands) {
-    for (const sub of cmd.subcommands.values()) {
-      const found = findCallback(sub, callbackData);
-      if (found) return found;
+    // Prefix callbacks at this level
+    if (cmd.callbacks && cmd.callbacks.size > 0) {
+      const prefixed = new Map<string, CallbackHandler>();
+      for (const [key, handler] of cmd.callbacks) {
+        prefixed.set(`${path}:${key}`, handler);
+      }
+      cmd.callbacks = prefixed;
+    }
+
+    // Recursively prefix subcommands
+    if (cmd.subcommands) {
+      prefixCallbacks(cmd.subcommands, path);
     }
   }
-
-  return undefined;
 }
 
 /**
- * Find callback handler across all commands in registry
+ * Find callback by navigating path in command tree
+ * CallbackData format: "path/to/command:action"
  *
- * @param commands - Map of all commands
- * @param callbackData - Callback data to find
+ * @param commands - Root commands map
+ * @param callbackData - Full callback data with path
  * @returns CallbackHandler if found
  */
-export function findCallbackInRegistry(
+export function findCallbackByPath(
   commands: Map<string, Command>,
   callbackData: string,
 ): CallbackHandler | undefined {
-  for (const cmd of commands.values()) {
-    const handler = findCallback(cmd, callbackData);
-    if (handler) return handler;
+  // Parse: "wallet/export:confirm" → path=["wallet","export"], fullKey="wallet/export:confirm"
+  const colonIndex = callbackData.lastIndexOf(":");
+  if (colonIndex === -1) return undefined;
+
+  const pathPart = callbackData.substring(0, colonIndex);
+  const segments = pathPart.split("/");
+
+  // Navigate to the target command
+  let current: Command | undefined;
+  let currentCommands = commands;
+
+  for (const segment of segments) {
+    current = currentCommands.get(segment);
+    if (!current) return undefined;
+    currentCommands = current.subcommands ?? new Map();
   }
-  return undefined;
+
+  // Get callback from target command (key includes full path)
+  return current?.callbacks?.get(callbackData);
 }

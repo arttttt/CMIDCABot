@@ -18,7 +18,7 @@ export type {
 } from "./types.js";
 
 // Router
-export { routeCommand, findCallback, findCallbackInRegistry } from "./router.js";
+export { routeCommand, prefixCallbacks, findCallbackByPath } from "./router.js";
 
 // Definitions
 export { Definitions, type DefinitionKey } from "./definitions.js";
