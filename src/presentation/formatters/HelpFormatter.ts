@@ -30,7 +30,10 @@ export class HelpFormatter {
       text += "\n";
     }
 
-    text += `[${modeInfo.label}] ${modeInfo.description}`;
+    // Show mode info only in development
+    if (modeInfo.label === "Development") {
+      text += `[${modeInfo.label}] ${modeInfo.description}`;
+    }
 
     return text;
   }
