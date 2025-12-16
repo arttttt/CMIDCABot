@@ -115,6 +115,10 @@ export class DcaWalletFormatter {
   }
 
   formatExportKey(result: ExportKeyResult): UIResponse {
+    // Auto-delete sensitive messages after 60 seconds
+    const autoDeleteSeconds = 60;
+    const deleteButton = [[{ text: "I saved it, delete now", callbackData: "delete_sensitive" }]];
+
     switch (result.type) {
       case "success":
         return {
@@ -123,10 +127,12 @@ export class DcaWalletFormatter {
             `**SECURITY WARNING**\n` +
             `- Never share this key with anyone\n` +
             `- Anyone with this key can access your funds\n` +
-            `- Store it securely offline\n` +
-            `- Delete this message after saving\n\n` +
+            `- Store it securely offline\n\n` +
             `Private Key (base64):\n` +
-            `\`${result.privateKey}\``,
+            `\`${result.privateKey}\`\n\n` +
+            `This message will be auto-deleted in ${autoDeleteSeconds} seconds.`,
+          buttons: deleteButton,
+          autoDeleteSeconds,
         };
 
       case "dev_mode":
@@ -136,7 +142,10 @@ export class DcaWalletFormatter {
             `You are using a shared development wallet.\n` +
             `This key is configured via DEV_WALLET_PRIVATE_KEY.\n\n` +
             `Private Key (base64):\n` +
-            `\`${result.privateKey}\``,
+            `\`${result.privateKey}\`\n\n` +
+            `This message will be auto-deleted in ${autoDeleteSeconds} seconds.`,
+          buttons: deleteButton,
+          autoDeleteSeconds,
         };
 
       case "no_wallet":
