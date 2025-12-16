@@ -449,39 +449,44 @@ export class SolanaService {
     encryptionService: KeyEncryptionService,
   ): Promise<SendTransactionResult> {
     try {
-      // 1. Decrypt to buffer and create signer atomically
-      logger.step("Solana", 1, 4, "Decrypting key and creating signer...");
-
-      const decryptedBase64 = await encryptionService.decrypt(encryptedPrivateKey);
-      const privateKeyBytes = Buffer.from(decryptedBase64, "base64");
-
-      let signer: KeyPairSigner;
-      try {
-        signer = await createKeyPairSignerFromPrivateKeyBytes(privateKeyBytes, true);
-      } finally {
-        // IMMEDIATELY zero the buffer - minimize exposure window
-        privateKeyBytes.fill(0);
-      }
-
-      logger.debug("Solana", "Signer created securely", { address: signer.address });
-
-      // 2. Decode base64 transaction to bytes
-      logger.step("Solana", 2, 4, "Decoding and signing transaction...");
+      // STEP 1: Decode transaction BEFORE decrypting key (no sensitive data yet)
+      logger.step("Solana", 1, 4, "Decoding transaction...");
       const transactionBytes = Buffer.from(transactionBase64, "base64");
-
-      // 3. Decode bytes to Transaction object
       const decoder = getTransactionDecoder();
       const transaction = decoder.decode(transactionBytes);
 
-      // 4. Sign the transaction with the signer's keypair
-      const signedTransaction = await signTransaction([signer.keyPair], transaction);
+      // STEP 2: Decrypt, sign, and zero - all in minimal exposure window
+      // Private key exists in memory ONLY during this block (~microseconds)
+      logger.step("Solana", 2, 4, "Signing transaction (secure)...");
 
-      // 5. Encode signed transaction back to base64
-      const encoder = getTransactionEncoder();
-      const signedBytes = encoder.encode(signedTransaction);
-      const signedBase64 = Buffer.from(signedBytes).toString("base64") as Base64EncodedWireTransaction;
+      let signedBase64: Base64EncodedWireTransaction;
+      {
+        // Decrypt key into buffer
+        const decryptedBase64 = await encryptionService.decrypt(encryptedPrivateKey);
+        const privateKeyBytes = Buffer.from(decryptedBase64, "base64");
 
-      // 6. Send the transaction
+        try {
+          // Create signer with NON-extractable key (more secure)
+          const signer = await createKeyPairSignerFromPrivateKeyBytes(privateKeyBytes, false);
+
+          // Sign the transaction
+          const signedTransaction = await signTransaction([signer.keyPair], transaction);
+
+          // Encode signed transaction
+          const encoder = getTransactionEncoder();
+          const signedBytes = encoder.encode(signedTransaction);
+          signedBase64 = Buffer.from(signedBytes).toString("base64") as Base64EncodedWireTransaction;
+
+          // signer goes out of scope here - CryptoKey becomes eligible for GC
+        } finally {
+          // Zero the buffer IMMEDIATELY after signing
+          privateKeyBytes.fill(0);
+        }
+        // decryptedBase64 string goes out of scope here
+      }
+      // PRIVATE KEY NO LONGER IN SCOPE - only signed transaction remains
+
+      // STEP 3: Send the transaction (key already zeroed/out of scope)
       logger.step("Solana", 3, 4, "Sending transaction to network...");
       const sendStartTime = Date.now();
 
