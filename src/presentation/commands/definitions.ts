@@ -17,26 +17,31 @@ export const Definitions = {
   wallet: {
     name: "wallet",
     description: "Wallet management (create/import/export/delete)",
+    requiredRole: "user" as UserRole,
   },
 
   portfolio: {
     name: "portfolio",
     description: "Portfolio status and manual buy",
+    requiredRole: "user" as UserRole,
   },
 
   dca: {
     name: "dca",
     description: "Automatic purchases (status/start/stop)",
+    requiredRole: "user" as UserRole,
   },
 
   prices: {
     name: "prices",
     description: "Current prices for BTC, ETH, SOL",
+    requiredRole: "user" as UserRole,
   },
 
   swap: {
     name: "swap",
     description: "Swap USDC to assets (quote/simulate/execute)",
+    requiredRole: "user" as UserRole,
   },
 
   admin: {
