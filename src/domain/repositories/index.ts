@@ -6,3 +6,4 @@ export * from "./TransactionRepository.js";
 export * from "./PortfolioRepository.js";
 export * from "./PurchaseRepository.js";
 export * from "./SchedulerRepository.js";
+export * from "./AuthRepository.js";

@@ -8,14 +8,18 @@ try {
 import { Kysely } from "kysely";
 import { loadConfig } from "./config/index.js";
 import { setLogger, DebugLogger, NoOpLogger } from "./services/logger.js";
-import { createMainDatabase, createMockDatabase } from "./data/datasources/KyselyDatabase.js";
+import { createMainDatabase, createMockDatabase, createAuthDatabase } from "./data/datasources/index.js";
 import { createMainRepositories, createMockRepositories } from "./data/factories/RepositoryFactory.js";
+import { SQLiteAuthRepository } from "./data/repositories/sqlite/SQLiteAuthRepository.js";
+import { InMemoryAuthRepository } from "./data/repositories/memory/InMemoryAuthRepository.js";
 import { SolanaService } from "./services/solana.js";
 import { getEncryptionService, initializeEncryption } from "./services/encryption.js";
+import { AuthorizationService } from "./services/authorization.js";
 import { DcaService } from "./services/dca.js";
 import { DcaScheduler } from "./services/DcaScheduler.js";
 import { PriceService } from "./services/price.js";
 import { JupiterSwapService } from "./services/jupiter-swap.js";
+import type { AuthDatabase } from "./data/types/authDatabase.js";
 import {
   InitUserUseCase,
   ExecutePurchaseUseCase,
@@ -51,6 +55,7 @@ import {
   QuoteFormatter,
   SimulateFormatter,
   SwapFormatter,
+  AdminFormatter,
 } from "./presentation/formatters/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
@@ -72,13 +77,25 @@ async function main(): Promise<void> {
   // Initialize database connections (only for sqlite mode)
   let mainDb: Kysely<MainDatabase> | undefined;
   let mockDb: Kysely<MockDatabase> | undefined;
+  let authDb: Kysely<AuthDatabase> | undefined;
 
   if (dbMode === "sqlite") {
     mainDb = createMainDatabase(config.database.path);
+    authDb = createAuthDatabase(config.auth.dbPath);
   }
 
   // Create repositories based on mode
   const { userRepository, transactionRepository } = createMainRepositories(dbMode, encryptionService, mainDb);
+
+  // Create auth repository
+  const authRepository = dbMode === "sqlite" && authDb
+    ? new SQLiteAuthRepository(authDb)
+    : new InMemoryAuthRepository();
+
+  // Create authorization service
+  const authService = new AuthorizationService(authRepository, config.auth.ownerTelegramId);
+  await authService.initialize();
+  console.log(`Authorization: Owner ID ${config.auth.ownerTelegramId}`);
 
   // Initialize Solana service
   const solana = new SolanaService(config.solana);
@@ -198,9 +215,16 @@ async function main(): Promise<void> {
   const quoteFormatter = new QuoteFormatter();
   const simulateFormatter = new SimulateFormatter();
   const swapFormatter = new SwapFormatter();
+  const adminFormatter = new AdminFormatter();
 
   // Build command registry based on mode
   let registry: CommandRegistry;
+
+  // Admin command deps (shared between dev and prod)
+  const adminDeps = {
+    authService,
+    formatter: adminFormatter,
+  };
 
   if (config.isDev) {
     const deps: DevCommandRegistryDeps = {
@@ -236,6 +260,7 @@ async function main(): Promise<void> {
         simulateFormatter,
         swapFormatter,
       },
+      admin: adminDeps,
     };
     registry = new DevCommandRegistry(deps);
   } else {
@@ -248,12 +273,13 @@ async function main(): Promise<void> {
         exportWalletKey,
         formatter: dcaWalletFormatter,
       },
+      admin: adminDeps,
     };
     registry = new ProdCommandRegistry(deps);
   }
 
   // Create protocol handler
-  const handler = new ProtocolHandler(registry, initUser);
+  const handler = new ProtocolHandler(registry, initUser, authService);
 
   const modeInfo = registry.getModeInfo();
   const modeLabel = modeInfo?.label ?? "Production";
@@ -264,6 +290,7 @@ async function main(): Promise<void> {
     dcaScheduler?.stop();
     await mockDb?.destroy();
     await mainDb?.destroy();
+    await authDb?.destroy();
   };
 
   // Web-only mode: just start the web server

@@ -2,11 +2,11 @@
  * Production mode command registry
  *
  * Composes commands available in production mode.
- * Includes: wallet only (other features require dev mode)
+ * Includes: wallet, admin
  */
 
 import { CommandRegistry, Command } from "./types.js";
-import { createWalletCommand, WalletCommandDeps } from "./handlers.js";
+import { createWalletCommand, createAdminCommand, WalletCommandDeps, AdminCommandDeps } from "./handlers.js";
 import { prefixCallbacks } from "./router.js";
 
 /**
@@ -14,6 +14,7 @@ import { prefixCallbacks } from "./router.js";
  */
 export interface ProdCommandRegistryDeps {
   wallet: WalletCommandDeps;
+  admin: AdminCommandDeps;
 }
 
 /**
@@ -21,6 +22,7 @@ export interface ProdCommandRegistryDeps {
  *
  * Limited command set:
  * - wallet: Wallet management
+ * - admin: User management (requires admin privileges)
  *
  * Other commands (portfolio, dca, prices, swap) require dev mode.
  */
@@ -28,7 +30,10 @@ export class ProdCommandRegistry implements CommandRegistry {
   private commands: Map<string, Command>;
 
   constructor(deps: ProdCommandRegistryDeps) {
-    this.commands = new Map([["wallet", createWalletCommand(deps.wallet)]]);
+    this.commands = new Map([
+      ["wallet", createWalletCommand(deps.wallet)],
+      ["admin", createAdminCommand(deps.admin)],
+    ]);
     prefixCallbacks(this.commands);
   }
 

@@ -26,6 +26,9 @@ import {
   ExecuteSwapUseCase,
 } from "../../domain/usecases/index.js";
 
+// Services
+import { AuthorizationService } from "../../services/authorization.js";
+
 // Formatters
 import {
   DcaWalletFormatter,
@@ -36,6 +39,9 @@ import {
   QuoteFormatter,
   SimulateFormatter,
   SwapFormatter,
+  AdminFormatter,
+  parseRole,
+  parseTelegramId,
 } from "../formatters/index.js";
 
 // ============================================================
@@ -77,6 +83,11 @@ export interface SwapCommandDeps {
   quoteFormatter: QuoteFormatter;
   simulateFormatter: SimulateFormatter;
   swapFormatter: SwapFormatter;
+}
+
+export interface AdminCommandDeps {
+  authService: AuthorizationService;
+  formatter: AdminFormatter;
 }
 
 // ============================================================
@@ -145,6 +156,7 @@ function createWalletDeleteCommand(deps: WalletCommandDeps): Command {
 export function createWalletCommand(deps: WalletCommandDeps): Command {
   return {
     definition: Definitions.wallet,
+    requiredRole: "user",
     handler: async (_args, telegramId) => {
       const result = await deps.showWallet.execute(telegramId);
       return deps.formatter.formatShowWallet(result);
@@ -189,6 +201,7 @@ function createDcaStopCommand(deps: DcaCommandDeps): Command {
 export function createDcaCommand(deps: DcaCommandDeps): Command {
   return {
     definition: Definitions.dca,
+    requiredRole: "user",
     handler: async (_args, telegramId) => {
       const result = await deps.getDcaStatus.execute(telegramId);
       return deps.formatter.formatStatus(result);
@@ -236,6 +249,7 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
 export function createPortfolioCommand(deps: PortfolioCommandDeps): Command {
   return {
     definition: Definitions.portfolio,
+    requiredRole: "user",
     handler: async (_args, telegramId) => {
       const result = await deps.getPortfolioStatus.execute(telegramId);
       return deps.portfolioFormatter.formatStatus(result);
@@ -254,6 +268,7 @@ export function createPortfolioCommand(deps: PortfolioCommandDeps): Command {
 export function createPricesCommand(deps: PricesCommandDeps): Command {
   return {
     definition: Definitions.prices,
+    requiredRole: "user",
     handler: async () => {
       const result = await deps.getPrices.execute();
       return deps.formatter.format(result);
@@ -320,6 +335,7 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
 export function createSwapCommand(deps: SwapCommandDeps): Command {
   return {
     definition: Definitions.swap,
+    requiredRole: "user",
     handler: async () => {
       return deps.swapFormatter.formatUnifiedUsage();
     },
@@ -327,6 +343,113 @@ export function createSwapCommand(deps: SwapCommandDeps): Command {
       ["quote", createSwapQuoteCommand(deps)],
       ["simulate", createSwapSimulateCommand(deps)],
       ["execute", createSwapExecuteCommand(deps)],
+    ]),
+  };
+}
+
+// ============================================================
+// Admin subcommand factories
+// ============================================================
+
+function createAdminAddCommand(deps: AdminCommandDeps): Command {
+  return {
+    definition: { name: "add", description: "Add authorized user" },
+    handler: async (args, telegramId) => {
+      const idStr = args[0];
+      if (!idStr) {
+        return deps.formatter.formatAddUsage();
+      }
+
+      const targetId = parseTelegramId(idStr);
+      if (!targetId) {
+        return deps.formatter.formatInvalidTelegramId(idStr);
+      }
+
+      const roleStr = args[1] || "user";
+      const role = parseRole(roleStr);
+      if (!role) {
+        return deps.formatter.formatInvalidRole(roleStr);
+      }
+
+      const result = await deps.authService.addUser(telegramId, targetId, role);
+      return deps.formatter.formatResult(result);
+    },
+  };
+}
+
+function createAdminRemoveCommand(deps: AdminCommandDeps): Command {
+  return {
+    definition: { name: "remove", description: "Remove authorized user" },
+    handler: async (args, telegramId) => {
+      const idStr = args[0];
+      if (!idStr) {
+        return deps.formatter.formatRemoveUsage();
+      }
+
+      const targetId = parseTelegramId(idStr);
+      if (!targetId) {
+        return deps.formatter.formatInvalidTelegramId(idStr);
+      }
+
+      const result = await deps.authService.removeUser(telegramId, targetId);
+      return deps.formatter.formatResult(result);
+    },
+  };
+}
+
+function createAdminListCommand(deps: AdminCommandDeps): Command {
+  return {
+    definition: { name: "list", description: "List all authorized users" },
+    handler: async () => {
+      const users = await deps.authService.getAllUsers();
+      return deps.formatter.formatUserList(users);
+    },
+  };
+}
+
+function createAdminRoleCommand(deps: AdminCommandDeps): Command {
+  return {
+    definition: { name: "role", description: "Change user role" },
+    handler: async (args, telegramId) => {
+      const idStr = args[0];
+      const roleStr = args[1];
+
+      if (!idStr || !roleStr) {
+        return deps.formatter.formatRoleUsage();
+      }
+
+      const targetId = parseTelegramId(idStr);
+      if (!targetId) {
+        return deps.formatter.formatInvalidTelegramId(idStr);
+      }
+
+      const role = parseRole(roleStr);
+      if (!role) {
+        return deps.formatter.formatInvalidRole(roleStr);
+      }
+
+      const result = await deps.authService.updateRole(telegramId, targetId, role);
+      return deps.formatter.formatResult(result);
+    },
+  };
+}
+
+// ============================================================
+// Admin command factory
+// ============================================================
+
+export function createAdminCommand(deps: AdminCommandDeps): Command {
+  return {
+    definition: Definitions.admin,
+    requiredRole: "admin",
+    handler: async () => {
+      return deps.formatter.formatHelp();
+    },
+    subcommands: new Map([
+      ["add", createAdminAddCommand(deps)],
+      ["remove", createAdminRemoveCommand(deps)],
+      ["list", createAdminListCommand(deps)],
+      ["role", createAdminRoleCommand(deps)],
     ]),
   };
 }
