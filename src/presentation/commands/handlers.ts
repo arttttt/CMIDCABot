@@ -156,6 +156,7 @@ function createWalletDeleteCommand(deps: WalletCommandDeps): Command {
 export function createWalletCommand(deps: WalletCommandDeps): Command {
   return {
     definition: Definitions.wallet,
+    requiredRole: "user",
     handler: async (_args, telegramId) => {
       const result = await deps.showWallet.execute(telegramId);
       return deps.formatter.formatShowWallet(result);
@@ -200,6 +201,7 @@ function createDcaStopCommand(deps: DcaCommandDeps): Command {
 export function createDcaCommand(deps: DcaCommandDeps): Command {
   return {
     definition: Definitions.dca,
+    requiredRole: "user",
     handler: async (_args, telegramId) => {
       const result = await deps.getDcaStatus.execute(telegramId);
       return deps.formatter.formatStatus(result);
@@ -247,6 +249,7 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
 export function createPortfolioCommand(deps: PortfolioCommandDeps): Command {
   return {
     definition: Definitions.portfolio,
+    requiredRole: "user",
     handler: async (_args, telegramId) => {
       const result = await deps.getPortfolioStatus.execute(telegramId);
       return deps.portfolioFormatter.formatStatus(result);
@@ -265,6 +268,7 @@ export function createPortfolioCommand(deps: PortfolioCommandDeps): Command {
 export function createPricesCommand(deps: PricesCommandDeps): Command {
   return {
     definition: Definitions.prices,
+    requiredRole: "user",
     handler: async () => {
       const result = await deps.getPrices.execute();
       return deps.formatter.format(result);
@@ -331,6 +335,7 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
 export function createSwapCommand(deps: SwapCommandDeps): Command {
   return {
     definition: Definitions.swap,
+    requiredRole: "user",
     handler: async () => {
       return deps.swapFormatter.formatUnifiedUsage();
     },
@@ -395,13 +400,7 @@ function createAdminRemoveCommand(deps: AdminCommandDeps): Command {
 function createAdminListCommand(deps: AdminCommandDeps): Command {
   return {
     definition: { name: "list", description: "List all authorized users" },
-    handler: async (_args, telegramId) => {
-      // Check if user is admin
-      const isAdmin = await deps.authService.isAdmin(telegramId);
-      if (!isAdmin) {
-        return deps.formatter.formatPermissionDenied();
-      }
-
+    handler: async () => {
       const users = await deps.authService.getAllUsers();
       return deps.formatter.formatUserList(users);
     },
@@ -442,13 +441,8 @@ function createAdminRoleCommand(deps: AdminCommandDeps): Command {
 export function createAdminCommand(deps: AdminCommandDeps): Command {
   return {
     definition: Definitions.admin,
-    handler: async (_args, telegramId) => {
-      // Check if user is admin
-      const isAdmin = await deps.authService.isAdmin(telegramId);
-      if (!isAdmin) {
-        return deps.formatter.formatPermissionDenied();
-      }
-
+    requiredRole: "admin",
+    handler: async () => {
       return deps.formatter.formatHelp();
     },
     subcommands: new Map([

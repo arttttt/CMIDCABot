@@ -105,7 +105,7 @@ export class ProtocolHandler {
     }
 
     // Check if user has required role for this command
-    const requiredRole = cmd.definition.requiredRole;
+    const requiredRole = cmd.requiredRole;
     if (requiredRole && !hasRequiredRole(userRole, requiredRole)) {
       // Return "unknown command" to hide restricted commands
       return { text: `Unknown command: ${command}\nUse /help to see available commands.` };
@@ -121,7 +121,7 @@ export class ProtocolHandler {
   private filterCommandsByRole(commands: Map<string, Command>, userRole: UserRole): Map<string, Command> {
     const filtered = new Map<string, Command>();
     for (const [name, cmd] of commands) {
-      const requiredRole = cmd.definition.requiredRole;
+      const requiredRole = cmd.requiredRole;
       // Include command if no role required or user has required role
       if (!requiredRole || hasRequiredRole(userRole, requiredRole)) {
         filtered.set(name, cmd);

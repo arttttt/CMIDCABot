@@ -16,12 +16,6 @@ import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 export interface CommandDefinition {
   name: string;
   description: string;
-  /**
-   * Minimum role required to access this command.
-   * If not specified, command is available to all authorized users.
-   * Hierarchy: owner > admin > user
-   */
-  requiredRole?: UserRole;
 }
 
 /**
@@ -39,12 +33,19 @@ export type CallbackHandler = (telegramId: number) => Promise<UIResponse>;
  *
  * Can contain:
  * - definition: metadata for help/registration
+ * - requiredRole: minimum role required to access this command
  * - handler: executes when command is called (with remaining args)
  * - subcommands: nested commands (recursive structure)
  * - callbacks: inline button handlers for this command
  */
 export interface Command {
   definition: CommandDefinition;
+  /**
+   * Minimum role required to access this command.
+   * If not specified, command is available to all authorized users.
+   * Hierarchy: owner > admin > user
+   */
+  requiredRole?: UserRole;
   handler?: CommandHandler;
   subcommands?: Map<string, Command>;
   callbacks?: Map<string, CallbackHandler>;
