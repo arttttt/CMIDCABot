@@ -2,12 +2,13 @@
  * Protocol handler - routes messages to command handlers
  *
  * This is the unified entry point for all UI interactions.
- * Uses CommandRegistry to get available commands and handlers.
+ * Uses CommandRegistry to get available commands and routes them.
  */
 
 import { InitUserUseCase } from "../../domain/usecases/index.js";
 import { HelpFormatter } from "../formatters/index.js";
 import { CommandRegistry } from "../commands/types.js";
+import { routeCommand, findCallbackInRegistry } from "../commands/router.js";
 import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./types.js";
 
 export class ProtocolHandler {
@@ -25,10 +26,14 @@ export class ProtocolHandler {
    * Used by Telegram bot to register commands
    */
   getAvailableCommands(): UICommand[] {
-    return this.registry.getDefinitions().map((def) => ({
-      name: def.name,
-      description: def.description,
-    }));
+    const commands: UICommand[] = [];
+    for (const cmd of this.registry.getCommands().values()) {
+      commands.push({
+        name: cmd.definition.name,
+        description: cmd.definition.description,
+      });
+    }
+    return commands;
   }
 
   /**
@@ -52,7 +57,6 @@ export class ProtocolHandler {
     args: string[],
     telegramId: number,
   ): Promise<UIResponse> {
-    const definitions = this.registry.getDefinitions();
     const modeInfo = this.registry.getModeInfo();
 
     // /start - initialize user
@@ -66,27 +70,28 @@ export class ProtocolHandler {
     // /help - show all available commands
     if (command === "/help") {
       return {
-        text: this.helpFormatter.formatHelp(definitions, modeInfo),
+        text: this.helpFormatter.formatHelp(this.registry.getCommands(), modeInfo),
       };
     }
 
     // Extract command name (remove leading /)
     const commandName = command.slice(1);
 
-    // Look up handler in registry
-    const handler = this.registry.getHandler(commandName);
-    if (!handler) {
+    // Look up command in registry
+    const cmd = this.registry.getCommand(commandName);
+    if (!cmd) {
       return { text: `Unknown command: ${command}\nUse /help to see available commands.` };
     }
 
-    return handler(args, telegramId);
+    // Route through command tree
+    return routeCommand(cmd, args, telegramId);
   }
 
   /**
    * Handle callback query (button press)
    */
   async handleCallback(ctx: UICallbackContext): Promise<UIResponse> {
-    const handler = this.registry.getCallbackHandler(ctx.callbackData);
+    const handler = findCallbackInRegistry(this.registry.getCommands(), ctx.callbackData);
     if (handler) {
       return handler(ctx.telegramId);
     }

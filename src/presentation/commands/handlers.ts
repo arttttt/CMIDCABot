@@ -1,13 +1,12 @@
 /**
- * Command handler factories
+ * Command factories
  *
- * Each factory creates a handler with its specific dependencies.
- * Handlers are pure functions that process command arguments
- * and return UIResponse.
+ * Each factory creates a Command with its specific dependencies.
+ * Commands can have handlers, subcommands, and callbacks.
  */
 
-import { CommandHandler, CallbackHandler, CommandEntry } from "./types.js";
-import { UIResponse } from "../protocol/types.js";
+import { Command } from "./types.js";
+import { Definitions } from "./definitions.js";
 
 // Use cases
 import {
@@ -43,7 +42,7 @@ import {
 // Dependencies types
 // ============================================================
 
-export interface WalletHandlerDeps {
+export interface WalletCommandDeps {
   showWallet: ShowWalletUseCase;
   createWallet: CreateWalletUseCase;
   importWallet: ImportWalletUseCase;
@@ -52,26 +51,26 @@ export interface WalletHandlerDeps {
   formatter: DcaWalletFormatter;
 }
 
-export interface DcaHandlerDeps {
+export interface DcaCommandDeps {
   startDca: StartDcaUseCase;
   stopDca: StopDcaUseCase;
   getDcaStatus: GetDcaStatusUseCase;
   formatter: DcaFormatter;
 }
 
-export interface PortfolioHandlerDeps {
+export interface PortfolioCommandDeps {
   getPortfolioStatus: GetPortfolioStatusUseCase;
   executePurchase: ExecutePurchaseUseCase;
   portfolioFormatter: PortfolioFormatter;
   purchaseFormatter: PurchaseFormatter;
 }
 
-export interface PricesHandlerDeps {
+export interface PricesCommandDeps {
   getPrices: GetPricesUseCase;
   formatter: PriceFormatter;
 }
 
-export interface SwapHandlerDeps {
+export interface SwapCommandDeps {
   getQuote: GetQuoteUseCase;
   simulateSwap: SimulateSwapUseCase;
   executeSwap: ExecuteSwapUseCase;
@@ -81,211 +80,247 @@ export interface SwapHandlerDeps {
 }
 
 // ============================================================
-// Handler factories
+// Command factories
 // ============================================================
 
 /**
- * Create wallet command entry (handler + callbacks)
- * Subcommands: (none), create, import, export, delete
- * Callbacks: confirm_export
+ * Create wallet command with subcommands
  */
-export function createWalletEntry(deps: WalletHandlerDeps): Omit<CommandEntry, "definition"> {
-  const {
-    showWallet,
-    createWallet,
-    importWallet,
-    deleteWallet,
-    exportWalletKey,
-    formatter,
-  } = deps;
+export function createWalletCommand(deps: WalletCommandDeps): Command {
+  const { showWallet, createWallet, importWallet, deleteWallet, exportWalletKey, formatter } = deps;
 
-  const handler: CommandHandler = async (args: string[], telegramId: number): Promise<UIResponse> => {
-    const subcommand = args[0]?.toLowerCase();
+  return {
+    definition: Definitions.wallet,
 
-    // /wallet - show wallet
-    if (!subcommand) {
+    // Default handler: /wallet - show wallet
+    handler: async (_args, telegramId) => {
       const result = await showWallet.execute(telegramId);
       return formatter.formatShowWallet(result);
-    }
+    },
 
-    // /wallet create
-    if (subcommand === "create") {
-      const result = await createWallet.execute(telegramId);
-      return formatter.formatCreateWallet(result);
-    }
-
-    // /wallet import <key>
-    if (subcommand === "import") {
-      const privateKey = args[1];
-      if (!privateKey) {
-        return formatter.formatImportUsage();
-      }
-      const result = await importWallet.execute(telegramId, privateKey);
-      return formatter.formatImportWallet(result);
-    }
-
-    // /wallet export
-    if (subcommand === "export") {
-      const result = await exportWalletKey.execute(telegramId);
-      return formatter.formatExportKey(result);
-    }
-
-    // /wallet delete
-    if (subcommand === "delete") {
-      const result = await deleteWallet.execute(telegramId);
-      return formatter.formatDeleteWallet(result);
-    }
-
-    return formatter.formatUnknownSubcommand();
+    subcommands: new Map([
+      [
+        "create",
+        {
+          definition: { name: "create", description: "Create new wallet" },
+          handler: async (_args, telegramId) => {
+            const result = await createWallet.execute(telegramId);
+            return formatter.formatCreateWallet(result);
+          },
+        },
+      ],
+      [
+        "import",
+        {
+          definition: { name: "import", description: "Import wallet from private key" },
+          handler: async (args, telegramId) => {
+            const privateKey = args[0];
+            if (!privateKey) {
+              return formatter.formatImportUsage();
+            }
+            const result = await importWallet.execute(telegramId, privateKey);
+            return formatter.formatImportWallet(result);
+          },
+        },
+      ],
+      [
+        "export",
+        {
+          definition: { name: "export", description: "Export private key" },
+          handler: async (_args, telegramId) => {
+            const result = await exportWalletKey.execute(telegramId);
+            return formatter.formatExportKey(result);
+          },
+          callbacks: new Map([
+            [
+              "confirm_export",
+              async (telegramId) => {
+                const result = await exportWalletKey.execute(telegramId);
+                return formatter.formatExportKeyConfirmed(result);
+              },
+            ],
+          ]),
+        },
+      ],
+      [
+        "delete",
+        {
+          definition: { name: "delete", description: "Delete wallet" },
+          handler: async (_args, telegramId) => {
+            const result = await deleteWallet.execute(telegramId);
+            return formatter.formatDeleteWallet(result);
+          },
+        },
+      ],
+    ]),
   };
-
-  const callbacks = new Map<string, CallbackHandler>([
-    [
-      "confirm_export",
-      async (telegramId: number): Promise<UIResponse> => {
-        const result = await exportWalletKey.execute(telegramId);
-        return formatter.formatExportKeyConfirmed(result);
-      },
-    ],
-  ]);
-
-  return { handler, callbacks };
 }
 
 /**
- * Create DCA command handler
- * Subcommands: (none/status), start, stop
+ * Create DCA command with subcommands
  */
-export function createDcaHandler(deps: DcaHandlerDeps): CommandHandler {
+export function createDcaCommand(deps: DcaCommandDeps): Command {
   const { startDca, stopDca, getDcaStatus, formatter } = deps;
 
-  return async (args: string[], telegramId: number): Promise<UIResponse> => {
-    const subcommand = args[0]?.toLowerCase();
+  return {
+    definition: Definitions.dca,
 
-    // /dca or /dca status - show status
-    if (!subcommand) {
+    // Default handler: /dca - show status
+    handler: async (_args, telegramId) => {
       const result = await getDcaStatus.execute(telegramId);
       return formatter.formatStatus(result);
-    }
+    },
 
-    // /dca start
-    if (subcommand === "start") {
-      const result = await startDca.execute(telegramId);
-      return formatter.formatStart(result);
-    }
-
-    // /dca stop
-    if (subcommand === "stop") {
-      const result = await stopDca.execute(telegramId);
-      return formatter.formatStop(result);
-    }
-
-    return formatter.formatUnknownSubcommand();
+    subcommands: new Map([
+      [
+        "start",
+        {
+          definition: { name: "start", description: "Start automatic purchases" },
+          handler: async (_args, telegramId) => {
+            const result = await startDca.execute(telegramId);
+            return formatter.formatStart(result);
+          },
+        },
+      ],
+      [
+        "stop",
+        {
+          definition: { name: "stop", description: "Stop automatic purchases" },
+          handler: async (_args, telegramId) => {
+            const result = await stopDca.execute(telegramId);
+            return formatter.formatStop(result);
+          },
+        },
+      ],
+    ]),
   };
 }
 
 /**
- * Create portfolio command handler
- * Subcommands: (none/status), buy <amount>
+ * Create portfolio command with subcommands
  */
-export function createPortfolioHandler(deps: PortfolioHandlerDeps): CommandHandler {
+export function createPortfolioCommand(deps: PortfolioCommandDeps): Command {
   const { getPortfolioStatus, executePurchase, portfolioFormatter, purchaseFormatter } = deps;
 
-  return async (args: string[], telegramId: number): Promise<UIResponse> => {
-    const subcommand = args[0]?.toLowerCase();
+  return {
+    definition: Definitions.portfolio,
 
-    // /portfolio or /portfolio status - show portfolio
-    if (!subcommand || subcommand === "status") {
+    // Default handler: /portfolio - show status
+    handler: async (_args, telegramId) => {
       const result = await getPortfolioStatus.execute(telegramId);
       return portfolioFormatter.formatStatus(result);
-    }
+    },
 
-    // /portfolio buy <amount>
-    if (subcommand === "buy") {
-      const amountStr = args[1];
-      if (!amountStr) {
-        return purchaseFormatter.formatUsage();
-      }
-      const amount = parseFloat(amountStr);
-      const result = await executePurchase.execute(telegramId, amount);
-      return purchaseFormatter.format(result);
-    }
-
-    return portfolioFormatter.formatUnknownSubcommand();
+    subcommands: new Map([
+      [
+        "status",
+        {
+          definition: { name: "status", description: "Show portfolio status" },
+          handler: async (_args, telegramId) => {
+            const result = await getPortfolioStatus.execute(telegramId);
+            return portfolioFormatter.formatStatus(result);
+          },
+        },
+      ],
+      [
+        "buy",
+        {
+          definition: { name: "buy", description: "Buy asset for USDC amount" },
+          handler: async (args, telegramId) => {
+            const amountStr = args[0];
+            if (!amountStr) {
+              return purchaseFormatter.formatUsage();
+            }
+            const amount = parseFloat(amountStr);
+            const result = await executePurchase.execute(telegramId, amount);
+            return purchaseFormatter.format(result);
+          },
+        },
+      ],
+    ]),
   };
 }
 
 /**
- * Create prices command handler
- * No subcommands
+ * Create prices command (no subcommands)
  */
-export function createPricesHandler(deps: PricesHandlerDeps): CommandHandler {
+export function createPricesCommand(deps: PricesCommandDeps): Command {
   const { getPrices, formatter } = deps;
 
-  return async (): Promise<UIResponse> => {
-    const result = await getPrices.execute();
-    return formatter.format(result);
+  return {
+    definition: Definitions.prices,
+
+    handler: async () => {
+      const result = await getPrices.execute();
+      return formatter.format(result);
+    },
   };
 }
 
 /**
- * Create swap command handler
- * Subcommands: quote <amount> [asset], simulate <amount> [asset], execute <amount> [asset]
+ * Create swap command with subcommands
  */
-export function createSwapHandler(deps: SwapHandlerDeps): CommandHandler {
-  const {
-    getQuote,
-    simulateSwap,
-    executeSwap,
-    quoteFormatter,
-    simulateFormatter,
-    swapFormatter,
-  } = deps;
+export function createSwapCommand(deps: SwapCommandDeps): Command {
+  const { getQuote, simulateSwap, executeSwap, quoteFormatter, simulateFormatter, swapFormatter } =
+    deps;
 
-  return async (args: string[], telegramId: number): Promise<UIResponse> => {
-    const subcommand = args[0]?.toLowerCase();
+  return {
+    definition: Definitions.swap,
 
-    // /swap without args - show usage
-    if (!subcommand) {
+    // Default handler: /swap - show usage
+    handler: async () => {
       return swapFormatter.formatUnifiedUsage();
-    }
+    },
 
-    // /swap quote <amount> [asset]
-    if (subcommand === "quote") {
-      const amountStr = args[1];
-      if (!amountStr) {
-        return quoteFormatter.formatUsage();
-      }
-      const amount = parseFloat(amountStr);
-      const asset = args[2] || "SOL";
-      const result = await getQuote.execute(amount, asset);
-      return quoteFormatter.format(result);
-    }
-
-    // /swap simulate <amount> [asset]
-    if (subcommand === "simulate") {
-      const amountStr = args[1];
-      if (!amountStr) {
-        return simulateFormatter.formatUsage();
-      }
-      const amount = parseFloat(amountStr);
-      const asset = args[2] || "SOL";
-      const result = await simulateSwap.execute(telegramId, amount, asset);
-      return simulateFormatter.format(result);
-    }
-
-    // /swap execute <amount> [asset]
-    if (subcommand === "execute") {
-      const amountStr = args[1];
-      if (!amountStr) {
-        return swapFormatter.formatUsage();
-      }
-      const amount = parseFloat(amountStr);
-      const asset = args[2] || "SOL";
-      const result = await executeSwap.execute(telegramId, amount, asset);
-      return swapFormatter.format(result);
-    }
-
-    return swapFormatter.formatUnifiedUsage();
+    subcommands: new Map([
+      [
+        "quote",
+        {
+          definition: { name: "quote", description: "Get quote for swap" },
+          handler: async (args) => {
+            const amountStr = args[0];
+            if (!amountStr) {
+              return quoteFormatter.formatUsage();
+            }
+            const amount = parseFloat(amountStr);
+            const asset = args[1] || "SOL";
+            const result = await getQuote.execute(amount, asset);
+            return quoteFormatter.format(result);
+          },
+        },
+      ],
+      [
+        "simulate",
+        {
+          definition: { name: "simulate", description: "Simulate swap without executing" },
+          handler: async (args, telegramId) => {
+            const amountStr = args[0];
+            if (!amountStr) {
+              return simulateFormatter.formatUsage();
+            }
+            const amount = parseFloat(amountStr);
+            const asset = args[1] || "SOL";
+            const result = await simulateSwap.execute(telegramId, amount, asset);
+            return simulateFormatter.format(result);
+          },
+        },
+      ],
+      [
+        "execute",
+        {
+          definition: { name: "execute", description: "Execute real swap" },
+          handler: async (args, telegramId) => {
+            const amountStr = args[0];
+            if (!amountStr) {
+              return swapFormatter.formatUsage();
+            }
+            const amount = parseFloat(amountStr);
+            const asset = args[1] || "SOL";
+            const result = await executeSwap.execute(telegramId, amount, asset);
+            return swapFormatter.format(result);
+          },
+        },
+      ],
+    ]),
   };
 }

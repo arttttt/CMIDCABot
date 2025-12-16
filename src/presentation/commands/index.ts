@@ -1,10 +1,10 @@
 /**
  * Command architecture exports
  *
- * Three-layer separation:
- * 1. Definitions - describes what commands do (data)
- * 2. Handlers - command execution logic (functions)
- * 3. Registries - compose definitions + handlers for mode
+ * Composable command structure:
+ * - Command contains definition, handler, subcommands, and callbacks
+ * - Routing traverses the command tree
+ * - Registries compose commands for different modes
  */
 
 // Types
@@ -12,27 +12,29 @@ export type {
   CommandDefinition,
   CommandHandler,
   CallbackHandler,
-  CommandEntry,
+  Command,
   CommandRegistry,
   ModeInfo,
-  SubcommandDefinition,
 } from "./types.js";
+
+// Router
+export { routeCommand, findCallback, findCallbackInRegistry } from "./router.js";
 
 // Definitions
 export { Definitions, type DefinitionKey } from "./definitions.js";
 
-// Handler factories
+// Command factories
 export {
-  createWalletEntry,
-  createDcaHandler,
-  createPortfolioHandler,
-  createPricesHandler,
-  createSwapHandler,
-  type WalletHandlerDeps,
-  type DcaHandlerDeps,
-  type PortfolioHandlerDeps,
-  type PricesHandlerDeps,
-  type SwapHandlerDeps,
+  createWalletCommand,
+  createDcaCommand,
+  createPortfolioCommand,
+  createPricesCommand,
+  createSwapCommand,
+  type WalletCommandDeps,
+  type DcaCommandDeps,
+  type PortfolioCommandDeps,
+  type PricesCommandDeps,
+  type SwapCommandDeps,
 } from "./handlers.js";
 
 // Registries
