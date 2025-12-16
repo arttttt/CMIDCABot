@@ -86,17 +86,21 @@ export function createTelegramBot(
   bot.on("callback_query:data", async (ctx) => {
     const callbackData = ctx.callbackQuery.data;
 
-    // Handle delete_sensitive callback - delete the message immediately
+    // Handle delete_sensitive callback - replace message with success text
     if (callbackData === "delete_sensitive") {
       try {
-        await ctx.deleteMessage();
-        await ctx.answerCallbackQuery({ text: "Message deleted" });
-        logger.debug("TelegramBot", "Deleted sensitive message via callback", {
+        await ctx.editMessageText(
+          "**Private key exported successfully.**\n\n" +
+            "The key has been removed from this chat for security.",
+          { parse_mode: "Markdown" },
+        );
+        await ctx.answerCallbackQuery({ text: "Key removed from chat" });
+        logger.debug("TelegramBot", "Replaced sensitive message with success text", {
           userId: ctx.from.id,
         });
       } catch (error) {
-        await ctx.answerCallbackQuery({ text: "Failed to delete message" });
-        logger.debug("TelegramBot", "Failed to delete message via callback", {
+        await ctx.answerCallbackQuery({ text: "Failed to update message" });
+        logger.debug("TelegramBot", "Failed to replace sensitive message", {
           error: error instanceof Error ? error.message : String(error),
         });
       }
