@@ -4,7 +4,7 @@
  * Uses CommandDefinition from registry to generate help.
  */
 
-import { CommandDefinition, CommandRegistry, ModeInfo } from "../commands/types.js";
+import { CommandDefinition, ModeInfo } from "../commands/types.js";
 
 export class HelpFormatter {
   /**
@@ -54,31 +54,6 @@ export class HelpFormatter {
       text += "3. `/dca start` - Enable automatic purchases\n";
     }
     text += "\nUse `/help` for full command reference.";
-    return text;
-  }
-
-  /**
-   * Format help for a specific command (O(1) lookup via registry)
-   */
-  formatCommandHelp(commandName: string, registry: CommandRegistry): string | null {
-    const cmd = registry.getDefinition(commandName);
-
-    if (!cmd) {
-      return null;
-    }
-
-    let text = `**/${cmd.name}** - ${cmd.description}\n\n`;
-
-    if (cmd.subcommands) {
-      text += "**Subcommands:**\n";
-      for (const sub of cmd.subcommands) {
-        text += `\`${sub.usage}\`\n`;
-        text += `  ${sub.description}\n\n`;
-      }
-    } else {
-      text += `Usage: \`/${cmd.name}\``;
-    }
-
     return text;
   }
 }

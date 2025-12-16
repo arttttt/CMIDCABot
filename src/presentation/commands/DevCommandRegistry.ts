@@ -64,10 +64,6 @@ export class DevCommandRegistry implements CommandRegistry {
     return Array.from(this.commands.values()).map((entry) => entry.definition);
   }
 
-  getDefinition(name: string): CommandDefinition | undefined {
-    return this.commands.get(name)?.definition;
-  }
-
   getHandler(name: string): CommandHandler | undefined {
     return this.commands.get(name)?.handler;
   }

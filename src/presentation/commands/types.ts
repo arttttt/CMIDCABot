@@ -61,11 +61,6 @@ export interface CommandRegistry {
   getDefinitions(): CommandDefinition[];
 
   /**
-   * Get definition for a command by name (O(1) lookup)
-   */
-  getDefinition(name: string): CommandDefinition | undefined;
-
-  /**
    * Get handler for a command by name (O(1) lookup)
    */
   getHandler(name: string): CommandHandler | undefined;

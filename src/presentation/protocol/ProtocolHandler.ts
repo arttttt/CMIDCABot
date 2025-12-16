@@ -63,20 +63,8 @@ export class ProtocolHandler {
       };
     }
 
-    // /help [command] - show available commands or specific command help
+    // /help - show all available commands
     if (command === "/help") {
-      const helpTarget = args[0]?.toLowerCase();
-
-      // /help <command> - show help for specific command
-      if (helpTarget) {
-        const commandHelp = this.helpFormatter.formatCommandHelp(helpTarget, this.registry);
-        if (commandHelp) {
-          return { text: commandHelp };
-        }
-        return { text: `Unknown command: /${helpTarget}\nUse /help to see available commands.` };
-      }
-
-      // /help - show all commands
       return {
         text: this.helpFormatter.formatHelp(definitions, modeInfo),
       };
