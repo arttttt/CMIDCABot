@@ -36,10 +36,12 @@ cp .env.example .env
 |----------|----------|---------|-------------|
 | `NODE_ENV` | No | `development` | Environment mode (`development` \| `production`) |
 | `TELEGRAM_BOT_TOKEN` | Yes* | - | Telegram bot token from @BotFather |
+| `OWNER_TELEGRAM_ID` | Yes | - | Telegram ID of the bot owner (super admin) |
 | `MASTER_ENCRYPTION_KEY` | Yes | - | Master key for private key encryption (base64, 32 bytes) |
 | `SOLANA_RPC_URL` | No | `https://api.devnet.solana.com` | Solana RPC endpoint |
 | `DB_MODE` | No | `sqlite` | Database mode (`sqlite` \| `memory`) |
 | `DATABASE_PATH` | No | `./data/bot.db` | Path to SQLite database |
+| `AUTH_DATABASE_PATH` | No | `./data/auth.db` | Path to authorization database |
 | `MOCK_DATABASE_PATH` | No | `./data/mock.db` | Path to mock database (dev only) |
 | `DCA_AMOUNT_USDC` | No | `6` | Purchase amount in USDC equivalent |
 | `DCA_INTERVAL_MS` | No | `86400000` | Interval between purchases in ms (24h) |
@@ -72,6 +74,32 @@ MASTER_ENCRYPTION_KEY=<your-generated-key>
 - Do not change this key after users have created wallets
 - Back up this key securely (e.g., in a password manager or secure vault)
 
+### Authorization Setup
+
+The bot uses a role-based access control system. You must set the owner's Telegram ID:
+
+```env
+OWNER_TELEGRAM_ID=123456789
+```
+
+To get your Telegram ID, you can use bots like [@userinfobot](https://t.me/userinfobot).
+
+## User Roles
+
+The bot has three user roles with different permissions:
+
+| Role | Description | Permissions |
+|------|-------------|-------------|
+| **Owner** | Bot owner (set via `OWNER_TELEGRAM_ID`) | Full access, cannot be modified or removed |
+| **Admin** | Administrator added by owner | Can manage users (add/remove/change role), but not other admins |
+| **User** | Regular authorized user | Access to bot commands based on mode |
+
+Role hierarchy: `owner` > `admin` > `user`
+
+- Owner can manage admins and users
+- Admin can only manage users
+- Users cannot manage anyone
+
 ## Running
 
 ### Development mode
@@ -84,7 +112,7 @@ In development mode (`NODE_ENV=development`):
 - Debug logging for all incoming messages
 - Webhook is automatically deleted to enable polling
 - Hot-reload enabled via tsx
-- Additional dev-only commands available
+- All commands available (portfolio, dca, prices, swap, admin)
 
 ### Web test interface
 
@@ -112,6 +140,10 @@ npm run build
 npm start
 ```
 
+In production mode (`NODE_ENV=production`):
+- Only wallet and admin commands available
+- DCA, portfolio, prices, and swap commands are disabled
+
 ## Build
 
 ```bash
@@ -128,32 +160,35 @@ npx tsc --noEmit
 
 ## Bot commands
 
-### Always available
+### Production mode
 
-| Command | Description |
-|---------|-------------|
-| `/start` | Welcome message and command list |
-| `/help` | Strategy description |
-| `/wallet` | Show current wallet info |
-| `/wallet create` | Create new wallet |
-| `/wallet import <key>` | Import wallet from private key |
-| `/wallet export` | Export private key |
-| `/wallet delete` | Delete wallet |
+| Command | Role | Description |
+|---------|------|-------------|
+| `/wallet` | user | Show current wallet info |
+| `/wallet create` | user | Create new wallet |
+| `/wallet import <key>` | user | Import wallet from private key |
+| `/wallet export` | user | Export private key |
+| `/wallet delete` | user | Delete wallet |
+| `/admin` | admin | Show admin help |
+| `/admin add <id> [role]` | admin | Add authorized user (default role: user) |
+| `/admin remove <id>` | admin | Remove authorized user |
+| `/admin list` | admin | List all authorized users |
+| `/admin role <id> <role>` | admin | Change user role |
 
-### Development mode only
+### Development mode (all production commands plus)
 
-| Command | Description |
-|---------|-------------|
-| `/dca` | Show DCA status |
-| `/dca start` | Start DCA automation |
-| `/dca stop` | Stop DCA automation |
-| `/portfolio` | Portfolio status |
-| `/portfolio buy <amount>` | Purchase asset using DCA strategy |
-| `/prices` | Show current asset prices |
-| `/swap` | Show swap usage |
-| `/swap quote <amount> [asset]` | Get swap quote (default: SOL) |
-| `/swap simulate <amount> [asset]` | Simulate swap without executing |
-| `/swap execute <amount> [asset]` | Execute real swap on Solana |
+| Command | Role | Description |
+|---------|------|-------------|
+| `/dca` | user | Show DCA status |
+| `/dca start` | user | Start DCA automation |
+| `/dca stop` | user | Stop DCA automation |
+| `/portfolio` | user | Portfolio status |
+| `/portfolio buy <amount>` | user | Purchase asset using DCA strategy |
+| `/prices` | user | Show current asset prices |
+| `/swap` | user | Show swap usage |
+| `/swap quote <amount> [asset]` | user | Get swap quote (default: SOL) |
+| `/swap simulate <amount> [asset]` | user | Simulate swap without executing |
+| `/swap execute <amount> [asset]` | user | Execute real swap on Solana |
 
 ## Tech stack
 
