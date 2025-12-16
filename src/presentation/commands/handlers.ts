@@ -6,7 +6,7 @@
  * and return UIResponse.
  */
 
-import { CommandHandler } from "./types.js";
+import { CommandHandler, CallbackHandler } from "./types.js";
 import { UIResponse } from "../protocol/types.js";
 
 // Use cases
@@ -137,6 +137,26 @@ export function createWalletHandler(deps: WalletHandlerDeps): CommandHandler {
 
     return formatter.formatUnknownSubcommand();
   };
+}
+
+/**
+ * Create wallet callback handlers
+ * Callbacks: confirm_export
+ */
+export function createWalletCallbackHandlers(
+  deps: WalletHandlerDeps,
+): Map<string, CallbackHandler> {
+  const { exportWalletKey, formatter } = deps;
+
+  return new Map([
+    [
+      "confirm_export",
+      async (telegramId: number): Promise<UIResponse> => {
+        const result = await exportWalletKey.execute(telegramId);
+        return formatter.formatExportKeyConfirmed(result);
+      },
+    ],
+  ]);
 }
 
 /**

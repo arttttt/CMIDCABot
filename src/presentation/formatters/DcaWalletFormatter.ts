@@ -115,6 +115,36 @@ export class DcaWalletFormatter {
   }
 
   formatExportKey(result: ExportKeyResult): UIResponse {
+    // First step: show confirmation screen (don't show key yet)
+    switch (result.type) {
+      case "success":
+      case "dev_mode":
+        return {
+          text:
+            `**Export Private Key?**\n\n` +
+            `**WARNING:** Your private key will be shown in this chat.\n\n` +
+            `**Security risks:**\n` +
+            `- The key may remain in chat history\n` +
+            `- Anyone with access to this chat can see it\n` +
+            `- Never share your private key with anyone\n\n` +
+            `Are you sure you want to export?`,
+          buttons: [[{ text: "Yes, show my private key", callbackData: "confirm_export" }]],
+        };
+
+      case "no_wallet":
+        return {
+          text:
+            `No wallet found.\n\n` +
+            `Use /wallet create to generate a wallet first.`,
+        };
+
+      default:
+        return { text: "Unable to export private key." };
+    }
+  }
+
+  formatExportKeyConfirmed(result: ExportKeyResult): UIResponse {
+    // Second step: show the actual key with delete button
     const deleteButton = [[{ text: "I saved it, delete now", callbackData: "delete_sensitive" }]];
 
     switch (result.type) {

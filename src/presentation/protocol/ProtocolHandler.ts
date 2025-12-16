@@ -85,7 +85,11 @@ export class ProtocolHandler {
   /**
    * Handle callback query (button press)
    */
-  async handleCallback(_ctx: UICallbackContext): Promise<UIResponse> {
+  async handleCallback(ctx: UICallbackContext): Promise<UIResponse> {
+    const handler = this.registry.getCallbackHandler(ctx.callbackData);
+    if (handler) {
+      return handler(ctx.telegramId);
+    }
     return { text: "Unknown action." };
   }
 }

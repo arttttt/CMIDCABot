@@ -9,11 +9,13 @@ import {
   CommandRegistry,
   CommandDefinition,
   CommandHandler,
+  CallbackHandler,
   CommandEntry,
 } from "./types.js";
 import { Definitions } from "./definitions.js";
 import {
   createWalletHandler,
+  createWalletCallbackHandlers,
   WalletHandlerDeps,
 } from "./handlers.js";
 
@@ -34,11 +36,15 @@ export interface ProdCommandRegistryDeps {
  */
 export class ProdCommandRegistry implements CommandRegistry {
   private commands: Map<string, CommandEntry>;
+  private callbacks: Map<string, CallbackHandler>;
 
   constructor(deps: ProdCommandRegistryDeps) {
     this.commands = new Map([
       ["wallet", { definition: Definitions.wallet, handler: createWalletHandler(deps.wallet) }],
     ]);
+
+    // Merge callback handlers from all command modules
+    this.callbacks = new Map([...createWalletCallbackHandlers(deps.wallet)]);
   }
 
   getDefinitions(): CommandDefinition[] {
@@ -47,6 +53,10 @@ export class ProdCommandRegistry implements CommandRegistry {
 
   getHandler(name: string): CommandHandler | undefined {
     return this.commands.get(name)?.handler;
+  }
+
+  getCallbackHandler(callbackData: string): CallbackHandler | undefined {
+    return this.callbacks.get(callbackData);
   }
 
   getModeInfo() {

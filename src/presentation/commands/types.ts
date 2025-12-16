@@ -36,6 +36,11 @@ export type CommandHandler = (
 ) => Promise<UIResponse>;
 
 /**
+ * Callback handler function signature
+ */
+export type CallbackHandler = (telegramId: number) => Promise<UIResponse>;
+
+/**
  * Command entry - definition + handler pair
  */
 export interface CommandEntry {
@@ -64,6 +69,11 @@ export interface CommandRegistry {
    * Get handler for a command by name (O(1) lookup)
    */
   getHandler(name: string): CommandHandler | undefined;
+
+  /**
+   * Get callback handler by callback data (O(1) lookup)
+   */
+  getCallbackHandler(callbackData: string): CallbackHandler | undefined;
 
   /**
    * Get mode information for display (null for production)
