@@ -10,7 +10,7 @@ export class HelpFormatter {
   /**
    * Format full help message using definitions from registry
    */
-  formatHelp(definitions: CommandDefinition[], modeInfo: ModeInfo): string {
+  formatHelp(definitions: CommandDefinition[], modeInfo: ModeInfo | null): string {
     let text = "**CMI DCA Bot**\n\n";
     text += "Target allocations:\n";
     text += "- BTC: 40%\n";
@@ -30,8 +30,7 @@ export class HelpFormatter {
       text += "\n";
     }
 
-    // Show mode info only in development
-    if (modeInfo.label === "Development") {
+    if (modeInfo) {
       text += `[${modeInfo.label}] ${modeInfo.description}`;
     }
 
@@ -41,8 +40,8 @@ export class HelpFormatter {
   /**
    * Format start message
    */
-  formatStartMessage(modeInfo: ModeInfo): string {
-    const isDev = modeInfo.label === "Development";
+  formatStartMessage(modeInfo: ModeInfo | null): string {
+    const isDev = modeInfo !== null;
 
     let text = "**CMI DCA Bot**\n\n";
     text += "Automated Crypto Majors Index DCA on Solana.\n\n";

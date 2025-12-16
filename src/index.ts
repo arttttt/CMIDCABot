@@ -250,7 +250,8 @@ async function main(): Promise<void> {
   const handler = new ProtocolHandler(registry, initUser);
 
   const modeInfo = registry.getModeInfo();
-  console.log(`Command mode: ${modeInfo.label} (${handler.getAvailableCommands().length} commands available)`);
+  const modeLabel = modeInfo?.label ?? "Production";
+  console.log(`Command mode: ${modeLabel} (${handler.getAvailableCommands().length} commands available)`);
 
   // Cleanup function
   const cleanup = async (): Promise<void> => {

@@ -66,7 +66,7 @@ export interface CommandRegistry {
   getHandler(name: string): CommandHandler | undefined;
 
   /**
-   * Get mode information for display
+   * Get mode information for display (null for production)
    */
-  getModeInfo(): ModeInfo;
+  getModeInfo(): ModeInfo | null;
 }

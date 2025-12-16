@@ -10,7 +10,6 @@ import {
   CommandDefinition,
   CommandHandler,
   CommandEntry,
-  ModeInfo,
 } from "./types.js";
 import { Definitions } from "./definitions.js";
 import {
@@ -50,10 +49,7 @@ export class ProdCommandRegistry implements CommandRegistry {
     return this.commands.get(name)?.handler;
   }
 
-  getModeInfo(): ModeInfo {
-    return {
-      label: "Production",
-      description: "Real transactions. Your personal wallet.",
-    };
+  getModeInfo() {
+    return null;
   }
 }
