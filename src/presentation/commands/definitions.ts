@@ -37,6 +37,11 @@ export const Definitions = {
     name: "swap",
     description: "Swap USDC to assets (quote/simulate/execute)",
   },
+
+  admin: {
+    name: "admin",
+    description: "User management (add/remove/list/role)",
+  },
 } as const satisfies Record<string, CommandDefinition>;
 
 /**

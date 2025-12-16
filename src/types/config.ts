@@ -36,6 +36,13 @@ export interface EncryptionConfig {
   masterKey: string;
 }
 
+export interface AuthConfig {
+  /** Owner Telegram ID - super admin who cannot be removed */
+  ownerTelegramId: number;
+  /** Path to authorization database */
+  dbPath: string;
+}
+
 export interface PriceConfig {
   source: PriceSource;
   jupiterApiKey?: string;
@@ -49,6 +56,7 @@ export interface Config {
   dcaWallet: DcaWalletConfig;
   encryption: EncryptionConfig;
   price: PriceConfig;
+  auth: AuthConfig;
   web?: WebConfig;
   isDev: boolean;
 }

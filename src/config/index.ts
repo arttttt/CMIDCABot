@@ -1,4 +1,4 @@
-import { Config, DatabaseMode, PriceSource } from "../types/config.js";
+import { Config, DatabaseMode, PriceSource, AuthConfig } from "../types/config.js";
 
 function getEnvOrThrow(key: string): string {
   const value = process.env[key];
@@ -36,6 +36,17 @@ export function loadConfig(): Config {
   // MASTER_ENCRYPTION_KEY is required for encrypting private keys
   const masterEncryptionKey = getEnvOrThrow("MASTER_ENCRYPTION_KEY");
 
+  // OWNER_TELEGRAM_ID is required for authorization
+  const ownerTelegramId = getEnvInt("OWNER_TELEGRAM_ID", 0);
+  if (ownerTelegramId === 0) {
+    throw new Error("Missing required environment variable: OWNER_TELEGRAM_ID");
+  }
+
+  const auth: AuthConfig = {
+    ownerTelegramId,
+    dbPath: getEnvOrDefault("AUTH_DATABASE_PATH", "./data/auth.db"),
+  };
+
   return {
     telegram: {
       // Bot token is optional when running in web-only mode
@@ -65,6 +76,7 @@ export function loadConfig(): Config {
       source: getEnvOrDefault("PRICE_SOURCE", "jupiter") as PriceSource,
       jupiterApiKey: process.env.JUPITER_API_KEY,
     },
+    auth,
     web: webEnabled
       ? {
           enabled: true,
