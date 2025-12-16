@@ -15,6 +15,7 @@ import {
 } from "@solana/transactions";
 import { SolanaConfig } from "../types/index.js";
 import { logger } from "./logger.js";
+import type { KeyEncryptionService } from "./encryption.js";
 
 const LAMPORTS_PER_SOL = 1_000_000_000n;
 
@@ -180,11 +181,19 @@ export class SolanaService {
   }
 
   /**
-   * Create a signer from a base64-encoded private key
+   * Create a signer from a base64-encoded private key.
+   * The input buffer is zeroed immediately after the signer is created
+   * to minimize the time sensitive data remains in JS heap.
    */
   async createSignerFromPrivateKey(privateKeyBase64: string): Promise<KeyPairSigner> {
     const privateKeyBytes = Buffer.from(privateKeyBase64, "base64");
-    return createKeyPairSignerFromPrivateKeyBytes(privateKeyBytes, true);
+    try {
+      const signer = await createKeyPairSignerFromPrivateKeyBytes(privateKeyBytes, true);
+      return signer;
+    } finally {
+      // Zero the buffer to minimize exposure window
+      privateKeyBytes.fill(0);
+    }
   }
 
   /**
@@ -388,6 +397,117 @@ export class SolanaService {
       logger.step("Solana", 4, 4, "Waiting for confirmation...");
       const confirmStartTime = Date.now();
       const confirmed = await this.waitForConfirmation(signature, 30000); // 30 second timeout
+      const confirmDuration = Date.now() - confirmStartTime;
+
+      if (confirmed) {
+        logger.tx("Solana", "Transaction CONFIRMED", {
+          signature,
+          confirmationTime: `${confirmDuration}ms`,
+        });
+      } else {
+        logger.warn("Solana", "Transaction confirmation timeout", {
+          signature,
+          timeout: "30s",
+        });
+      }
+
+      return {
+        success: true,
+        signature: signature,
+        error: null,
+        confirmed,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error("Solana", "Transaction failed", { error: errorMessage });
+      return {
+        success: false,
+        signature: null,
+        error: errorMessage,
+        confirmed: false,
+      };
+    }
+  }
+
+  /**
+   * Sign and send a transaction with ENCRYPTED private key.
+   *
+   * This is the secure signing method that minimizes private key exposure:
+   * 1. Decrypt the encrypted key to a Buffer
+   * 2. Create signer from bytes
+   * 3. IMMEDIATELY zero the buffer (microseconds exposure)
+   * 4. Sign and send transaction
+   *
+   * @param transactionBase64 - Base64 encoded serialized transaction (from Jupiter API)
+   * @param encryptedPrivateKey - AES-256-GCM encrypted private key from database
+   * @param encryptionService - Service to decrypt the key
+   * @returns SendTransactionResult with signature, confirmation status, and any errors
+   */
+  async signAndSendTransactionSecure(
+    transactionBase64: string,
+    encryptedPrivateKey: string,
+    encryptionService: KeyEncryptionService,
+  ): Promise<SendTransactionResult> {
+    try {
+      // STEP 1: Decode transaction BEFORE decrypting key (no sensitive data yet)
+      logger.step("Solana", 1, 4, "Decoding transaction...");
+      const transactionBytes = Buffer.from(transactionBase64, "base64");
+      const decoder = getTransactionDecoder();
+      const transaction = decoder.decode(transactionBytes);
+
+      // STEP 2: Decrypt, sign, and zero - all in minimal exposure window
+      // Private key exists in memory ONLY during this block (~microseconds)
+      logger.step("Solana", 2, 4, "Signing transaction (secure)...");
+
+      let signedBase64: Base64EncodedWireTransaction;
+      {
+        // Decrypt key into buffer
+        const decryptedBase64 = await encryptionService.decrypt(encryptedPrivateKey);
+        const privateKeyBytes = Buffer.from(decryptedBase64, "base64");
+
+        try {
+          // Create signer with NON-extractable key (more secure)
+          const signer = await createKeyPairSignerFromPrivateKeyBytes(privateKeyBytes, false);
+
+          // Sign the transaction
+          const signedTransaction = await signTransaction([signer.keyPair], transaction);
+
+          // Encode signed transaction
+          const encoder = getTransactionEncoder();
+          const signedBytes = encoder.encode(signedTransaction);
+          signedBase64 = Buffer.from(signedBytes).toString("base64") as Base64EncodedWireTransaction;
+
+          // signer goes out of scope here - CryptoKey becomes eligible for GC
+        } finally {
+          // Zero the buffer IMMEDIATELY after signing
+          privateKeyBytes.fill(0);
+        }
+        // decryptedBase64 string goes out of scope here
+      }
+      // PRIVATE KEY NO LONGER IN SCOPE - only signed transaction remains
+
+      // STEP 3: Send the transaction (key already zeroed/out of scope)
+      logger.step("Solana", 3, 4, "Sending transaction to network...");
+      const sendStartTime = Date.now();
+
+      const signature = await this.rpc
+        .sendTransaction(signedBase64, {
+          encoding: "base64",
+          skipPreflight: false,
+          preflightCommitment: "confirmed",
+        })
+        .send();
+
+      const sendDuration = Date.now() - sendStartTime;
+      logger.tx("Solana", "Transaction sent", {
+        signature,
+        duration: `${sendDuration}ms`,
+      });
+
+      // 7. Wait for confirmation (poll for status)
+      logger.step("Solana", 4, 4, "Waiting for confirmation...");
+      const confirmStartTime = Date.now();
+      const confirmed = await this.waitForConfirmation(signature, 30000);
       const confirmDuration = Date.now() - confirmStartTime;
 
       if (confirmed) {

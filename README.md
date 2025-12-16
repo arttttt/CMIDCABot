@@ -36,6 +36,7 @@ cp .env.example .env
 |----------|----------|---------|-------------|
 | `NODE_ENV` | No | `development` | Environment mode (`development` \| `production`) |
 | `TELEGRAM_BOT_TOKEN` | Yes* | - | Telegram bot token from @BotFather |
+| `MASTER_ENCRYPTION_KEY` | Yes | - | Master key for private key encryption (base64, 32 bytes) |
 | `SOLANA_RPC_URL` | No | `https://api.devnet.solana.com` | Solana RPC endpoint |
 | `DB_MODE` | No | `sqlite` | Database mode (`sqlite` \| `memory`) |
 | `DATABASE_PATH` | No | `./data/bot.db` | Path to SQLite database |
@@ -50,6 +51,26 @@ cp .env.example .env
 
 \* Not required if `WEB_ENABLED=true`
 \** Required when `PRICE_SOURCE=jupiter`
+
+### Encryption Setup
+
+Private keys are encrypted at rest using AES-256-GCM. You must generate a master encryption key before first run:
+
+```bash
+# Generate a secure 32-byte key
+openssl rand -base64 32
+```
+
+Add this key to your `.env` file:
+
+```env
+MASTER_ENCRYPTION_KEY=<your-generated-key>
+```
+
+**Important:**
+- Keep this key safe — losing it means losing access to all encrypted wallets
+- Do not change this key after users have created wallets
+- Back up this key securely (e.g., in a password manager or secure vault)
 
 ## Running
 

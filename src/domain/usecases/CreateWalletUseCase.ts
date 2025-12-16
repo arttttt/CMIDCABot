@@ -28,9 +28,10 @@ export class CreateWalletUseCase {
 
     const user = await this.userRepository.getById(telegramId);
 
-    if (user?.privateKey) {
+    if (user?.privateKey && user?.walletAddress) {
       logger.info("CreateWallet", "Wallet already exists", { telegramId });
-      const wallet = await this.walletHelper.getWalletInfo(user.privateKey, false);
+      // Use walletAddress instead of decrypting privateKey
+      const wallet = await this.walletHelper.getWalletInfoByAddress(user.walletAddress, false);
       return { type: "already_exists", wallet };
     }
 

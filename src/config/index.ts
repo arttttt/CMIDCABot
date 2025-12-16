@@ -33,6 +33,9 @@ export function loadConfig(): Config {
   // DEV_WALLET_PRIVATE_KEY is optional, only used in dev mode
   const devPrivateKey = process.env.DEV_WALLET_PRIVATE_KEY || undefined;
 
+  // MASTER_ENCRYPTION_KEY is required for encrypting private keys
+  const masterEncryptionKey = getEnvOrThrow("MASTER_ENCRYPTION_KEY");
+
   return {
     telegram: {
       // Bot token is optional when running in web-only mode
@@ -54,6 +57,9 @@ export function loadConfig(): Config {
     },
     dcaWallet: {
       devPrivateKey: isDev ? devPrivateKey : undefined,
+    },
+    encryption: {
+      masterKey: masterEncryptionKey,
     },
     price: {
       source: getEnvOrDefault("PRICE_SOURCE", "jupiter") as PriceSource,
