@@ -84,13 +84,41 @@ export function createTelegramBot(
 
   // Handle callback queries: Context -> Protocol -> Edit message
   bot.on("callback_query:data", async (ctx) => {
+    const callbackData = ctx.callbackQuery.data;
+
+    // Handle delete_sensitive callback - replace message with success text
+    if (callbackData === "delete_sensitive") {
+      try {
+        await ctx.editMessageText(
+          "**Private key exported successfully.**\n\n" +
+            "The key has been removed from this chat for security.",
+          { parse_mode: "Markdown" },
+        );
+        await ctx.answerCallbackQuery({ text: "Key removed from chat" });
+        logger.debug("TelegramBot", "Replaced sensitive message with success text", {
+          userId: ctx.from.id,
+        });
+      } catch (error) {
+        await ctx.answerCallbackQuery({ text: "Failed to update message" });
+        logger.debug("TelegramBot", "Failed to replace sensitive message", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      return;
+    }
+
+    // Handle regular callbacks via protocol handler
     const response = await handler.handleCallback({
       telegramId: ctx.from.id,
-      callbackData: ctx.callbackQuery.data,
+      callbackData: callbackData,
     });
 
+    const keyboard = toInlineKeyboard(response);
     await ctx.answerCallbackQuery();
-    await ctx.editMessageText(response.text, { parse_mode: "Markdown" });
+    await ctx.editMessageText(response.text, {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
   });
 
   // Error handling

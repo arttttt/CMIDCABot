@@ -5,36 +5,30 @@
  * Includes: wallet, portfolio, dca, prices, swap
  */
 
+import { CommandRegistry, Command, ModeInfo } from "./types.js";
 import {
-  CommandRegistry,
-  CommandDefinition,
-  CommandHandler,
-  CommandEntry,
-  ModeInfo,
-} from "./types.js";
-import { Definitions } from "./definitions.js";
-import {
-  createWalletHandler,
-  createDcaHandler,
-  createPortfolioHandler,
-  createPricesHandler,
-  createSwapHandler,
-  WalletHandlerDeps,
-  DcaHandlerDeps,
-  PortfolioHandlerDeps,
-  PricesHandlerDeps,
-  SwapHandlerDeps,
+  createWalletCommand,
+  createDcaCommand,
+  createPortfolioCommand,
+  createPricesCommand,
+  createSwapCommand,
+  WalletCommandDeps,
+  DcaCommandDeps,
+  PortfolioCommandDeps,
+  PricesCommandDeps,
+  SwapCommandDeps,
 } from "./handlers.js";
+import { prefixCallbacks } from "./router.js";
 
 /**
  * Dependencies required for DevCommandRegistry
  */
 export interface DevCommandRegistryDeps {
-  wallet: WalletHandlerDeps;
-  dca: DcaHandlerDeps;
-  portfolio: PortfolioHandlerDeps;
-  prices: PricesHandlerDeps;
-  swap: SwapHandlerDeps;
+  wallet: WalletCommandDeps;
+  dca: DcaCommandDeps;
+  portfolio: PortfolioCommandDeps;
+  prices: PricesCommandDeps;
+  swap: SwapCommandDeps;
 }
 
 /**
@@ -48,24 +42,25 @@ export interface DevCommandRegistryDeps {
  * - swap: Quote/simulate/execute swaps
  */
 export class DevCommandRegistry implements CommandRegistry {
-  private commands: Map<string, CommandEntry>;
+  private commands: Map<string, Command>;
 
   constructor(deps: DevCommandRegistryDeps) {
     this.commands = new Map([
-      ["wallet", { definition: Definitions.wallet, handler: createWalletHandler(deps.wallet) }],
-      ["portfolio", { definition: Definitions.portfolio, handler: createPortfolioHandler(deps.portfolio) }],
-      ["dca", { definition: Definitions.dca, handler: createDcaHandler(deps.dca) }],
-      ["prices", { definition: Definitions.prices, handler: createPricesHandler(deps.prices) }],
-      ["swap", { definition: Definitions.swap, handler: createSwapHandler(deps.swap) }],
+      ["wallet", createWalletCommand(deps.wallet)],
+      ["portfolio", createPortfolioCommand(deps.portfolio)],
+      ["dca", createDcaCommand(deps.dca)],
+      ["prices", createPricesCommand(deps.prices)],
+      ["swap", createSwapCommand(deps.swap)],
     ]);
+    prefixCallbacks(this.commands);
   }
 
-  getDefinitions(): CommandDefinition[] {
-    return Array.from(this.commands.values()).map((entry) => entry.definition);
+  getCommand(name: string): Command | undefined {
+    return this.commands.get(name);
   }
 
-  getHandler(name: string): CommandHandler | undefined {
-    return this.commands.get(name)?.handler;
+  getCommands(): Map<string, Command> {
+    return this.commands;
   }
 
   getModeInfo(): ModeInfo {

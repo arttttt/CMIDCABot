@@ -114,7 +114,39 @@ export class DcaWalletFormatter {
     }
   }
 
-  formatExportKey(result: ExportKeyResult): UIResponse {
+  formatExportKey(result: ExportKeyResult, commandPath: string): UIResponse {
+    // First step: show confirmation screen (don't show key yet)
+    switch (result.type) {
+      case "success":
+      case "dev_mode":
+        return {
+          text:
+            `**Export Private Key?**\n\n` +
+            `**WARNING:** Your private key will be shown in this chat.\n\n` +
+            `**Security risks:**\n` +
+            `- The key may remain in chat history\n` +
+            `- Anyone with access to this chat can see it\n` +
+            `- Never share your private key with anyone\n\n` +
+            `Are you sure you want to export?`,
+          buttons: [[{ text: "Yes, show my private key", callbackData: `${commandPath}:confirm_export` }]],
+        };
+
+      case "no_wallet":
+        return {
+          text:
+            `No wallet found.\n\n` +
+            `Use /wallet create to generate a wallet first.`,
+        };
+
+      default:
+        return { text: "Unable to export private key." };
+    }
+  }
+
+  formatExportKeyConfirmed(result: ExportKeyResult): UIResponse {
+    // Second step: show the actual key with clear button
+    const clearButton = [[{ text: "✓ I saved it", callbackData: "delete_sensitive" }]];
+
     switch (result.type) {
       case "success":
         return {
@@ -123,10 +155,11 @@ export class DcaWalletFormatter {
             `**SECURITY WARNING**\n` +
             `- Never share this key with anyone\n` +
             `- Anyone with this key can access your funds\n` +
-            `- Store it securely offline\n` +
-            `- Delete this message after saving\n\n` +
+            `- Store it securely offline\n\n` +
             `Private Key (base64):\n` +
-            `\`${result.privateKey}\``,
+            `\`${result.privateKey}\`\n\n` +
+            `_Press the button below after saving to clear this message._`,
+          buttons: clearButton,
         };
 
       case "dev_mode":
@@ -136,7 +169,9 @@ export class DcaWalletFormatter {
             `You are using a shared development wallet.\n` +
             `This key is configured via DEV_WALLET_PRIVATE_KEY.\n\n` +
             `Private Key (base64):\n` +
-            `\`${result.privateKey}\``,
+            `\`${result.privateKey}\`\n\n` +
+            `_Press the button below after saving to clear this message._`,
+          buttons: clearButton,
         };
 
       case "no_wallet":

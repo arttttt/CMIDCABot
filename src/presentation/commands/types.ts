@@ -1,46 +1,46 @@
 /**
  * Command architecture types
  *
- * Three-layer separation:
- * 1. CommandDefinition - describes what command does (data)
- * 2. CommandHandler - executes command logic (function)
- * 3. CommandRegistry - composes definitions + handlers for a mode
+ * Composable command structure:
+ * - Command contains definition, handler, subcommands, and callbacks
+ * - Subcommands are recursive - same Command structure
+ * - Routing is done by traversing the command tree
  */
 
 import { UIResponse } from "../protocol/types.js";
 
 /**
- * Subcommand definition for help display
- */
-export interface SubcommandDefinition {
-  usage: string;
-  description: string;
-}
-
-/**
- * Command definition - describes what command does
- * Reusable across different modes
+ * Command definition - metadata for help/registration
  */
 export interface CommandDefinition {
   name: string;
   description: string;
-  subcommands?: SubcommandDefinition[];
 }
 
 /**
  * Command handler function signature
  */
-export type CommandHandler = (
-  args: string[],
-  telegramId: number,
-) => Promise<UIResponse>;
+export type CommandHandler = (args: string[], telegramId: number) => Promise<UIResponse>;
 
 /**
- * Command entry - definition + handler pair
+ * Callback handler function signature
  */
-export interface CommandEntry {
+export type CallbackHandler = (telegramId: number) => Promise<UIResponse>;
+
+/**
+ * Command - composable command structure
+ *
+ * Can contain:
+ * - definition: metadata for help/registration
+ * - handler: executes when command is called (with remaining args)
+ * - subcommands: nested commands (recursive structure)
+ * - callbacks: inline button handlers for this command
+ */
+export interface Command {
   definition: CommandDefinition;
-  handler: CommandHandler;
+  handler?: CommandHandler;
+  subcommands?: Map<string, Command>;
+  callbacks?: Map<string, CallbackHandler>;
 }
 
 /**
@@ -52,18 +52,18 @@ export interface ModeInfo {
 }
 
 /**
- * Command registry interface - composes definitions + handlers for a mode
+ * Command registry interface - top-level command container
  */
 export interface CommandRegistry {
   /**
-   * Get all command definitions available in this mode
+   * Get command by name
    */
-  getDefinitions(): CommandDefinition[];
+  getCommand(name: string): Command | undefined;
 
   /**
-   * Get handler for a command by name (O(1) lookup)
+   * Get all commands
    */
-  getHandler(name: string): CommandHandler | undefined;
+  getCommands(): Map<string, Command>;
 
   /**
    * Get mode information for display (null for production)

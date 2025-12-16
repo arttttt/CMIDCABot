@@ -1,16 +1,16 @@
 /**
  * Help formatter - format help and start messages
  *
- * Uses CommandDefinition from registry to generate help.
+ * Uses Command structure to generate help recursively.
  */
 
-import { CommandDefinition, ModeInfo } from "../commands/types.js";
+import { Command, ModeInfo } from "../commands/types.js";
 
 export class HelpFormatter {
   /**
-   * Format full help message using definitions from registry
+   * Format full help message from Command structure
    */
-  formatHelp(definitions: CommandDefinition[], modeInfo: ModeInfo | null): string {
+  formatHelp(commands: Map<string, Command>, modeInfo: ModeInfo | null): string {
     let text = "**CMI DCA Bot**\n\n";
     text += "Target allocations:\n";
     text += "- BTC: 40%\n";
@@ -19,21 +19,30 @@ export class HelpFormatter {
     text += "The bot purchases the asset furthest below its target allocation.\n\n";
     text += "**Commands**\n\n";
 
-    for (const cmd of definitions) {
-      text += `**/${cmd.name}** - ${cmd.description}\n`;
-      if (cmd.subcommands) {
-        for (const sub of cmd.subcommands) {
-          text += `  \`${sub.usage}\`\n`;
-          text += `    ${sub.description}\n`;
-        }
-      }
-      text += "\n";
+    for (const cmd of commands.values()) {
+      text += this.formatCommandHelp(cmd, `/${cmd.definition.name}`);
     }
 
     if (modeInfo) {
       text += `[${modeInfo.label}]\n${modeInfo.description}`;
     }
 
+    return text;
+  }
+
+  /**
+   * Format help for a single command (recursive)
+   */
+  private formatCommandHelp(cmd: Command, prefix: string): string {
+    let text = `**${prefix}** - ${cmd.definition.description}\n`;
+
+    if (cmd.subcommands && cmd.subcommands.size > 0) {
+      for (const [name, sub] of cmd.subcommands) {
+        text += `  \`${prefix} ${name}\` - ${sub.definition.description}\n`;
+      }
+    }
+
+    text += "\n";
     return text;
   }
 
