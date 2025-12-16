@@ -31,7 +31,7 @@ export class HelpFormatter {
     }
 
     if (modeInfo) {
-      text += `[${modeInfo.label}] ${modeInfo.description}`;
+      text += `[${modeInfo.label}]\n${modeInfo.description}`;
     }
 
     return text;
