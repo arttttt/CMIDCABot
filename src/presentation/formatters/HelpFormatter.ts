@@ -17,9 +17,7 @@ export class HelpFormatter {
     text += "- ETH: 30%\n";
     text += "- SOL: 30%\n\n";
     text += "The bot purchases the asset furthest below its target allocation.\n\n";
-    text += "─".repeat(30) + "\n";
-    text += "**Commands**\n";
-    text += "─".repeat(30) + "\n\n";
+    text += "**Commands**\n\n";
 
     for (const cmd of definitions) {
       text += `**/${cmd.name}** - ${cmd.description}\n`;
@@ -32,9 +30,7 @@ export class HelpFormatter {
       text += "\n";
     }
 
-    text += "─".repeat(30) + "\n";
-    text += `_Mode: ${modeInfo.label}_\n`;
-    text += `_${modeInfo.description}_`;
+    text += `[${modeInfo.label}] ${modeInfo.description}`;
 
     return text;
   }
