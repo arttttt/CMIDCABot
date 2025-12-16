@@ -77,7 +77,7 @@ Example:
     for (const user of users) {
       const role = ROLE_LABELS[user.role];
       const addedBy = user.addedBy ? ` (added by ${user.addedBy})` : "";
-      lines.push(`  ${user.telegramId} - ${role}${addedBy}`);
+      lines.push(`${user.telegramId} - ${role}${addedBy}`);
     }
 
     lines.push("");

@@ -8,7 +8,7 @@
 
 import { InitUserUseCase } from "../../domain/usecases/index.js";
 import { HelpFormatter } from "../formatters/index.js";
-import { CommandRegistry } from "../commands/types.js";
+import { CommandRegistry, Command } from "../commands/types.js";
 import { routeCommand, findCallbackByPath } from "../commands/router.js";
 import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./types.js";
 import { AuthorizationService } from "../../services/authorization.js";
@@ -16,6 +16,11 @@ import { AuthorizationService } from "../../services/authorization.js";
 const UNAUTHORIZED_MESSAGE = `You are not authorized to use this bot.
 
 Please contact the administrator to request access.`;
+
+/**
+ * Commands that require admin privileges
+ */
+const ADMIN_ONLY_COMMANDS = new Set(["admin"]);
 
 export class ProtocolHandler {
   private helpFormatter: HelpFormatter;
@@ -71,6 +76,7 @@ export class ProtocolHandler {
     telegramId: number,
   ): Promise<UIResponse> {
     const modeInfo = this.registry.getModeInfo();
+    const isAdmin = await this.authService.isAdmin(telegramId);
 
     // /start - initialize user
     if (command === "/start") {
@@ -80,15 +86,22 @@ export class ProtocolHandler {
       };
     }
 
-    // /help - show all available commands
+    // /help - show commands available to user based on role
     if (command === "/help") {
+      const availableCommands = this.filterCommandsByRole(this.registry.getCommands(), isAdmin);
       return {
-        text: this.helpFormatter.formatHelp(this.registry.getCommands(), modeInfo),
+        text: this.helpFormatter.formatHelp(availableCommands, modeInfo),
       };
     }
 
     // Extract command name (remove leading /)
     const commandName = command.slice(1);
+
+    // Check if command requires admin privileges
+    if (ADMIN_ONLY_COMMANDS.has(commandName) && !isAdmin) {
+      // Return "unknown command" to hide admin commands from non-admins
+      return { text: `Unknown command: ${command}\nUse /help to see available commands.` };
+    }
 
     // Look up command in registry
     const cmd = this.registry.getCommand(commandName);
@@ -98,6 +111,24 @@ export class ProtocolHandler {
 
     // Route through command tree
     return routeCommand(cmd, args, telegramId);
+  }
+
+  /**
+   * Filter commands based on user role
+   */
+  private filterCommandsByRole(commands: Map<string, Command>, isAdmin: boolean): Map<string, Command> {
+    if (isAdmin) {
+      return commands; // Admins see all commands
+    }
+
+    // Filter out admin-only commands for regular users
+    const filtered = new Map<string, Command>();
+    for (const [name, cmd] of commands) {
+      if (!ADMIN_ONLY_COMMANDS.has(name)) {
+        filtered.set(name, cmd);
+      }
+    }
+    return filtered;
   }
 
   /**
