@@ -7,7 +7,6 @@ import { Bot, Context, InlineKeyboard } from "grammy";
 import { ProtocolHandler } from "../protocol/index.js";
 import { UIResponse } from "../protocol/types.js";
 import { logger } from "../../services/logger.js";
-import type { Message } from "grammy/types";
 
 function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
   if (!response.buttons?.length) return undefined;
@@ -22,35 +21,13 @@ function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
   return keyboard;
 }
 
-async function sendResponse(ctx: Context, response: UIResponse): Promise<Message.TextMessage> {
+async function sendResponse(ctx: Context, response: UIResponse): Promise<void> {
   const keyboard = toInlineKeyboard(response);
   if (keyboard) {
-    return await ctx.reply(response.text, { reply_markup: keyboard, parse_mode: "Markdown" });
+    await ctx.reply(response.text, { reply_markup: keyboard, parse_mode: "Markdown" });
   } else {
-    return await ctx.reply(response.text, { parse_mode: "Markdown" });
+    await ctx.reply(response.text, { parse_mode: "Markdown" });
   }
-}
-
-/**
- * Schedule auto-deletion of a message
- */
-function scheduleMessageDeletion(
-  bot: Bot<Context>,
-  chatId: number,
-  messageId: number,
-  delaySeconds: number,
-): void {
-  setTimeout(async () => {
-    try {
-      await bot.api.deleteMessage(chatId, messageId);
-      logger.debug("TelegramBot", "Auto-deleted sensitive message", { chatId, messageId });
-    } catch (error) {
-      // Message may already be deleted by user or expired
-      logger.debug("TelegramBot", "Failed to auto-delete message", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }, delaySeconds * 1000);
 }
 
 export function createTelegramBot(
@@ -102,12 +79,7 @@ export function createTelegramBot(
       }
     }
 
-    const sentMessage = await sendResponse(ctx, response);
-
-    // Schedule auto-deletion for sensitive messages (e.g., exported private keys)
-    if (response.autoDeleteSeconds && ctx.chat) {
-      scheduleMessageDeletion(bot, ctx.chat.id, sentMessage.message_id, response.autoDeleteSeconds);
-    }
+    await sendResponse(ctx, response);
   });
 
   // Handle callback queries: Context -> Protocol -> Edit message

@@ -19,8 +19,6 @@ export interface UIResponse {
   buttons?: UIButton[][];
   /** If true, the adapter should delete the user's original message (for sensitive data like private keys) */
   deleteUserMessage?: boolean;
-  /** If set, the bot's response message will be auto-deleted after this many seconds */
-  autoDeleteSeconds?: number;
 }
 
 /**
