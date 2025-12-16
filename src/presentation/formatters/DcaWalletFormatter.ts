@@ -115,8 +115,8 @@ export class DcaWalletFormatter {
   }
 
   formatExportKey(result: ExportKeyResult): UIResponse {
-    // Auto-delete sensitive messages after 60 seconds
-    const autoDeleteSeconds = 60;
+    // Auto-delete sensitive messages after 30 seconds
+    const autoDeleteSeconds = 30;
     const deleteButton = [[{ text: "I saved it, delete now", callbackData: "delete_sensitive" }]];
 
     switch (result.type) {
