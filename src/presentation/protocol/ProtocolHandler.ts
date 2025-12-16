@@ -72,7 +72,12 @@ export class ProtocolHandler {
     telegramId: number,
   ): Promise<UIResponse> {
     const modeInfo = this.registry.getModeInfo();
-    const userRole = await this.authService.getRole(telegramId) ?? "user";
+    const userRole = await this.authService.getRole(telegramId);
+
+    // If role not found, user is not authorized (should not happen after isAuthorized check)
+    if (!userRole) {
+      return { text: UNAUTHORIZED_MESSAGE };
+    }
 
     // /start - initialize user
     if (command === "/start") {
