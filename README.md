@@ -134,10 +134,11 @@ npx tsc --noEmit
 |---------|-------------|
 | `/start` | Welcome message and command list |
 | `/help` | Strategy description |
-| `/wallet` | Show DCA wallet info |
-| `/wallet create` | Create new DCA wallet |
+| `/wallet` | Show current wallet info |
+| `/wallet create` | Create new wallet |
+| `/wallet import <key>` | Import wallet from private key |
 | `/wallet export` | Export private key |
-| `/wallet delete` | Delete DCA wallet |
+| `/wallet delete` | Delete wallet |
 
 ### Development mode only
 
