@@ -41,11 +41,12 @@ export type CommandHandler = (
 export type CallbackHandler = (telegramId: number) => Promise<UIResponse>;
 
 /**
- * Command entry - definition + handler pair
+ * Command entry - definition + handler + optional callbacks
  */
 export interface CommandEntry {
   definition: CommandDefinition;
   handler: CommandHandler;
+  callbacks?: Map<string, CallbackHandler>;
 }
 
 /**

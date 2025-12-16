@@ -6,7 +6,7 @@
  * and return UIResponse.
  */
 
-import { CommandHandler, CallbackHandler } from "./types.js";
+import { CommandHandler, CallbackHandler, CommandEntry } from "./types.js";
 import { UIResponse } from "../protocol/types.js";
 
 // Use cases
@@ -85,10 +85,11 @@ export interface SwapHandlerDeps {
 // ============================================================
 
 /**
- * Create wallet command handler
+ * Create wallet command entry (handler + callbacks)
  * Subcommands: (none), create, import, export, delete
+ * Callbacks: confirm_export
  */
-export function createWalletHandler(deps: WalletHandlerDeps): CommandHandler {
+export function createWalletEntry(deps: WalletHandlerDeps): Omit<CommandEntry, "definition"> {
   const {
     showWallet,
     createWallet,
@@ -98,7 +99,7 @@ export function createWalletHandler(deps: WalletHandlerDeps): CommandHandler {
     formatter,
   } = deps;
 
-  return async (args: string[], telegramId: number): Promise<UIResponse> => {
+  const handler: CommandHandler = async (args: string[], telegramId: number): Promise<UIResponse> => {
     const subcommand = args[0]?.toLowerCase();
 
     // /wallet - show wallet
@@ -137,18 +138,8 @@ export function createWalletHandler(deps: WalletHandlerDeps): CommandHandler {
 
     return formatter.formatUnknownSubcommand();
   };
-}
 
-/**
- * Create wallet callback handlers
- * Callbacks: confirm_export
- */
-export function createWalletCallbackHandlers(
-  deps: WalletHandlerDeps,
-): Map<string, CallbackHandler> {
-  const { exportWalletKey, formatter } = deps;
-
-  return new Map([
+  const callbacks = new Map<string, CallbackHandler>([
     [
       "confirm_export",
       async (telegramId: number): Promise<UIResponse> => {
@@ -157,6 +148,8 @@ export function createWalletCallbackHandlers(
       },
     ],
   ]);
+
+  return { handler, callbacks };
 }
 
 /**

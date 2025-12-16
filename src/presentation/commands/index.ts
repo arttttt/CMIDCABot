@@ -11,6 +11,7 @@
 export type {
   CommandDefinition,
   CommandHandler,
+  CallbackHandler,
   CommandEntry,
   CommandRegistry,
   ModeInfo,
@@ -22,7 +23,7 @@ export { Definitions, type DefinitionKey } from "./definitions.js";
 
 // Handler factories
 export {
-  createWalletHandler,
+  createWalletEntry,
   createDcaHandler,
   createPortfolioHandler,
   createPricesHandler,

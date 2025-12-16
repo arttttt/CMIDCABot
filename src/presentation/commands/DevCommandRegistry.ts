@@ -15,8 +15,7 @@ import {
 } from "./types.js";
 import { Definitions } from "./definitions.js";
 import {
-  createWalletHandler,
-  createWalletCallbackHandlers,
+  createWalletEntry,
   createDcaHandler,
   createPortfolioHandler,
   createPricesHandler,
@@ -51,19 +50,16 @@ export interface DevCommandRegistryDeps {
  */
 export class DevCommandRegistry implements CommandRegistry {
   private commands: Map<string, CommandEntry>;
-  private callbacks: Map<string, CallbackHandler>;
 
   constructor(deps: DevCommandRegistryDeps) {
+    const walletEntry = createWalletEntry(deps.wallet);
     this.commands = new Map([
-      ["wallet", { definition: Definitions.wallet, handler: createWalletHandler(deps.wallet) }],
+      ["wallet", { definition: Definitions.wallet, ...walletEntry }],
       ["portfolio", { definition: Definitions.portfolio, handler: createPortfolioHandler(deps.portfolio) }],
       ["dca", { definition: Definitions.dca, handler: createDcaHandler(deps.dca) }],
       ["prices", { definition: Definitions.prices, handler: createPricesHandler(deps.prices) }],
       ["swap", { definition: Definitions.swap, handler: createSwapHandler(deps.swap) }],
     ]);
-
-    // Merge callback handlers from all command modules
-    this.callbacks = new Map([...createWalletCallbackHandlers(deps.wallet)]);
   }
 
   getDefinitions(): CommandDefinition[] {
@@ -75,7 +71,11 @@ export class DevCommandRegistry implements CommandRegistry {
   }
 
   getCallbackHandler(callbackData: string): CallbackHandler | undefined {
-    return this.callbacks.get(callbackData);
+    for (const entry of this.commands.values()) {
+      const handler = entry.callbacks?.get(callbackData);
+      if (handler) return handler;
+    }
+    return undefined;
   }
 
   getModeInfo(): ModeInfo {

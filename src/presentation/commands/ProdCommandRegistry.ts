@@ -5,19 +5,9 @@
  * Includes: wallet only (other features require dev mode)
  */
 
-import {
-  CommandRegistry,
-  CommandDefinition,
-  CommandHandler,
-  CallbackHandler,
-  CommandEntry,
-} from "./types.js";
+import { CommandRegistry, CommandDefinition, CommandHandler, CallbackHandler, CommandEntry } from "./types.js";
 import { Definitions } from "./definitions.js";
-import {
-  createWalletHandler,
-  createWalletCallbackHandlers,
-  WalletHandlerDeps,
-} from "./handlers.js";
+import { createWalletEntry, WalletHandlerDeps } from "./handlers.js";
 
 /**
  * Dependencies required for ProdCommandRegistry
@@ -36,15 +26,12 @@ export interface ProdCommandRegistryDeps {
  */
 export class ProdCommandRegistry implements CommandRegistry {
   private commands: Map<string, CommandEntry>;
-  private callbacks: Map<string, CallbackHandler>;
 
   constructor(deps: ProdCommandRegistryDeps) {
+    const walletEntry = createWalletEntry(deps.wallet);
     this.commands = new Map([
-      ["wallet", { definition: Definitions.wallet, handler: createWalletHandler(deps.wallet) }],
+      ["wallet", { definition: Definitions.wallet, ...walletEntry }],
     ]);
-
-    // Merge callback handlers from all command modules
-    this.callbacks = new Map([...createWalletCallbackHandlers(deps.wallet)]);
   }
 
   getDefinitions(): CommandDefinition[] {
@@ -56,7 +43,11 @@ export class ProdCommandRegistry implements CommandRegistry {
   }
 
   getCallbackHandler(callbackData: string): CallbackHandler | undefined {
-    return this.callbacks.get(callbackData);
+    for (const entry of this.commands.values()) {
+      const handler = entry.callbacks?.get(callbackData);
+      if (handler) return handler;
+    }
+    return undefined;
   }
 
   getModeInfo() {
