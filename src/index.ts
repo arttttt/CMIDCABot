@@ -33,7 +33,24 @@ import {
   SimulateSwapUseCase,
   ExecuteSwapUseCase,
 } from "./domain/usecases/index.js";
-import { ProtocolHandler, UseCases } from "./presentation/protocol/index.js";
+import { ProtocolHandler } from "./presentation/protocol/index.js";
+import {
+  DevCommandRegistry,
+  ProdCommandRegistry,
+  type DevCommandRegistryDeps,
+  type ProdCommandRegistryDeps,
+  type CommandRegistry,
+} from "./presentation/commands/index.js";
+import {
+  DcaWalletFormatter,
+  DcaFormatter,
+  PortfolioFormatter,
+  PurchaseFormatter,
+  PriceFormatter,
+  QuoteFormatter,
+  SimulateFormatter,
+  SwapFormatter,
+} from "./presentation/formatters/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
 import type { MainDatabase, MockDatabase } from "./data/types/database.js";
@@ -128,57 +145,113 @@ async function main(): Promise<void> {
   );
 
   // Create use cases
-  const useCases: UseCases = {
-    // User
-    initUser: new InitUserUseCase(userRepository, dca),
-    // Purchase (requires Jupiter for real swaps)
-    executePurchase: jupiterSwap && priceService
-      ? new ExecutePurchaseUseCase(
-          userRepository,
-          executeSwapUseCase,
-          solana,
-          priceService,
-          config.dcaWallet.devPrivateKey,
-        )
-      : (undefined as unknown as ExecutePurchaseUseCase),
-    // Portfolio (requires PriceService)
-    getPortfolioStatus: priceService
-      ? new GetPortfolioStatusUseCase(
-          userRepository,
-          solana,
-          priceService,
-          config.dcaWallet.devPrivateKey,
-        )
-      : (undefined as unknown as GetPortfolioStatusUseCase),
-    // Wallet
-    showWallet: new ShowWalletUseCase(userRepository, walletHelper),
-    createWallet: new CreateWalletUseCase(userRepository, solana, walletHelper),
-    importWallet: new ImportWalletUseCase(userRepository, solana, walletHelper),
-    deleteWallet: new DeleteWalletUseCase(userRepository, walletHelper),
-    exportWalletKey: new ExportWalletKeyUseCase(userRepository, config.dcaWallet),
-    // DCA
-    startDca: new StartDcaUseCase(userRepository, dcaScheduler),
-    stopDca: new StopDcaUseCase(userRepository, dcaScheduler),
-    getDcaStatus: new GetDcaStatusUseCase(userRepository, dcaScheduler),
-    // Prices
-    getPrices: new GetPricesUseCase(dca),
-    // Quote
-    getQuote: new GetQuoteUseCase(jupiterSwap),
-    // Simulate
-    simulateSwap: new SimulateSwapUseCase(
-      jupiterSwap,
-      solana,
-      userRepository,
-      config.dcaWallet.devPrivateKey,
-    ),
-    // Swap
-    executeSwap: executeSwapUseCase,
-  };
+  const initUser = new InitUserUseCase(userRepository, dca);
+  const showWallet = new ShowWalletUseCase(userRepository, walletHelper);
+  const createWallet = new CreateWalletUseCase(userRepository, solana, walletHelper);
+  const importWallet = new ImportWalletUseCase(userRepository, solana, walletHelper);
+  const deleteWallet = new DeleteWalletUseCase(userRepository, walletHelper);
+  const exportWalletKey = new ExportWalletKeyUseCase(userRepository, config.dcaWallet);
+  const startDca = new StartDcaUseCase(userRepository, dcaScheduler);
+  const stopDca = new StopDcaUseCase(userRepository, dcaScheduler);
+  const getDcaStatus = new GetDcaStatusUseCase(userRepository, dcaScheduler);
+  const getPrices = new GetPricesUseCase(dca);
+  const getQuote = new GetQuoteUseCase(jupiterSwap);
+  const simulateSwap = new SimulateSwapUseCase(
+    jupiterSwap,
+    solana,
+    userRepository,
+    config.dcaWallet.devPrivateKey,
+  );
+
+  // Create use cases that require Jupiter
+  const executePurchase = jupiterSwap && priceService
+    ? new ExecutePurchaseUseCase(
+        userRepository,
+        executeSwapUseCase,
+        solana,
+        priceService,
+        config.dcaWallet.devPrivateKey,
+      )
+    : (undefined as unknown as ExecutePurchaseUseCase);
+
+  const getPortfolioStatus = priceService
+    ? new GetPortfolioStatusUseCase(
+        userRepository,
+        solana,
+        priceService,
+        config.dcaWallet.devPrivateKey,
+      )
+    : (undefined as unknown as GetPortfolioStatusUseCase);
+
+  // Create formatters
+  const dcaWalletFormatter = new DcaWalletFormatter();
+  const dcaFormatter = new DcaFormatter();
+  const portfolioFormatter = new PortfolioFormatter();
+  const purchaseFormatter = new PurchaseFormatter();
+  const priceFormatter = new PriceFormatter();
+  const quoteFormatter = new QuoteFormatter();
+  const simulateFormatter = new SimulateFormatter();
+  const swapFormatter = new SwapFormatter();
+
+  // Build command registry based on mode
+  let registry: CommandRegistry;
+
+  if (config.isDev) {
+    const deps: DevCommandRegistryDeps = {
+      wallet: {
+        showWallet,
+        createWallet,
+        importWallet,
+        deleteWallet,
+        exportWalletKey,
+        formatter: dcaWalletFormatter,
+      },
+      dca: {
+        startDca,
+        stopDca,
+        getDcaStatus,
+        formatter: dcaFormatter,
+      },
+      portfolio: {
+        getPortfolioStatus,
+        executePurchase,
+        portfolioFormatter,
+        purchaseFormatter,
+      },
+      prices: {
+        getPrices,
+        formatter: priceFormatter,
+      },
+      swap: {
+        getQuote,
+        simulateSwap,
+        executeSwap: executeSwapUseCase,
+        quoteFormatter,
+        simulateFormatter,
+        swapFormatter,
+      },
+    };
+    registry = new DevCommandRegistry(deps);
+  } else {
+    const deps: ProdCommandRegistryDeps = {
+      wallet: {
+        showWallet,
+        createWallet,
+        importWallet,
+        deleteWallet,
+        exportWalletKey,
+        formatter: dcaWalletFormatter,
+      },
+    };
+    registry = new ProdCommandRegistry(deps);
+  }
 
   // Create protocol handler
-  const handler = new ProtocolHandler(useCases, config.isDev);
+  const handler = new ProtocolHandler(registry, initUser);
 
-  console.log(`Command mode: ${config.isDev ? "development" : "production"} (${handler.getAvailableCommands().length} commands available)`);
+  const modeInfo = registry.getModeInfo();
+  const modeLabel = modeInfo?.label ?? "Production";
+  console.log(`Command mode: ${modeLabel} (${handler.getAvailableCommands().length} commands available)`);
 
   // Cleanup function
   const cleanup = async (): Promise<void> => {
