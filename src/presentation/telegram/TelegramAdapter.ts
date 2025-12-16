@@ -109,8 +109,12 @@ export function createTelegramBot(
       callbackData: callbackData,
     });
 
+    const keyboard = toInlineKeyboard(response);
     await ctx.answerCallbackQuery();
-    await ctx.editMessageText(response.text, { parse_mode: "Markdown" });
+    await ctx.editMessageText(response.text, {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
   });
 
   // Error handling
