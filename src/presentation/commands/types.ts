@@ -8,6 +8,7 @@
  */
 
 import { UIResponse } from "../protocol/types.js";
+import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 
 /**
  * Command definition - metadata for help/registration
@@ -15,6 +16,12 @@ import { UIResponse } from "../protocol/types.js";
 export interface CommandDefinition {
   name: string;
   description: string;
+  /**
+   * Minimum role required to access this command.
+   * If not specified, command is available to all authorized users.
+   * Hierarchy: owner > admin > user
+   */
+  requiredRole?: UserRole;
 }
 
 /**

@@ -52,3 +52,27 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Admin",
   user: "User",
 };
+
+/**
+ * Role hierarchy levels (higher = more privileges)
+ */
+const ROLE_LEVELS: Record<UserRole, number> = {
+  owner: 3,
+  admin: 2,
+  user: 1,
+};
+
+/**
+ * Check if user's role meets the required role level
+ * Returns true if userRole >= requiredRole in hierarchy
+ *
+ * Hierarchy: owner > admin > user
+ *
+ * @example
+ * hasRequiredRole("owner", "admin") // true - owner can access admin features
+ * hasRequiredRole("admin", "admin") // true - admin can access admin features
+ * hasRequiredRole("user", "admin")  // false - user cannot access admin features
+ */
+export function hasRequiredRole(userRole: UserRole, requiredRole: UserRole): boolean {
+  return ROLE_LEVELS[userRole] >= ROLE_LEVELS[requiredRole];
+}

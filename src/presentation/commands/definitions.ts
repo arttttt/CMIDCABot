@@ -8,6 +8,7 @@
  */
 
 import { CommandDefinition } from "./types.js";
+import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 
 /**
  * All command definitions
@@ -41,6 +42,7 @@ export const Definitions = {
   admin: {
     name: "admin",
     description: "User management (add/remove/list/role)",
+    requiredRole: "admin" as UserRole,
   },
 } as const satisfies Record<string, CommandDefinition>;
 

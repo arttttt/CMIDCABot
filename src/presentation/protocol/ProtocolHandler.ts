@@ -12,15 +12,11 @@ import { CommandRegistry, Command } from "../commands/types.js";
 import { routeCommand, findCallbackByPath } from "../commands/router.js";
 import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./types.js";
 import { AuthorizationService } from "../../services/authorization.js";
+import { hasRequiredRole, type UserRole } from "../../domain/models/AuthorizedUser.js";
 
 const UNAUTHORIZED_MESSAGE = `You are not authorized to use this bot.
 
 Please contact the administrator to request access.`;
-
-/**
- * Commands that require admin privileges
- */
-const ADMIN_ONLY_COMMANDS = new Set(["admin"]);
 
 export class ProtocolHandler {
   private helpFormatter: HelpFormatter;
@@ -76,7 +72,7 @@ export class ProtocolHandler {
     telegramId: number,
   ): Promise<UIResponse> {
     const modeInfo = this.registry.getModeInfo();
-    const isAdmin = await this.authService.isAdmin(telegramId);
+    const userRole = await this.authService.getRole(telegramId) ?? "user";
 
     // /start - initialize user
     if (command === "/start") {
@@ -88,7 +84,7 @@ export class ProtocolHandler {
 
     // /help - show commands available to user based on role
     if (command === "/help") {
-      const availableCommands = this.filterCommandsByRole(this.registry.getCommands(), isAdmin);
+      const availableCommands = this.filterCommandsByRole(this.registry.getCommands(), userRole);
       return {
         text: this.helpFormatter.formatHelp(availableCommands, modeInfo),
       };
@@ -97,15 +93,16 @@ export class ProtocolHandler {
     // Extract command name (remove leading /)
     const commandName = command.slice(1);
 
-    // Check if command requires admin privileges
-    if (ADMIN_ONLY_COMMANDS.has(commandName) && !isAdmin) {
-      // Return "unknown command" to hide admin commands from non-admins
-      return { text: `Unknown command: ${command}\nUse /help to see available commands.` };
-    }
-
     // Look up command in registry
     const cmd = this.registry.getCommand(commandName);
     if (!cmd) {
+      return { text: `Unknown command: ${command}\nUse /help to see available commands.` };
+    }
+
+    // Check if user has required role for this command
+    const requiredRole = cmd.definition.requiredRole;
+    if (requiredRole && !hasRequiredRole(userRole, requiredRole)) {
+      // Return "unknown command" to hide restricted commands
       return { text: `Unknown command: ${command}\nUse /help to see available commands.` };
     }
 
@@ -116,15 +113,12 @@ export class ProtocolHandler {
   /**
    * Filter commands based on user role
    */
-  private filterCommandsByRole(commands: Map<string, Command>, isAdmin: boolean): Map<string, Command> {
-    if (isAdmin) {
-      return commands; // Admins see all commands
-    }
-
-    // Filter out admin-only commands for regular users
+  private filterCommandsByRole(commands: Map<string, Command>, userRole: UserRole): Map<string, Command> {
     const filtered = new Map<string, Command>();
     for (const [name, cmd] of commands) {
-      if (!ADMIN_ONLY_COMMANDS.has(name)) {
+      const requiredRole = cmd.definition.requiredRole;
+      // Include command if no role required or user has required role
+      if (!requiredRole || hasRequiredRole(userRole, requiredRole)) {
         filtered.set(name, cmd);
       }
     }
