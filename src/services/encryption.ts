@@ -21,6 +21,8 @@ import { logger } from "./logger.js";
 
 const IV_LENGTH = 12; // 96 bits - recommended for AES-GCM
 const KEY_LENGTH = 32; // 256 bits
+const AUTH_TAG_LENGTH = 16; // 128 bits - GCM authentication tag
+const MIN_PRIVATE_KEY_LENGTH = 32; // Minimum expected private key size in bytes
 
 export class KeyEncryptionService {
   private masterKey: CryptoKey | null = null;
@@ -147,18 +149,60 @@ export class KeyEncryptionService {
 
   /**
    * Check if a value appears to be encrypted (vs plaintext base64 key).
-   * Encrypted values are longer due to IV + auth tag overhead.
+   * Encrypted values have specific format: base64(IV || ciphertext || authTag)
    *
-   * Plaintext 32-byte key in base64 = 44 characters
-   * Encrypted: base64(12 + 44 + 16) = ~96 characters minimum
+   * Validation checks:
+   * 1. Must be valid base64 string
+   * 2. Decoded length must be at least 60 bytes:
+   *    - IV: 12 bytes
+   *    - Minimum ciphertext: 32 bytes (for private key)
+   *    - AuthTag: 16 bytes
+   *
+   * Plaintext 32-byte key in base64 = 44 characters (decodes to 32 bytes)
+   * Encrypted: base64(12 + 32 + 16) = 80 characters minimum (decodes to 60 bytes)
    *
    * This is used during migration to detect unencrypted keys.
    */
   isEncrypted(value: string): boolean {
-    // Plaintext base64 key is exactly 44 chars (32 bytes)
-    // Encrypted data is much longer due to IV (12) + authTag (16) overhead
-    // Minimum encrypted length: base64((12 + 32 + 16)) = base64(60) = 80 chars
-    return value.length > 60;
+    // Empty or very short strings cannot be encrypted data
+    if (!value || value.length < 80) {
+      return false;
+    }
+
+    // Check if string has valid base64 format
+    // Base64 uses A-Z, a-z, 0-9, +, / and = for padding
+    const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+    if (!base64Regex.test(value)) {
+      return false;
+    }
+
+    // Valid base64 length must be divisible by 4
+    if (value.length % 4 !== 0) {
+      return false;
+    }
+
+    try {
+      const decoded = Buffer.from(value, "base64");
+
+      // Minimum encrypted data length:
+      // IV (12 bytes) + minimum ciphertext (32 bytes) + AuthTag (16 bytes) = 60 bytes
+      const minEncryptedLength = IV_LENGTH + MIN_PRIVATE_KEY_LENGTH + AUTH_TAG_LENGTH;
+      if (decoded.length < minEncryptedLength) {
+        return false;
+      }
+
+      // Additional structural check: the data after IV should have enough space
+      // for both ciphertext and auth tag
+      const ciphertextAndTagLength = decoded.length - IV_LENGTH;
+      if (ciphertextAndTagLength < MIN_PRIVATE_KEY_LENGTH + AUTH_TAG_LENGTH) {
+        return false;
+      }
+
+      return true;
+    } catch {
+      // If base64 decoding fails, it's not valid encrypted data
+      return false;
+    }
   }
 }
 
