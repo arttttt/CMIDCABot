@@ -2,7 +2,8 @@
  * Command router - recursive command execution and callback routing
  */
 
-import { Command, CallbackHandler } from "./types.js";
+import { Command, CallbackHandler, CallbackLookupResult } from "./types.js";
+import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 import { UIResponse } from "../protocol/types.js";
 
 /**
@@ -68,14 +69,19 @@ export function prefixCallbacks(commands: Map<string, Command>, prefix = ""): vo
  * Find callback by navigating path in command tree
  * CallbackData format: "path/to/command:action"
  *
+ * Tracks requiredRole through the command tree:
+ * - If a command has requiredRole, that becomes the effective role
+ * - Subcommands without requiredRole inherit from parent
+ * - The final requiredRole is returned with the handler
+ *
  * @param commands - Root commands map
  * @param callbackData - Full callback data with path
- * @returns CallbackHandler if found
+ * @returns CallbackLookupResult with handler and requiredRole if found
  */
 export function findCallbackByPath(
   commands: Map<string, Command>,
   callbackData: string,
-): CallbackHandler | undefined {
+): CallbackLookupResult | undefined {
   // Parse: "wallet/export:confirm" → path=["wallet","export"], fullKey="wallet/export:confirm"
   const colonIndex = callbackData.lastIndexOf(":");
   if (colonIndex === -1) return undefined;
@@ -83,16 +89,29 @@ export function findCallbackByPath(
   const pathPart = callbackData.substring(0, colonIndex);
   const segments = pathPart.split("/");
 
-  // Navigate to the target command
+  // Navigate to the target command, tracking requiredRole
   let current: Command | undefined;
   let currentCommands = commands;
+  let effectiveRole: UserRole | undefined;
 
   for (const segment of segments) {
     current = currentCommands.get(segment);
     if (!current) return undefined;
+
+    // Track required role - inherit from parent if not specified
+    if (current.requiredRole) {
+      effectiveRole = current.requiredRole;
+    }
+
     currentCommands = current.subcommands ?? new Map();
   }
 
   // Get callback from target command (key includes full path)
-  return current?.callbacks?.get(callbackData);
+  const handler = current?.callbacks?.get(callbackData);
+  if (!handler) return undefined;
+
+  return {
+    handler,
+    requiredRole: effectiveRole,
+  };
 }

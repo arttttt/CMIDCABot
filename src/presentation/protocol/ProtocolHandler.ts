@@ -137,14 +137,23 @@ export class ProtocolHandler {
     // Check authorization first
     const isAuthorized = await this.authService.isAuthorized(ctx.telegramId);
     if (!isAuthorized) {
-      return { text: UNAUTHORIZED_MESSAGE };
+      return { text: "Unknown action." }; // Hide existence of callback from unauthorized users
     }
 
-    const handler = findCallbackByPath(this.registry.getCommands(), ctx.callbackData);
-    if (handler) {
-      return handler(ctx.telegramId);
+    const result = findCallbackByPath(this.registry.getCommands(), ctx.callbackData);
+    if (!result) {
+      return { text: "Unknown action." };
     }
-    return { text: "Unknown action." };
+
+    // Check role requirement
+    if (result.requiredRole) {
+      const userRole = await this.authService.getRole(ctx.telegramId);
+      if (!userRole || !hasRequiredRole(userRole, result.requiredRole)) {
+        return { text: "Unknown action." }; // Hide existence of callback from users without required role
+      }
+    }
+
+    return result.handler(ctx.telegramId);
   }
 
   /**
