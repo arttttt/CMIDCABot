@@ -56,87 +56,56 @@ export function normalizeUsername(username: string): string {
   return username.startsWith("@") ? username.slice(1) : username;
 }
 
+// Helper to create error result
+const error = (message: string): ResolveResult => ({ success: false, error: message });
+
+// Helper to create success result
+const success = (telegramId: number): ResolveResult => ({ success: true, telegramId });
+
 /**
  * Telegram-based user resolver using Bot API
  */
 export class TelegramUserResolver implements UserResolver {
   private api: Api | null = null;
 
-  /**
-   * Set the Bot API instance
-   * Called after bot is created since resolver is created before bot
-   */
   setApi(api: Api): void {
     this.api = api;
   }
 
-  /**
-   * Check if API is available
-   */
-  hasApi(): boolean {
-    return this.api !== null;
-  }
-
   async resolve(identifier: string): Promise<ResolveResult> {
-    // If it's a numeric ID, return directly
+    // Numeric ID - parse and return directly
     if (!isUsername(identifier)) {
       const telegramId = parseNumericId(identifier);
-      if (!telegramId) {
-        return {
-          success: false,
-          error: `Invalid Telegram ID: ${identifier}`,
-        };
-      }
-      return { success: true, telegramId };
+      return telegramId ? success(telegramId) : error(`Invalid Telegram ID: ${identifier}`);
     }
 
-    // It's a username - need to resolve via API
+    // Username - resolve via API
     if (!this.api) {
-      return {
-        success: false,
-        error: "Bot API not initialized. Cannot resolve usernames.",
-      };
+      return error("Bot API not initialized. Cannot resolve usernames.");
     }
 
-    const username = normalizeUsername(identifier);
+    return this.resolveUsername(normalizeUsername(identifier));
+  }
 
+  private async resolveUsername(username: string): Promise<ResolveResult> {
     try {
-      // Use getChat to get user info by username
-      const chat = await this.api.getChat(`@${username}`);
+      const chat = await this.api!.getChat(`@${username}`);
 
       if (chat.type !== "private") {
-        return {
-          success: false,
-          error: `@${username} is not a user (it's a ${chat.type})`,
-        };
+        return error(`@${username} is not a user (it's a ${chat.type})`);
       }
 
-      logger.debug("UserResolver", "Resolved username", {
-        username,
-        telegramId: chat.id,
-      });
+      logger.debug("UserResolver", "Resolved username", { username, telegramId: chat.id });
+      return success(chat.id);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      logger.debug("UserResolver", "Failed to resolve username", { username, error: message });
 
-      return { success: true, telegramId: chat.id };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-
-      // Check for common error patterns
-      if (message.includes("chat not found") || message.includes("400")) {
-        return {
-          success: false,
-          error: `User @${username} not found. Make sure the username is correct and the user has started the bot.`,
-        };
-      }
-
-      logger.debug("UserResolver", "Failed to resolve username", {
-        username,
-        error: message,
-      });
-
-      return {
-        success: false,
-        error: `Failed to resolve @${username}: ${message}`,
-      };
+      return error(
+        message.includes("chat not found") || message.includes("400")
+          ? `User @${username} not found. Make sure the username is correct and the user has started the bot.`
+          : `Failed to resolve @${username}: ${message}`
+      );
     }
   }
 }
@@ -147,20 +116,10 @@ export class TelegramUserResolver implements UserResolver {
 export class StubUserResolver implements UserResolver {
   async resolve(identifier: string): Promise<ResolveResult> {
     if (isUsername(identifier)) {
-      return {
-        success: false,
-        error: "Username resolution not available in this mode",
-      };
+      return error("Username resolution not available in this mode");
     }
 
     const telegramId = parseNumericId(identifier);
-    if (!telegramId) {
-      return {
-        success: false,
-        error: `Invalid Telegram ID: ${identifier}`,
-      };
-    }
-
-    return { success: true, telegramId };
+    return telegramId ? success(telegramId) : error(`Invalid Telegram ID: ${identifier}`);
   }
 }
