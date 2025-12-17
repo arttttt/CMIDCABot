@@ -58,6 +58,8 @@ export interface ShowWalletResult {
 export interface CreateWalletResult {
   type: "created" | "already_exists" | "dev_mode";
   wallet?: DcaWalletInfo;
+  /** BIP39 mnemonic phrase - only returned when type="created" */
+  mnemonic?: string;
 }
 
 export interface DeleteWalletResult {

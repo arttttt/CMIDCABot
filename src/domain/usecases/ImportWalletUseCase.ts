@@ -38,26 +38,50 @@ export class ImportWalletUseCase {
       return { type: "already_exists", wallet };
     }
 
-    // Validate the private key
-    const validation = await this.solana.validatePrivateKey(privateKeyBase64);
-    if (!validation.valid) {
-      logger.warn("ImportWallet", "Invalid private key", {
-        telegramId,
-        error: validation.error,
-      });
-      return { type: "invalid_key", error: validation.error };
+    // Detect input type: mnemonic (words separated by spaces) or base64 private key
+    const words = privateKeyBase64.trim().split(/\s+/);
+    const isMnemonic = words.length >= 12 && words.length <= 24;
+
+    let normalizedKey: string;
+    let walletAddress: string;
+
+    if (isMnemonic) {
+      // Validate as BIP39 mnemonic
+      logger.debug("ImportWallet", "Detected mnemonic input");
+      const mnemonicValidation = await this.solana.validateMnemonic(privateKeyBase64);
+      if (!mnemonicValidation.valid) {
+        logger.warn("ImportWallet", "Invalid mnemonic", {
+          telegramId,
+          error: mnemonicValidation.error,
+        });
+        return { type: "invalid_key", error: mnemonicValidation.error };
+      }
+      normalizedKey = mnemonicValidation.normalizedKey!;
+      walletAddress = mnemonicValidation.address!;
+    } else {
+      // Validate as base64 private key
+      const validation = await this.solana.validatePrivateKey(privateKeyBase64);
+      if (!validation.valid) {
+        logger.warn("ImportWallet", "Invalid private key", {
+          telegramId,
+          error: validation.error,
+        });
+        return { type: "invalid_key", error: validation.error };
+      }
+      normalizedKey = validation.normalizedKey!;
+      walletAddress = validation.address!;
     }
 
-    // Store the wallet (use normalized key from validation)
-    await this.userRepository.setPrivateKey(telegramId, validation.normalizedKey!);
-    await this.userRepository.setWalletAddress(telegramId, validation.address!);
+    // Store the wallet
+    await this.userRepository.setPrivateKey(telegramId, normalizedKey);
+    await this.userRepository.setWalletAddress(telegramId, walletAddress);
 
     logger.info("ImportWallet", "Wallet imported", {
       telegramId,
-      address: validation.address,
+      address: walletAddress,
     });
 
-    const wallet = await this.walletHelper.getWalletInfo(validation.normalizedKey!, false);
+    const wallet = await this.walletHelper.getWalletInfo(normalizedKey, false);
     return { type: "imported", wallet };
   }
 }

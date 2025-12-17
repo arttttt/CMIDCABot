@@ -58,14 +58,24 @@ export class DcaWalletFormatter {
 
   formatCreateWallet(result: CreateWalletResult): UIResponse {
     switch (result.type) {
-      case "created":
+      case "created": {
+        const mnemonicSection = result.mnemonic
+          ? `\n\n**Recovery Phrase (save this!):**\n` +
+            `\`\`\`\n${result.mnemonic}\n\`\`\`\n\n` +
+            `**WARNING:** This phrase is shown ONLY ONCE!\n` +
+            `- Write it down and store securely offline\n` +
+            `- Anyone with this phrase can access your funds\n` +
+            `- Compatible with Phantom, Solflare, and other Solana wallets`
+          : `\n\n**Important:** Use /wallet export to backup your private key.`;
+
         return {
           text:
             `**Wallet Created!**\n\n` +
             this.formatWalletInfo(result.wallet!) +
-            `\n\nDeposit SOL to this address to fund your DCA purchases.\n\n` +
-            `**Important:** Use /wallet export to backup your private key.`,
+            `\n\nDeposit SOL to this address to fund your DCA purchases.` +
+            mnemonicSection,
         };
+      }
 
       case "already_exists":
         return {
@@ -216,11 +226,14 @@ export class DcaWalletFormatter {
       case "invalid_key":
         return {
           text:
-            `**Invalid Private Key**\n\n` +
-            `${result.error || "The provided key is not a valid Solana private key."}\n\n` +
-            `**Expected format:**\n` +
-            `- Base64-encoded Ed25519 private key (32 or 64 bytes)\n` +
-            `- Example: \`/wallet import ABC123...xyz=\`\n\n` +
+            `**Invalid Key or Mnemonic**\n\n` +
+            `${result.error || "The provided input is not a valid Solana private key or mnemonic."}\n\n` +
+            `**Supported formats:**\n` +
+            `- Recovery phrase: 12 or 24 words\n` +
+            `- Private key: base64-encoded (32 or 64 bytes)\n\n` +
+            `**Examples:**\n` +
+            `\`/wallet import word1 word2 ... word12\`\n` +
+            `\`/wallet import ABC123...xyz=\`\n\n` +
             `**Note:** Only Solana wallets are supported. Ethereum and other chain keys will not work.` +
             securityNotice,
           deleteUserMessage,
@@ -245,9 +258,12 @@ export class DcaWalletFormatter {
     return {
       text:
         `**Import Wallet Usage**\n\n` +
-        `/wallet import <private_key>\n\n` +
-        `Provide your Solana private key in base64 format.\n\n` +
-        `**Example:**\n` +
+        `/wallet import <recovery_phrase or private_key>\n\n` +
+        `**Supported formats:**\n` +
+        `- Recovery phrase (12 or 24 words) - compatible with Phantom, Solflare\n` +
+        `- Base64-encoded private key\n\n` +
+        `**Examples:**\n` +
+        `/wallet import word1 word2 word3 ... word12\n` +
         `/wallet import ABC123...xyz=\n\n` +
         `**Security:**\n` +
         `- Your message with the key will be automatically deleted\n` +
