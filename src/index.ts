@@ -199,7 +199,7 @@ async function main(): Promise<void> {
         priceService,
         config.dcaWallet.devPrivateKey,
       )
-    : (undefined as unknown as ExecutePurchaseUseCase);
+    : undefined;
 
   const getPortfolioStatus = priceService
     ? new GetPortfolioStatusUseCase(
@@ -208,7 +208,7 @@ async function main(): Promise<void> {
         priceService,
         config.dcaWallet.devPrivateKey,
       )
-    : (undefined as unknown as GetPortfolioStatusUseCase);
+    : undefined;
 
   // Create formatters
   const dcaWalletFormatter = new DcaWalletFormatter();
