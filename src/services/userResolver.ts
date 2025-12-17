@@ -109,17 +109,3 @@ export class TelegramUserResolver implements UserResolver {
     }
   }
 }
-
-/**
- * Stub resolver for testing - only handles numeric IDs
- */
-export class StubUserResolver implements UserResolver {
-  async resolve(identifier: string): Promise<ResolveResult> {
-    if (isUsername(identifier)) {
-      return error("Username resolution not available in this mode");
-    }
-
-    const telegramId = parseNumericId(identifier);
-    return telegramId ? success(telegramId) : error(`Invalid Telegram ID: ${identifier}`);
-  }
-}

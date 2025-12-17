@@ -8,7 +8,6 @@ export {
   type UserResolver,
   type ResolveResult,
   TelegramUserResolver,
-  StubUserResolver,
   isUsername,
   parseNumericId,
   normalizeUsername,
