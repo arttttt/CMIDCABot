@@ -1,5 +1,15 @@
 import { Config, DatabaseMode, PriceSource, AuthConfig } from "../types/config.js";
 
+/**
+ * MED-004: Environment variables that are forbidden in production mode.
+ * These variables are for development only and may contain sensitive data
+ * or change bot behavior in ways that are unsafe for production.
+ */
+const FORBIDDEN_IN_PRODUCTION = [
+  "DEV_WALLET_PRIVATE_KEY", // Development wallet private key - security risk
+  "DB_MODE", // Should be only sqlite in production
+];
+
 function getEnvOrThrow(key: string): string {
   const value = process.env[key];
   if (!value) {
@@ -30,8 +40,39 @@ export function loadConfig(): Config {
   const isDev = nodeEnv !== "production";
   const webEnabled = getEnvBool("WEB_ENABLED", false);
 
+  // MED-004: Block dangerous env vars in production
+  if (!isDev) {
+    const foundForbidden: string[] = [];
+
+    for (const envVar of FORBIDDEN_IN_PRODUCTION) {
+      if (process.env[envVar]) {
+        foundForbidden.push(envVar);
+      }
+    }
+
+    if (foundForbidden.length > 0) {
+      console.error("─".repeat(50));
+      console.error("FATAL: Forbidden environment variables detected in production!");
+      console.error("─".repeat(50));
+      console.error("The following variables must NOT be set in production:");
+      for (const v of foundForbidden) {
+        console.error(`  - ${v}`);
+      }
+      console.error("");
+      console.error("These variables are for development only and pose security risks.");
+      console.error("Remove them from your environment and restart.");
+      console.error("─".repeat(50));
+      process.exit(1);
+    }
+  }
+
   // DEV_WALLET_PRIVATE_KEY is optional, only used in dev mode
   const devPrivateKey = process.env.DEV_WALLET_PRIVATE_KEY || undefined;
+
+  // MED-004: Clear sensitive dev variable from process.env after reading
+  if (devPrivateKey) {
+    delete process.env.DEV_WALLET_PRIVATE_KEY;
+  }
 
   // MASTER_ENCRYPTION_KEY is required for encrypting private keys
   const masterEncryptionKey = getEnvOrThrow("MASTER_ENCRYPTION_KEY");
