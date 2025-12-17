@@ -6,13 +6,11 @@ import {
   createKeyPairSignerFromPrivateKeyBytes,
   type KeyPairSigner,
   type Signature,
-} from "@solana/kit";
-import {
   type Base64EncodedWireTransaction,
   getTransactionDecoder,
   getTransactionEncoder,
   signTransaction,
-} from "@solana/transactions";
+} from "@solana/kit";
 import { SolanaConfig } from "../types/index.js";
 import { logger } from "./logger.js";
 import type { KeyEncryptionService } from "./encryption.js";
