@@ -124,14 +124,6 @@ Note: Owner cannot be modified.`,
   }
 
   /**
-   * Format invalid telegram ID message
-   * @deprecated Use formatResolveError instead
-   */
-  formatInvalidTelegramId(id: string): UIResponse {
-    return { text: `Invalid Telegram ID: ${id}\nTelegram ID must be a number.` };
-  }
-
-  /**
    * Format user resolve error message
    */
   formatResolveError(identifier: string, error?: string): UIResponse {
@@ -151,15 +143,4 @@ export function parseRole(roleStr: string): UserRole | undefined {
     return normalized;
   }
   return undefined;
-}
-
-/**
- * Parse telegram ID from string
- */
-export function parseTelegramId(idStr: string): number | undefined {
-  const id = parseInt(idStr, 10);
-  if (isNaN(id) || id <= 0) {
-    return undefined;
-  }
-  return id;
 }
