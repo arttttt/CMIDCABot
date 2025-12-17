@@ -29,6 +29,15 @@ const HTML_PAGE = `<!DOCTYPE html>
       flex-direction: column;
     }
 
+    .dev-warning {
+      background: #ff6b35;
+      color: #000;
+      padding: 0.5rem 1rem;
+      text-align: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
     header {
       background: #16213e;
       padding: 1rem;
@@ -172,6 +181,9 @@ const HTML_PAGE = `<!DOCTYPE html>
   </style>
 </head>
 <body>
+  <div class="dev-warning">
+    &#9888;&#65039; Development Only - Do not expose to internet
+  </div>
   <header>
     <h1>CMI DCA Bot - Test Interface</h1>
     <p>Web interface for testing without Telegram</p>
@@ -307,8 +319,19 @@ export async function startWebServer(
     const url = req.url ?? "/";
     const method = req.method ?? "GET";
 
-    // CORS headers
-    res.setHeader("Access-Control-Allow-Origin", "*");
+    // CORS headers - restricted to localhost only for security
+    const origin = req.headers.origin ?? "";
+    const allowedOrigins = [
+      "http://localhost",
+      "http://127.0.0.1",
+    ];
+    // Allow localhost on any port
+    const isAllowed = allowedOrigins.some((allowed) =>
+      origin === allowed || origin.startsWith(`${allowed}:`)
+    );
+    if (isAllowed) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+    }
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
@@ -365,8 +388,10 @@ export async function startWebServer(
   });
 
   return new Promise((resolve) => {
-    server.listen(port, () => {
-      logger.info("WebServer", "Web interface running", { port, url: `http://localhost:${port}` });
+    // Bind only to localhost for security - prevents external access
+    const host = "127.0.0.1";
+    server.listen(port, host, () => {
+      logger.info("WebServer", "Web interface running", { port, host, url: `http://localhost:${port}` });
       resolve();
     });
   });

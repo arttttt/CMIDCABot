@@ -300,6 +300,16 @@ async function main(): Promise<void> {
 
   // Web-only mode: just start the web server
   if (config.web?.enabled) {
+    // Block web server in production mode for security
+    if (!config.isDev) {
+      console.warn("─".repeat(50));
+      console.warn("WARNING: Web interface is disabled in production mode!");
+      console.warn("The web interface is intended for local development only.");
+      console.warn("Set NODE_ENV=development or disable WEB_ENABLED to proceed.");
+      console.warn("─".repeat(50));
+      process.exit(1);
+    }
+
     console.log("Starting DCA Bot in WEB MODE...");
     console.log("─".repeat(50));
     console.log("WEB TEST INTERFACE");
