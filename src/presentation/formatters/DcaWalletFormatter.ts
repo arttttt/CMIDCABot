@@ -59,21 +59,28 @@ export class DcaWalletFormatter {
   formatCreateWallet(result: CreateWalletResult): UIResponse {
     switch (result.type) {
       case "created": {
-        const mnemonicSection = result.mnemonic
-          ? `\n\n**Recovery Phrase (save this!):**\n` +
-            `\`\`\`\n${result.mnemonic}\n\`\`\`\n\n` +
-            `**WARNING:** This phrase is shown ONLY ONCE!\n` +
-            `- Write it down and store securely offline\n` +
-            `- Anyone with this phrase can access your funds\n` +
-            `- Compatible with Phantom, Solflare, and other Solana wallets`
-          : `\n\n**Important:** Use /wallet export to backup your private key.`;
+        if (result.mnemonic) {
+          return {
+            text:
+              `**Wallet Created!**\n\n` +
+              this.formatWalletInfo(result.wallet!) +
+              `\n\n**Recovery Phrase (tap to copy):**\n` +
+              `\`${result.mnemonic}\`\n\n` +
+              `**WARNING:** This phrase is shown ONLY ONCE!\n` +
+              `- Write it down and store securely offline\n` +
+              `- Anyone with this phrase can access your funds\n` +
+              `- Compatible with Phantom, Solflare, and other Solana wallets\n\n` +
+              `_Press the button below after saving to hide the phrase._`,
+            buttons: [[{ text: "✓ I saved the recovery phrase", callbackData: "mnemonic_saved" }]],
+          };
+        }
 
         return {
           text:
             `**Wallet Created!**\n\n` +
             this.formatWalletInfo(result.wallet!) +
-            `\n\nDeposit SOL to this address to fund your DCA purchases.` +
-            mnemonicSection,
+            `\n\nDeposit SOL to this address to fund your DCA purchases.\n\n` +
+            `**Important:** Use /wallet export to backup your private key.`,
         };
       }
 
