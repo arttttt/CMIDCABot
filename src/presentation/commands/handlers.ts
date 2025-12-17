@@ -65,8 +65,8 @@ export interface DcaCommandDeps {
 }
 
 export interface PortfolioCommandDeps {
-  getPortfolioStatus: GetPortfolioStatusUseCase;
-  executePurchase: ExecutePurchaseUseCase;
+  getPortfolioStatus: GetPortfolioStatusUseCase | undefined;
+  executePurchase: ExecutePurchaseUseCase | undefined;
   portfolioFormatter: PortfolioFormatter;
   purchaseFormatter: PurchaseFormatter;
 }
@@ -222,6 +222,9 @@ function createPortfolioStatusCommand(deps: PortfolioCommandDeps): Command {
   return {
     definition: { name: "status", description: "Show portfolio status" },
     handler: async (_args, telegramId) => {
+      if (!deps.getPortfolioStatus) {
+        return deps.portfolioFormatter.formatStatus({ type: "unavailable" });
+      }
       const result = await deps.getPortfolioStatus.execute(telegramId);
       return deps.portfolioFormatter.formatStatus(result);
     },
@@ -232,6 +235,9 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
   return {
     definition: { name: "buy", description: "Buy asset for USDC amount" },
     handler: async (args, telegramId) => {
+      if (!deps.executePurchase) {
+        return deps.purchaseFormatter.format({ type: "unavailable" });
+      }
       const amountStr = args[0];
       if (!amountStr) {
         return deps.purchaseFormatter.formatUsage();
@@ -252,6 +258,9 @@ export function createPortfolioCommand(deps: PortfolioCommandDeps): Command {
     definition: Definitions.portfolio,
     requiredRole: "user",
     handler: async (_args, telegramId) => {
+      if (!deps.getPortfolioStatus) {
+        return deps.portfolioFormatter.formatStatus({ type: "unavailable" });
+      }
       const result = await deps.getPortfolioStatus.execute(telegramId);
       return deps.portfolioFormatter.formatStatus(result);
     },
