@@ -18,7 +18,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@solana/web3.js": "^2.0.0",
+    "@solana/kit": "^2.1.0",
     "better-sqlite3": "^12.5.0",
     "grammy": "^1.38.4",
     "kysely": "^0.28.8"
