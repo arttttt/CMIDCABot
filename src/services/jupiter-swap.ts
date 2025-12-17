@@ -13,6 +13,18 @@ import { logger } from "./logger.js";
 const JUPITER_SWAP_API = "https://api.jup.ag/swap/v1";
 
 /**
+ * Sanitize error messages to prevent leaking sensitive data (LOW-003).
+ * Removes URLs, API keys, and other potentially sensitive information.
+ */
+function sanitizeErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : "Unknown error";
+  return message
+    .replace(/https?:\/\/[^\s]+/g, "[URL]")
+    .replace(/x-api-key[^\s]*/gi, "[API_KEY]")
+    .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]"); // Long base64 strings
+}
+
+/**
  * Token decimal places for amount conversion.
  *
  * Solana tokens store amounts as integers in smallest units:
@@ -137,23 +149,35 @@ export class JupiterSwapService {
     logger.api("Jupiter", "GET", url.toString());
     const startTime = Date.now();
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        "x-api-key": this.apiKey,
-      },
-    });
+    let response: Response;
+    try {
+      response = await fetch(url.toString(), {
+        headers: {
+          "x-api-key": this.apiKey,
+        },
+      });
+    } catch (error) {
+      // Sanitize network errors to prevent leaking sensitive data (LOW-003)
+      const sanitizedMessage = sanitizeErrorMessage(error);
+      logger.error("Jupiter", "Quote fetch failed", { error: sanitizedMessage });
+      throw new Error(`Jupiter API error: ${sanitizedMessage}`);
+    }
 
     const duration = Date.now() - startTime;
 
     if (!response.ok) {
       const errorText = await response.text();
+      // Sanitize error response
+      const sanitizedError = errorText
+        .replace(/https?:\/\/[^\s]+/g, "[URL]")
+        .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]");
       logger.error("Jupiter", "Quote API error", {
         status: response.status,
         statusText: response.statusText,
-        error: errorText,
+        error: sanitizedError,
         duration,
       });
-      throw new Error(`Jupiter Quote API error: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(`Jupiter Quote API error: ${response.status} ${response.statusText}`);
     }
 
     const data = (await response.json()) as JupiterQuoteResponse;
@@ -217,42 +241,54 @@ export class JupiterSwapService {
     });
 
     const startTime = Date.now();
-    const response = await fetch(`${this.baseUrl}/swap`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": this.apiKey,
-      },
-      body: JSON.stringify({
-        quoteResponse: quote.rawQuoteResponse,
-        userPublicKey,
-        // wrapAndUnwrapSol defaults to true in Jupiter API:
-        // - When input is SOL mint: Jupiter wraps native SOL → WSOL automatically
-        // - When output is SOL mint: Jupiter unwraps WSOL → native SOL automatically
-        // This means we receive/spend native SOL, not WSOL token accounts
-        // Use dynamic slippage for better execution
-        dynamicSlippage: { maxBps: 300 }, // Max 3% slippage
-        // Priority fee settings
-        prioritizationFeeLamports: {
-          priorityLevelWithMaxLamports: {
-            maxLamports: 1000000, // Max 0.001 SOL for priority
-            priorityLevel: "medium",
-          },
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/swap`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": this.apiKey,
         },
-      }),
-    });
+        body: JSON.stringify({
+          quoteResponse: quote.rawQuoteResponse,
+          userPublicKey,
+          // wrapAndUnwrapSol defaults to true in Jupiter API:
+          // - When input is SOL mint: Jupiter wraps native SOL → WSOL automatically
+          // - When output is SOL mint: Jupiter unwraps WSOL → native SOL automatically
+          // This means we receive/spend native SOL, not WSOL token accounts
+          // Use dynamic slippage for better execution
+          dynamicSlippage: { maxBps: 300 }, // Max 3% slippage
+          // Priority fee settings
+          prioritizationFeeLamports: {
+            priorityLevelWithMaxLamports: {
+              maxLamports: 1000000, // Max 0.001 SOL for priority
+              priorityLevel: "medium",
+            },
+          },
+        }),
+      });
+    } catch (error) {
+      // Sanitize network errors to prevent leaking sensitive data (LOW-003)
+      const sanitizedMessage = sanitizeErrorMessage(error);
+      logger.error("Jupiter", "Swap build fetch failed", { error: sanitizedMessage });
+      throw new Error(`Jupiter API error: ${sanitizedMessage}`);
+    }
 
     const duration = Date.now() - startTime;
 
     if (!response.ok) {
       const errorText = await response.text();
+      // Sanitize error response
+      const sanitizedError = errorText
+        .replace(/https?:\/\/[^\s]+/g, "[URL]")
+        .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]");
       logger.error("Jupiter", "Swap build API error", {
         status: response.status,
         statusText: response.statusText,
-        error: errorText,
+        error: sanitizedError,
         duration,
       });
-      throw new Error(`Jupiter Swap API error: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(`Jupiter Swap API error: ${response.status} ${response.statusText}`);
     }
 
     const data = (await response.json()) as JupiterSwapResponse;
