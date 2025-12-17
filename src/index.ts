@@ -15,6 +15,7 @@ import { InMemoryAuthRepository } from "./data/repositories/memory/InMemoryAuthR
 import { SolanaService } from "./services/solana.js";
 import { getEncryptionService, initializeEncryption } from "./services/encryption.js";
 import { AuthorizationService } from "./services/authorization.js";
+import { TelegramUserResolver } from "./services/userResolver.js";
 import { DcaService } from "./services/dca.js";
 import { DcaScheduler } from "./services/DcaScheduler.js";
 import { PriceService } from "./services/price.js";
@@ -96,6 +97,9 @@ async function main(): Promise<void> {
   const authService = new AuthorizationService(authRepository, config.auth.ownerTelegramId);
   await authService.initialize();
   console.log(`Authorization: Owner ID ${config.auth.ownerTelegramId}`);
+
+  // Create user resolver (will be connected to bot API later)
+  const userResolver = new TelegramUserResolver();
 
   // Initialize Solana service
   const solana = new SolanaService(config.solana);
@@ -224,6 +228,7 @@ async function main(): Promise<void> {
   const adminDeps = {
     authService,
     formatter: adminFormatter,
+    userResolver,
   };
 
   if (config.isDev) {
@@ -325,6 +330,9 @@ async function main(): Promise<void> {
   console.log("Starting DCA Telegram Bot...");
 
   const bot = createTelegramBot(config.telegram.botToken, handler, config.isDev);
+
+  // Connect user resolver to bot API for username resolution
+  userResolver.setApi(bot.api);
 
   // Graceful shutdown
   const shutdown = async (): Promise<void> => {

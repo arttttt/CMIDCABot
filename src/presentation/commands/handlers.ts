@@ -28,6 +28,7 @@ import {
 
 // Services
 import { AuthorizationService } from "../../services/authorization.js";
+import { UserResolver } from "../../services/userResolver.js";
 
 // Formatters
 import {
@@ -41,7 +42,6 @@ import {
   SwapFormatter,
   AdminFormatter,
   parseRole,
-  parseTelegramId,
 } from "../formatters/index.js";
 
 // ============================================================
@@ -88,6 +88,7 @@ export interface SwapCommandDeps {
 export interface AdminCommandDeps {
   authService: AuthorizationService;
   formatter: AdminFormatter;
+  userResolver: UserResolver;
 }
 
 // ============================================================
@@ -360,10 +361,11 @@ function createAdminAddCommand(deps: AdminCommandDeps): Command {
         return deps.formatter.formatAddUsage();
       }
 
-      const targetId = parseTelegramId(idStr);
-      if (!targetId) {
-        return deps.formatter.formatInvalidTelegramId(idStr);
+      const resolveResult = await deps.userResolver.resolve(idStr);
+      if (!resolveResult.success || !resolveResult.telegramId) {
+        return deps.formatter.formatResolveError(idStr, resolveResult.error);
       }
+      const targetId = resolveResult.telegramId;
 
       const roleStr = args[1] || "user";
       const role = parseRole(roleStr);
@@ -386,10 +388,11 @@ function createAdminRemoveCommand(deps: AdminCommandDeps): Command {
         return deps.formatter.formatRemoveUsage();
       }
 
-      const targetId = parseTelegramId(idStr);
-      if (!targetId) {
-        return deps.formatter.formatInvalidTelegramId(idStr);
+      const resolveResult = await deps.userResolver.resolve(idStr);
+      if (!resolveResult.success || !resolveResult.telegramId) {
+        return deps.formatter.formatResolveError(idStr, resolveResult.error);
       }
+      const targetId = resolveResult.telegramId;
 
       const result = await deps.authService.removeUser(telegramId, targetId);
       return deps.formatter.formatResult(result);
@@ -418,10 +421,11 @@ function createAdminRoleCommand(deps: AdminCommandDeps): Command {
         return deps.formatter.formatRoleUsage();
       }
 
-      const targetId = parseTelegramId(idStr);
-      if (!targetId) {
-        return deps.formatter.formatInvalidTelegramId(idStr);
+      const resolveResult = await deps.userResolver.resolve(idStr);
+      if (!resolveResult.success || !resolveResult.telegramId) {
+        return deps.formatter.formatResolveError(idStr, resolveResult.error);
       }
+      const targetId = resolveResult.telegramId;
 
       const role = parseRole(roleStr);
       if (!role) {

@@ -11,13 +11,15 @@ export class AdminFormatter {
    */
   formatAddUsage(): UIResponse {
     return {
-      text: `Usage: /admin add <telegram_id> [role]
+      text: `Usage: /admin add <user> [role]
 
 Arguments:
-  telegram_id - User's Telegram ID (required)
+  user - Username (@username) or Telegram ID (required)
   role - User role: user, admin (default: user)
 
 Examples:
+  /admin add @username
+  /admin add @username admin
   /admin add 123456789
   /admin add 123456789 admin`,
     };
@@ -28,12 +30,13 @@ Examples:
    */
   formatRemoveUsage(): UIResponse {
     return {
-      text: `Usage: /admin remove <telegram_id>
+      text: `Usage: /admin remove <user>
 
 Arguments:
-  telegram_id - User's Telegram ID (required)
+  user - Username (@username) or Telegram ID (required)
 
-Example:
+Examples:
+  /admin remove @username
   /admin remove 123456789`,
     };
   }
@@ -43,13 +46,14 @@ Example:
    */
   formatRoleUsage(): UIResponse {
     return {
-      text: `Usage: /admin role <telegram_id> <role>
+      text: `Usage: /admin role <user> <role>
 
 Arguments:
-  telegram_id - User's Telegram ID (required)
+  user - Username (@username) or Telegram ID (required)
   role - New role: user, admin (required)
 
-Example:
+Examples:
+  /admin role @username admin
   /admin role 123456789 admin`,
     };
   }
@@ -95,10 +99,11 @@ Example:
 
 /admin - Show this help
 /admin list - List all authorized users
-/admin add <id> [role] - Add a user
-/admin remove <id> - Remove a user
-/admin role <id> <role> - Change user's role
+/admin add <user> [role] - Add a user
+/admin remove <user> - Remove a user
+/admin role <user> <role> - Change user's role
 
+User can be specified as @username or Telegram ID.
 Roles: user, admin
 Note: Owner cannot be modified.`,
     };
@@ -119,10 +124,13 @@ Note: Owner cannot be modified.`,
   }
 
   /**
-   * Format invalid telegram ID message
+   * Format user resolve error message
    */
-  formatInvalidTelegramId(id: string): UIResponse {
-    return { text: `Invalid Telegram ID: ${id}\nTelegram ID must be a number.` };
+  formatResolveError(identifier: string, error?: string): UIResponse {
+    if (error) {
+      return { text: `Error: ${error}` };
+    }
+    return { text: `Could not resolve user: ${identifier}` };
   }
 }
 
@@ -135,15 +143,4 @@ export function parseRole(roleStr: string): UserRole | undefined {
     return normalized;
   }
   return undefined;
-}
-
-/**
- * Parse telegram ID from string
- */
-export function parseTelegramId(idStr: string): number | undefined {
-  const id = parseInt(idStr, 10);
-  if (isNaN(id) || id <= 0) {
-    return undefined;
-  }
-  return id;
 }
