@@ -29,6 +29,14 @@ export type CommandHandler = (args: string[], telegramId: number) => Promise<UIR
 export type CallbackHandler = (telegramId: number) => Promise<UIResponse>;
 
 /**
+ * Result of callback lookup - includes handler and required role
+ */
+export interface CallbackLookupResult {
+  handler: CallbackHandler;
+  requiredRole?: UserRole;
+}
+
+/**
  * Command - composable command structure
  *
  * Can contain:
