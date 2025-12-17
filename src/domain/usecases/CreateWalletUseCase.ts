@@ -35,8 +35,8 @@ export class CreateWalletUseCase {
       return { type: "already_exists", wallet };
     }
 
-    logger.debug("CreateWallet", "Generating new keypair");
-    const keypair = await this.solana.generateKeypair();
+    logger.debug("CreateWallet", "Generating new keypair with mnemonic");
+    const keypair = await this.solana.generateKeypairFromMnemonic();
     await this.userRepository.setPrivateKey(telegramId, keypair.privateKeyBase64);
     await this.userRepository.setWalletAddress(telegramId, keypair.address);
 
@@ -46,6 +46,6 @@ export class CreateWalletUseCase {
     });
 
     const wallet = await this.walletHelper.getWalletInfo(keypair.privateKeyBase64, false);
-    return { type: "created", wallet };
+    return { type: "created", wallet, mnemonic: keypair.mnemonic };
   }
 }

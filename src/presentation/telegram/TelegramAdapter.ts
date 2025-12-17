@@ -107,6 +107,32 @@ export function createTelegramBot(
       return;
     }
 
+    // Handle mnemonic_saved callback - replace message with confirmation
+    if (callbackData === "mnemonic_saved") {
+      try {
+        await ctx.editMessageText(
+          "**Wallet Created Successfully!**\n\n" +
+            "Your recovery phrase has been hidden for security.\n\n" +
+            "**Remember:**\n" +
+            "- Keep your recovery phrase in a safe place\n" +
+            "- Never share it with anyone\n" +
+            "- You can import it into Phantom, Solflare, or other Solana wallets\n\n" +
+            "Use /wallet to view your wallet details.",
+          { parse_mode: "Markdown" },
+        );
+        await ctx.answerCallbackQuery({ text: "Recovery phrase hidden" });
+        logger.debug("TelegramBot", "Hid mnemonic after user confirmation", {
+          userId: ctx.from.id,
+        });
+      } catch (error) {
+        await ctx.answerCallbackQuery({ text: "Failed to update message" });
+        logger.debug("TelegramBot", "Failed to hide mnemonic", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      return;
+    }
+
     // Handle regular callbacks via protocol handler
     const response = await handler.handleCallback({
       telegramId: ctx.from.id,

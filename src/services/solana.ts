@@ -11,9 +11,21 @@ import {
   getTransactionEncoder,
   signTransaction,
 } from "@solana/kit";
+import * as bip39 from "bip39";
+import { derivePath } from "ed25519-hd-key";
 import { SolanaConfig } from "../types/index.js";
 import { logger } from "./logger.js";
 import type { KeyEncryptionService } from "./encryption.js";
+
+/**
+ * Solana BIP44 derivation path (compatible with Phantom, Solflare, etc.)
+ * m/44'/501'/0'/0'
+ * - 44' = BIP44 purpose
+ * - 501' = Solana coin type
+ * - 0' = account index
+ * - 0' = change (external)
+ */
+const SOLANA_DERIVATION_PATH = "m/44'/501'/0'/0'";
 
 const LAMPORTS_PER_SOL = 1_000_000_000n;
 
@@ -34,6 +46,23 @@ function sanitizeErrorMessage(error: unknown): string {
 export interface GeneratedKeypair {
   address: string;
   privateKeyBase64: string;
+}
+
+/**
+ * Generated keypair with BIP39 mnemonic (Phantom/Solflare compatible)
+ */
+export interface GeneratedKeypairWithMnemonic extends GeneratedKeypair {
+  mnemonic: string;
+}
+
+/**
+ * Result of mnemonic validation
+ */
+export interface ValidateMnemonicResult {
+  valid: boolean;
+  address?: string;
+  normalizedKey?: string;
+  error?: string;
 }
 
 /**
@@ -187,6 +216,107 @@ export class SolanaService {
       address: signer.address,
       privateKeyBase64: Buffer.from(privateKeyBytes).toString("base64"),
     };
+  }
+
+  /**
+   * Generate a new Solana keypair from BIP39 mnemonic.
+   * Compatible with Phantom, Solflare, and other Solana wallets.
+   *
+   * Uses standard Solana derivation path: m/44'/501'/0'/0'
+   *
+   * @returns Generated keypair with mnemonic phrase
+   */
+  async generateKeypairFromMnemonic(): Promise<GeneratedKeypairWithMnemonic> {
+    // Generate 12-word mnemonic (128 bits of entropy)
+    const mnemonic = bip39.generateMnemonic();
+
+    // Convert mnemonic to seed (64 bytes)
+    const seed = bip39.mnemonicToSeedSync(mnemonic);
+
+    // Derive Ed25519 key using Solana's standard path
+    const derived = derivePath(SOLANA_DERIVATION_PATH, seed.toString("hex"));
+    const privateKeyBytes = derived.key;
+
+    // Create signer from derived key to get the address
+    const signer = await createKeyPairSignerFromPrivateKeyBytes(
+      privateKeyBytes,
+      true,
+    );
+
+    return {
+      address: signer.address,
+      privateKeyBase64: Buffer.from(privateKeyBytes).toString("base64"),
+      mnemonic,
+    };
+  }
+
+  /**
+   * Derive keypair from an existing BIP39 mnemonic.
+   * Uses standard Solana derivation path: m/44'/501'/0'/0'
+   *
+   * @param mnemonic - BIP39 mnemonic phrase (12 or 24 words)
+   * @returns Generated keypair (without mnemonic in result)
+   */
+  async deriveKeypairFromMnemonic(mnemonic: string): Promise<GeneratedKeypair> {
+    // Normalize mnemonic (lowercase, single spaces)
+    const normalizedMnemonic = mnemonic.trim().toLowerCase().replace(/\s+/g, " ");
+
+    // Convert mnemonic to seed
+    const seed = bip39.mnemonicToSeedSync(normalizedMnemonic);
+
+    // Derive Ed25519 key using Solana's standard path
+    const derived = derivePath(SOLANA_DERIVATION_PATH, seed.toString("hex"));
+    const privateKeyBytes = derived.key;
+
+    // Create signer from derived key to get the address
+    const signer = await createKeyPairSignerFromPrivateKeyBytes(
+      privateKeyBytes,
+      true,
+    );
+
+    return {
+      address: signer.address,
+      privateKeyBase64: Buffer.from(privateKeyBytes).toString("base64"),
+    };
+  }
+
+  /**
+   * Validate a BIP39 mnemonic phrase.
+   *
+   * Checks:
+   * 1. Valid BIP39 mnemonic (12 or 24 words from wordlist)
+   * 2. Can derive a valid Solana address
+   *
+   * @param mnemonic - Mnemonic phrase to validate
+   * @returns Validation result with derived address if valid
+   */
+  async validateMnemonic(mnemonic: string): Promise<ValidateMnemonicResult> {
+    try {
+      // Normalize mnemonic
+      const normalizedMnemonic = mnemonic.trim().toLowerCase().replace(/\s+/g, " ");
+
+      // Check if valid BIP39 mnemonic
+      if (!bip39.validateMnemonic(normalizedMnemonic)) {
+        return { valid: false, error: "Invalid BIP39 mnemonic phrase" };
+      }
+
+      // Derive keypair to get address
+      const keypair = await this.deriveKeypairFromMnemonic(normalizedMnemonic);
+
+      // Verify the derived address is valid
+      if (!this.isValidAddress(keypair.address)) {
+        return { valid: false, error: "Derived address is not a valid Solana address" };
+      }
+
+      return {
+        valid: true,
+        address: keypair.address,
+        normalizedKey: keypair.privateKeyBase64,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { valid: false, error: `Invalid mnemonic: ${message}` };
+    }
   }
 
   /**
