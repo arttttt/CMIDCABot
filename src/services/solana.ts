@@ -18,6 +18,17 @@ import type { KeyEncryptionService } from "./encryption.js";
 const LAMPORTS_PER_SOL = 1_000_000_000n;
 
 /**
+ * Sanitize error messages to prevent leaking sensitive data (LOW-003).
+ * Removes RPC URLs, base64 strings (potential keys/transactions), and other sensitive info.
+ */
+function sanitizeErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message
+    .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]") // Long base64 strings (keys, transactions)
+    .replace(/https?:\/\/[^\s]+/g, "[RPC_URL]"); // RPC URLs
+}
+
+/**
  * Generated keypair with extractable private key
  */
 export interface GeneratedKeypair {
@@ -320,12 +331,12 @@ export class SolanaService {
 
       return simulationResult;
     } catch (error) {
-      // Handle RPC errors
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error("Solana", "Simulation RPC error", { error: errorMessage });
+      // Handle RPC errors - sanitize to prevent leaking sensitive data (LOW-003)
+      const sanitizedMessage = sanitizeErrorMessage(error);
+      logger.error("Solana", "Simulation RPC error", { error: sanitizedMessage });
       return {
         success: false,
-        error: `Simulation RPC error: ${errorMessage}`,
+        error: `Simulation RPC error: ${sanitizedMessage}`,
         unitsConsumed: null,
         logs: [],
       };
@@ -416,12 +427,13 @@ export class SolanaService {
         confirmed,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error("Solana", "Transaction failed", { error: errorMessage });
+      // Sanitize error to prevent leaking sensitive data (LOW-003)
+      const sanitizedMessage = sanitizeErrorMessage(error);
+      logger.error("Solana", "Transaction failed", { error: sanitizedMessage });
       return {
         success: false,
         signature: null,
-        error: errorMessage,
+        error: sanitizedMessage,
         confirmed: false,
       };
     }
@@ -527,12 +539,13 @@ export class SolanaService {
         confirmed,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error("Solana", "Transaction failed", { error: errorMessage });
+      // Sanitize error to prevent leaking sensitive data (LOW-003)
+      const sanitizedMessage = sanitizeErrorMessage(error);
+      logger.error("Solana", "Transaction failed", { error: sanitizedMessage });
       return {
         success: false,
         signature: null,
-        error: errorMessage,
+        error: sanitizedMessage,
         confirmed: false,
       };
     }

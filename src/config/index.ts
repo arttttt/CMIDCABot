@@ -47,6 +47,17 @@ export function loadConfig(): Config {
     dbPath: getEnvOrDefault("AUTH_DATABASE_PATH", "./data/auth.db"),
   };
 
+  // Validate RPC URL uses HTTPS in production (LOW-002)
+  const rpcUrl = getEnvOrDefault("SOLANA_RPC_URL", "https://api.devnet.solana.com");
+  if (!isDev && !rpcUrl.startsWith("https://")) {
+    throw new Error(
+      "SOLANA_RPC_URL must use HTTPS in production. " +
+        "Current value starts with: " +
+        rpcUrl.substring(0, 10) +
+        "...",
+    );
+  }
+
   return {
     telegram: {
       // Bot token is optional when running in web-only mode
@@ -55,7 +66,7 @@ export function loadConfig(): Config {
         : getEnvOrThrow("TELEGRAM_BOT_TOKEN"),
     },
     solana: {
-      rpcUrl: getEnvOrDefault("SOLANA_RPC_URL", "https://api.devnet.solana.com"),
+      rpcUrl,
     },
     database: {
       mode: getEnvOrDefault("DB_MODE", "sqlite") as DatabaseMode,

@@ -45,6 +45,25 @@ import {
 } from "../formatters/index.js";
 
 // ============================================================
+// Helper functions
+// ============================================================
+
+/**
+ * Safely parse a string to a positive number.
+ * Returns null if the input is not a valid positive number.
+ *
+ * Security: Validates parseFloat result immediately to prevent
+ * NaN propagation through the system (LOW-001).
+ */
+function parseAmount(amountStr: string): number | null {
+  const amount = parseFloat(amountStr);
+  if (isNaN(amount) || amount <= 0) {
+    return null;
+  }
+  return amount;
+}
+
+// ============================================================
 // Dependencies types
 // ============================================================
 
@@ -242,7 +261,10 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
       if (!amountStr) {
         return deps.purchaseFormatter.formatUsage();
       }
-      const amount = parseFloat(amountStr);
+      const amount = parseAmount(amountStr);
+      if (amount === null) {
+        return deps.purchaseFormatter.formatUsage();
+      }
       const result = await deps.executePurchase.execute(telegramId, amount);
       return deps.purchaseFormatter.format(result);
     },
@@ -298,7 +320,10 @@ function createSwapQuoteCommand(deps: SwapCommandDeps): Command {
       if (!amountStr) {
         return deps.quoteFormatter.formatUsage();
       }
-      const amount = parseFloat(amountStr);
+      const amount = parseAmount(amountStr);
+      if (amount === null) {
+        return deps.quoteFormatter.formatUsage();
+      }
       const asset = args[1] || "SOL";
       const result = await deps.getQuote.execute(amount, asset);
       return deps.quoteFormatter.format(result);
@@ -314,7 +339,10 @@ function createSwapSimulateCommand(deps: SwapCommandDeps): Command {
       if (!amountStr) {
         return deps.simulateFormatter.formatUsage();
       }
-      const amount = parseFloat(amountStr);
+      const amount = parseAmount(amountStr);
+      if (amount === null) {
+        return deps.simulateFormatter.formatUsage();
+      }
       const asset = args[1] || "SOL";
       const result = await deps.simulateSwap.execute(telegramId, amount, asset);
       return deps.simulateFormatter.format(result);
@@ -330,7 +358,10 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
       if (!amountStr) {
         return deps.swapFormatter.formatUsage();
       }
-      const amount = parseFloat(amountStr);
+      const amount = parseAmount(amountStr);
+      if (amount === null) {
+        return deps.swapFormatter.formatUsage();
+      }
       const asset = args[1] || "SOL";
       const result = await deps.executeSwap.execute(telegramId, amount, asset);
       return deps.swapFormatter.format(result);
