@@ -6,7 +6,7 @@ import {
   createKeyPairSignerFromPrivateKeyBytes,
   type KeyPairSigner,
   type Signature,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   type Base64EncodedWireTransaction,
   getTransactionDecoder,

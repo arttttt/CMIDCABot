@@ -194,7 +194,7 @@ npx tsc --noEmit
 
 - **TypeScript** 5.9
 - **grammY** — Telegram Bot Framework
-- **@solana/web3.js** v2 — Solana SDK
+- **@solana/kit** v2 — Solana SDK
 - **better-sqlite3** + **Kysely** — Local database with type-safe query builder
 - **tsx** — Run TypeScript without compilation
 
