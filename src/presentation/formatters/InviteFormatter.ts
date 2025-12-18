@@ -15,7 +15,8 @@ export class InviteFormatter {
   formatGenerateResult(result: GenerateInviteResult): UIResponse {
     switch (result.type) {
       case "success": {
-        const link = `https://t.me/${this.botUsername}?start=inv_${result.token}`;
+        // Escape _ for Markdown (otherwise it's interpreted as italic)
+        const link = `https://t.me/${this.botUsername}?start=inv\\_${result.token}`;
         const roleLabel = ROLE_LABELS[result.role];
         const expiresIn = this.formatExpiresIn(result.expiresAt);
 
