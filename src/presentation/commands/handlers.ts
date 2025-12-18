@@ -139,13 +139,14 @@ function createWalletCreateCommand(deps: WalletCommandDeps): Command {
 
 function createWalletImportCommand(deps: WalletCommandDeps): Command {
   return {
-    definition: { name: "import", description: "Import wallet from private key", usage: "<private_key>" },
+    definition: { name: "import", description: "Import wallet from private key or mnemonic", usage: "<key_or_mnemonic>" },
     handler: async (args, telegramId) => {
-      const privateKey = args[0];
-      if (!privateKey) {
+      if (args.length === 0) {
         return deps.formatter.formatImportUsage();
       }
-      const result = await deps.importWallet.execute(telegramId, privateKey);
+      // Join all args to support mnemonic phrases (12-24 words)
+      const privateKeyOrMnemonic = args.join(" ");
+      const result = await deps.importWallet.execute(telegramId, privateKeyOrMnemonic);
       return deps.formatter.formatImportWallet(result);
     },
   };
