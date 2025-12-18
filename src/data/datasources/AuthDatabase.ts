@@ -45,4 +45,24 @@ function initAuthSchema(db: Kysely<AuthDatabase>): void {
   sql`
     CREATE INDEX IF NOT EXISTS idx_auth_users_role ON authorized_users(role)
   `.execute(db);
+
+  sql`
+    CREATE TABLE IF NOT EXISTS invite_tokens (
+      token TEXT PRIMARY KEY,
+      role TEXT NOT NULL,
+      created_by INTEGER NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      expires_at TEXT NOT NULL,
+      used_by INTEGER,
+      used_at TEXT
+    )
+  `.execute(db);
+
+  sql`
+    CREATE INDEX IF NOT EXISTS idx_invite_tokens_created_by ON invite_tokens(created_by)
+  `.execute(db);
+
+  sql`
+    CREATE INDEX IF NOT EXISTS idx_invite_tokens_expires_at ON invite_tokens(expires_at)
+  `.execute(db);
 }

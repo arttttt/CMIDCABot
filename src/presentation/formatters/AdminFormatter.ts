@@ -93,20 +93,29 @@ Examples:
   /**
    * Format admin help
    */
-  formatHelp(): UIResponse {
-    return {
-      text: `Admin Commands:
+  formatHelp(showInvite = false): UIResponse {
+    const lines = [
+      "Admin Commands:",
+      "",
+      "/admin - Show this help",
+      "/admin list - List all authorized users",
+      "/admin add <user> [role] - Add a user",
+      "/admin remove <user> - Remove a user",
+      "/admin role <user> <role> - Change user's role",
+    ];
 
-/admin - Show this help
-/admin list - List all authorized users
-/admin add <user> [role] - Add a user
-/admin remove <user> - Remove a user
-/admin role <user> <role> - Change user's role
+    if (showInvite) {
+      lines.push("/admin invite [role] - Create invite link");
+    }
 
-User can be specified as @username or Telegram ID.
-Roles: user, admin
-Note: Owner cannot be modified.`,
-    };
+    lines.push(
+      "",
+      "User can be specified as @username or Telegram ID.",
+      "Roles: user, admin",
+      "Note: Owner cannot be modified.",
+    );
+
+    return { text: lines.join("\n") };
   }
 
   /**

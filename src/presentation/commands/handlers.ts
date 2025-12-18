@@ -24,6 +24,7 @@ import {
   GetQuoteUseCase,
   SimulateSwapUseCase,
   ExecuteSwapUseCase,
+  GenerateInviteUseCase,
 } from "../../domain/usecases/index.js";
 
 // Services
@@ -41,6 +42,7 @@ import {
   SimulateFormatter,
   SwapFormatter,
   AdminFormatter,
+  InviteFormatter,
   parseRole,
 } from "../formatters/index.js";
 
@@ -108,6 +110,8 @@ export interface AdminCommandDeps {
   authService: AuthorizationService;
   formatter: AdminFormatter;
   userResolver: UserResolver;
+  generateInvite?: GenerateInviteUseCase;
+  inviteFormatter?: InviteFormatter;
 }
 
 // ============================================================
@@ -478,22 +482,53 @@ function createAdminRoleCommand(deps: AdminCommandDeps): Command {
   };
 }
 
+function createAdminInviteCommand(deps: AdminCommandDeps): Command | undefined {
+  if (!deps.generateInvite || !deps.inviteFormatter) {
+    return undefined;
+  }
+
+  const generateInvite = deps.generateInvite;
+  const inviteFormatter = deps.inviteFormatter;
+
+  return {
+    definition: { name: "invite", description: "Create invite link" },
+    handler: async (args, telegramId) => {
+      const roleStr = args[0] || "user";
+      const role = parseRole(roleStr);
+      if (!role) {
+        return inviteFormatter.formatUsage();
+      }
+
+      const result = await generateInvite.execute(telegramId, role);
+      return inviteFormatter.formatGenerateResult(result);
+    },
+  };
+}
+
 // ============================================================
 // Admin command factory
 // ============================================================
 
 export function createAdminCommand(deps: AdminCommandDeps): Command {
+  const subcommands = new Map<string, Command>([
+    ["add", createAdminAddCommand(deps)],
+    ["remove", createAdminRemoveCommand(deps)],
+    ["list", createAdminListCommand(deps)],
+    ["role", createAdminRoleCommand(deps)],
+  ]);
+
+  // Add invite command if dependencies are available
+  const inviteCmd = createAdminInviteCommand(deps);
+  if (inviteCmd) {
+    subcommands.set("invite", inviteCmd);
+  }
+
   return {
     definition: Definitions.admin,
     requiredRole: "admin",
     handler: async () => {
-      return deps.formatter.formatHelp();
+      return deps.formatter.formatHelp(!!inviteCmd);
     },
-    subcommands: new Map([
-      ["add", createAdminAddCommand(deps)],
-      ["remove", createAdminRemoveCommand(deps)],
-      ["list", createAdminListCommand(deps)],
-      ["role", createAdminRoleCommand(deps)],
-    ]),
+    subcommands,
   };
 }

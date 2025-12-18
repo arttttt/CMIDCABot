@@ -105,6 +105,8 @@ export function loadConfig(): Config {
       botToken: webEnabled
         ? getEnvOrDefault("TELEGRAM_BOT_TOKEN", "")
         : getEnvOrThrow("TELEGRAM_BOT_TOKEN"),
+      // Bot username for invite links (optional, will be fetched from API if not set)
+      botUsername: process.env.BOT_USERNAME || undefined,
     },
     solana: {
       rpcUrl,
