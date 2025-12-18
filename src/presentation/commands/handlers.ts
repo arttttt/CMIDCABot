@@ -139,7 +139,7 @@ function createWalletCreateCommand(deps: WalletCommandDeps): Command {
 
 function createWalletImportCommand(deps: WalletCommandDeps): Command {
   return {
-    definition: { name: "import", description: "Import wallet from private key" },
+    definition: { name: "import", description: "Import wallet from private key", usage: "<private_key>" },
     handler: async (args, telegramId) => {
       const privateKey = args[0];
       if (!privateKey) {
@@ -265,7 +265,7 @@ function createPortfolioStatusCommand(deps: PortfolioCommandDeps): Command {
 
 function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
   return {
-    definition: { name: "buy", description: "Buy asset for USDC amount" },
+    definition: { name: "buy", description: "Buy asset for USDC amount", usage: "<amount>" },
     handler: async (args, telegramId) => {
       if (!deps.executePurchase) {
         return deps.purchaseFormatter.format({ type: "unavailable" });
@@ -327,7 +327,7 @@ export function createPricesCommand(deps: PricesCommandDeps): Command {
 
 function createSwapQuoteCommand(deps: SwapCommandDeps): Command {
   return {
-    definition: { name: "quote", description: "Get quote for swap" },
+    definition: { name: "quote", description: "Get quote for swap", usage: "<amount> [asset]" },
     handler: async (args) => {
       const amountStr = args[0];
       if (!amountStr) {
@@ -346,7 +346,7 @@ function createSwapQuoteCommand(deps: SwapCommandDeps): Command {
 
 function createSwapSimulateCommand(deps: SwapCommandDeps): Command {
   return {
-    definition: { name: "simulate", description: "Simulate swap without executing" },
+    definition: { name: "simulate", description: "Simulate swap without executing", usage: "<amount> [asset]" },
     handler: async (args, telegramId) => {
       const amountStr = args[0];
       if (!amountStr) {
@@ -365,7 +365,7 @@ function createSwapSimulateCommand(deps: SwapCommandDeps): Command {
 
 function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
   return {
-    definition: { name: "execute", description: "Execute real swap" },
+    definition: { name: "execute", description: "Execute real swap", usage: "<amount> [asset]" },
     handler: async (args, telegramId) => {
       const amountStr = args[0];
       if (!amountStr) {
@@ -407,7 +407,7 @@ export function createSwapCommand(deps: SwapCommandDeps): Command {
 
 function createAdminAddCommand(deps: AdminCommandDeps): Command {
   return {
-    definition: { name: "add", description: "Add authorized user" },
+    definition: { name: "add", description: "Add authorized user", usage: "<user_id> [role]" },
     handler: async (args, telegramId) => {
       const idStr = args[0];
       if (!idStr) {
@@ -434,7 +434,7 @@ function createAdminAddCommand(deps: AdminCommandDeps): Command {
 
 function createAdminRemoveCommand(deps: AdminCommandDeps): Command {
   return {
-    definition: { name: "remove", description: "Remove authorized user" },
+    definition: { name: "remove", description: "Remove authorized user", usage: "<user_id>" },
     handler: async (args, telegramId) => {
       const idStr = args[0];
       if (!idStr) {
@@ -465,7 +465,7 @@ function createAdminListCommand(deps: AdminCommandDeps): Command {
 
 function createAdminRoleCommand(deps: AdminCommandDeps): Command {
   return {
-    definition: { name: "role", description: "Change user role" },
+    definition: { name: "role", description: "Change user role", usage: "<user_id> <role>" },
     handler: async (args, telegramId) => {
       const idStr = args[0];
       const roleStr = args[1];
@@ -500,7 +500,7 @@ function createAdminInviteCommand(deps: AdminCommandDeps): Command | undefined {
   const inviteFormatter = deps.inviteFormatter;
 
   return {
-    definition: { name: "invite", description: "Create invite link" },
+    definition: { name: "invite", description: "Create invite link", usage: "[role]" },
     handler: async (args, telegramId) => {
       const roleStr = args[0] || "user";
       const role = parseRole(roleStr);

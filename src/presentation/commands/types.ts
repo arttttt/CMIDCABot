@@ -16,6 +16,8 @@ import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 export interface CommandDefinition {
   name: string;
   description: string;
+  /** Usage hint for commands with parameters, e.g. "<amount> [asset]" */
+  usage?: string;
 }
 
 /**
