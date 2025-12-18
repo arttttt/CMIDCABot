@@ -13,12 +13,14 @@ import {
   createPricesCommand,
   createSwapCommand,
   createAdminCommand,
+  createStartCommand,
   WalletCommandDeps,
   DcaCommandDeps,
   PortfolioCommandDeps,
   PricesCommandDeps,
   SwapCommandDeps,
   AdminCommandDeps,
+  StartCommandDeps,
 } from "./handlers.js";
 import { prefixCallbacks } from "./router.js";
 
@@ -26,6 +28,7 @@ import { prefixCallbacks } from "./router.js";
  * Dependencies required for DevCommandRegistry
  */
 export interface DevCommandRegistryDeps {
+  start: StartCommandDeps;
   wallet: WalletCommandDeps;
   dca: DcaCommandDeps;
   portfolio: PortfolioCommandDeps;
@@ -50,6 +53,7 @@ export class DevCommandRegistry implements CommandRegistry {
 
   constructor(deps: DevCommandRegistryDeps) {
     this.commands = new Map([
+      ["start", createStartCommand(deps.start)],
       ["wallet", createWalletCommand(deps.wallet)],
       ["portfolio", createPortfolioCommand(deps.portfolio)],
       ["dca", createDcaCommand(deps.dca)],

@@ -7,8 +7,9 @@
  * - owner: Super admin, cannot be modified or removed
  * - admin: Can manage users (add/remove users, but not admins)
  * - user: Regular authorized user
+ * - guest: Unauthorized user (can only use /start)
  */
-export type UserRole = "owner" | "admin" | "user";
+export type UserRole = "owner" | "admin" | "user" | "guest";
 
 /**
  * Authorized user - represents a user who has access to the bot
@@ -51,6 +52,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   owner: "Owner",
   admin: "Admin",
   user: "User",
+  guest: "Guest",
 };
 
 /**
@@ -60,6 +62,7 @@ const ROLE_LEVELS: Record<UserRole, number> = {
   owner: 3,
   admin: 2,
   user: 1,
+  guest: 0,
 };
 
 /**

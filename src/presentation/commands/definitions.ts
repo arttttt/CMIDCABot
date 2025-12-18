@@ -13,6 +13,11 @@ import { CommandDefinition } from "./types.js";
  * All command definitions
  */
 export const Definitions = {
+  start: {
+    name: "start",
+    description: "Start the bot / activate invite",
+  },
+
   wallet: {
     name: "wallet",
     description: "Wallet management (create/import/export/delete)",
