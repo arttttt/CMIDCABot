@@ -43,7 +43,7 @@ import {
   GenerateInviteUseCase,
   ActivateInviteUseCase,
 } from "./domain/usecases/index.js";
-import { ProtocolHandler, type InviteDeps } from "./presentation/protocol/index.js";
+import { ProtocolHandler } from "./presentation/protocol/index.js";
 import {
   DevCommandRegistry,
   ProdCommandRegistry,
@@ -240,6 +240,14 @@ async function main(): Promise<void> {
     // Create invite formatter if botUsername is available
     const inviteFormatter = botUsername ? new InviteFormatter(botUsername) : undefined;
 
+    // Start command deps (shared between dev and prod)
+    const startDeps = {
+      initUser,
+      authService,
+      activateInvite: inviteFormatter ? activateInvite : undefined,
+      inviteFormatter,
+    };
+
     // Admin command deps (shared between dev and prod)
     const adminDeps = {
       authService,
@@ -254,6 +262,7 @@ async function main(): Promise<void> {
 
     if (config.isDev) {
       const deps: DevCommandRegistryDeps = {
+        start: startDeps,
         wallet: {
           showWallet,
           createWallet,
@@ -291,6 +300,7 @@ async function main(): Promise<void> {
       registry = new DevCommandRegistry(deps);
     } else {
       const deps: ProdCommandRegistryDeps = {
+        start: startDeps,
         wallet: {
           showWallet,
           createWallet,
@@ -304,13 +314,8 @@ async function main(): Promise<void> {
       registry = new ProdCommandRegistry(deps);
     }
 
-    // Create invite deps for protocol handler if available
-    const inviteDeps: InviteDeps | undefined = inviteFormatter
-      ? { activateInvite, inviteFormatter }
-      : undefined;
-
     // Create protocol handler
-    const handler = new ProtocolHandler(registry, initUser, authService, inviteDeps);
+    const handler = new ProtocolHandler(registry, authService);
 
     return { registry, handler };
   }

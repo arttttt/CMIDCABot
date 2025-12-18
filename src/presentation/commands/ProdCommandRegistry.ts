@@ -6,13 +6,14 @@
  */
 
 import { CommandRegistry, Command } from "./types.js";
-import { createWalletCommand, createAdminCommand, WalletCommandDeps, AdminCommandDeps } from "./handlers.js";
+import { createWalletCommand, createAdminCommand, createStartCommand, WalletCommandDeps, AdminCommandDeps, StartCommandDeps } from "./handlers.js";
 import { prefixCallbacks } from "./router.js";
 
 /**
  * Dependencies required for ProdCommandRegistry
  */
 export interface ProdCommandRegistryDeps {
+  start: StartCommandDeps;
   wallet: WalletCommandDeps;
   admin: AdminCommandDeps;
 }
@@ -31,6 +32,7 @@ export class ProdCommandRegistry implements CommandRegistry {
 
   constructor(deps: ProdCommandRegistryDeps) {
     this.commands = new Map([
+      ["start", createStartCommand(deps.start)],
       ["wallet", createWalletCommand(deps.wallet)],
       ["admin", createAdminCommand(deps.admin)],
     ]);

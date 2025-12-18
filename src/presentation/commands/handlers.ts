@@ -10,6 +10,7 @@ import { Definitions } from "./definitions.js";
 
 // Use cases
 import {
+  InitUserUseCase,
   ShowWalletUseCase,
   CreateWalletUseCase,
   ImportWalletUseCase,
@@ -25,6 +26,7 @@ import {
   SimulateSwapUseCase,
   ExecuteSwapUseCase,
   GenerateInviteUseCase,
+  ActivateInviteUseCase,
 } from "../../domain/usecases/index.js";
 
 // Services
@@ -111,6 +113,13 @@ export interface AdminCommandDeps {
   formatter: AdminFormatter;
   userResolver: UserResolver;
   generateInvite?: GenerateInviteUseCase;
+  inviteFormatter?: InviteFormatter;
+}
+
+export interface StartCommandDeps {
+  initUser: InitUserUseCase;
+  authService: AuthorizationService;
+  activateInvite?: ActivateInviteUseCase;
   inviteFormatter?: InviteFormatter;
 }
 
@@ -530,5 +539,36 @@ export function createAdminCommand(deps: AdminCommandDeps): Command {
       return deps.formatter.formatHelp(!!inviteCmd);
     },
     subcommands,
+  };
+}
+
+// ============================================================
+// Start command factory
+// ============================================================
+
+export function createStartCommand(deps: StartCommandDeps): Command {
+  return {
+    definition: Definitions.start,
+    requiredRole: "guest",
+    handler: async (args, telegramId) => {
+      const param = args[0];
+
+      // Check for invite token parameter (inv_<token>)
+      if (param?.startsWith("inv_") && deps.activateInvite && deps.inviteFormatter) {
+        const token = param.slice(4); // Remove "inv_" prefix
+        const result = await deps.activateInvite.execute(token, telegramId);
+        return deps.inviteFormatter.formatActivateResult(result);
+      }
+
+      // Check if user is authorized
+      const role = await deps.authService.getRole(telegramId);
+      if (!role) {
+        return { text: "You need an invite link to use this bot." };
+      }
+
+      // Initialize user (for authorized users)
+      await deps.initUser.execute(telegramId);
+      return { text: "Welcome! Use /help to see available commands." };
+    },
   };
 }

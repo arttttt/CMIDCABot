@@ -31,12 +31,14 @@ export {
   createPricesCommand,
   createSwapCommand,
   createAdminCommand,
+  createStartCommand,
   type WalletCommandDeps,
   type DcaCommandDeps,
   type PortfolioCommandDeps,
   type PricesCommandDeps,
   type SwapCommandDeps,
   type AdminCommandDeps,
+  type StartCommandDeps,
 } from "./handlers.js";
 
 // Registries
