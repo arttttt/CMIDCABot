@@ -86,19 +86,21 @@ To get your Telegram ID, you can use bots like [@userinfobot](https://t.me/useri
 
 ## User Roles
 
-The bot has three user roles with different permissions:
+The bot has four user roles with different permissions:
 
 | Role | Description | Permissions |
 |------|-------------|-------------|
 | **Owner** | Bot owner (set via `OWNER_TELEGRAM_ID`) | Full access, cannot be modified or removed |
 | **Admin** | Administrator added by owner | Can manage users (add/remove/change role), but not other admins |
 | **User** | Regular authorized user | Access to bot commands based on mode |
+| **Guest** | Unauthorized user | Can only use `/start` (to activate invite link) |
 
-Role hierarchy: `owner` > `admin` > `user`
+Role hierarchy: `owner` > `admin` > `user` > `guest`
 
 - Owner can manage admins and users
 - Admin can only manage users
-- Users cannot manage anyone
+- Users and guests cannot manage anyone
+- New users need an invite link to access the bot
 
 ## Running
 
@@ -164,6 +166,8 @@ npx tsc --noEmit
 
 | Command | Role | Description |
 |---------|------|-------------|
+| `/start` | guest | Start the bot / show welcome message |
+| `/start inv_<token>` | guest | Activate invite link |
 | `/wallet` | user | Show current wallet info |
 | `/wallet create` | user | Create new wallet |
 | `/wallet import <key>` | user | Import wallet from private key |
@@ -174,6 +178,7 @@ npx tsc --noEmit
 | `/admin remove <id>` | admin | Remove authorized user |
 | `/admin list` | admin | List all authorized users |
 | `/admin role <id> <role>` | admin | Change user role |
+| `/admin invite [role]` | admin | Create invite link (default role: user) |
 
 ### Development mode (all production commands plus)
 
