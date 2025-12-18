@@ -568,7 +568,16 @@ export function createStartCommand(deps: StartCommandDeps): Command {
 
       // Initialize user (for authorized users)
       await deps.initUser.execute(telegramId);
-      return { text: "Welcome! Use /help to see available commands." };
+
+      let text = "**CMI DCA Bot**\n\n";
+      text += "Target allocations:\n";
+      text += "- BTC: 40%\n";
+      text += "- ETH: 30%\n";
+      text += "- SOL: 30%\n\n";
+      text += "The bot purchases the asset furthest below its target allocation.\n\n";
+      text += "Use /help to see available commands.";
+
+      return { text };
     },
   };
 }

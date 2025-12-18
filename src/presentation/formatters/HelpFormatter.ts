@@ -11,13 +11,7 @@ export class HelpFormatter {
    * Format full help message from Command structure
    */
   formatHelp(commands: Map<string, Command>, modeInfo: ModeInfo | null): string {
-    let text = "**CMI DCA Bot**\n\n";
-    text += "Target allocations:\n";
-    text += "- BTC: 40%\n";
-    text += "- ETH: 30%\n";
-    text += "- SOL: 30%\n\n";
-    text += "The bot purchases the asset furthest below its target allocation.\n\n";
-    text += "**Commands**\n\n";
+    let text = "**Commands**\n\n";
 
     for (const cmd of commands.values()) {
       text += this.formatCommandHelp(cmd, `/${cmd.definition.name}`);
