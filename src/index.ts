@@ -315,13 +315,6 @@ async function main(): Promise<void> {
     return { registry, handler };
   }
 
-  // Initial creation with botUsername from config (if available)
-  let { registry, handler } = createRegistryAndHandler(config.telegram.botUsername);
-
-  const modeInfo = registry.getModeInfo();
-  const modeLabel = modeInfo?.label ?? "Production";
-  console.log(`Command mode: ${modeLabel} (${handler.getAvailableCommands().length} commands available)`);
-
   // Cleanup function
   const cleanup = async (): Promise<void> => {
     dcaScheduler?.stop();
@@ -341,6 +334,9 @@ async function main(): Promise<void> {
       console.warn("─".repeat(50));
       process.exit(1);
     }
+
+    // Create handler without botUsername (invite links won't work in web mode)
+    const { handler } = createRegistryAndHandler();
 
     console.log("Starting DCA Bot in WEB MODE...");
     console.log("─".repeat(50));
@@ -371,20 +367,19 @@ async function main(): Promise<void> {
   // Telegram bot mode
   console.log("Starting DCA Telegram Bot...");
 
-  // Get bot info early to have botUsername for invite links
-  // We need to create a temporary API client for this
+  // Get bot info first to have botUsername for invite links
   const { Bot } = await import("grammy");
   const tempBot = new Bot(config.telegram.botToken);
   const botInfo = await tempBot.api.getMe();
 
-  // Recreate handler with actual botUsername if it wasn't in config
-  if (!config.telegram.botUsername && botInfo.username) {
-    const result = createRegistryAndHandler(botInfo.username);
-    registry = result.registry;
-    handler = result.handler;
-  }
+  // Create handler with botUsername (single creation, no recreation)
+  const { registry, handler } = createRegistryAndHandler(botInfo.username);
 
-  // Now create the actual bot with the correct handler
+  const modeInfo = registry.getModeInfo();
+  const modeLabel = modeInfo?.label ?? "Production";
+  console.log(`Command mode: ${modeLabel} (${handler.getAvailableCommands().length} commands available)`);
+
+  // Create the bot with the handler
   const bot = createTelegramBot(config.telegram.botToken, handler, config.isDev);
 
   // Connect user resolver to bot API for username resolution

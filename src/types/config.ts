@@ -1,7 +1,5 @@
 export interface TelegramConfig {
   botToken: string;
-  /** Bot username (without @) for generating invite links */
-  botUsername?: string;
 }
 
 export interface SolanaConfig {
