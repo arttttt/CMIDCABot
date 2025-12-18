@@ -309,6 +309,12 @@ async function main(): Promise<void> {
           exportWalletKey,
           formatter: dcaWalletFormatter,
         },
+        portfolio: {
+          getPortfolioStatus,
+          executePurchase,
+          portfolioFormatter,
+          purchaseFormatter,
+        },
         admin: adminDeps,
       };
       registry = new ProdCommandRegistry(deps);

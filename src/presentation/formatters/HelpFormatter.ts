@@ -32,7 +32,8 @@ export class HelpFormatter {
 
     if (cmd.subcommands && cmd.subcommands.size > 0) {
       for (const [name, sub] of cmd.subcommands) {
-        text += `  \`${prefix} ${name}\` - ${sub.definition.description}\n`;
+        const usage = sub.definition.usage ? ` ${sub.definition.usage}` : "";
+        text += `  \`${prefix} ${name}${usage}\` - ${sub.definition.description}\n`;
       }
     }
 
