@@ -37,3 +37,7 @@ export { SimulateSwapUseCase } from "./SimulateSwapUseCase.js";
 
 // Swap
 export { ExecuteSwapUseCase } from "./ExecuteSwapUseCase.js";
+
+// Invite
+export { GenerateInviteUseCase, type GenerateInviteResult } from "./GenerateInviteUseCase.js";
+export { ActivateInviteUseCase, type ActivateInviteResult } from "./ActivateInviteUseCase.js";

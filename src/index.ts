@@ -11,7 +11,9 @@ import { setLogger, DebugLogger, NoOpLogger } from "./services/logger.js";
 import { createMainDatabase, createMockDatabase, createAuthDatabase } from "./data/datasources/index.js";
 import { createMainRepositories, createMockRepositories } from "./data/factories/RepositoryFactory.js";
 import { SQLiteAuthRepository } from "./data/repositories/sqlite/SQLiteAuthRepository.js";
+import { SQLiteInviteTokenRepository } from "./data/repositories/sqlite/SQLiteInviteTokenRepository.js";
 import { InMemoryAuthRepository } from "./data/repositories/memory/InMemoryAuthRepository.js";
+import { InMemoryInviteTokenRepository } from "./data/repositories/memory/InMemoryInviteTokenRepository.js";
 import { SolanaService } from "./services/solana.js";
 import { getEncryptionService, initializeEncryption } from "./services/encryption.js";
 import { AuthorizationService } from "./services/authorization.js";
@@ -38,8 +40,10 @@ import {
   GetQuoteUseCase,
   SimulateSwapUseCase,
   ExecuteSwapUseCase,
+  GenerateInviteUseCase,
+  ActivateInviteUseCase,
 } from "./domain/usecases/index.js";
-import { ProtocolHandler } from "./presentation/protocol/index.js";
+import { ProtocolHandler, type InviteDeps } from "./presentation/protocol/index.js";
 import {
   DevCommandRegistry,
   ProdCommandRegistry,
@@ -57,6 +61,7 @@ import {
   SimulateFormatter,
   SwapFormatter,
   AdminFormatter,
+  InviteFormatter,
 } from "./presentation/formatters/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
@@ -92,6 +97,11 @@ async function main(): Promise<void> {
   const authRepository = dbMode === "sqlite" && authDb
     ? new SQLiteAuthRepository(authDb)
     : new InMemoryAuthRepository();
+
+  // Create invite token repository
+  const inviteTokenRepository = dbMode === "sqlite" && authDb
+    ? new SQLiteInviteTokenRepository(authDb)
+    : new InMemoryInviteTokenRepository();
 
   // Create authorization service
   const authService = new AuthorizationService(authRepository, config.auth.ownerTelegramId);
@@ -210,6 +220,10 @@ async function main(): Promise<void> {
       )
     : undefined;
 
+  // Create invite use cases
+  const generateInvite = new GenerateInviteUseCase(inviteTokenRepository, authRepository);
+  const activateInvite = new ActivateInviteUseCase(inviteTokenRepository, authRepository);
+
   // Create formatters
   const dcaWalletFormatter = new DcaWalletFormatter();
   const dcaFormatter = new DcaFormatter();
@@ -221,74 +235,85 @@ async function main(): Promise<void> {
   const swapFormatter = new SwapFormatter();
   const adminFormatter = new AdminFormatter();
 
-  // Build command registry based on mode
-  let registry: CommandRegistry;
+  // Helper function to build registry and handler with optional botUsername
+  function createRegistryAndHandler(botUsername?: string) {
+    // Create invite formatter if botUsername is available
+    const inviteFormatter = botUsername ? new InviteFormatter(botUsername) : undefined;
 
-  // Admin command deps (shared between dev and prod)
-  const adminDeps = {
-    authService,
-    formatter: adminFormatter,
-    userResolver,
-  };
+    // Admin command deps (shared between dev and prod)
+    const adminDeps = {
+      authService,
+      formatter: adminFormatter,
+      userResolver,
+      generateInvite: inviteFormatter ? generateInvite : undefined,
+      inviteFormatter,
+    };
 
-  if (config.isDev) {
-    const deps: DevCommandRegistryDeps = {
-      wallet: {
-        showWallet,
-        createWallet,
-        importWallet,
-        deleteWallet,
-        exportWalletKey,
-        formatter: dcaWalletFormatter,
-      },
-      dca: {
-        startDca,
-        stopDca,
-        getDcaStatus,
-        formatter: dcaFormatter,
-      },
-      portfolio: {
-        getPortfolioStatus,
-        executePurchase,
-        portfolioFormatter,
-        purchaseFormatter,
-      },
-      prices: {
-        getPrices,
-        formatter: priceFormatter,
-      },
-      swap: {
-        getQuote,
-        simulateSwap,
-        executeSwap: executeSwapUseCase,
-        quoteFormatter,
-        simulateFormatter,
-        swapFormatter,
-      },
-      admin: adminDeps,
-    };
-    registry = new DevCommandRegistry(deps);
-  } else {
-    const deps: ProdCommandRegistryDeps = {
-      wallet: {
-        showWallet,
-        createWallet,
-        importWallet,
-        deleteWallet,
-        exportWalletKey,
-        formatter: dcaWalletFormatter,
-      },
-      admin: adminDeps,
-    };
-    registry = new ProdCommandRegistry(deps);
+    // Build command registry based on mode
+    let registry: CommandRegistry;
+
+    if (config.isDev) {
+      const deps: DevCommandRegistryDeps = {
+        wallet: {
+          showWallet,
+          createWallet,
+          importWallet,
+          deleteWallet,
+          exportWalletKey,
+          formatter: dcaWalletFormatter,
+        },
+        dca: {
+          startDca,
+          stopDca,
+          getDcaStatus,
+          formatter: dcaFormatter,
+        },
+        portfolio: {
+          getPortfolioStatus,
+          executePurchase,
+          portfolioFormatter,
+          purchaseFormatter,
+        },
+        prices: {
+          getPrices,
+          formatter: priceFormatter,
+        },
+        swap: {
+          getQuote,
+          simulateSwap,
+          executeSwap: executeSwapUseCase,
+          quoteFormatter,
+          simulateFormatter,
+          swapFormatter,
+        },
+        admin: adminDeps,
+      };
+      registry = new DevCommandRegistry(deps);
+    } else {
+      const deps: ProdCommandRegistryDeps = {
+        wallet: {
+          showWallet,
+          createWallet,
+          importWallet,
+          deleteWallet,
+          exportWalletKey,
+          formatter: dcaWalletFormatter,
+        },
+        admin: adminDeps,
+      };
+      registry = new ProdCommandRegistry(deps);
+    }
+
+    // Create invite deps for protocol handler if available
+    const inviteDeps: InviteDeps | undefined = inviteFormatter
+      ? { activateInvite, inviteFormatter }
+      : undefined;
+
+    // Create protocol handler
+    const handler = new ProtocolHandler(registry, initUser, authService, inviteDeps);
+
+    return { registry, handler };
   }
-
-  // Create protocol handler
-  const handler = new ProtocolHandler(registry, initUser, authService);
-
-  const modeInfo = registry.getModeInfo();
-  const modeLabel = modeInfo?.label ?? "Production";
-  console.log(`Command mode: ${modeLabel} (${handler.getAvailableCommands().length} commands available)`);
 
   // Cleanup function
   const cleanup = async (): Promise<void> => {
@@ -309,6 +334,9 @@ async function main(): Promise<void> {
       console.warn("─".repeat(50));
       process.exit(1);
     }
+
+    // Create handler without botUsername (invite links won't work in web mode)
+    const { handler } = createRegistryAndHandler();
 
     console.log("Starting DCA Bot in WEB MODE...");
     console.log("─".repeat(50));
@@ -339,6 +367,19 @@ async function main(): Promise<void> {
   // Telegram bot mode
   console.log("Starting DCA Telegram Bot...");
 
+  // Get bot info first to have botUsername for invite links
+  const { Bot } = await import("grammy");
+  const tempBot = new Bot(config.telegram.botToken);
+  const botInfo = await tempBot.api.getMe();
+
+  // Create handler with botUsername (single creation, no recreation)
+  const { registry, handler } = createRegistryAndHandler(botInfo.username);
+
+  const modeInfo = registry.getModeInfo();
+  const modeLabel = modeInfo?.label ?? "Production";
+  console.log(`Command mode: ${modeLabel} (${handler.getAvailableCommands().length} commands available)`);
+
+  // Create the bot with the handler
   const bot = createTelegramBot(config.telegram.botToken, handler, config.isDev);
 
   // Connect user resolver to bot API for username resolution
@@ -360,9 +401,6 @@ async function main(): Promise<void> {
 
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
-
-  // Get bot info and prepare for polling
-  const botInfo = await bot.api.getMe();
 
   // Delete any existing webhook to ensure polling works
   await bot.api.deleteWebhook({ drop_pending_updates: true });

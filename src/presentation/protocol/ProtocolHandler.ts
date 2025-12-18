@@ -6,27 +6,37 @@
  * Includes authorization checks for all commands.
  */
 
-import { InitUserUseCase } from "../../domain/usecases/index.js";
-import { HelpFormatter } from "../formatters/index.js";
+import { InitUserUseCase, ActivateInviteUseCase } from "../../domain/usecases/index.js";
+import { HelpFormatter, InviteFormatter } from "../formatters/index.js";
 import { CommandRegistry, Command } from "../commands/types.js";
 import { routeCommand, findCallbackByPath } from "../commands/router.js";
 import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./types.js";
 import { AuthorizationService } from "../../services/authorization.js";
 import { hasRequiredRole, type UserRole } from "../../domain/models/AuthorizedUser.js";
 
+const INVITE_PREFIX = "inv_";
+
 const UNAUTHORIZED_MESSAGE = `You are not authorized to use this bot.
 
 Please contact the administrator to request access.`;
 
+export interface InviteDeps {
+  activateInvite: ActivateInviteUseCase;
+  inviteFormatter: InviteFormatter;
+}
+
 export class ProtocolHandler {
   private helpFormatter: HelpFormatter;
+  private inviteDeps?: InviteDeps;
 
   constructor(
     private registry: CommandRegistry,
     private initUser: InitUserUseCase,
     private authService: AuthorizationService,
+    inviteDeps?: InviteDeps,
   ) {
     this.helpFormatter = new HelpFormatter();
+    this.inviteDeps = inviteDeps;
   }
 
   /**
@@ -48,13 +58,25 @@ export class ProtocolHandler {
    * Handle incoming message
    */
   async handleMessage(ctx: UIMessageContext): Promise<UIResponse> {
-    // Check authorization first
+    const text = ctx.text.trim();
+
+    // Check for invite activation BEFORE authorization check
+    // Invite links are for unauthorized users
+    if (text.startsWith("/start ") && this.inviteDeps) {
+      const parts = text.split(/\s+/);
+      const param = parts[1];
+      if (param && param.startsWith(INVITE_PREFIX)) {
+        const token = param.slice(INVITE_PREFIX.length);
+        const result = await this.inviteDeps.activateInvite.execute(token, ctx.telegramId);
+        return this.inviteDeps.inviteFormatter.formatActivateResult(result);
+      }
+    }
+
+    // Check authorization for all other commands
     const isAuthorized = await this.authService.isAuthorized(ctx.telegramId);
     if (!isAuthorized) {
       return { text: UNAUTHORIZED_MESSAGE };
     }
-
-    const text = ctx.text.trim();
 
     if (text.startsWith("/")) {
       const parts = text.split(/\s+/);
