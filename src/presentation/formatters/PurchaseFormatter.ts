@@ -50,6 +50,13 @@ export class PurchaseFormatter {
           text: `Transaction failed: ${result.error}`,
         };
 
+      case "rpc_error":
+        return {
+          text:
+            "Failed to check balance. The Solana network may be busy.\n\n" +
+            "Please try again in a few seconds.",
+        };
+
       case "success": {
         const confirmStatus = result.confirmed ? "Confirmed" : "Pending";
         const explorerUrl = `https://solscan.io/tx/${result.signature}`;

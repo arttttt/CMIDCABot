@@ -31,6 +31,7 @@ export type ExecuteSwapResult =
   | { status: "invalid_amount"; message: string }
   | { status: "invalid_asset"; message: string }
   | { status: "insufficient_balance"; required: number; available: number }
+  | { status: "rpc_error"; message: string }
   | { status: "quote_error"; message: string }
   | { status: "build_error"; message: string }
   | { status: "send_error"; message: string };
@@ -117,7 +118,15 @@ export class ExecuteSwapUseCase {
     }
 
     // Check USDC balance before calling Jupiter API
-    const usdcBalance = await this.solanaService.getUsdcBalance(walletAddress);
+    let usdcBalance: number;
+    try {
+      usdcBalance = await this.solanaService.getUsdcBalance(walletAddress);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("ExecuteSwap", "Failed to fetch USDC balance", { error: message });
+      return { status: "rpc_error", message };
+    }
+
     if (usdcBalance < amountUsdc) {
       logger.warn("ExecuteSwap", "Insufficient USDC balance", {
         required: amountUsdc,

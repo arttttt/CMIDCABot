@@ -43,6 +43,14 @@ export class SwapFormatter {
       return { text: `Transaction failed: ${result.message}` };
     }
 
+    if (result.status === "rpc_error") {
+      return {
+        text:
+          "Failed to check balance. The Solana network may be busy.\n\n" +
+          "Please try again in a few seconds.",
+      };
+    }
+
     const { quote, signature, confirmed } = result;
 
     const statusIcon = confirmed ? "CONFIRMED" : "PENDING";
