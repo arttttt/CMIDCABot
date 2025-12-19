@@ -4,8 +4,9 @@
  */
 
 import type { Bot, Context } from "grammy";
+import type { TransportMode } from "../../../types/config.js";
 
-export type TransportMode = "polling" | "webhook";
+export type { TransportMode };
 
 export interface TransportConfig {
   mode: TransportMode;

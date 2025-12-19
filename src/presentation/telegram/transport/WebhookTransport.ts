@@ -34,7 +34,14 @@ export class WebhookTransport implements BotTransport {
     await this.startServer();
 
     // Register webhook with Telegram
-    await this.registerWebhook();
+    // If this fails, we need to clean up the server
+    try {
+      await this.registerWebhook();
+    } catch (error) {
+      // Stop the server since webhook registration failed
+      await this.stopServer();
+      throw error;
+    }
 
     // Notify startup
     this.onStart?.({ username: botInfo.username });
@@ -55,15 +62,30 @@ export class WebhookTransport implements BotTransport {
     }
 
     // Stop HTTP server
-    if (this.server) {
-      await new Promise<void>((resolve, reject) => {
-        this.server!.close((err) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
-      this.server = null;
+    await this.stopServer();
+  }
+
+  private async stopServer(): Promise<void> {
+    if (!this.server) {
+      return;
     }
+
+    const server = this.server;
+    this.server = null;
+
+    await new Promise<void>((resolve, reject) => {
+      // Set a timeout for graceful shutdown (5 seconds)
+      const timeout = setTimeout(() => {
+        console.warn("Server close timeout, forcing shutdown");
+        resolve();
+      }, 5000);
+
+      server.close((err) => {
+        clearTimeout(timeout);
+        if (err) reject(err);
+        else resolve();
+      });
+    });
   }
 
   private async startServer(): Promise<void> {
@@ -98,11 +120,9 @@ export class WebhookTransport implements BotTransport {
 
   private async registerWebhook(): Promise<void> {
     const options: {
-      url: string;
       drop_pending_updates: boolean;
       secret_token?: string;
     } = {
-      url: this.config.url,
       drop_pending_updates: true,
     };
 
@@ -125,15 +145,10 @@ export class WebhookTransport implements BotTransport {
       }
     }
 
-    // Read request body
+    // Read request body with timeout
     let body = "";
     try {
-      body = await new Promise<string>((resolve, reject) => {
-        const chunks: Buffer[] = [];
-        req.on("data", (chunk: Buffer) => chunks.push(chunk));
-        req.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
-        req.on("error", reject);
-      });
+      body = await this.readRequestBody(req);
     } catch (error) {
       console.error("Failed to read webhook request body:", error);
       res.writeHead(400);
@@ -162,8 +177,32 @@ export class WebhookTransport implements BotTransport {
     try {
       await this.bot.handleUpdate(update);
     } catch (error) {
-      console.error("Failed to process webhook update:", error);
+      console.error(`Failed to process webhook update ${update.update_id}:`, error);
     }
+  }
+
+  private readRequestBody(req: IncomingMessage): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+
+      // Timeout for reading body (10 seconds)
+      const timeout = setTimeout(() => {
+        req.destroy();
+        reject(new Error("Request body read timeout"));
+      }, 10000);
+
+      req.on("data", (chunk: Buffer) => chunks.push(chunk));
+
+      req.on("end", () => {
+        clearTimeout(timeout);
+        resolve(Buffer.concat(chunks).toString("utf-8"));
+      });
+
+      req.on("error", (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+    });
   }
 
   private getWebhookPath(): string {
