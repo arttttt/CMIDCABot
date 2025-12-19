@@ -181,69 +181,63 @@ export class SolanaService {
    * @param walletAddress - Wallet address to check
    * @param tokenMint - Token mint address
    * @param decimals - Token decimals (default 9)
-   * @returns Token balance or 0 if no account exists
+   * @returns Token balance (0 if no token account exists)
+   * @throws Error if RPC request fails
    */
   async getTokenBalance(walletAddress: string, tokenMint: string, _decimals: number = 9): Promise<number> {
-    try {
-      const owner = address(walletAddress);
-      const mint = address(tokenMint);
+    const owner = address(walletAddress);
+    const mint = address(tokenMint);
 
-      // Use retry with exponential backoff for rate-limited requests
-      const result = await withRetry(() =>
-        this.rpc
-          .getTokenAccountsByOwner(
-            owner,
-            { mint },
-            { encoding: "jsonParsed" },
-          )
-          .send()
-      );
+    // Use retry with exponential backoff for rate-limited requests
+    const result = await withRetry(() =>
+      this.rpc
+        .getTokenAccountsByOwner(
+          owner,
+          { mint },
+          { encoding: "jsonParsed" },
+        )
+        .send()
+    );
 
-      if (result.value.length === 0) {
-        return 0;
-      }
-
-      // Get the first token account (there should only be one per mint)
-      const accountData = result.value[0].account.data;
-
-      // Type guard for parsed data
-      if (typeof accountData === "object" && "parsed" in accountData) {
-        const parsed = accountData.parsed as {
-          info: {
-            tokenAmount: {
-              amount: string;
-              decimals: number;
-              uiAmount: number | null;
-              uiAmountString: string;
-            };
-          };
-        };
-        const tokenAmount = parsed.info.tokenAmount;
-
-        // Use uiAmountString (more reliable) or fallback to calculating from raw amount
-        // uiAmount can be null in some edge cases, so we avoid relying on it
-        if (tokenAmount.uiAmountString) {
-          return parseFloat(tokenAmount.uiAmountString);
-        }
-
-        // Fallback: calculate from raw amount and decimals
-        if (tokenAmount.amount && tokenAmount.decimals !== undefined) {
-          return Number(tokenAmount.amount) / Math.pow(10, tokenAmount.decimals);
-        }
-
-        // Last resort: use uiAmount if available
-        return tokenAmount.uiAmount ?? 0;
-      }
-
-      return 0;
-    } catch (error) {
-      logger.debug("Solana", "Failed to get token balance", {
-        wallet: walletAddress,
-        mint: tokenMint,
-        error: error instanceof Error ? error.message : String(error),
-      });
+    // No token account = balance is legitimately 0
+    if (result.value.length === 0) {
       return 0;
     }
+
+    // Get the first token account (there should only be one per mint)
+    const accountData = result.value[0].account.data;
+
+    // Type guard for parsed data
+    if (typeof accountData === "object" && "parsed" in accountData) {
+      const parsed = accountData.parsed as {
+        info: {
+          tokenAmount: {
+            amount: string;
+            decimals: number;
+            uiAmount: number | null;
+            uiAmountString: string;
+          };
+        };
+      };
+      const tokenAmount = parsed.info.tokenAmount;
+
+      // Use uiAmountString (more reliable) or fallback to calculating from raw amount
+      // uiAmount can be null in some edge cases, so we avoid relying on it
+      if (tokenAmount.uiAmountString) {
+        return parseFloat(tokenAmount.uiAmountString);
+      }
+
+      // Fallback: calculate from raw amount and decimals
+      if (tokenAmount.amount && tokenAmount.decimals !== undefined) {
+        return Number(tokenAmount.amount) / Math.pow(10, tokenAmount.decimals);
+      }
+
+      // Last resort: use uiAmount if available
+      return tokenAmount.uiAmount ?? 0;
+    }
+
+    // Unexpected data format
+    throw new Error("Unexpected token account data format");
   }
 
   /**

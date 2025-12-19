@@ -50,6 +50,11 @@ export class PurchaseFormatter {
           text: `Transaction failed: ${result.error}`,
         };
 
+      case "rpc_error":
+        return {
+          text: `RPC error: ${result.error}\n\nPlease try again later.`,
+        };
+
       case "success": {
         const confirmStatus = result.confirmed ? "Confirmed" : "Pending";
         const explorerUrl = `https://solscan.io/tx/${result.signature}`;

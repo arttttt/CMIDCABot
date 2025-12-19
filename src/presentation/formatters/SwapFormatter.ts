@@ -43,6 +43,10 @@ export class SwapFormatter {
       return { text: `Transaction failed: ${result.message}` };
     }
 
+    if (result.status === "rpc_error") {
+      return { text: `RPC error: ${result.message}\n\nPlease try again later.` };
+    }
+
     const { quote, signature, confirmed } = result;
 
     const statusIcon = confirmed ? "CONFIRMED" : "PENDING";

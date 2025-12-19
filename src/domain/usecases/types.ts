@@ -20,7 +20,7 @@ export interface BalanceResult {
 
 // Purchase result (real swap via Jupiter)
 export interface PurchaseResult {
-  type: "success" | "invalid_amount" | "no_wallet" | "insufficient_balance" | "quote_error" | "build_error" | "send_error" | "unavailable";
+  type: "success" | "invalid_amount" | "no_wallet" | "insufficient_balance" | "rpc_error" | "quote_error" | "build_error" | "send_error" | "unavailable";
   asset?: AssetSymbol;
   amountAsset?: number;
   amountUsdc?: number;
