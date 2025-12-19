@@ -477,6 +477,15 @@ async function main(): Promise<void> {
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
+  // Global error handlers to prevent silent crashes
+  process.on("uncaughtException", (error) => {
+    console.error("[FATAL] Uncaught exception:", error);
+  });
+
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("[ERROR] Unhandled rejection at:", promise, "reason:", reason);
+  });
+
   // Log startup info
   const transportModeLabel = config.transport.mode === "webhook" ? "Webhook" : "Long Polling";
 

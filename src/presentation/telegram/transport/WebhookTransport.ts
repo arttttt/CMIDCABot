@@ -91,23 +91,41 @@ export class WebhookTransport implements BotTransport {
   private async startServer(): Promise<void> {
     const webhookPath = this.getWebhookPath();
 
-    this.server = createServer(async (req, res) => {
-      // Handle webhook endpoint
-      if (req.method === "POST" && req.url === webhookPath) {
-        await this.handleWebhookRequest(req, res);
-        return;
-      }
+    this.server = createServer((req, res) => {
+      // Wrap in async IIFE with error handling
+      (async () => {
+        // Handle webhook endpoint
+        if (req.method === "POST" && req.url === webhookPath) {
+          await this.handleWebhookRequest(req, res);
+          return;
+        }
 
-      // Handle health check (keep health endpoint working)
-      if (req.url === "/health" || req.url === "/") {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ status: "ok" }));
-        return;
-      }
+        // Handle health check (keep health endpoint working)
+        if (req.url === "/health" || req.url === "/") {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ status: "ok" }));
+          return;
+        }
 
-      // 404 for unknown routes
-      res.writeHead(404);
-      res.end();
+        // 404 for unknown routes
+        res.writeHead(404);
+        res.end();
+      })().catch((error) => {
+        console.error("[Webhook] Unhandled error in request handler:", error);
+        if (!res.headersSent) {
+          res.writeHead(500);
+          res.end("Internal Server Error");
+        }
+      });
+    });
+
+    // Handle server errors
+    this.server.on("error", (error) => {
+      console.error("[Webhook] Server error:", error);
+    });
+
+    this.server.on("close", () => {
+      console.log("[Webhook] Server closed");
     });
 
     await new Promise<void>((resolve) => {
