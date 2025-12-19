@@ -50,9 +50,15 @@ cp .env.example .env
 | `JUPITER_API_KEY` | Yes** | - | Jupiter API key from portal.jup.ag |
 | `WEB_ENABLED` | No | `false` | Enable web test interface |
 | `WEB_PORT` | No | `3000` | Port for web interface |
+| `BOT_TRANSPORT` | No | `polling` | Transport mode (`polling` \| `webhook`) |
+| `WEBHOOK_URL` | Yes*** | - | Public HTTPS URL for webhook |
+| `WEBHOOK_SECRET` | No | - | Secret token for webhook validation |
+| `HEALTH_PORT` | No | `8000` | Port for health check endpoint |
+| `HEALTH_HOST` | No | `127.0.0.1` | Host for health check (use `0.0.0.0` for containers) |
 
 \* Not required if `WEB_ENABLED=true`
 \** Required when `PRICE_SOURCE=jupiter`
+\*** Required when `BOT_TRANSPORT=webhook`
 
 ### Encryption Setup
 
@@ -145,6 +151,64 @@ npm start
 In production mode (`NODE_ENV=production`):
 - Only wallet and admin commands available
 - DCA, portfolio, prices, and swap commands are disabled
+
+### Transport Modes
+
+The bot supports two transport modes for receiving Telegram updates:
+
+| Mode | Use Case | Behavior |
+|------|----------|----------|
+| `polling` | Local development | Long polling, may cause 409 conflicts on redeploy |
+| `webhook` | Production (Koyeb, etc.) | HTTP webhook, seamless redeploys |
+
+#### Polling (default)
+
+Uses long polling to receive updates. Simple setup, works locally without public URL.
+
+```env
+BOT_TRANSPORT=polling
+```
+
+#### Webhook
+
+Receives updates via HTTP endpoint. Recommended for production deployments.
+
+```env
+BOT_TRANSPORT=webhook
+WEBHOOK_URL=https://your-app.koyeb.app/webhook
+WEBHOOK_SECRET=your-secret-here
+HEALTH_HOST=0.0.0.0
+```
+
+Generate webhook secret:
+```bash
+openssl rand -hex 32
+```
+
+### Deployment (Koyeb)
+
+1. Create a new app on [Koyeb](https://app.koyeb.com)
+
+2. Set environment variables:
+   ```
+   NODE_ENV=production
+   BOT_TRANSPORT=webhook
+   WEBHOOK_URL=https://<your-app>.koyeb.app/webhook
+   WEBHOOK_SECRET=<generated-secret>
+   HEALTH_HOST=0.0.0.0
+   HEALTH_PORT=8000
+   TELEGRAM_BOT_TOKEN=<your-token>
+   OWNER_TELEGRAM_ID=<your-id>
+   MASTER_ENCRYPTION_KEY=<your-key>
+   SOLANA_RPC_URL=<your-rpc-url>
+   JUPITER_API_KEY=<your-api-key>
+   ```
+
+3. Configure the service:
+   - **Port:** `8000`
+   - **Health check path:** `/health`
+
+4. Deploy. The bot will automatically register the webhook with Telegram.
 
 ## Build
 
