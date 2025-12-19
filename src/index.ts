@@ -5,7 +5,11 @@ try {
   console.log("No .env file found, using environment variables");
 }
 
+import { createRequire } from "module";
 import { Kysely } from "kysely";
+
+const require = createRequire(import.meta.url);
+const pkg = require("../package.json") as { version: string };
 import { loadConfig } from "./config/index.js";
 import { setLogger, DebugLogger, NoOpLogger } from "./services/logger.js";
 import { createMainDatabase, createMockDatabase, createAuthDatabase } from "./data/datasources/index.js";
@@ -70,6 +74,8 @@ import { HealthService } from "./services/health.js";
 import type { MainDatabase, MockDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
+  console.log(`CMI DCA Bot v${pkg.version}`);
+
   const config = loadConfig();
   const dbMode = config.database.mode;
 
