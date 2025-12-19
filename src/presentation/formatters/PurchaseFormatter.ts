@@ -52,7 +52,9 @@ export class PurchaseFormatter {
 
       case "rpc_error":
         return {
-          text: `RPC error: ${result.error}\n\nPlease try again later.`,
+          text:
+            "Failed to check balance. The Solana network may be busy.\n\n" +
+            "Please try again in a few seconds.",
         };
 
       case "success": {

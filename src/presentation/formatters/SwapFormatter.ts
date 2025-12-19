@@ -44,7 +44,11 @@ export class SwapFormatter {
     }
 
     if (result.status === "rpc_error") {
-      return { text: `RPC error: ${result.message}\n\nPlease try again later.` };
+      return {
+        text:
+          "Failed to check balance. The Solana network may be busy.\n\n" +
+          "Please try again in a few seconds.",
+      };
     }
 
     const { quote, signature, confirmed } = result;
