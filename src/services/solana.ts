@@ -149,9 +149,49 @@ export class SolanaService {
       // Type guard for parsed data
       if (typeof accountData === "object" && "parsed" in accountData) {
         const parsed = accountData.parsed as {
-          info: { tokenAmount: { uiAmount: number } };
+          info: {
+            tokenAmount: {
+              amount: string;
+              decimals: number;
+              uiAmount: number | null;
+              uiAmountString: string;
+            };
+          };
         };
-        return parsed.info.tokenAmount.uiAmount ?? 0;
+        const tokenAmount = parsed.info.tokenAmount;
+
+        // Use uiAmountString (more reliable) or fallback to calculating from raw amount
+        // uiAmount can be null in some edge cases, so we avoid relying on it
+        if (tokenAmount.uiAmountString) {
+          const balance = parseFloat(tokenAmount.uiAmountString);
+          logger.debug("Solana", "Token balance retrieved", {
+            wallet: walletAddress.slice(0, 8) + "...",
+            mint: tokenMint.slice(0, 8) + "...",
+            balance,
+            source: "uiAmountString",
+          });
+          return balance;
+        }
+
+        // Fallback: calculate from raw amount and decimals
+        if (tokenAmount.amount && tokenAmount.decimals !== undefined) {
+          const balance = Number(tokenAmount.amount) / Math.pow(10, tokenAmount.decimals);
+          logger.debug("Solana", "Token balance retrieved", {
+            wallet: walletAddress.slice(0, 8) + "...",
+            mint: tokenMint.slice(0, 8) + "...",
+            balance,
+            source: "calculated",
+          });
+          return balance;
+        }
+
+        // Last resort: use uiAmount if available
+        logger.debug("Solana", "Token balance using uiAmount fallback", {
+          wallet: walletAddress.slice(0, 8) + "...",
+          mint: tokenMint.slice(0, 8) + "...",
+          uiAmount: tokenAmount.uiAmount,
+        });
+        return tokenAmount.uiAmount ?? 0;
       }
 
       return 0;
