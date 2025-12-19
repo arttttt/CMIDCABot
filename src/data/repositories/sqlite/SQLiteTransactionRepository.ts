@@ -62,4 +62,11 @@ export class SQLiteTransactionRepository implements TransactionRepository {
 
     return this.rowToModel(row);
   }
+
+  async deleteByUserId(telegramId: number): Promise<void> {
+    await this.db
+      .deleteFrom("transactions")
+      .where("telegram_id", "=", telegramId)
+      .execute();
+  }
 }

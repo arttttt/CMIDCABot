@@ -171,4 +171,11 @@ export class SQLiteUserRepository implements UserRepository {
 
     return result !== undefined;
   }
+
+  async delete(telegramId: number): Promise<void> {
+    await this.db
+      .deleteFrom("users")
+      .where("telegram_id", "=", telegramId)
+      .execute();
+  }
 }

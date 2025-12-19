@@ -18,4 +18,9 @@ export interface TransactionRepository {
    * Create a new transaction
    */
   create(data: CreateTransactionData): Promise<Transaction>;
+
+  /**
+   * Delete all transactions for a user
+   */
+  deleteByUserId(telegramId: number): Promise<void>;
 }

@@ -36,4 +36,12 @@ export class InMemoryTransactionRepository implements TransactionRepository {
     this.transactions.set(id, transaction);
     return transaction;
   }
+
+  async deleteByUserId(telegramId: number): Promise<void> {
+    for (const [id, tx] of this.transactions.entries()) {
+      if (tx.telegramId === telegramId) {
+        this.transactions.delete(id);
+      }
+    }
+  }
 }

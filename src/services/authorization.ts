@@ -155,7 +155,7 @@ export class AuthorizationService {
     const adminCheck = await this.checkAdminPermission(adminTelegramId, target.role);
     if (!adminCheck.success) return adminCheck;
 
-    // Remove user
+    // Remove user authorization
     const removed = await this.authRepository.remove(targetTelegramId);
     if (!removed) {
       return { success: false, error: "Failed to remove user" };

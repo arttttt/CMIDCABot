@@ -27,6 +27,7 @@ import {
   ExecuteSwapUseCase,
   GenerateInviteUseCase,
   ActivateInviteUseCase,
+  DeleteUserDataUseCase,
 } from "../../domain/usecases/index.js";
 
 // Services
@@ -112,6 +113,8 @@ export interface AdminCommandDeps {
   authService: AuthorizationService;
   formatter: AdminFormatter;
   userResolver: UserResolver;
+  deleteUserData: DeleteUserDataUseCase;
+  version: string;
   generateInvite?: GenerateInviteUseCase;
   inviteFormatter?: InviteFormatter;
 }
@@ -448,7 +451,7 @@ function createAdminRemoveCommand(deps: AdminCommandDeps): Command {
       }
       const targetId = resolveResult.telegramId;
 
-      const result = await deps.authService.removeUser(telegramId, targetId);
+      const result = await deps.deleteUserData.execute(telegramId, targetId);
       return deps.formatter.formatResult(result);
     },
   };
@@ -492,6 +495,15 @@ function createAdminRoleCommand(deps: AdminCommandDeps): Command {
   };
 }
 
+function createAdminVersionCommand(deps: AdminCommandDeps): Command {
+  return {
+    definition: { name: "version", description: "Show bot version" },
+    handler: async () => {
+      return deps.formatter.formatVersion(deps.version);
+    },
+  };
+}
+
 function createAdminInviteCommand(deps: AdminCommandDeps): Command | undefined {
   if (!deps.generateInvite || !deps.inviteFormatter) {
     return undefined;
@@ -525,6 +537,7 @@ export function createAdminCommand(deps: AdminCommandDeps): Command {
     ["remove", createAdminRemoveCommand(deps)],
     ["list", createAdminListCommand(deps)],
     ["role", createAdminRoleCommand(deps)],
+    ["version", createAdminVersionCommand(deps)],
   ]);
 
   // Add invite command if dependencies are available

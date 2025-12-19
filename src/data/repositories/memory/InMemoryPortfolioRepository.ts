@@ -68,4 +68,8 @@ export class InMemoryPortfolioRepository implements PortfolioRepository {
       portfolio.updatedAt = new Date();
     }
   }
+
+  async deleteByUserId(telegramId: number): Promise<void> {
+    this.portfolios.delete(telegramId);
+  }
 }

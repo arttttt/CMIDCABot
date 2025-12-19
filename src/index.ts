@@ -5,7 +5,11 @@ try {
   console.log("No .env file found, using environment variables");
 }
 
+import { createRequire } from "module";
 import { Kysely } from "kysely";
+
+const require = createRequire(import.meta.url);
+const pkg = require("../package.json") as { version: string };
 import { loadConfig } from "./config/index.js";
 import { setLogger, DebugLogger, NoOpLogger } from "./services/logger.js";
 import { createMainDatabase, createMockDatabase, createAuthDatabase } from "./data/datasources/index.js";
@@ -42,6 +46,7 @@ import {
   ExecuteSwapUseCase,
   GenerateInviteUseCase,
   ActivateInviteUseCase,
+  DeleteUserDataUseCase,
 } from "./domain/usecases/index.js";
 import { ProtocolHandler } from "./presentation/protocol/index.js";
 import {
@@ -69,6 +74,8 @@ import { HealthService } from "./services/health.js";
 import type { MainDatabase, MockDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
+  console.log(`CMI DCA Bot v${pkg.version}`);
+
   const config = loadConfig();
   const dbMode = config.database.mode;
 
@@ -132,6 +139,7 @@ async function main(): Promise<void> {
   // Initialize mock database, DCA service and scheduler only in development mode
   let dca: DcaService | undefined;
   let dcaScheduler: DcaScheduler | undefined;
+  let deleteUserData: DeleteUserDataUseCase;
 
   if (config.isDev) {
     if (dbMode === "sqlite") {
@@ -139,6 +147,15 @@ async function main(): Promise<void> {
     }
 
     const mockRepos = createMockRepositories(dbMode, mockDb);
+
+    // Create delete user data use case with dev-mode repositories
+    deleteUserData = new DeleteUserDataUseCase(
+      authService,
+      userRepository,
+      transactionRepository,
+      mockRepos.portfolioRepository,
+      mockRepos.purchaseRepository,
+    );
 
     dca = new DcaService(
       userRepository,
@@ -167,6 +184,13 @@ async function main(): Promise<void> {
         console.error("[DCA Scheduler] Failed to check for active users:", error);
       });
     }
+  } else {
+    // Create delete user data use case for production (no mock repositories)
+    deleteUserData = new DeleteUserDataUseCase(
+      authService,
+      userRepository,
+      transactionRepository,
+    );
   }
 
   // Create helpers
@@ -254,6 +278,8 @@ async function main(): Promise<void> {
       authService,
       formatter: adminFormatter,
       userResolver,
+      deleteUserData,
+      version: pkg.version,
       generateInvite: inviteFormatter ? generateInvite : undefined,
       inviteFormatter,
     };

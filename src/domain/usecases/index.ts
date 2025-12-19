@@ -41,3 +41,6 @@ export { ExecuteSwapUseCase } from "./ExecuteSwapUseCase.js";
 // Invite
 export { GenerateInviteUseCase, type GenerateInviteResult } from "./GenerateInviteUseCase.js";
 export { ActivateInviteUseCase, type ActivateInviteResult } from "./ActivateInviteUseCase.js";
+
+// Admin
+export { DeleteUserDataUseCase } from "./DeleteUserDataUseCase.js";

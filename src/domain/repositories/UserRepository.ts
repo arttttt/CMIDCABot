@@ -53,4 +53,9 @@ export interface UserRepository {
    * Check if there are any active DCA users
    */
   hasActiveDcaUsers(): Promise<boolean>;
+
+  /**
+   * Delete a user and all their data (wallet, DCA settings)
+   */
+  delete(telegramId: number): Promise<void>;
 }
