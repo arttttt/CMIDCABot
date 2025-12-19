@@ -53,13 +53,10 @@ export class WebhookTransport implements BotTransport {
   }
 
   async stop(): Promise<void> {
-    // Remove webhook from Telegram
-    try {
-      await this.bot.api.deleteWebhook();
-      console.log("Webhook removed");
-    } catch (error) {
-      console.error("Failed to remove webhook:", error);
-    }
+    // Note: We intentionally do NOT delete the webhook on shutdown.
+    // When the new instance starts, it will re-register the webhook with the same URL.
+    // Deleting the webhook during shutdown causes a gap where Telegram can't deliver updates.
+    console.log("Stopping webhook transport (keeping webhook registered for next instance)");
 
     // Stop HTTP server
     await this.stopServer();
