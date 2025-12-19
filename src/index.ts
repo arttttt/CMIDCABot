@@ -354,7 +354,7 @@ async function main(): Promise<void> {
     console.log("─".repeat(50));
     console.log("WEB TEST INTERFACE");
     console.log("─".repeat(50));
-    console.log(`RPC: ${config.solana.rpcUrl}`);
+    console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
     console.log("─".repeat(50));
 
     await startWebServer(config.web.port ?? 3000, handler);
@@ -428,7 +428,7 @@ async function main(): Promise<void> {
     console.log("DEVELOPMENT MODE");
     console.log("─".repeat(50));
     console.log(`Bot: @${botInfo.username}`);
-    console.log(`RPC: ${config.solana.rpcUrl}`);
+    console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
     console.log(`Mode: Long Polling (local)`);
     if (dcaScheduler) {
       console.log(`DCA: ${config.dca.amountUsdc} USDC every ${formatInterval(config.dca.intervalMs)}`);
@@ -439,7 +439,7 @@ async function main(): Promise<void> {
     console.log("Press Ctrl+C to stop.\n");
   } else {
     console.log(`Bot @${botInfo.username} starting...`);
-    console.log(`RPC: ${config.solana.rpcUrl}`);
+    console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
   }
 
   // Start bot with retry on 409 Conflict
@@ -486,6 +486,18 @@ function formatInterval(ms: number): string {
   if (ms >= 3600000) return `${(ms / 3600000).toFixed(1)} hours`;
   if (ms >= 60000) return `${(ms / 60000).toFixed(1)} minutes`;
   return `${ms} ms`;
+}
+
+function maskUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.search) {
+      parsed.search = "?***";
+    }
+    return parsed.toString();
+  } catch {
+    return url.replace(/[?].*$/, "?***");
+  }
 }
 
 main().catch((error) => {
