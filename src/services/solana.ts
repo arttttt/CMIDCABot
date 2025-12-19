@@ -41,6 +41,62 @@ function sanitizeErrorMessage(error: unknown): string {
 }
 
 /**
+ * Check if an error is a rate limit error (HTTP 429)
+ */
+function isRateLimitError(error: unknown): boolean {
+  if (error instanceof Error) {
+    return error.message.includes("429") || error.message.includes("Too Many Requests");
+  }
+  return false;
+}
+
+/**
+ * Sleep for a given number of milliseconds
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Retry a function with exponential backoff
+ * @param fn - Function to retry
+ * @param maxRetries - Maximum number of retries (default 3)
+ * @param baseDelayMs - Base delay in milliseconds (default 1000)
+ * @returns Result of the function
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelayMs: number = 1000,
+): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      // Only retry on rate limit errors
+      if (!isRateLimitError(error) || attempt === maxRetries) {
+        throw error;
+      }
+
+      // Exponential backoff: 1s, 2s, 4s
+      const delayMs = baseDelayMs * Math.pow(2, attempt);
+      logger.debug("Solana", "Rate limited, retrying", {
+        attempt: attempt + 1,
+        maxRetries,
+        delayMs,
+      });
+      await sleep(delayMs);
+    }
+  }
+
+  throw lastError;
+}
+
+/**
  * Generated keypair with extractable private key
  */
 export interface GeneratedKeypair {
@@ -115,7 +171,8 @@ export class SolanaService {
    */
   async getBalance(walletAddress: string): Promise<number> {
     const addr = address(walletAddress);
-    const { value } = await this.rpc.getBalance(addr).send();
+    // Use retry with exponential backoff for rate-limited requests
+    const { value } = await withRetry(() => this.rpc.getBalance(addr).send());
     return Number(value) / Number(LAMPORTS_PER_SOL);
   }
 
@@ -131,13 +188,16 @@ export class SolanaService {
       const owner = address(walletAddress);
       const mint = address(tokenMint);
 
-      const result = await this.rpc
-        .getTokenAccountsByOwner(
-          owner,
-          { mint },
-          { encoding: "jsonParsed" },
-        )
-        .send();
+      // Use retry with exponential backoff for rate-limited requests
+      const result = await withRetry(() =>
+        this.rpc
+          .getTokenAccountsByOwner(
+            owner,
+            { mint },
+            { encoding: "jsonParsed" },
+          )
+          .send()
+      );
 
       if (result.value.length === 0) {
         return 0;
@@ -163,34 +223,15 @@ export class SolanaService {
         // Use uiAmountString (more reliable) or fallback to calculating from raw amount
         // uiAmount can be null in some edge cases, so we avoid relying on it
         if (tokenAmount.uiAmountString) {
-          const balance = parseFloat(tokenAmount.uiAmountString);
-          logger.debug("Solana", "Token balance retrieved", {
-            wallet: walletAddress.slice(0, 8) + "...",
-            mint: tokenMint.slice(0, 8) + "...",
-            balance,
-            source: "uiAmountString",
-          });
-          return balance;
+          return parseFloat(tokenAmount.uiAmountString);
         }
 
         // Fallback: calculate from raw amount and decimals
         if (tokenAmount.amount && tokenAmount.decimals !== undefined) {
-          const balance = Number(tokenAmount.amount) / Math.pow(10, tokenAmount.decimals);
-          logger.debug("Solana", "Token balance retrieved", {
-            wallet: walletAddress.slice(0, 8) + "...",
-            mint: tokenMint.slice(0, 8) + "...",
-            balance,
-            source: "calculated",
-          });
-          return balance;
+          return Number(tokenAmount.amount) / Math.pow(10, tokenAmount.decimals);
         }
 
         // Last resort: use uiAmount if available
-        logger.debug("Solana", "Token balance using uiAmount fallback", {
-          wallet: walletAddress.slice(0, 8) + "...",
-          mint: tokenMint.slice(0, 8) + "...",
-          uiAmount: tokenAmount.uiAmount,
-        });
         return tokenAmount.uiAmount ?? 0;
       }
 
