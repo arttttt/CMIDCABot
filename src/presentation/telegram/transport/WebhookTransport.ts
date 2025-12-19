@@ -130,7 +130,18 @@ export class WebhookTransport implements BotTransport {
       options.secret_token = this.config.secret;
     }
 
-    await this.bot.api.setWebhook(this.config.url, options);
+    console.log(`Registering webhook: ${this.config.url}`);
+    const result = await this.bot.api.setWebhook(this.config.url, options);
+    console.log(`setWebhook result: ${result}`);
+
+    // Verify webhook was actually set
+    const info = await this.bot.api.getWebhookInfo();
+    if (info.url !== this.config.url) {
+      throw new Error(
+        `Webhook registration failed. Expected URL: ${this.config.url}, got: ${info.url || "(empty)"}`
+      );
+    }
+
     console.log("Webhook registered with Telegram");
   }
 
