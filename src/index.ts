@@ -471,11 +471,22 @@ async function main(): Promise<void> {
   }
 
   // Start bot with retry on 409 Conflict
-  const maxRetries = 5;
-  const baseDelayMs = 2000;
+  const maxRetries = 3;
+  const baseDelayMs = 1000;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      // Force close any existing session before starting
+      // This is especially important during redeploys when old instance may still be running
+      try {
+        await bot.api.close();
+      } catch {
+        // Ignore - session may not exist
+      }
+
+      // Small delay to ensure Telegram API registers the close
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       await bot.start({
         onStart: (botInfo) => {
           if (!config.isDev) {
@@ -494,13 +505,6 @@ async function main(): Promise<void> {
         console.log(`Bot instance conflict detected (attempt ${attempt}/${maxRetries}), retrying in ${delayMs / 1000}s...`);
 
         await new Promise((resolve) => setTimeout(resolve, delayMs));
-
-        // Try to release any existing session
-        try {
-          await bot.api.close();
-        } catch {
-          // Ignore
-        }
         await bot.api.deleteWebhook({ drop_pending_updates: true });
       } else {
         throw error;
