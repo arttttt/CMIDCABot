@@ -27,6 +27,7 @@ import {
   ExecuteSwapUseCase,
   GenerateInviteUseCase,
   ActivateInviteUseCase,
+  DeleteUserDataUseCase,
 } from "../../domain/usecases/index.js";
 
 // Services
@@ -112,6 +113,7 @@ export interface AdminCommandDeps {
   authService: AuthorizationService;
   formatter: AdminFormatter;
   userResolver: UserResolver;
+  deleteUserData: DeleteUserDataUseCase;
   generateInvite?: GenerateInviteUseCase;
   inviteFormatter?: InviteFormatter;
 }
@@ -448,7 +450,7 @@ function createAdminRemoveCommand(deps: AdminCommandDeps): Command {
       }
       const targetId = resolveResult.telegramId;
 
-      const result = await deps.authService.removeUser(telegramId, targetId);
+      const result = await deps.deleteUserData.execute(telegramId, targetId);
       return deps.formatter.formatResult(result);
     },
   };

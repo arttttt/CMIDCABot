@@ -133,4 +133,8 @@ export class InMemoryUserRepository implements UserRepository {
     }
     return false;
   }
+
+  async delete(telegramId: number): Promise<void> {
+    this.users.delete(telegramId);
+  }
 }

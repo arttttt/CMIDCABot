@@ -24,4 +24,9 @@ export interface PortfolioRepository {
    * Reset portfolio to zero balances and clear purchase history
    */
   reset(telegramId: number): Promise<void>;
+
+  /**
+   * Delete portfolio for a user
+   */
+  deleteByUserId(telegramId: number): Promise<void>;
 }

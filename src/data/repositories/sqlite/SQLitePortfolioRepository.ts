@@ -65,4 +65,11 @@ export class SQLitePortfolioRepository implements PortfolioRepository {
       .where("telegram_id", "=", telegramId)
       .execute();
   }
+
+  async deleteByUserId(telegramId: number): Promise<void> {
+    await this.db
+      .deleteFrom("portfolio")
+      .where("telegram_id", "=", telegramId)
+      .execute();
+  }
 }

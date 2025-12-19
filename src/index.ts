@@ -42,6 +42,7 @@ import {
   ExecuteSwapUseCase,
   GenerateInviteUseCase,
   ActivateInviteUseCase,
+  DeleteUserDataUseCase,
 } from "./domain/usecases/index.js";
 import { ProtocolHandler } from "./presentation/protocol/index.js";
 import {
@@ -132,6 +133,7 @@ async function main(): Promise<void> {
   // Initialize mock database, DCA service and scheduler only in development mode
   let dca: DcaService | undefined;
   let dcaScheduler: DcaScheduler | undefined;
+  let deleteUserData: DeleteUserDataUseCase;
 
   if (config.isDev) {
     if (dbMode === "sqlite") {
@@ -139,6 +141,15 @@ async function main(): Promise<void> {
     }
 
     const mockRepos = createMockRepositories(dbMode, mockDb);
+
+    // Create delete user data use case with dev-mode repositories
+    deleteUserData = new DeleteUserDataUseCase(
+      authService,
+      userRepository,
+      transactionRepository,
+      mockRepos.portfolioRepository,
+      mockRepos.purchaseRepository,
+    );
 
     dca = new DcaService(
       userRepository,
@@ -167,6 +178,13 @@ async function main(): Promise<void> {
         console.error("[DCA Scheduler] Failed to check for active users:", error);
       });
     }
+  } else {
+    // Create delete user data use case for production (no mock repositories)
+    deleteUserData = new DeleteUserDataUseCase(
+      authService,
+      userRepository,
+      transactionRepository,
+    );
   }
 
   // Create helpers
@@ -254,6 +272,7 @@ async function main(): Promise<void> {
       authService,
       formatter: adminFormatter,
       userResolver,
+      deleteUserData,
       generateInvite: inviteFormatter ? generateInvite : undefined,
       inviteFormatter,
     };
