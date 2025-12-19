@@ -65,7 +65,7 @@ import {
 } from "./presentation/formatters/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
-import { startHealthServer } from "./presentation/health/index.js";
+import { HealthService } from "./services/health.js";
 import type { MainDatabase, MockDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
@@ -380,9 +380,11 @@ async function main(): Promise<void> {
   console.log("Starting DCA Telegram Bot...");
 
   // Start health check server in production for platforms like Koyeb
+  let healthService: HealthService | undefined;
   if (!config.isDev) {
     const healthPort = Number(process.env.PORT) || 8000;
-    startHealthServer(healthPort);
+    healthService = new HealthService({ port: healthPort });
+    healthService.start();
   }
 
   // Get bot info first to have botUsername for invite links
@@ -406,6 +408,7 @@ async function main(): Promise<void> {
   // Graceful shutdown
   const shutdown = async (): Promise<void> => {
     console.log("\nShutting down...");
+    healthService?.stop();
     try {
       // Close bot session to release getUpdates lock
       await bot.api.close();
