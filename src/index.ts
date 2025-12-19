@@ -471,22 +471,13 @@ async function main(): Promise<void> {
   }
 
   // Start bot with retry on 409 Conflict
-  const maxRetries = 3;
-  const baseDelayMs = 1000;
+  // During redeploys, old instance may still hold polling connection
+  // We need to wait for it to be terminated by the platform
+  const maxRetries = 10;
+  const baseDelayMs = 3000;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      // Force close any existing session before starting
-      // This is especially important during redeploys when old instance may still be running
-      try {
-        await bot.api.close();
-      } catch {
-        // Ignore - session may not exist
-      }
-
-      // Small delay to ensure Telegram API registers the close
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
       await bot.start({
         onStart: (botInfo) => {
           if (!config.isDev) {
@@ -502,10 +493,9 @@ async function main(): Promise<void> {
 
       if (is409 && attempt < maxRetries) {
         const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
-        console.log(`Bot instance conflict detected (attempt ${attempt}/${maxRetries}), retrying in ${delayMs / 1000}s...`);
+        console.log(`Bot instance conflict detected (attempt ${attempt}/${maxRetries}), waiting ${delayMs / 1000}s for old instance to stop...`);
 
         await new Promise((resolve) => setTimeout(resolve, delayMs));
-        await bot.api.deleteWebhook({ drop_pending_updates: true });
       } else {
         throw error;
       }
