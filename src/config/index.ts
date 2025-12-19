@@ -90,7 +90,8 @@ export function loadConfig(): Config {
 
   const health: HealthConfig = {
     port: getEnvInt("HEALTH_PORT", 8000),
-    host: getEnvOrDefault("HEALTH_HOST", "0.0.0.0"),
+    // Default to localhost for safety; set HEALTH_HOST=0.0.0.0 for container platforms
+    host: getEnvOrDefault("HEALTH_HOST", "127.0.0.1"),
   };
 
   // Validate RPC URL uses HTTPS in production (LOW-002)
