@@ -68,7 +68,13 @@ import {
   AdminFormatter,
   InviteFormatter,
 } from "./presentation/formatters/index.js";
-import { createTelegramBot } from "./presentation/telegram/index.js";
+import {
+  createTelegramBot,
+  createTransport,
+  validateTransportConfig,
+  type BotTransport,
+  type TransportConfig as TelegramTransportConfig,
+} from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
 import { HealthService } from "./services/health.js";
 import type { MainDatabase, MockDatabase } from "./data/types/database.js";
@@ -405,9 +411,26 @@ async function main(): Promise<void> {
   // Telegram bot mode
   console.log("Starting DCA Telegram Bot...");
 
-  // Start health check server in production for platforms like Koyeb
+  // Build transport configuration
+  const transportConfig: TelegramTransportConfig = {
+    mode: config.transport.mode,
+    webhook: config.transport.mode === "webhook" && config.transport.webhookUrl
+      ? {
+          url: config.transport.webhookUrl,
+          secret: config.transport.webhookSecret,
+          port: config.health.port,
+          host: config.health.host,
+        }
+      : undefined,
+  };
+
+  // Validate transport configuration
+  validateTransportConfig(transportConfig);
+
+  // Start health check server in production for polling mode only
+  // Webhook mode handles health checks on its own server
   let healthService: HealthService | undefined;
-  if (!config.isDev) {
+  if (!config.isDev && config.transport.mode === "polling") {
     healthService = new HealthService(config.health);
     healthService.start();
   }
@@ -430,17 +453,23 @@ async function main(): Promise<void> {
   // Connect user resolver to bot API for username resolution
   userResolver.setApi(bot.api);
 
+  // Create transport based on configuration
+  let transport: BotTransport;
+  transport = createTransport(transportConfig, {
+    bot,
+    isDev: config.isDev,
+    onStart: (info) => {
+      if (!config.isDev) {
+        console.log(`Bot @${info.username} is running`);
+      }
+    },
+  });
+
   // Graceful shutdown
   const shutdown = async (): Promise<void> => {
     console.log("\nShutting down...");
     healthService?.stop();
-    try {
-      // Close bot session to release getUpdates lock
-      await bot.api.close();
-    } catch {
-      // Ignore close errors
-    }
-    await bot.stop();
+    await transport.stop();
     await cleanup();
     process.exit(0);
   };
@@ -448,8 +477,8 @@ async function main(): Promise<void> {
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
-  // Delete any existing webhook to ensure polling works
-  await bot.api.deleteWebhook({ drop_pending_updates: true });
+  // Log startup info
+  const transportModeLabel = config.transport.mode === "webhook" ? "Webhook" : "Long Polling";
 
   if (config.isDev) {
     console.log("─".repeat(50));
@@ -457,7 +486,7 @@ async function main(): Promise<void> {
     console.log("─".repeat(50));
     console.log(`Bot: @${botInfo.username}`);
     console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
-    console.log(`Mode: Long Polling (local)`);
+    console.log(`Mode: ${transportModeLabel}`);
     if (dcaScheduler) {
       console.log(`DCA: ${config.dca.amountUsdc} USDC every ${formatInterval(config.dca.intervalMs)}`);
     }
@@ -468,39 +497,11 @@ async function main(): Promise<void> {
   } else {
     console.log(`Bot @${botInfo.username} starting...`);
     console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
+    console.log(`Transport: ${transportModeLabel}`);
   }
 
-  // Start bot with retry on 409 Conflict
-  // During redeploys, old instance may still hold polling connection
-  // We need to wait for it to be terminated by the platform
-  const maxRetries = 10;
-  const baseDelayMs = 3000;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      await bot.start({
-        onStart: (botInfo) => {
-          if (!config.isDev) {
-            console.log(`Bot @${botInfo.username} is running`);
-          }
-        },
-      });
-      break; // Success, exit retry loop
-    } catch (error) {
-      const is409 = error instanceof Error &&
-        error.message.includes("409") &&
-        error.message.includes("Conflict");
-
-      if (is409 && attempt < maxRetries) {
-        const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
-        console.log(`Bot instance conflict detected (attempt ${attempt}/${maxRetries}), waiting ${delayMs / 1000}s for old instance to stop...`);
-
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-      } else {
-        throw error;
-      }
-    }
-  }
+  // Start transport (handles both polling and webhook modes)
+  await transport.start();
 }
 
 function formatInterval(ms: number): string {
