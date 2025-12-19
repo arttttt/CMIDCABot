@@ -65,6 +65,7 @@ import {
 } from "./presentation/formatters/index.js";
 import { createTelegramBot } from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
+import { HealthService } from "./services/health.js";
 import type { MainDatabase, MockDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
@@ -353,7 +354,7 @@ async function main(): Promise<void> {
     console.log("─".repeat(50));
     console.log("WEB TEST INTERFACE");
     console.log("─".repeat(50));
-    console.log(`RPC: ${config.solana.rpcUrl}`);
+    console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
     console.log("─".repeat(50));
 
     await startWebServer(config.web.port ?? 3000, handler);
@@ -378,6 +379,13 @@ async function main(): Promise<void> {
   // Telegram bot mode
   console.log("Starting DCA Telegram Bot...");
 
+  // Start health check server in production for platforms like Koyeb
+  let healthService: HealthService | undefined;
+  if (!config.isDev) {
+    healthService = new HealthService(config.health);
+    healthService.start();
+  }
+
   // Get bot info first to have botUsername for invite links
   const { Bot } = await import("grammy");
   const tempBot = new Bot(config.telegram.botToken);
@@ -399,6 +407,7 @@ async function main(): Promise<void> {
   // Graceful shutdown
   const shutdown = async (): Promise<void> => {
     console.log("\nShutting down...");
+    healthService?.stop();
     try {
       // Close bot session to release getUpdates lock
       await bot.api.close();
@@ -421,7 +430,7 @@ async function main(): Promise<void> {
     console.log("DEVELOPMENT MODE");
     console.log("─".repeat(50));
     console.log(`Bot: @${botInfo.username}`);
-    console.log(`RPC: ${config.solana.rpcUrl}`);
+    console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
     console.log(`Mode: Long Polling (local)`);
     if (dcaScheduler) {
       console.log(`DCA: ${config.dca.amountUsdc} USDC every ${formatInterval(config.dca.intervalMs)}`);
@@ -432,7 +441,7 @@ async function main(): Promise<void> {
     console.log("Press Ctrl+C to stop.\n");
   } else {
     console.log(`Bot @${botInfo.username} starting...`);
-    console.log(`RPC: ${config.solana.rpcUrl}`);
+    console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
   }
 
   // Start bot with retry on 409 Conflict
@@ -479,6 +488,18 @@ function formatInterval(ms: number): string {
   if (ms >= 3600000) return `${(ms / 3600000).toFixed(1)} hours`;
   if (ms >= 60000) return `${(ms / 60000).toFixed(1)} minutes`;
   return `${ms} ms`;
+}
+
+function maskUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.search) {
+      parsed.search = "?***";
+    }
+    return parsed.toString();
+  } catch {
+    return url.replace(/[?].*$/, "?***");
+  }
 }
 
 main().catch((error) => {

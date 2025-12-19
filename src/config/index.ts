@@ -1,4 +1,4 @@
-import { Config, DatabaseMode, PriceSource, AuthConfig } from "../types/config.js";
+import { Config, DatabaseMode, PriceSource, AuthConfig, HealthConfig } from "../types/config.js";
 
 /**
  * MED-004: Environment variables that are forbidden in production mode.
@@ -88,6 +88,12 @@ export function loadConfig(): Config {
     dbPath: getEnvOrDefault("AUTH_DATABASE_PATH", "./data/auth.db"),
   };
 
+  const health: HealthConfig = {
+    port: getEnvInt("HEALTH_PORT", 8000),
+    // Default to localhost for safety; set HEALTH_HOST=0.0.0.0 for container platforms
+    host: getEnvOrDefault("HEALTH_HOST", "127.0.0.1"),
+  };
+
   // Validate RPC URL uses HTTPS in production (LOW-002)
   const rpcUrl = getEnvOrDefault("SOLANA_RPC_URL", "https://api.devnet.solana.com");
   if (!isDev && !rpcUrl.startsWith("https://")) {
@@ -129,6 +135,7 @@ export function loadConfig(): Config {
       jupiterApiKey: process.env.JUPITER_API_KEY,
     },
     auth,
+    health,
     web: webEnabled
       ? {
           enabled: true,

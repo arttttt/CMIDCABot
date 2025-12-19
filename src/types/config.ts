@@ -21,6 +21,11 @@ export interface WebConfig {
   port: number;
 }
 
+export interface HealthConfig {
+  port: number;
+  host: string;
+}
+
 export interface DcaConfig {
   amountUsdc: number;
   intervalMs: number; // interval between purchases in milliseconds
@@ -57,6 +62,7 @@ export interface Config {
   encryption: EncryptionConfig;
   price: PriceConfig;
   auth: AuthConfig;
+  health: HealthConfig;
   web?: WebConfig;
   isDev: boolean;
 }
