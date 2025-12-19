@@ -109,6 +109,7 @@ Examples:
     }
 
     lines.push(
+      "/admin version - Show bot version",
       "",
       "User can be specified as @username or Telegram ID.",
       "Roles: user, admin",
@@ -116,6 +117,13 @@ Examples:
     );
 
     return { text: lines.join("\n") };
+  }
+
+  /**
+   * Format version info
+   */
+  formatVersion(version: string): UIResponse {
+    return { text: `CMI DCA Bot v${version}` };
   }
 
   /**

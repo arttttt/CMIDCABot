@@ -279,6 +279,7 @@ async function main(): Promise<void> {
       formatter: adminFormatter,
       userResolver,
       deleteUserData,
+      version: pkg.version,
       generateInvite: inviteFormatter ? generateInvite : undefined,
       inviteFormatter,
     };
