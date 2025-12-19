@@ -146,10 +146,13 @@ export class WebhookTransport implements BotTransport {
   }
 
   private async handleWebhookRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    console.log(`[Webhook] Incoming request from ${req.socket.remoteAddress}`);
+
     // Validate secret token if configured
     if (this.config.secret) {
       const receivedToken = req.headers["x-telegram-bot-api-secret-token"];
       if (receivedToken !== this.config.secret) {
+        console.log("[Webhook] Unauthorized: invalid secret token");
         res.writeHead(401);
         res.end("Unauthorized");
         return;
@@ -178,6 +181,8 @@ export class WebhookTransport implements BotTransport {
       return;
     }
 
+    console.log(`[Webhook] Update ${update.update_id} received`);
+
     // Process update through bot
     // Must respond quickly to Telegram (within 60 seconds)
     // so we acknowledge first then process
@@ -186,9 +191,11 @@ export class WebhookTransport implements BotTransport {
 
     // Process the update asynchronously
     try {
+      console.log(`[Webhook] Processing update ${update.update_id}...`);
       await this.bot.handleUpdate(update);
+      console.log(`[Webhook] Update ${update.update_id} processed`);
     } catch (error) {
-      console.error(`Failed to process webhook update ${update.update_id}:`, error);
+      console.error(`[Webhook] Failed to process update ${update.update_id}:`, error);
     }
   }
 
