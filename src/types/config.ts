@@ -2,6 +2,16 @@ export interface TelegramConfig {
   botToken: string;
 }
 
+export type TransportMode = "polling" | "webhook";
+
+export interface TransportConfig {
+  mode: TransportMode;
+  /** Webhook URL (required when mode is 'webhook') */
+  webhookUrl?: string;
+  /** Secret token for webhook validation (optional) */
+  webhookSecret?: string;
+}
+
 export interface SolanaConfig {
   rpcUrl: string;
 }
@@ -63,6 +73,7 @@ export interface Config {
   price: PriceConfig;
   auth: AuthConfig;
   health: HealthConfig;
+  transport: TransportConfig;
   web?: WebConfig;
   isDev: boolean;
 }

@@ -1,4 +1,4 @@
-import { Config, DatabaseMode, PriceSource, AuthConfig, HealthConfig } from "../types/config.js";
+import { Config, DatabaseMode, PriceSource, AuthConfig, HealthConfig, TransportConfig, TransportMode } from "../types/config.js";
 
 /**
  * MED-004: Environment variables that are forbidden in production mode.
@@ -94,6 +94,14 @@ export function loadConfig(): Config {
     host: getEnvOrDefault("HEALTH_HOST", "127.0.0.1"),
   };
 
+  // Transport configuration (polling or webhook)
+  const transportMode = getEnvOrDefault("BOT_TRANSPORT", "polling") as TransportMode;
+  const transport: TransportConfig = {
+    mode: transportMode,
+    webhookUrl: process.env.WEBHOOK_URL,
+    webhookSecret: process.env.WEBHOOK_SECRET,
+  };
+
   // Validate RPC URL uses HTTPS in production (LOW-002)
   const rpcUrl = getEnvOrDefault("SOLANA_RPC_URL", "https://api.devnet.solana.com");
   if (!isDev && !rpcUrl.startsWith("https://")) {
@@ -136,6 +144,7 @@ export function loadConfig(): Config {
     },
     auth,
     health,
+    transport,
     web: webEnabled
       ? {
           enabled: true,
