@@ -3,6 +3,40 @@
  * Implementations can be swapped based on environment
  */
 
+/**
+ * List of sensitive commands that should have their arguments redacted
+ * These commands may contain private keys, mnemonics, or other secrets
+ */
+const SENSITIVE_COMMANDS = ["/wallet import"];
+
+/**
+ * Redacts sensitive data from log messages
+ * Protects: mnemonics, private keys, and arguments to sensitive commands
+ */
+export function redactSensitiveData(text: string): string {
+  // Check if this is a sensitive command - redact everything after the command
+  for (const cmd of SENSITIVE_COMMANDS) {
+    if (text.toLowerCase().startsWith(cmd.toLowerCase())) {
+      return `${cmd} [REDACTED]`;
+    }
+  }
+
+  // Check for potential mnemonic (12 or 24 words, all lowercase letters)
+  const words = text.trim().split(/\s+/);
+  if ((words.length === 12 || words.length === 24) && words.every((w) => /^[a-z]+$/.test(w))) {
+    return "[REDACTED MNEMONIC]";
+  }
+
+  // Check for potential base58 private key (44-88 chars, base58 alphabet)
+  // Solana private keys are typically 64 or 88 characters in base58
+  const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{44,88}$/;
+  if (base58Regex.test(text.trim())) {
+    return "[REDACTED KEY]";
+  }
+
+  return text;
+}
+
 export interface Logger {
   debug(component: string, message: string, data?: Record<string, unknown>): void;
   info(component: string, message: string, data?: Record<string, unknown>): void;
