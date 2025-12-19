@@ -4,21 +4,14 @@
  */
 
 import { createServer, type Server } from "node:http";
-
-export interface HealthServerConfig {
-  port: number;
-  host?: string;
-}
+import type { HealthConfig } from "../types/config.js";
 
 export class HealthService {
   private server: Server | null = null;
-  private readonly config: Required<HealthServerConfig>;
+  private readonly config: HealthConfig;
 
-  constructor(config: HealthServerConfig) {
-    this.config = {
-      port: config.port,
-      host: config.host ?? "0.0.0.0",
-    };
+  constructor(config: HealthConfig) {
+    this.config = config;
   }
 
   start(): void {

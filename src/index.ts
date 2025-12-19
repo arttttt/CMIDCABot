@@ -382,8 +382,7 @@ async function main(): Promise<void> {
   // Start health check server in production for platforms like Koyeb
   let healthService: HealthService | undefined;
   if (!config.isDev) {
-    const healthPort = Number(process.env.PORT) || 8000;
-    healthService = new HealthService({ port: healthPort });
+    healthService = new HealthService(config.health);
     healthService.start();
   }
 
