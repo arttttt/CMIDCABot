@@ -92,6 +92,8 @@ export function loadConfig(): Config {
     port: getEnvInt("HEALTH_PORT", 8000),
     // Default to localhost for safety; set HEALTH_HOST=0.0.0.0 for container platforms
     host: getEnvOrDefault("HEALTH_HOST", "127.0.0.1"),
+    // Public URL for one-time seed phrase links
+    publicUrl: process.env.PUBLIC_URL || undefined,
   };
 
   // Transport configuration (polling or webhook)

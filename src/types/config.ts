@@ -34,6 +34,8 @@ export interface WebConfig {
 export interface HealthConfig {
   port: number;
   host: string;
+  /** Public URL for generating one-time seed links (optional) */
+  publicUrl?: string;
 }
 
 export interface DcaConfig {

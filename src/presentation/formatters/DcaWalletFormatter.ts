@@ -57,22 +57,23 @@ export class DcaWalletFormatter {
     }
   }
 
-  formatCreateWallet(result: CreateWalletResult): UIResponse {
+  formatCreateWallet(result: CreateWalletResult, seedTtlMinutes?: number): UIResponse {
     switch (result.type) {
       case "created": {
-        if (result.mnemonic) {
+        if (result.seedUrl) {
+          const ttl = seedTtlMinutes ?? 5;
           return {
             text:
               `**Wallet Created!**\n\n` +
               this.formatWalletInfo(result.wallet!) +
-              `\n\n**Recovery Phrase (tap to copy):**\n` +
-              `${Markdown.code(result.mnemonic)}\n\n` +
-              `**WARNING:** This phrase is shown ONLY ONCE!\n` +
-              `- Write it down and store securely offline\n` +
-              `- Anyone with this phrase can access your funds\n` +
-              `- Compatible with Phantom, Solflare, and other Solana wallets\n\n` +
-              `_Press the button below after saving to hide the phrase._`,
-            buttons: [[{ text: "✓ I saved the recovery phrase", callbackData: "mnemonic_saved" }]],
+              `\n\n**Recovery Phrase:**\n` +
+              `Your seed phrase is available via secure one-time link.\n\n` +
+              `**IMPORTANT:**\n` +
+              `- Link expires in ${ttl} minutes\n` +
+              `- Link works only ONCE\n` +
+              `- Write down the phrase and store offline\n` +
+              `- Compatible with Phantom, Solflare, and other Solana wallets`,
+            buttons: [[{ text: "View Recovery Phrase", url: result.seedUrl }]],
           };
         }
 

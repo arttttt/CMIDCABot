@@ -14,7 +14,13 @@ function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
   const keyboard = new InlineKeyboard();
   for (const row of response.buttons) {
     for (const button of row) {
-      keyboard.text(button.text, button.callbackData);
+      if (button.url) {
+        // URL button - opens external link
+        keyboard.url(button.text, button.url);
+      } else if (button.callbackData) {
+        // Callback button - triggers bot callback
+        keyboard.text(button.text, button.callbackData);
+      }
     }
     keyboard.row();
   }

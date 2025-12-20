@@ -79,6 +79,8 @@ import {
 } from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
 import { HealthService } from "./services/health.js";
+import { SecretStore } from "./services/SecretStore.js";
+import { SeedPageHandler } from "./presentation/web/SeedPageHandler.js";
 import type { MainDatabase, MockDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
@@ -131,6 +133,15 @@ async function main(): Promise<void> {
 
   // Initialize balance repository with caching
   const balanceRepository = new CachedBalanceRepository(solana);
+
+  // Initialize SecretStore for one-time seed phrase links (if PUBLIC_URL is configured)
+  let secretStore: SecretStore | undefined;
+  if (config.health.publicUrl) {
+    secretStore = new SecretStore(encryptionService, {
+      publicUrl: config.health.publicUrl,
+    });
+    secretStore.startCleanup();
+  }
 
   // Initialize PriceService (required for portfolio and swap operations)
   let priceService: PriceService | undefined;
@@ -220,7 +231,7 @@ async function main(): Promise<void> {
   // Create use cases
   const initUser = new InitUserUseCase(userRepository, dca);
   const showWallet = new ShowWalletUseCase(userRepository, walletHelper);
-  const createWallet = new CreateWalletUseCase(userRepository, solana, walletHelper);
+  const createWallet = new CreateWalletUseCase(userRepository, solana, walletHelper, secretStore);
   const importWallet = new ImportWalletUseCase(userRepository, solana, walletHelper);
   const deleteWallet = new DeleteWalletUseCase(userRepository, walletHelper);
   const exportWalletKey = new ExportWalletKeyUseCase(userRepository, encryptionService, config.dcaWallet);
@@ -380,6 +391,7 @@ async function main(): Promise<void> {
 
   // Cleanup function
   const cleanup = async (): Promise<void> => {
+    secretStore?.stopCleanup();
     dcaScheduler?.stop();
     await mockDb?.destroy();
     await mainDb?.destroy();
@@ -446,12 +458,30 @@ async function main(): Promise<void> {
   // Validate transport configuration
   validateTransportConfig(transportConfig);
 
-  // Start health check server in production for polling mode only
-  // Webhook mode handles health checks on its own server
+  // Start health/seed server
+  // - Production + polling: health checks + seed pages
+  // - Production + webhook: webhook transport handles its own server
+  // - Development: seed pages only (if PUBLIC_URL configured)
   let healthService: HealthService | undefined;
-  if (!config.isDev && config.transport.mode === "polling") {
-    healthService = new HealthService(config.health);
-    healthService.start();
+  const needsSeedServer = secretStore !== undefined;
+  const needsHealthServer = !config.isDev && config.transport.mode === "polling";
+
+  if (needsHealthServer || needsSeedServer) {
+    // In webhook mode, seed pages are not supported yet (would need integration with WebhookTransport)
+    if (config.transport.mode === "webhook" && needsSeedServer) {
+      console.warn("WARNING: Seed phrase links are not supported in webhook mode yet.");
+      console.warn("Consider using polling mode or implementing seed pages in WebhookTransport.");
+    } else {
+      healthService = new HealthService(config.health);
+
+      // Add seed page handler if SecretStore is configured
+      if (secretStore) {
+        const seedPageHandler = new SeedPageHandler(secretStore);
+        healthService.addHandler(seedPageHandler);
+      }
+
+      healthService.start();
+    }
   }
 
   // Get bot info first to have botUsername for invite links
@@ -509,7 +539,12 @@ async function main(): Promise<void> {
     if (dcaScheduler) {
       console.log(`DCA: ${config.dca.amountUsdc} USDC every ${formatInterval(config.dca.intervalMs)}`);
     }
-    console.log(`Prices: ${config.price.source === "jupiter" ? "Jupiter API (real-time)" : "Mock (static)"}`)
+    console.log(`Prices: ${config.price.source === "jupiter" ? "Jupiter API (real-time)" : "Mock (static)"}`);
+    if (secretStore) {
+      console.log(`Seed links: ${config.health.publicUrl}/seed/{token}`);
+    } else {
+      console.log("Seed links: DISABLED (set PUBLIC_URL to enable)");
+    }
     console.log("─".repeat(50));
     console.log("Bot is ready! Send /start in Telegram to test.");
     console.log("Press Ctrl+C to stop.\n");
