@@ -22,6 +22,19 @@ export function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Calculate exponential backoff delay.
+ *
+ * @param attempt - Current attempt number (0-based)
+ * @param baseDelayMs - Base delay in milliseconds
+ * @param maxDelayMs - Maximum delay cap (optional)
+ * @returns Delay in milliseconds
+ */
+export function calculateBackoff(attempt: number, baseDelayMs: number, maxDelayMs?: number): number {
+  const delay = baseDelayMs * Math.pow(2, attempt);
+  return maxDelayMs !== undefined ? Math.min(delay, maxDelayMs) : delay;
+}
+
+/**
  * Retry a function with exponential backoff.
  *
  * @param fn - Function to retry
@@ -51,7 +64,7 @@ export async function withRetry<T>(
       }
 
       // Exponential backoff
-      const delayMs = baseDelayMs * Math.pow(2, attempt);
+      const delayMs = calculateBackoff(attempt, baseDelayMs);
       logger.debug("Retry", "Retrying after error", {
         attempt: attempt + 1,
         maxRetries,
@@ -62,4 +75,81 @@ export async function withRetry<T>(
   }
 
   throw lastError;
+}
+
+/**
+ * Result of a poll operation
+ */
+export type PollResult<T> =
+  | { status: "success"; value: T }
+  | { status: "failure"; reason: string }
+  | { status: "timeout" };
+
+/**
+ * Options for pollWithBackoff
+ */
+export interface PollOptions {
+  /** Maximum time to wait in milliseconds */
+  timeoutMs: number;
+  /** Base delay between polls in milliseconds (default 1000) */
+  baseDelayMs?: number;
+  /** Maximum delay cap in milliseconds (default 4000) */
+  maxDelayMs?: number;
+}
+
+/**
+ * Poll a function with exponential backoff until a condition is met or timeout.
+ *
+ * Use this for waiting on async operations like transaction confirmations
+ * where the first checks should be fast but later checks can be spaced out.
+ *
+ * @param checkFn - Function that checks the status and returns a poll result
+ * @param options - Polling configuration
+ * @returns Final poll result
+ */
+export async function pollWithBackoff<T>(
+  checkFn: () => Promise<PollResult<T>>,
+  options: PollOptions,
+): Promise<PollResult<T>> {
+  const { timeoutMs, baseDelayMs = 1000, maxDelayMs = 4000 } = options;
+  const startTime = Date.now();
+  let attempt = 0;
+
+  while (Date.now() - startTime < timeoutMs) {
+    try {
+      const result = await checkFn();
+
+      if (result.status === "success" || result.status === "failure") {
+        return result;
+      }
+      // status === "timeout" means continue polling
+    } catch {
+      // Ignore errors and continue polling
+      // Transaction is already sent - need to wait for result
+    }
+
+    // Calculate remaining time to avoid overshooting timeout
+    const elapsed = Date.now() - startTime;
+    const remaining = timeoutMs - elapsed;
+
+    if (remaining <= 0) {
+      break;
+    }
+
+    // Exponential backoff with cap
+    const delayMs = Math.min(calculateBackoff(attempt, baseDelayMs, maxDelayMs), remaining);
+
+    if (attempt > 0) {
+      logger.debug("Poll", "Polling with backoff", {
+        attempt: attempt + 1,
+        delayMs,
+        elapsedMs: elapsed,
+      });
+    }
+
+    await sleep(delayMs);
+    attempt++;
+  }
+
+  return { status: "timeout" };
 }
