@@ -17,7 +17,7 @@ export class PortfolioFormatter {
 
       case "error":
         return {
-          text: `Failed to fetch portfolio: ${Markdown.escape(result.error ?? "Unknown error")}`,
+          text: "Failed to fetch portfolio. Please try again later.",
         };
 
       case "not_found":
