@@ -109,9 +109,76 @@ export interface Logger {
 
 /**
  * Debug logger for development mode
- * Outputs detailed logs to console with sensitive data masking
+ * Outputs detailed logs to console without masking for full debugging
  */
 export class DebugLogger implements Logger {
+  private formatTimestamp(): string {
+    return new Date().toISOString();
+  }
+
+  debug(component: string, message: string, data?: Record<string, unknown>): void {
+    const timestamp = this.formatTimestamp();
+    if (data) {
+      console.log(`[DEBUG] ${timestamp} [${component}] ${message}`, JSON.stringify(data, null, 2));
+    } else {
+      console.log(`[DEBUG] ${timestamp} [${component}] ${message}`);
+    }
+  }
+
+  info(component: string, message: string, data?: Record<string, unknown>): void {
+    const timestamp = this.formatTimestamp();
+    if (data) {
+      console.log(`[INFO] ${timestamp} [${component}] ${message}`, JSON.stringify(data, null, 2));
+    } else {
+      console.log(`[INFO] ${timestamp} [${component}] ${message}`);
+    }
+  }
+
+  warn(component: string, message: string, data?: Record<string, unknown>): void {
+    const timestamp = this.formatTimestamp();
+    if (data) {
+      console.log(`[WARN] ${timestamp} [${component}] ${message}`, JSON.stringify(data, null, 2));
+    } else {
+      console.log(`[WARN] ${timestamp} [${component}] ${message}`);
+    }
+  }
+
+  error(component: string, message: string, data?: Record<string, unknown>): void {
+    const timestamp = this.formatTimestamp();
+    if (data) {
+      console.error(`[ERROR] ${timestamp} [${component}] ${message}`, JSON.stringify(data, null, 2));
+    } else {
+      console.error(`[ERROR] ${timestamp} [${component}] ${message}`);
+    }
+  }
+
+  step(component: string, stepNumber: number, totalSteps: number, description: string): void {
+    const timestamp = this.formatTimestamp();
+    console.log(`[STEP] ${timestamp} [${component}] (${stepNumber}/${totalSteps}) ${description}`);
+  }
+
+  api(component: string, method: string, url: string, status?: number, duration?: number): void {
+    const timestamp = this.formatTimestamp();
+    const statusStr = status ? ` → ${status}` : "";
+    const durationStr = duration ? ` (${duration}ms)` : "";
+    console.log(`[API] ${timestamp} [${component}] ${method} ${url}${statusStr}${durationStr}`);
+  }
+
+  tx(component: string, event: string, data?: Record<string, unknown>): void {
+    const timestamp = this.formatTimestamp();
+    if (data) {
+      console.log(`[TX] ${timestamp} [${component}] ${event}`, JSON.stringify(data, null, 2));
+    } else {
+      console.log(`[TX] ${timestamp} [${component}] ${event}`);
+    }
+  }
+}
+
+/**
+ * Production logger with sensitive data masking
+ * Outputs logs with masked user identifiers for security
+ */
+export class ProductionLogger implements Logger {
   private formatTimestamp(): string {
     return new Date().toISOString();
   }
