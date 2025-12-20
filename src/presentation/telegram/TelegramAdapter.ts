@@ -8,9 +8,6 @@ import { ProtocolHandler } from "../protocol/index.js";
 import { UIResponse, UIStreamItem } from "../protocol/types.js";
 import { logger, LogSanitizer } from "../../services/logger.js";
 
-/** Minimum interval between edit operations to prevent race conditions (ms) */
-const EDIT_THROTTLE_MS = 150;
-
 function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
   if (!response.buttons?.length) return undefined;
 
@@ -26,7 +23,7 @@ function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
 
 /**
  * Handle streaming responses from protocol handler
- * - 'edit' mode: Update the status message (throttled to prevent race conditions)
+ * - 'edit' mode: Update the status message
  * - 'new' mode: Send a new message (preserving previous)
  * - 'final' mode: Final result, update or send based on context
  *
@@ -37,7 +34,6 @@ async function handleStreamingResponse(
   stream: AsyncGenerator<UIStreamItem, void, undefined>,
 ): Promise<void> {
   let statusMessageId: number | undefined;
-  let lastEditTime = 0;
   let isFirstItem = true;
   const chatId = ctx.chat?.id;
 
@@ -66,15 +62,6 @@ async function handleStreamingResponse(
 
     switch (item.mode) {
       case "edit": {
-        // Throttle edit operations to prevent race conditions
-        const now = Date.now();
-        const timeSinceLastEdit = now - lastEditTime;
-        if (timeSinceLastEdit < EDIT_THROTTLE_MS) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, EDIT_THROTTLE_MS - timeSinceLastEdit),
-          );
-        }
-
         // Update status message (or create if first)
         if (statusMessageId) {
           try {
@@ -82,7 +69,6 @@ async function handleStreamingResponse(
               parse_mode: "Markdown",
               reply_markup: keyboard,
             });
-            lastEditTime = Date.now();
           } catch (error) {
             // Edit might fail if content is the same - ignore
             logger.debug("TelegramBot", "Edit message failed", {
