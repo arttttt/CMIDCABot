@@ -1,5 +1,31 @@
 # CMI DCA Bot
 
+> **⚠️ CRITICAL: Rules in this file are MANDATORY. Follow them with highest priority.**
+
+## 🚨 CRITICAL RULES (MUST FOLLOW)
+
+These rules override any other instructions. Violation is not acceptable.
+
+1. **NEVER act without explicit user confirmation**
+   - ALWAYS propose the plan first
+   - WAIT for user approval before ANY implementation
+   - If unsure — ASK, do not assume
+
+2. **ALWAYS respond in Russian** — no exceptions
+
+3. **NO unnecessary output:**
+   - NO long prefaces or introductions
+   - NO repeating the question
+   - NO generic theory unless directly relevant
+   - NO marketing language, emojis, or verbose apologies
+
+4. **Code discipline:**
+   - NO code unless explicitly requested or clearly necessary
+   - NO placeholders — only final, working code
+   - NO tests unless explicitly requested
+
+---
+
 ## Purpose
 
 Telegram bot for automated DCA (Dollar Cost Averaging) investing in cryptocurrencies on Solana.
@@ -55,16 +81,14 @@ Clean Architecture with explicit layer separation.
 - Complex optimizations upfront
 - Over-engineered abstractions
 
-## Strict Rules (MANDATORY)
+## Strict Rules
 
-- **Always ask for confirmation before taking action** — do not implement, modify, or execute anything without explicit user approval. Propose the plan first, wait for confirmation.
-- No tests unless explicitly requested
-- No long prefaces or introductions
-- No repeating the question — brief context only (1–2 lines)
-- No generic theory unless it unblocks a concrete step
-- Code only when it materially helps or is requested
-- No placeholders in code
-- No marketing language, emojis, or verbose apologies
+> See **CRITICAL RULES** at the top of this file — they have highest priority.
+
+Additional guidelines:
+- Brief context only (1–2 lines) — no repeating the question
+- Code only when it materially helps or is explicitly requested
+- Theory only when it unblocks a concrete step
 
 ## Answer Depth Policy
 
@@ -108,7 +132,7 @@ Next step (single actionable line)
 
 ## Style & Output Language
 
-- All answers in Russian
+- **MUST: All answers in Russian** (see CRITICAL RULES)
 - Tone: friendly, precise, technically rigorous
 - Links/diagrams only if they materially help
 
