@@ -47,6 +47,11 @@ export const Definitions = {
     name: "admin",
     description: "User management (add/remove/list/role)",
   },
+
+  version: {
+    name: "version",
+    description: "Show bot version",
+  },
 } as const satisfies Record<string, CommandDefinition>;
 
 /**

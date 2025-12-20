@@ -136,6 +136,11 @@ export interface StartCommandDeps {
   inviteFormatter?: InviteFormatter;
 }
 
+export interface VersionCommandDeps {
+  version: string;
+  formatter: AdminFormatter;
+}
+
 // ============================================================
 // Wallet subcommand factories
 // ============================================================
@@ -579,15 +584,6 @@ function createAdminRoleCommand(deps: AdminCommandDeps): Command {
   };
 }
 
-function createAdminVersionCommand(deps: AdminCommandDeps): Command {
-  return {
-    definition: { name: "version", description: "Show bot version" },
-    handler: async () => {
-      return deps.formatter.formatVersion(deps.version);
-    },
-  };
-}
-
 function createAdminInviteCommand(deps: AdminCommandDeps): Command | undefined {
   if (!deps.generateInvite || !deps.inviteFormatter) {
     return undefined;
@@ -621,7 +617,6 @@ export function createAdminCommand(deps: AdminCommandDeps): Command {
     ["remove", createAdminRemoveCommand(deps)],
     ["list", createAdminListCommand(deps)],
     ["role", createAdminRoleCommand(deps)],
-    ["version", createAdminVersionCommand(deps)],
   ]);
 
   // Add invite command if dependencies are available
@@ -676,6 +671,20 @@ export function createStartCommand(deps: StartCommandDeps): Command {
       text += "Use /help to see available commands.";
 
       return { text };
+    },
+  };
+}
+
+// ============================================================
+// Version command factory
+// ============================================================
+
+export function createVersionCommand(deps: VersionCommandDeps): Command {
+  return {
+    definition: Definitions.version,
+    requiredRole: "admin",
+    handler: async () => {
+      return deps.formatter.formatVersion(deps.version);
     },
   };
 }

@@ -298,6 +298,12 @@ async function main(): Promise<void> {
       inviteFormatter,
     };
 
+    // Version command deps (shared between dev and prod)
+    const versionDeps = {
+      version: pkg.version,
+      formatter: adminFormatter,
+    };
+
     // Build command registry based on mode
     let registry: CommandRegistry;
 
@@ -339,6 +345,7 @@ async function main(): Promise<void> {
           progressFormatter,
         },
         admin: adminDeps,
+        version: versionDeps,
       };
       registry = new DevCommandRegistry(deps);
     } else {
@@ -360,6 +367,7 @@ async function main(): Promise<void> {
           progressFormatter,
         },
         admin: adminDeps,
+        version: versionDeps,
       };
       registry = new ProdCommandRegistry(deps);
     }

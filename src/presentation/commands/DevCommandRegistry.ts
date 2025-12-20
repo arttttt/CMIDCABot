@@ -14,6 +14,7 @@ import {
   createSwapCommand,
   createAdminCommand,
   createStartCommand,
+  createVersionCommand,
   WalletCommandDeps,
   DcaCommandDeps,
   PortfolioCommandDeps,
@@ -21,6 +22,7 @@ import {
   SwapCommandDeps,
   AdminCommandDeps,
   StartCommandDeps,
+  VersionCommandDeps,
 } from "./handlers.js";
 import { prefixCallbacks } from "./router.js";
 
@@ -35,6 +37,7 @@ export interface DevCommandRegistryDeps {
   prices: PricesCommandDeps;
   swap: SwapCommandDeps;
   admin: AdminCommandDeps;
+  version: VersionCommandDeps;
 }
 
 /**
@@ -60,6 +63,7 @@ export class DevCommandRegistry implements CommandRegistry {
       ["prices", createPricesCommand(deps.prices)],
       ["swap", createSwapCommand(deps.swap)],
       ["admin", createAdminCommand(deps.admin)],
+      ["version", createVersionCommand(deps.version)],
     ]);
     prefixCallbacks(this.commands);
   }

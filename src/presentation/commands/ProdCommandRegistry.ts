@@ -6,7 +6,7 @@
  */
 
 import { CommandRegistry, Command } from "./types.js";
-import { createWalletCommand, createAdminCommand, createStartCommand, createPortfolioCommand, WalletCommandDeps, AdminCommandDeps, StartCommandDeps, PortfolioCommandDeps } from "./handlers.js";
+import { createWalletCommand, createAdminCommand, createStartCommand, createPortfolioCommand, createVersionCommand, WalletCommandDeps, AdminCommandDeps, StartCommandDeps, PortfolioCommandDeps, VersionCommandDeps } from "./handlers.js";
 import { prefixCallbacks } from "./router.js";
 
 /**
@@ -17,6 +17,7 @@ export interface ProdCommandRegistryDeps {
   wallet: WalletCommandDeps;
   portfolio: PortfolioCommandDeps;
   admin: AdminCommandDeps;
+  version: VersionCommandDeps;
 }
 
 /**
@@ -38,6 +39,7 @@ export class ProdCommandRegistry implements CommandRegistry {
       ["wallet", createWalletCommand(deps.wallet)],
       ["portfolio", createPortfolioCommand(deps.portfolio)],
       ["admin", createAdminCommand(deps.admin)],
+      ["version", createVersionCommand(deps.version)],
     ]);
     prefixCallbacks(this.commands);
   }

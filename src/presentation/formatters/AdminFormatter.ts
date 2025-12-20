@@ -110,7 +110,6 @@ Examples:
     }
 
     lines.push(
-      "/admin version - Show bot version",
       "",
       "User can be specified as @username or Telegram ID.",
       "Roles: user, admin",
