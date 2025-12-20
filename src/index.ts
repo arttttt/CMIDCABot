@@ -136,9 +136,6 @@ async function main(): Promise<void> {
 
   if (config.price.jupiterApiKey) {
     priceService = new PriceService(config.price.jupiterApiKey);
-    console.log("[init] PriceService initialized with JUPITER_API_KEY");
-  } else {
-    console.warn("[init] JUPITER_API_KEY not set - portfolio/swap features disabled");
   }
 
   // Initialize JupiterSwapService (for quote/swap operations, requires API key)
@@ -260,8 +257,6 @@ async function main(): Promise<void> {
       )
     : undefined;
 
-  console.log("[init] getPortfolioStatus:", getPortfolioStatus ? "created" : "undefined (priceService missing)");
-
   // Create invite use cases
   const generateInvite = new GenerateInviteUseCase(inviteTokenRepository, authRepository);
   const activateInvite = new ActivateInviteUseCase(inviteTokenRepository, authRepository);
@@ -341,7 +336,6 @@ async function main(): Promise<void> {
         },
         admin: adminDeps,
       };
-      console.log("[init] DevCommandRegistry: getPortfolioStatus =", deps.portfolio.getPortfolioStatus ? "present" : "undefined");
       registry = new DevCommandRegistry(deps);
     } else {
       const deps: ProdCommandRegistryDeps = {
@@ -362,7 +356,6 @@ async function main(): Promise<void> {
         },
         admin: adminDeps,
       };
-      console.log("[init] ProdCommandRegistry: getPortfolioStatus =", deps.portfolio.getPortfolioStatus ? "present" : "undefined");
       registry = new ProdCommandRegistry(deps);
     }
 
