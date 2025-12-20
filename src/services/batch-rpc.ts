@@ -7,6 +7,8 @@
  * - Rate limit consumption
  * - Network overhead
  *
+ * Supports selective retry: if some calls fail, only failed calls are retried.
+ *
  * @see https://www.jsonrpc.org/specification#batch
  */
 
@@ -35,7 +37,7 @@ interface JsonRpcSuccessResponse<T = unknown> {
 /**
  * JSON-RPC 2.0 error object
  */
-interface JsonRpcError {
+export interface JsonRpcError {
   code: number;
   message: string;
   data?: unknown;
@@ -64,6 +66,13 @@ export interface RpcCall {
 }
 
 /**
+ * Result of a single call in batch
+ */
+export type BatchCallResult<T> =
+  | { success: true; value: T }
+  | { success: false; error: JsonRpcError };
+
+/**
  * Check if response is an error
  */
 function isErrorResponse(response: JsonRpcResponse): response is JsonRpcErrorResponse {
@@ -74,34 +83,88 @@ function isErrorResponse(response: JsonRpcResponse): response is JsonRpcErrorRes
  * Batch RPC Client for Solana
  *
  * Sends multiple RPC calls in a single HTTP request using JSON-RPC 2.0 batch format.
- * All calls must succeed — if any call fails, the entire batch throws an error.
+ * Supports selective retry for failed calls.
  */
 export class BatchRpcClient {
   constructor(private rpcUrl: string) {}
 
   /**
-   * Execute multiple RPC calls in a single batch request.
+   * Execute multiple RPC calls in a single batch request with selective retry.
+   *
+   * Strategy:
+   * 1. Execute all calls in one batch
+   * 2. If some fail, retry only failed calls
+   * 3. Merge results
+   * 4. If still failures after retry, throw error
    *
    * @param calls - Array of RPC calls to execute
+   * @param maxRetries - Maximum retries for failed calls (default 2)
    * @returns Array of results in the same order as input calls
-   * @throws Error if HTTP request fails or any RPC call in batch returns an error
-   *
-   * @example
-   * ```typescript
-   * const [balance, tokenAccounts] = await client.batch<[
-   *   { value: bigint },
-   *   { value: TokenAccount[] }
-   * ]>([
-   *   { method: "getBalance", params: [address] },
-   *   { method: "getTokenAccountsByOwner", params: [address, { mint }, { encoding: "jsonParsed" }] },
-   * ]);
-   * ```
+   * @throws Error if any call still fails after retries
    */
-  async batch<T extends unknown[]>(calls: RpcCall[]): Promise<T> {
+  async batch<T extends unknown[]>(
+    calls: RpcCall[],
+    maxRetries: number = 2,
+  ): Promise<T> {
     if (calls.length === 0) {
       return [] as unknown as T;
     }
 
+    // Execute initial batch
+    let results = await this.executeBatch(calls);
+
+    // Retry failed calls
+    for (let retry = 0; retry < maxRetries; retry++) {
+      const failedIndices = this.getFailedIndices(results);
+
+      if (failedIndices.length === 0) {
+        break; // All succeeded
+      }
+
+      logger.debug("BatchRPC", "Retrying failed calls", {
+        retry: retry + 1,
+        maxRetries,
+        failedCount: failedIndices.length,
+        failedMethods: failedIndices.map(i => calls[i].method),
+      });
+
+      // Build retry batch with only failed calls
+      const retryCalls = failedIndices.map(i => calls[i]);
+      const retryResults = await this.executeBatch(retryCalls);
+
+      // Merge retry results back
+      results = this.mergeResults(results, failedIndices, retryResults);
+    }
+
+    // Check for remaining failures
+    const remainingFailures = this.getFailedIndices(results);
+    if (remainingFailures.length > 0) {
+      const failedMethods = remainingFailures.map(i => {
+        const result = results[i];
+        const method = calls[i].method;
+        if (!result.success) {
+          return `${method}: [${result.error.code}] ${result.error.message}`;
+        }
+        return method;
+      });
+
+      throw new Error(`Batch RPC failed after ${maxRetries} retries: ${failedMethods.join(", ")}`);
+    }
+
+    // Extract values from successful results
+    return results.map(r => {
+      if (!r.success) {
+        throw new Error("Unexpected failure after retry check");
+      }
+      return r.value;
+    }) as T;
+  }
+
+  /**
+   * Execute a single batch request (no retry logic).
+   * Returns results with success/error information for each call.
+   */
+  private async executeBatch(calls: RpcCall[]): Promise<BatchCallResult<unknown>[]> {
     // Build JSON-RPC 2.0 batch request
     const requests: JsonRpcRequest[] = calls.map((call, index) => ({
       jsonrpc: "2.0" as const,
@@ -110,7 +173,7 @@ export class BatchRpcClient {
       params: call.params,
     }));
 
-    // Execute with retry on rate limit
+    // Execute with retry on HTTP-level errors (rate limit)
     return withRetry(async () => {
       const startTime = Date.now();
 
@@ -132,40 +195,74 @@ export class BatchRpcClient {
 
       const responses = (await response.json()) as JsonRpcResponse[];
 
-      logger.debug("BatchRPC", "Batch request completed", {
+      logger.debug("BatchRPC", "Batch executed", {
         calls: calls.length,
         duration: `${duration}ms`,
       });
 
       // Map responses back to input order using id field
-      // Note: JSON-RPC 2.0 spec allows responses in any order
       const resultsMap = new Map<number, JsonRpcResponse>();
       for (const resp of responses) {
         resultsMap.set(resp.id, resp);
       }
 
-      // Build results array in original order, fail on any error
-      const results: unknown[] = [];
+      // Build results array in original order
+      const results: BatchCallResult<unknown>[] = [];
 
       for (let i = 0; i < calls.length; i++) {
         const resp = resultsMap.get(i);
 
         if (!resp) {
-          throw new Error(
-            `Batch RPC: missing response for request ${i} (${calls[i].method})`
-          );
+          results.push({
+            success: false,
+            error: {
+              code: -32603,
+              message: `Missing response for request ${i} (${calls[i].method})`,
+            },
+          });
+          continue;
         }
 
         if (isErrorResponse(resp)) {
-          throw new Error(
-            `Batch RPC: ${calls[i].method} failed: [${resp.error.code}] ${resp.error.message}`
-          );
+          results.push({
+            success: false,
+            error: resp.error,
+          });
+        } else {
+          results.push({
+            success: true,
+            value: resp.result,
+          });
         }
-
-        results.push(resp.result);
       }
 
-      return results as T;
+      return results;
     });
+  }
+
+  /**
+   * Get indices of failed calls
+   */
+  private getFailedIndices(results: BatchCallResult<unknown>[]): number[] {
+    return results
+      .map((r, i) => (!r.success ? i : -1))
+      .filter(i => i !== -1);
+  }
+
+  /**
+   * Merge retry results back into original results array
+   */
+  private mergeResults(
+    original: BatchCallResult<unknown>[],
+    failedIndices: number[],
+    retryResults: BatchCallResult<unknown>[],
+  ): BatchCallResult<unknown>[] {
+    const merged = [...original];
+
+    for (let i = 0; i < failedIndices.length; i++) {
+      merged[failedIndices[i]] = retryResults[i];
+    }
+
+    return merged;
   }
 }
