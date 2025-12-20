@@ -136,6 +136,9 @@ async function main(): Promise<void> {
 
   if (config.price.jupiterApiKey) {
     priceService = new PriceService(config.price.jupiterApiKey);
+    console.log("[init] PriceService initialized with JUPITER_API_KEY");
+  } else {
+    console.warn("[init] JUPITER_API_KEY not set - portfolio/swap features disabled");
   }
 
   // Initialize JupiterSwapService (for quote/swap operations, requires API key)
