@@ -2,12 +2,12 @@
  * SwapFormatter - Formats swap execution results for display
  */
 
-import { ExecuteSwapResult } from "../../domain/usecases/ExecuteSwapUseCase.js";
+import { SwapResult } from "../../domain/models/SwapStep.js";
 import { UIResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
 export class SwapFormatter {
-  format(result: ExecuteSwapResult): UIResponse {
+  format(result: SwapResult): UIResponse {
     if (result.status === "unavailable") {
       return { text: `Swap unavailable (requires ${Markdown.code("JUPITER_API_KEY")})` };
     }

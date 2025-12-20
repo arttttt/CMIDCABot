@@ -9,7 +9,7 @@
  * 4. Wait for confirmation
  * 5. Return result with signature
  *
- * Supports streaming progress via executeWithProgress() AsyncGenerator.
+ * Streams progress via execute() AsyncGenerator.
  */
 
 import { JupiterSwapService, SwapQuote } from "../../services/jupiter-swap.js";
@@ -21,35 +21,7 @@ import { BalanceRepository } from "../repositories/BalanceRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../services/logger.js";
 import type { KeyEncryptionService } from "../../services/encryption.js";
-import {
-  OperationState,
-  SwapStep,
-  SwapSteps,
-  progress,
-  completed,
-} from "../models/index.js";
-
-export type ExecuteSwapResult =
-  | {
-      status: "success";
-      quote: SwapQuote;
-      signature: string;
-      confirmed: boolean;
-    }
-  | { status: "unavailable" }
-  | { status: "no_wallet" }
-  | { status: "invalid_amount"; message: string }
-  | { status: "invalid_asset"; message: string }
-  | { status: "insufficient_balance"; required: number; available: number }
-  | { status: "rpc_error"; message: string }
-  | { status: "quote_error"; message: string }
-  | { status: "build_error"; message: string }
-  | { status: "send_error"; message: string };
-
-/**
- * Type alias for swap operation state stream
- */
-export type SwapState = OperationState<SwapStep, ExecuteSwapResult>;
+import { SwapStep, SwapSteps } from "../models/index.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
@@ -65,38 +37,17 @@ export class ExecuteSwapUseCase {
   ) {}
 
   /**
-   * Execute USDC → asset swap (non-streaming)
-   * @param telegramId User's Telegram ID
-   * @param amountUsdc Amount of USDC to spend
-   * @param asset Target asset (BTC, ETH, SOL). Defaults to SOL.
-   */
-  async execute(
-    telegramId: number,
-    amountUsdc: number,
-    asset: string = "SOL",
-  ): Promise<ExecuteSwapResult> {
-    // Consume the generator and return final result
-    let result: ExecuteSwapResult = { status: "unavailable" };
-    for await (const state of this.executeWithProgress(telegramId, amountUsdc, asset)) {
-      if (state.type === "completed") {
-        result = state.result;
-      }
-    }
-    return result;
-  }
-
-  /**
    * Execute USDC → asset swap with streaming progress
    * @param telegramId User's Telegram ID
    * @param amountUsdc Amount of USDC to spend
    * @param asset Target asset (BTC, ETH, SOL). Defaults to SOL.
-   * @yields SwapState - progress updates and final result
+   * @yields SwapStep - progress updates and final result
    */
-  async *executeWithProgress(
+  async *execute(
     telegramId: number,
     amountUsdc: number,
     asset: string = "SOL",
-  ): AsyncGenerator<SwapState> {
+  ): AsyncGenerator<SwapStep> {
     logger.info("ExecuteSwap", "Starting swap execution", {
       telegramId,
       amountUsdc,
@@ -106,13 +57,13 @@ export class ExecuteSwapUseCase {
     // Check if Jupiter is available
     if (!this.jupiterSwap) {
       logger.warn("ExecuteSwap", "Jupiter service unavailable");
-      yield completed({ status: "unavailable" });
+      yield SwapSteps.completed({ status: "unavailable" });
       return;
     }
 
     // Validate amount
     if (isNaN(amountUsdc) || amountUsdc <= 0) {
-      yield completed({
+      yield SwapSteps.completed({
         status: "invalid_amount",
         message: "Amount must be a positive number",
       });
@@ -120,7 +71,7 @@ export class ExecuteSwapUseCase {
     }
 
     if (amountUsdc < 0.01) {
-      yield completed({
+      yield SwapSteps.completed({
         status: "invalid_amount",
         message: "Minimum amount is 0.01 USDC",
       });
@@ -130,7 +81,7 @@ export class ExecuteSwapUseCase {
     // Validate asset
     const assetUpper = asset.toUpperCase() as AssetSymbol;
     if (!SUPPORTED_ASSETS.includes(assetUpper)) {
-      yield completed({
+      yield SwapSteps.completed({
         status: "invalid_asset",
         message: `Unsupported asset: ${asset}. Supported: ${SUPPORTED_ASSETS.join(", ")}`,
       });
@@ -156,7 +107,7 @@ export class ExecuteSwapUseCase {
     }
 
     if (!walletAddress || (!useDevKey && !encryptedPrivateKey)) {
-      yield completed({ status: "no_wallet" });
+      yield SwapSteps.completed({ status: "no_wallet" });
       return;
     }
 
@@ -167,7 +118,7 @@ export class ExecuteSwapUseCase {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Failed to fetch USDC balance", { error: message });
-      yield completed({ status: "rpc_error", message });
+      yield SwapSteps.completed({ status: "rpc_error", message });
       return;
     }
 
@@ -176,7 +127,7 @@ export class ExecuteSwapUseCase {
         required: amountUsdc,
         available: usdcBalance,
       });
-      yield completed({
+      yield SwapSteps.completed({
         status: "insufficient_balance",
         required: amountUsdc,
         available: usdcBalance,
@@ -187,7 +138,7 @@ export class ExecuteSwapUseCase {
     const outputMint = TOKEN_MINTS[assetUpper];
 
     // Step 1: Get quote
-    yield progress(SwapSteps.gettingQuote());
+    yield SwapSteps.gettingQuote();
     logger.step("ExecuteSwap", 1, 3, "Getting quote from Jupiter...");
 
     let quote: SwapQuote;
@@ -196,25 +147,23 @@ export class ExecuteSwapUseCase {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Quote failed", { error: message });
-      yield completed({ status: "quote_error", message });
+      yield SwapSteps.completed({ status: "quote_error", message });
       return;
     }
 
     // Emit quote received with data
-    yield progress(
-      SwapSteps.quoteReceived({
-        inputAmount: quote.inputAmount,
-        inputSymbol: quote.inputSymbol,
-        outputAmount: quote.outputAmount,
-        outputSymbol: quote.outputSymbol,
-        priceImpactPct: quote.priceImpactPct,
-        slippageBps: quote.slippageBps,
-        route: quote.route,
-      }),
-    );
+    yield SwapSteps.quoteReceived({
+      inputAmount: quote.inputAmount,
+      inputSymbol: quote.inputSymbol,
+      outputAmount: quote.outputAmount,
+      outputSymbol: quote.outputSymbol,
+      priceImpactPct: quote.priceImpactPct,
+      slippageBps: quote.slippageBps,
+      route: quote.route,
+    });
 
     // Step 2: Build transaction
-    yield progress(SwapSteps.buildingTransaction());
+    yield SwapSteps.buildingTransaction();
     logger.step("ExecuteSwap", 2, 3, "Building transaction...");
 
     let transactionBase64: string;
@@ -224,12 +173,12 @@ export class ExecuteSwapUseCase {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Build failed", { error: message });
-      yield completed({ status: "build_error", message });
+      yield SwapSteps.completed({ status: "build_error", message });
       return;
     }
 
     // Step 3: Sign and send transaction
-    yield progress(SwapSteps.sendingTransaction());
+    yield SwapSteps.sendingTransaction();
     logger.step("ExecuteSwap", 3, 3, "Signing and sending transaction...");
 
     let sendResult: SendTransactionResult;
@@ -251,7 +200,7 @@ export class ExecuteSwapUseCase {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Send failed", { error: message });
-      yield completed({ status: "send_error", message });
+      yield SwapSteps.completed({ status: "send_error", message });
       return;
     }
 
@@ -259,7 +208,7 @@ export class ExecuteSwapUseCase {
       logger.error("ExecuteSwap", "Transaction failed", {
         error: sendResult.error,
       });
-      yield completed({
+      yield SwapSteps.completed({
         status: "send_error",
         message: sendResult.error ?? "Transaction failed",
       });
@@ -293,7 +242,7 @@ export class ExecuteSwapUseCase {
       outputAmount: `${quote.outputAmount} ${quote.outputSymbol}`,
     });
 
-    yield completed({
+    yield SwapSteps.completed({
       status: "success",
       quote,
       signature: sendResult.signature,

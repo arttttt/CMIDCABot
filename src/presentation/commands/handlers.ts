@@ -289,7 +289,13 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
       if (amount === null) {
         return deps.purchaseFormatter.formatUsage();
       }
-      const result = await deps.executePurchase.execute(telegramId, amount);
+      // Collect result from streaming execute
+      let result: import("../../domain/usecases/types.js").PurchaseResult = { type: "unavailable" };
+      for await (const step of deps.executePurchase.execute(telegramId, amount)) {
+        if (step.step === "completed") {
+          result = step.result;
+        }
+      }
       return deps.purchaseFormatter.format(result);
     },
     // Streaming handler for progress updates
@@ -313,16 +319,15 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
       }
 
       // Stream progress from use case
-      for await (const state of deps.executePurchase.executeWithProgress(telegramId, amount)) {
-        if (state.type === "progress") {
-          const formatted = deps.progressFormatter.formatPurchaseStep(state.step);
-          yield { response: formatted.response, mode: formatted.mode };
-        } else {
-          // Completed - format final result
+      for await (const step of deps.executePurchase.execute(telegramId, amount)) {
+        if (step.step === "completed") {
           yield {
-            response: deps.purchaseFormatter.format(state.result),
+            response: deps.purchaseFormatter.format(step.result),
             mode: "final",
           };
+        } else {
+          const formatted = deps.progressFormatter.formatPurchaseStep(step);
+          yield { response: formatted.response, mode: formatted.mode };
         }
       }
     },
@@ -422,7 +427,13 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
         return deps.swapFormatter.formatUsage();
       }
       const asset = args[1] || "SOL";
-      const result = await deps.executeSwap.execute(telegramId, amount, asset);
+      // Collect result from streaming execute
+      let result: import("../../domain/models/SwapStep.js").SwapResult = { status: "unavailable" };
+      for await (const step of deps.executeSwap.execute(telegramId, amount, asset)) {
+        if (step.step === "completed") {
+          result = step.result;
+        }
+      }
       return deps.swapFormatter.format(result);
     },
     // Streaming handler for progress updates
@@ -440,20 +451,15 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
       const asset = args[1] || "SOL";
 
       // Stream progress from use case
-      for await (const state of deps.executeSwap.executeWithProgress(
-        telegramId,
-        amount,
-        asset,
-      )) {
-        if (state.type === "progress") {
-          const formatted = deps.progressFormatter.formatSwapStep(state.step);
-          yield { response: formatted.response, mode: formatted.mode };
-        } else {
-          // Completed - format final result
+      for await (const step of deps.executeSwap.execute(telegramId, amount, asset)) {
+        if (step.step === "completed") {
           yield {
-            response: deps.swapFormatter.format(state.result),
+            response: deps.swapFormatter.format(step.result),
             mode: "final",
           };
+        } else {
+          const formatted = deps.progressFormatter.formatSwapStep(step);
+          yield { response: formatted.response, mode: formatted.mode };
         }
       }
     },

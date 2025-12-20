@@ -50,6 +50,10 @@ export class ProgressFormatter {
           response: { text: "Signing and sending transaction..." },
           mode: "edit",
         };
+
+      case "completed":
+        // Completed steps are formatted by SwapFormatter, not ProgressFormatter
+        throw new Error("ProgressFormatter should not receive completed step");
     }
   }
 
@@ -72,6 +76,10 @@ export class ProgressFormatter {
 
       case "swap":
         return this.formatSwapStep(step.swapStep);
+
+      case "completed":
+        // Completed steps are formatted by PurchaseFormatter, not ProgressFormatter
+        throw new Error("ProgressFormatter should not receive completed step");
     }
   }
 

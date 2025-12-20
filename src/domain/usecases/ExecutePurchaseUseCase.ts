@@ -2,7 +2,7 @@
  * Execute purchase use case - real swap via Jupiter
  * Automatically selects the asset furthest below target allocation
  *
- * Supports streaming progress via executeWithProgress() AsyncGenerator.
+ * Streams progress via execute() AsyncGenerator.
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
@@ -11,20 +11,10 @@ import { SolanaService } from "../../services/solana.js";
 import { PriceService } from "../../services/price.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { PurchaseResult } from "./types.js";
-import { ExecuteSwapUseCase, ExecuteSwapResult } from "./ExecuteSwapUseCase.js";
+import { ExecuteSwapUseCase } from "./ExecuteSwapUseCase.js";
+import { SwapResult } from "../models/SwapStep.js";
 import { logger } from "../../services/logger.js";
-import {
-  OperationState,
-  PurchaseStep,
-  PurchaseSteps,
-  progress,
-  completed,
-} from "../models/index.js";
-
-/**
- * Type alias for purchase operation state stream
- */
-export type PurchaseState = OperationState<PurchaseStep, PurchaseResult>;
+import { PurchaseStep, PurchaseSteps } from "../models/index.js";
 
 /**
  * Internal type for asset selection result
@@ -47,29 +37,15 @@ export class ExecutePurchaseUseCase {
   ) {}
 
   /**
-   * Execute purchase (non-streaming)
-   */
-  async execute(telegramId: number, amountUsdc: number): Promise<PurchaseResult> {
-    // Consume the generator and return final result
-    let result: PurchaseResult = { type: "unavailable" };
-    for await (const state of this.executeWithProgress(telegramId, amountUsdc)) {
-      if (state.type === "completed") {
-        result = state.result;
-      }
-    }
-    return result;
-  }
-
-  /**
    * Execute purchase with streaming progress
    * @param telegramId User's Telegram ID
    * @param amountUsdc Amount of USDC to spend
-   * @yields PurchaseState - progress updates and final result
+   * @yields PurchaseStep - progress updates and final result
    */
-  async *executeWithProgress(
+  async *execute(
     telegramId: number,
     amountUsdc: number,
-  ): AsyncGenerator<PurchaseState> {
+  ): AsyncGenerator<PurchaseStep> {
     logger.info("ExecutePurchase", "Executing portfolio purchase", {
       telegramId,
       amountUsdc,
@@ -78,19 +54,19 @@ export class ExecutePurchaseUseCase {
     // Check if PriceService is available (needed for selectAssetToBuy)
     if (!this.priceService) {
       logger.warn("ExecutePurchase", "Price service unavailable");
-      yield completed({ type: "unavailable" });
+      yield PurchaseSteps.completed({ type: "unavailable" });
       return;
     }
 
     // Validate amount
     if (isNaN(amountUsdc) || amountUsdc <= 0) {
       logger.warn("ExecutePurchase", "Invalid amount", { amountUsdc });
-      yield completed({ type: "invalid_amount" });
+      yield PurchaseSteps.completed({ type: "invalid_amount" });
       return;
     }
 
     if (amountUsdc < 0.01) {
-      yield completed({
+      yield PurchaseSteps.completed({
         type: "invalid_amount",
         error: "Minimum amount is 0.01 USDC",
       });
@@ -109,12 +85,12 @@ export class ExecutePurchaseUseCase {
 
     if (!walletAddress) {
       logger.warn("ExecutePurchase", "No wallet connected", { telegramId });
-      yield completed({ type: "no_wallet" });
+      yield PurchaseSteps.completed({ type: "no_wallet" });
       return;
     }
 
     // Step: Selecting asset
-    yield progress(PurchaseSteps.selectingAsset());
+    yield PurchaseSteps.selectingAsset();
 
     // Determine which asset to buy based on portfolio allocation
     const selection = await this.selectAssetToBuyWithInfo(walletAddress);
@@ -126,41 +102,39 @@ export class ExecutePurchaseUseCase {
     });
 
     // Step: Asset selected with allocation info
-    yield progress(
-      PurchaseSteps.assetSelected({
-        asset: selection.asset,
-        currentAllocation: selection.currentAllocation,
-        targetAllocation: selection.targetAllocation,
-        deviation: selection.deviation,
-      }),
-    );
+    yield PurchaseSteps.assetSelected({
+      asset: selection.asset,
+      currentAllocation: selection.currentAllocation,
+      targetAllocation: selection.targetAllocation,
+      deviation: selection.deviation,
+    });
 
     // Delegate to ExecuteSwapUseCase with progress forwarding
-    for await (const swapState of this.executeSwapUseCase.executeWithProgress(
+    for await (const swapStep of this.executeSwapUseCase.execute(
       telegramId,
       amountUsdc,
       selection.asset,
     )) {
-      if (swapState.type === "progress") {
-        // Wrap swap step in purchase step
-        yield progress(PurchaseSteps.swap(swapState.step));
-      } else {
+      if (swapStep.step === "completed") {
         // Map swap result to purchase result
         const purchaseResult = this.mapSwapResultToPurchaseResult(
-          swapState.result,
+          swapStep.result,
           selection.asset,
           amountUsdc,
         );
-        yield completed(purchaseResult);
+        yield PurchaseSteps.completed(purchaseResult);
+      } else {
+        // Wrap swap step in purchase step
+        yield PurchaseSteps.swap(swapStep);
       }
     }
   }
 
   /**
-   * Map ExecuteSwapResult to PurchaseResult
+   * Map SwapResult to PurchaseResult
    */
   private mapSwapResultToPurchaseResult(
-    swapResult: ExecuteSwapResult,
+    swapResult: SwapResult,
     asset: AssetSymbol,
     amountUsdc: number,
   ): PurchaseResult {
