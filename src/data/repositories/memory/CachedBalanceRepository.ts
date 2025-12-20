@@ -96,12 +96,7 @@ export class CachedBalanceRepository implements BalanceRepository {
         error: errorMessage,
       });
 
-      [sol, btc, eth, usdc] = await Promise.all([
-        this.solanaService.getBalance(walletAddress),
-        this.solanaService.getTokenBalance(walletAddress, TOKEN_CONFIGS.btc.mint, TOKEN_CONFIGS.btc.decimals),
-        this.solanaService.getTokenBalance(walletAddress, TOKEN_CONFIGS.eth.mint, TOKEN_CONFIGS.eth.decimals),
-        this.solanaService.getTokenBalance(walletAddress, TOKEN_CONFIGS.usdc.mint, TOKEN_CONFIGS.usdc.decimals),
-      ]);
+      ({ sol, btc, eth, usdc } = await this.fetchBalancesIndividually(walletAddress));
     }
 
     const balances: WalletBalances = {
@@ -153,6 +148,23 @@ export class CachedBalanceRepository implements BalanceRepository {
         wallet: walletAddress.slice(0, 8),
       });
     }
+  }
+
+  /**
+   * Fetch balances using individual RPC requests.
+   * Used as fallback when batch RPC is not supported.
+   */
+  private async fetchBalancesIndividually(
+    walletAddress: string,
+  ): Promise<{ sol: number; btc: number; eth: number; usdc: number }> {
+    const [sol, btc, eth, usdc] = await Promise.all([
+      this.solanaService.getBalance(walletAddress),
+      this.solanaService.getTokenBalance(walletAddress, TOKEN_CONFIGS.btc.mint, TOKEN_CONFIGS.btc.decimals),
+      this.solanaService.getTokenBalance(walletAddress, TOKEN_CONFIGS.eth.mint, TOKEN_CONFIGS.eth.decimals),
+      this.solanaService.getTokenBalance(walletAddress, TOKEN_CONFIGS.usdc.mint, TOKEN_CONFIGS.usdc.decimals),
+    ]);
+
+    return { sol, btc, eth, usdc };
   }
 
   /**
