@@ -5,11 +5,6 @@ try {
   console.log("No .env file found, using environment variables");
 }
 
-// Debug: check if Jupiter API key is loaded
-if (!process.env.JUPITER_API_KEY) {
-  console.warn("WARNING: JUPITER_API_KEY not set - portfolio/swap features will be disabled");
-}
-
 import { createRequire } from "module";
 import { Kysely } from "kysely";
 
