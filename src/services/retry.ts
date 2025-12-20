@@ -22,18 +22,20 @@ export function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Retry a function with exponential backoff on rate limit errors.
+ * Retry a function with exponential backoff.
  *
  * @param fn - Function to retry
  * @param maxRetries - Maximum number of retries (default 3)
  * @param baseDelayMs - Base delay in milliseconds (default 1000)
+ * @param shouldRetry - Predicate to determine if error is retryable (default: isRateLimitError)
  * @returns Result of the function
- * @throws Last error if all retries exhausted
+ * @throws Last error if all retries exhausted or error is not retryable
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
   baseDelayMs: number = 1000,
+  shouldRetry: (error: unknown) => boolean = isRateLimitError,
 ): Promise<T> {
   let lastError: unknown;
 
@@ -43,14 +45,14 @@ export async function withRetry<T>(
     } catch (error) {
       lastError = error;
 
-      // Only retry on rate limit errors
-      if (!isRateLimitError(error) || attempt === maxRetries) {
+      // Check if we should retry this error
+      if (!shouldRetry(error) || attempt === maxRetries) {
         throw error;
       }
 
-      // Exponential backoff: 1s, 2s, 4s
+      // Exponential backoff
       const delayMs = baseDelayMs * Math.pow(2, attempt);
-      logger.debug("Retry", "Rate limited, retrying", {
+      logger.debug("Retry", "Retrying after error", {
         attempt: attempt + 1,
         maxRetries,
         delayMs,
