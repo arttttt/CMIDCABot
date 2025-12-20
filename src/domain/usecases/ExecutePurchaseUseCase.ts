@@ -1,6 +1,8 @@
 /**
  * Execute purchase use case - real swap via Jupiter
  * Automatically selects the asset furthest below target allocation
+ *
+ * Supports streaming progress via executeWithProgress() AsyncGenerator.
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
@@ -11,6 +13,28 @@ import { AssetSymbol, TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { PurchaseResult } from "./types.js";
 import { ExecuteSwapUseCase, ExecuteSwapResult } from "./ExecuteSwapUseCase.js";
 import { logger } from "../../services/logger.js";
+import {
+  OperationState,
+  PurchaseStep,
+  PurchaseSteps,
+  progress,
+  completed,
+} from "../models/index.js";
+
+/**
+ * Type alias for purchase operation state stream
+ */
+export type PurchaseState = OperationState<PurchaseStep, PurchaseResult>;
+
+/**
+ * Internal type for asset selection result
+ */
+interface AssetSelection {
+  asset: AssetSymbol;
+  currentAllocation: number;
+  targetAllocation: number;
+  deviation: number;
+}
 
 export class ExecutePurchaseUseCase {
   constructor(
@@ -22,7 +46,30 @@ export class ExecutePurchaseUseCase {
     private devPrivateKey?: string,
   ) {}
 
+  /**
+   * Execute purchase (non-streaming)
+   */
   async execute(telegramId: number, amountUsdc: number): Promise<PurchaseResult> {
+    // Consume the generator and return final result
+    let result: PurchaseResult = { type: "unavailable" };
+    for await (const state of this.executeWithProgress(telegramId, amountUsdc)) {
+      if (state.type === "completed") {
+        result = state.result;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Execute purchase with streaming progress
+   * @param telegramId User's Telegram ID
+   * @param amountUsdc Amount of USDC to spend
+   * @yields PurchaseState - progress updates and final result
+   */
+  async *executeWithProgress(
+    telegramId: number,
+    amountUsdc: number,
+  ): AsyncGenerator<PurchaseState> {
     logger.info("ExecutePurchase", "Executing portfolio purchase", {
       telegramId,
       amountUsdc,
@@ -31,20 +78,23 @@ export class ExecutePurchaseUseCase {
     // Check if PriceService is available (needed for selectAssetToBuy)
     if (!this.priceService) {
       logger.warn("ExecutePurchase", "Price service unavailable");
-      return { type: "unavailable" };
+      yield completed({ type: "unavailable" });
+      return;
     }
 
     // Validate amount
     if (isNaN(amountUsdc) || amountUsdc <= 0) {
       logger.warn("ExecutePurchase", "Invalid amount", { amountUsdc });
-      return { type: "invalid_amount" };
+      yield completed({ type: "invalid_amount" });
+      return;
     }
 
     if (amountUsdc < 0.01) {
-      return {
+      yield completed({
         type: "invalid_amount",
         error: "Minimum amount is 0.01 USDC",
-      };
+      });
+      return;
     }
 
     // Get wallet address for portfolio selection
@@ -59,18 +109,51 @@ export class ExecutePurchaseUseCase {
 
     if (!walletAddress) {
       logger.warn("ExecutePurchase", "No wallet connected", { telegramId });
-      return { type: "no_wallet" };
+      yield completed({ type: "no_wallet" });
+      return;
     }
 
+    // Step: Selecting asset
+    yield progress(PurchaseSteps.selectingAsset());
+
     // Determine which asset to buy based on portfolio allocation
-    const assetToBuy = await this.selectAssetToBuy(walletAddress);
-    logger.info("ExecutePurchase", "Selected asset to buy", { asset: assetToBuy });
+    const selection = await this.selectAssetToBuyWithInfo(walletAddress);
+    logger.info("ExecutePurchase", "Selected asset to buy", {
+      asset: selection.asset,
+      currentAllocation: `${(selection.currentAllocation * 100).toFixed(1)}%`,
+      targetAllocation: `${(selection.targetAllocation * 100).toFixed(1)}%`,
+      deviation: `${(selection.deviation * 100).toFixed(1)}%`,
+    });
 
-    // Delegate to ExecuteSwapUseCase
-    const swapResult = await this.executeSwapUseCase.execute(telegramId, amountUsdc, assetToBuy);
+    // Step: Asset selected with allocation info
+    yield progress(
+      PurchaseSteps.assetSelected({
+        asset: selection.asset,
+        currentAllocation: selection.currentAllocation,
+        targetAllocation: selection.targetAllocation,
+        deviation: selection.deviation,
+      }),
+    );
 
-    // Map ExecuteSwapResult to PurchaseResult
-    return this.mapSwapResultToPurchaseResult(swapResult, assetToBuy, amountUsdc);
+    // Delegate to ExecuteSwapUseCase with progress forwarding
+    for await (const swapState of this.executeSwapUseCase.executeWithProgress(
+      telegramId,
+      amountUsdc,
+      selection.asset,
+    )) {
+      if (swapState.type === "progress") {
+        // Wrap swap step in purchase step
+        yield progress(PurchaseSteps.swap(swapState.step));
+      } else {
+        // Map swap result to purchase result
+        const purchaseResult = this.mapSwapResultToPurchaseResult(
+          swapState.result,
+          selection.asset,
+          amountUsdc,
+        );
+        yield completed(purchaseResult);
+      }
+    }
   }
 
   /**
@@ -129,7 +212,7 @@ export class ExecutePurchaseUseCase {
   }
 
   /**
-   * Select asset to buy based on portfolio allocation
+   * Select asset to buy based on portfolio allocation (with full info)
    *
    * Uses "Crypto Majors Index" rebalancing strategy:
    * - Target: BTC 40%, ETH 30%, SOL 30%
@@ -138,7 +221,7 @@ export class ExecutePurchaseUseCase {
    * This approach naturally rebalances the portfolio over time:
    * each purchase reduces the deviation of the most underweight asset.
    */
-  private async selectAssetToBuy(walletAddress: string): Promise<AssetSymbol> {
+  private async selectAssetToBuyWithInfo(walletAddress: string): Promise<AssetSelection> {
     try {
       // Fetch balances (cached) and prices in parallel for efficiency
       const [balances, prices] = await Promise.all([
@@ -157,12 +240,22 @@ export class ExecutePurchaseUseCase {
 
       // Empty portfolio: start with BTC (largest target at 40%)
       if (totalValueInUsdc === 0) {
-        return "BTC";
+        return {
+          asset: "BTC",
+          currentAllocation: 0,
+          targetAllocation: TARGET_ALLOCATIONS.BTC,
+          deviation: -TARGET_ALLOCATIONS.BTC,
+        };
       }
 
       // Find asset with maximum negative deviation (most below target).
       // Negative deviation = asset is underweight and needs buying.
-      let assetToBuy: AssetSymbol = "BTC";
+      let selection: AssetSelection = {
+        asset: "BTC",
+        currentAllocation: 0,
+        targetAllocation: TARGET_ALLOCATIONS.BTC,
+        deviation: 0,
+      };
       let maxNegativeDeviation = 0;
 
       for (const asset of assets) {
@@ -173,16 +266,26 @@ export class ExecutePurchaseUseCase {
 
         if (deviation < maxNegativeDeviation) {
           maxNegativeDeviation = deviation;
-          assetToBuy = asset.symbol;
+          selection = {
+            asset: asset.symbol,
+            currentAllocation,
+            targetAllocation,
+            deviation,
+          };
         }
       }
 
-      return assetToBuy;
+      return selection;
     } catch (error) {
       logger.warn("ExecutePurchase", "Failed to calculate allocations, defaulting to BTC", {
         error: error instanceof Error ? error.message : String(error),
       });
-      return "BTC";
+      return {
+        asset: "BTC",
+        currentAllocation: 0,
+        targetAllocation: TARGET_ALLOCATIONS.BTC,
+        deviation: -TARGET_ALLOCATIONS.BTC,
+      };
     }
   }
 }

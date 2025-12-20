@@ -68,6 +68,7 @@ import {
   SwapFormatter,
   AdminFormatter,
   InviteFormatter,
+  ProgressFormatter,
 } from "./presentation/formatters/index.js";
 import {
   createTelegramBot,
@@ -271,6 +272,7 @@ async function main(): Promise<void> {
   const simulateFormatter = new SimulateFormatter();
   const swapFormatter = new SwapFormatter();
   const adminFormatter = new AdminFormatter();
+  const progressFormatter = new ProgressFormatter();
 
   // Helper function to build registry and handler with optional botUsername
   function createRegistryAndHandler(botUsername?: string) {
@@ -321,6 +323,7 @@ async function main(): Promise<void> {
           executePurchase,
           portfolioFormatter,
           purchaseFormatter,
+          progressFormatter,
         },
         prices: {
           getPrices,
@@ -333,6 +336,7 @@ async function main(): Promise<void> {
           quoteFormatter,
           simulateFormatter,
           swapFormatter,
+          progressFormatter,
         },
         admin: adminDeps,
       };
@@ -353,6 +357,7 @@ async function main(): Promise<void> {
           executePurchase,
           portfolioFormatter,
           purchaseFormatter,
+          progressFormatter,
         },
         admin: adminDeps,
       };

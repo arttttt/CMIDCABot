@@ -46,8 +46,12 @@ import {
   SwapFormatter,
   AdminFormatter,
   InviteFormatter,
+  ProgressFormatter,
   parseRole,
 } from "../formatters/index.js";
+
+// Protocol types
+import { UIStreamItem } from "../protocol/types.js";
 
 // ============================================================
 // Helper functions
@@ -93,6 +97,7 @@ export interface PortfolioCommandDeps {
   executePurchase: ExecutePurchaseUseCase | undefined;
   portfolioFormatter: PortfolioFormatter;
   purchaseFormatter: PurchaseFormatter;
+  progressFormatter: ProgressFormatter;
 }
 
 export interface PricesCommandDeps {
@@ -107,6 +112,7 @@ export interface SwapCommandDeps {
   quoteFormatter: QuoteFormatter;
   simulateFormatter: SimulateFormatter;
   swapFormatter: SwapFormatter;
+  progressFormatter: ProgressFormatter;
 }
 
 export interface AdminCommandDeps {
@@ -270,6 +276,7 @@ function createPortfolioStatusCommand(deps: PortfolioCommandDeps): Command {
 function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
   return {
     definition: { name: "buy", description: "Buy asset for USDC amount", usage: "<amount>" },
+    // Fallback handler for non-streaming contexts
     handler: async (args, telegramId) => {
       if (!deps.executePurchase) {
         return deps.purchaseFormatter.format({ type: "unavailable" });
@@ -284,6 +291,40 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
       }
       const result = await deps.executePurchase.execute(telegramId, amount);
       return deps.purchaseFormatter.format(result);
+    },
+    // Streaming handler for progress updates
+    streamingHandler: async function* (args, telegramId): AsyncGenerator<UIStreamItem> {
+      if (!deps.executePurchase) {
+        yield {
+          response: deps.purchaseFormatter.format({ type: "unavailable" }),
+          mode: "final",
+        };
+        return;
+      }
+      const amountStr = args[0];
+      if (!amountStr) {
+        yield { response: deps.purchaseFormatter.formatUsage(), mode: "final" };
+        return;
+      }
+      const amount = parseAmount(amountStr);
+      if (amount === null) {
+        yield { response: deps.purchaseFormatter.formatUsage(), mode: "final" };
+        return;
+      }
+
+      // Stream progress from use case
+      for await (const state of deps.executePurchase.executeWithProgress(telegramId, amount)) {
+        if (state.type === "progress") {
+          const formatted = deps.progressFormatter.formatPurchaseStep(state.step);
+          yield { response: formatted.response, mode: formatted.mode };
+        } else {
+          // Completed - format final result
+          yield {
+            response: deps.purchaseFormatter.format(state.result),
+            mode: "final",
+          };
+        }
+      }
     },
   };
 }
@@ -370,6 +411,7 @@ function createSwapSimulateCommand(deps: SwapCommandDeps): Command {
 function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
   return {
     definition: { name: "execute", description: "Execute real swap", usage: "<amount> [asset]" },
+    // Fallback handler for non-streaming contexts
     handler: async (args, telegramId) => {
       const amountStr = args[0];
       if (!amountStr) {
@@ -382,6 +424,38 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
       const asset = args[1] || "SOL";
       const result = await deps.executeSwap.execute(telegramId, amount, asset);
       return deps.swapFormatter.format(result);
+    },
+    // Streaming handler for progress updates
+    streamingHandler: async function* (args, telegramId): AsyncGenerator<UIStreamItem> {
+      const amountStr = args[0];
+      if (!amountStr) {
+        yield { response: deps.swapFormatter.formatUsage(), mode: "final" };
+        return;
+      }
+      const amount = parseAmount(amountStr);
+      if (amount === null) {
+        yield { response: deps.swapFormatter.formatUsage(), mode: "final" };
+        return;
+      }
+      const asset = args[1] || "SOL";
+
+      // Stream progress from use case
+      for await (const state of deps.executeSwap.executeWithProgress(
+        telegramId,
+        amount,
+        asset,
+      )) {
+        if (state.type === "progress") {
+          const formatted = deps.progressFormatter.formatSwapStep(state.step);
+          yield { response: formatted.response, mode: formatted.mode };
+        } else {
+          // Completed - format final result
+          yield {
+            response: deps.swapFormatter.format(state.result),
+            mode: "final",
+          };
+        }
+      }
     },
   };
 }

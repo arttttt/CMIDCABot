@@ -13,4 +13,5 @@ export { SimulateFormatter } from "./SimulateFormatter.js";
 export { SwapFormatter } from "./SwapFormatter.js";
 export { AdminFormatter, parseRole } from "./AdminFormatter.js";
 export { InviteFormatter } from "./InviteFormatter.js";
+export { ProgressFormatter, type FormattedProgress } from "./ProgressFormatter.js";
 export { Markdown } from "./markdown.js";

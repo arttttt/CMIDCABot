@@ -1,11 +1,11 @@
 /**
  * Telegram adapter - grammY <-> protocol mapping
- * Pure mapping, no logic
+ * Handles streaming progress with message updates
  */
 
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { ProtocolHandler } from "../protocol/index.js";
-import { UIResponse } from "../protocol/types.js";
+import { UIResponse, UIStreamItem } from "../protocol/types.js";
 import { logger, LogSanitizer } from "../../services/logger.js";
 
 function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
@@ -21,12 +21,86 @@ function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
   return keyboard;
 }
 
-async function sendResponse(ctx: Context, response: UIResponse): Promise<void> {
-  const keyboard = toInlineKeyboard(response);
-  if (keyboard) {
-    await ctx.reply(response.text, { reply_markup: keyboard, parse_mode: "Markdown" });
-  } else {
-    await ctx.reply(response.text, { parse_mode: "Markdown" });
+/**
+ * Handle streaming responses from protocol handler
+ * - 'edit' mode: Update the status message
+ * - 'new' mode: Send a new message (preserving previous)
+ * - 'final' mode: Final result, update or send based on context
+ */
+async function handleStreamingResponse(
+  ctx: Context,
+  stream: AsyncGenerator<UIStreamItem, void, undefined>,
+): Promise<void> {
+  let statusMessageId: number | undefined;
+  const chatId = ctx.chat?.id;
+
+  if (!chatId) {
+    logger.warn("TelegramBot", "No chat ID for streaming response");
+    return;
+  }
+
+  for await (const item of stream) {
+    const keyboard = toInlineKeyboard(item.response);
+
+    switch (item.mode) {
+      case "edit":
+        // Update status message (or create if first)
+        if (statusMessageId) {
+          try {
+            await ctx.api.editMessageText(chatId, statusMessageId, item.response.text, {
+              parse_mode: "Markdown",
+              reply_markup: keyboard,
+            });
+          } catch (error) {
+            // Edit might fail if content is the same - ignore
+            logger.debug("TelegramBot", "Edit message failed", {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        } else {
+          // First message - send new
+          const msg = await ctx.reply(item.response.text, {
+            parse_mode: "Markdown",
+            reply_markup: keyboard,
+          });
+          statusMessageId = msg.message_id;
+        }
+        break;
+
+      case "new":
+        // Send new message (keep status message for future updates)
+        await ctx.reply(item.response.text, {
+          parse_mode: "Markdown",
+          reply_markup: keyboard,
+        });
+        break;
+
+      case "final":
+        // Final result - update status message or send new
+        if (statusMessageId) {
+          try {
+            await ctx.api.editMessageText(chatId, statusMessageId, item.response.text, {
+              parse_mode: "Markdown",
+              reply_markup: keyboard,
+            });
+          } catch (error) {
+            // If edit fails, send new message
+            logger.debug("TelegramBot", "Final edit failed, sending new", {
+              error: error instanceof Error ? error.message : String(error),
+            });
+            await ctx.reply(item.response.text, {
+              parse_mode: "Markdown",
+              reply_markup: keyboard,
+            });
+          }
+        } else {
+          await ctx.reply(item.response.text, {
+            parse_mode: "Markdown",
+            reply_markup: keyboard,
+          });
+        }
+        break;
+    }
   }
 }
 
@@ -58,17 +132,25 @@ export function createTelegramBot(
     });
   }
 
-  // Handle text messages: Context -> Protocol -> Response
+  // Handle text messages: Context -> Protocol -> Streaming Response
   bot.on("message:text", async (ctx) => {
-    const response = await handler.handleMessage({
+    const messageContext = {
       userId: String(ctx.from.id),
       telegramId: ctx.from.id,
       username: ctx.from.username,
       text: ctx.message.text,
-    });
+    };
 
-    // Delete user's message if it contains sensitive data (e.g., private keys)
-    if (response.deleteUserMessage) {
+    // Check if message contains sensitive data (private key import)
+    // by peeking at the command before streaming
+    const text = ctx.message.text.trim();
+    const isSensitiveCommand = text.toLowerCase().startsWith("/wallet import");
+
+    // Use streaming handler for all commands
+    const stream = handler.handleMessageStreaming(messageContext);
+
+    // Handle deleteUserMessage for sensitive commands
+    if (isSensitiveCommand) {
       try {
         await ctx.deleteMessage();
       } catch (error) {
@@ -79,7 +161,7 @@ export function createTelegramBot(
       }
     }
 
-    await sendResponse(ctx, response);
+    await handleStreamingResponse(ctx, stream);
   });
 
   // Handle callback queries: Context -> Protocol -> Edit message

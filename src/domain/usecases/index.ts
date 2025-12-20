@@ -8,7 +8,7 @@ export * from "./types.js";
 export { InitUserUseCase } from "./InitUserUseCase.js";
 
 // Purchase
-export { ExecutePurchaseUseCase } from "./ExecutePurchaseUseCase.js";
+export { ExecutePurchaseUseCase, type PurchaseState } from "./ExecutePurchaseUseCase.js";
 
 // Portfolio
 export { GetPortfolioStatusUseCase } from "./GetPortfolioStatusUseCase.js";
@@ -36,7 +36,7 @@ export { GetQuoteUseCase } from "./GetQuoteUseCase.js";
 export { SimulateSwapUseCase } from "./SimulateSwapUseCase.js";
 
 // Swap
-export { ExecuteSwapUseCase } from "./ExecuteSwapUseCase.js";
+export { ExecuteSwapUseCase, type SwapState } from "./ExecuteSwapUseCase.js";
 
 // Invite
 export { GenerateInviteUseCase, type GenerateInviteResult } from "./GenerateInviteUseCase.js";
