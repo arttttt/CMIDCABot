@@ -57,7 +57,8 @@ export class CachedBalanceRepository implements BalanceRepository {
    * Returns cached data if valid, otherwise fetches from RPC.
    *
    * Uses batch RPC to fetch all balances in a single HTTP request,
-   * reducing RPC calls from 4 to 1.
+   * reducing RPC calls from 4 to 1. Falls back to individual requests
+   * if batch is not supported by the RPC provider.
    */
   async getBalances(walletAddress: string): Promise<WalletBalances> {
     const cached = this.cache.get(walletAddress);
@@ -69,15 +70,34 @@ export class CachedBalanceRepository implements BalanceRepository {
       return cached.balances;
     }
 
-    logger.debug("BalanceCache", "Cache miss, fetching via batch RPC", {
+    logger.debug("BalanceCache", "Cache miss, fetching balances", {
       wallet: walletAddress.slice(0, 8),
     });
 
-    // Fetch all balances in a single batch RPC request
-    const { sol, btc, eth, usdc } = await this.solanaService.getAllBalancesBatch(
-      walletAddress,
-      TOKEN_CONFIGS,
-    );
+    let sol: number;
+    let btc: number;
+    let eth: number;
+    let usdc: number;
+
+    try {
+      // Try batch RPC first (4x more efficient)
+      const result = await this.solanaService.getAllBalancesBatch(
+        walletAddress,
+        TOKEN_CONFIGS,
+      );
+      sol = result.sol;
+      btc = result.btc;
+      eth = result.eth;
+      usdc = result.usdc;
+    } catch (error) {
+      // Fallback to individual requests if batch not supported
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.warn("BalanceCache", "Batch RPC failed, falling back to individual requests", {
+        error: errorMessage,
+      });
+
+      ({ sol, btc, eth, usdc } = await this.fetchBalancesIndividually(walletAddress));
+    }
 
     const balances: WalletBalances = {
       sol,
@@ -128,6 +148,23 @@ export class CachedBalanceRepository implements BalanceRepository {
         wallet: walletAddress.slice(0, 8),
       });
     }
+  }
+
+  /**
+   * Fetch balances using individual RPC requests.
+   * Used as fallback when batch RPC is not supported.
+   */
+  private async fetchBalancesIndividually(
+    walletAddress: string,
+  ): Promise<{ sol: number; btc: number; eth: number; usdc: number }> {
+    const [sol, btc, eth, usdc] = await Promise.all([
+      this.solanaService.getBalance(walletAddress),
+      this.solanaService.getTokenBalance(walletAddress, TOKEN_CONFIGS.btc.mint, TOKEN_CONFIGS.btc.decimals),
+      this.solanaService.getTokenBalance(walletAddress, TOKEN_CONFIGS.eth.mint, TOKEN_CONFIGS.eth.decimals),
+      this.solanaService.getTokenBalance(walletAddress, TOKEN_CONFIGS.usdc.mint, TOKEN_CONFIGS.usdc.decimals),
+    ]);
+
+    return { sol, btc, eth, usdc };
   }
 
   /**

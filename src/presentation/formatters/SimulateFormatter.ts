@@ -9,7 +9,7 @@ import { Markdown } from "./markdown.js";
 export class SimulateFormatter {
   format(result: SimulateSwapResult): UIResponse {
     if (result.status === "unavailable") {
-      return { text: "Simulation unavailable (requires JUPITER_API_KEY)" };
+      return { text: `Simulation unavailable (requires ${Markdown.code("JUPITER_API_KEY")})` };
     }
 
     if (result.status === "no_wallet") {

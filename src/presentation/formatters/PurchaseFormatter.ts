@@ -11,7 +11,7 @@ export class PurchaseFormatter {
     switch (result.type) {
       case "unavailable":
         return {
-          text: "Portfolio purchases are not available. JUPITER_API_KEY is required.",
+          text: `Portfolio purchases are not available. ${Markdown.code("JUPITER_API_KEY")} is required.`,
         };
 
       case "invalid_amount":

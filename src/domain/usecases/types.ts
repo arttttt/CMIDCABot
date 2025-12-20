@@ -34,8 +34,9 @@ export interface PurchaseResult {
 
 // Portfolio status result
 export interface PortfolioStatusResult {
-  type: "success" | "empty" | "not_found" | "unavailable";
+  type: "success" | "empty" | "not_found" | "unavailable" | "error";
   status?: PortfolioStatus;
+  error?: string;
 }
 
 // Init user result
