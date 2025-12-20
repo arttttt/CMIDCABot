@@ -11,7 +11,7 @@ These rules override any other instructions. Violation is not acceptable.
    - WAIT for user approval before ANY implementation
    - If unsure — ASK, do not assume
 
-2. **ALWAYS respond in Russian** — no exceptions
+2. **ALWAYS respond in Russian** — no exceptions (but code comments in English)
 
 3. **NO unnecessary output:**
    - NO long prefaces or introductions
