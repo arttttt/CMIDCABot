@@ -17,7 +17,7 @@ import { SolanaConfig } from "../types/index.js";
 import { logger } from "./logger.js";
 import type { KeyEncryptionService } from "./encryption.js";
 import { BatchRpcClient } from "./batch-rpc.js";
-import { withRetry } from "./retry.js";
+import { withRetry, pollWithBackoff, type PollResult } from "./retry.js";
 
 /**
  * Solana BIP44 derivation path (compatible with Phantom, Solflare, etc.)
@@ -893,38 +893,33 @@ export class SolanaService {
    * @returns true if confirmed, false if timed out or failed
    */
   private async waitForConfirmation(signature: Signature, timeoutMs: number): Promise<boolean> {
-    const startTime = Date.now();
-    const pollIntervalMs = 1000; // Poll every second
+    const checkStatus = async (): Promise<PollResult<boolean>> => {
+      const result = await this.rpc.getSignatureStatuses([signature]).send();
 
-    while (Date.now() - startTime < timeoutMs) {
-      try {
-        const result = await this.rpc
-          .getSignatureStatuses([signature])
-          .send();
+      const status = result.value[0];
 
-        const status = result.value[0];
-
-        if (status !== null) {
-          // Transaction explicitly failed (e.g., insufficient funds, program error)
-          if (status.err !== null) {
-            return false;
-          }
-
-          // Accept both confirmed and finalized as success
-          if (status.confirmationStatus === "confirmed" || status.confirmationStatus === "finalized") {
-            return true;
-          }
+      if (status !== null) {
+        // Transaction explicitly failed (e.g., insufficient funds, program error)
+        if (status.err !== null) {
+          return { status: "failure", reason: "Transaction failed" };
         }
 
-        // Wait before next poll
-        await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-      } catch {
-        // Ignore errors and keep polling
-        await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+        // Accept both confirmed and finalized as success
+        if (status.confirmationStatus === "confirmed" || status.confirmationStatus === "finalized") {
+          return { status: "success", value: true };
+        }
       }
-    }
 
-    // Timeout reached
-    return false;
+      // Status is null or pending - continue polling
+      return { status: "timeout" };
+    };
+
+    const result = await pollWithBackoff(checkStatus, {
+      timeoutMs,
+      baseDelayMs: 1000,
+      maxDelayMs: 4000,
+    });
+
+    return result.status === "success";
   }
 }
