@@ -4,6 +4,9 @@
  * In-memory cache over SolanaService RPC calls.
  * Reduces RPC request frequency during sequential read operations.
  *
+ * Uses batch RPC requests to fetch all balances in a single HTTP call,
+ * reducing RPC billing and rate limit consumption by 4x.
+ *
  * Cache is invalidated:
  * - After TTL expires (10 seconds by default)
  * - Manually after successful transactions
@@ -14,6 +17,15 @@ import { SolanaService } from "../../../services/solana.js";
 import { TOKEN_MINTS } from "../../../services/price.js";
 import { TOKEN_DECIMALS } from "../../../services/jupiter-swap.js";
 import { logger } from "../../../services/logger.js";
+
+/**
+ * Token configurations for batch balance fetching
+ */
+const TOKEN_CONFIGS = {
+  btc: { mint: TOKEN_MINTS.BTC, decimals: TOKEN_DECIMALS.BTC },
+  eth: { mint: TOKEN_MINTS.ETH, decimals: TOKEN_DECIMALS.ETH },
+  usdc: { mint: TOKEN_MINTS.USDC, decimals: TOKEN_DECIMALS.USDC },
+} as const;
 
 /**
  * Cache entry with balances
@@ -43,6 +55,9 @@ export class CachedBalanceRepository implements BalanceRepository {
   /**
    * Get all balances for a wallet address.
    * Returns cached data if valid, otherwise fetches from RPC.
+   *
+   * Uses batch RPC to fetch all balances in a single HTTP request,
+   * reducing RPC calls from 4 to 1.
    */
   async getBalances(walletAddress: string): Promise<WalletBalances> {
     const cached = this.cache.get(walletAddress);
@@ -54,17 +69,15 @@ export class CachedBalanceRepository implements BalanceRepository {
       return cached.balances;
     }
 
-    logger.debug("BalanceCache", "Cache miss, fetching from RPC", {
+    logger.debug("BalanceCache", "Cache miss, fetching via batch RPC", {
       wallet: walletAddress.slice(0, 8),
     });
 
-    // Fetch all balances in parallel
-    const [sol, btc, eth, usdc] = await Promise.all([
-      this.solanaService.getBalance(walletAddress),
-      this.solanaService.getTokenBalance(walletAddress, TOKEN_MINTS.BTC, TOKEN_DECIMALS.BTC),
-      this.solanaService.getTokenBalance(walletAddress, TOKEN_MINTS.ETH, TOKEN_DECIMALS.ETH),
-      this.solanaService.getUsdcBalance(walletAddress),
-    ]);
+    // Fetch all balances in a single batch RPC request
+    const { sol, btc, eth, usdc } = await this.solanaService.getAllBalancesBatch(
+      walletAddress,
+      TOKEN_CONFIGS,
+    );
 
     const balances: WalletBalances = {
       sol,
