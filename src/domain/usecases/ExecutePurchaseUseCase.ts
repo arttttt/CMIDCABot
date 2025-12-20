@@ -4,9 +4,9 @@
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
+import { BalanceRepository } from "../repositories/BalanceRepository.js";
 import { SolanaService } from "../../services/solana.js";
-import { PriceService, TOKEN_MINTS } from "../../services/price.js";
-import { TOKEN_DECIMALS } from "../../services/jupiter-swap.js";
+import { PriceService } from "../../services/price.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { PurchaseResult } from "./types.js";
 import { ExecuteSwapUseCase, ExecuteSwapResult } from "./ExecuteSwapUseCase.js";
@@ -15,6 +15,7 @@ import { logger } from "../../services/logger.js";
 export class ExecutePurchaseUseCase {
   constructor(
     private userRepository: UserRepository,
+    private balanceRepository: BalanceRepository,
     private executeSwapUseCase: ExecuteSwapUseCase,
     private solanaService: SolanaService,
     private priceService: PriceService | undefined,
@@ -139,19 +140,17 @@ export class ExecutePurchaseUseCase {
    */
   private async selectAssetToBuy(walletAddress: string): Promise<AssetSymbol> {
     try {
-      // Fetch all balances and prices in parallel for efficiency
-      const [solBalance, btcBalance, ethBalance, prices] = await Promise.all([
-        this.solanaService.getBalance(walletAddress),
-        this.solanaService.getTokenBalance(walletAddress, TOKEN_MINTS.BTC, TOKEN_DECIMALS.BTC),
-        this.solanaService.getTokenBalance(walletAddress, TOKEN_MINTS.ETH, TOKEN_DECIMALS.ETH),
+      // Fetch balances (cached) and prices in parallel for efficiency
+      const [balances, prices] = await Promise.all([
+        this.balanceRepository.getBalances(walletAddress),
         this.priceService!.getPricesRecord(),
       ]);
 
       // Calculate USD value of each asset holding
       const assets: { symbol: AssetSymbol; valueInUsdc: number }[] = [
-        { symbol: "BTC", valueInUsdc: btcBalance * prices.BTC },
-        { symbol: "ETH", valueInUsdc: ethBalance * prices.ETH },
-        { symbol: "SOL", valueInUsdc: solBalance * prices.SOL },
+        { symbol: "BTC", valueInUsdc: balances.btc * prices.BTC },
+        { symbol: "ETH", valueInUsdc: balances.eth * prices.ETH },
+        { symbol: "SOL", valueInUsdc: balances.sol * prices.SOL },
       ];
 
       const totalValueInUsdc = assets.reduce((sum, a) => sum + a.valueInUsdc, 0);

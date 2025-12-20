@@ -18,6 +18,7 @@ import { SQLiteAuthRepository } from "./data/repositories/sqlite/SQLiteAuthRepos
 import { SQLiteInviteTokenRepository } from "./data/repositories/sqlite/SQLiteInviteTokenRepository.js";
 import { InMemoryAuthRepository } from "./data/repositories/memory/InMemoryAuthRepository.js";
 import { InMemoryInviteTokenRepository } from "./data/repositories/memory/InMemoryInviteTokenRepository.js";
+import { CachedBalanceRepository } from "./data/repositories/memory/CachedBalanceRepository.js";
 import { SolanaService } from "./services/solana.js";
 import { getEncryptionService, initializeEncryption } from "./services/encryption.js";
 import { AuthorizationService } from "./services/authorization.js";
@@ -128,6 +129,9 @@ async function main(): Promise<void> {
   // Initialize Solana service
   const solana = new SolanaService(config.solana);
 
+  // Initialize balance repository with caching
+  const balanceRepository = new CachedBalanceRepository(solana);
+
   // Initialize PriceService (required for portfolio and swap operations)
   let priceService: PriceService | undefined;
 
@@ -208,6 +212,7 @@ async function main(): Promise<void> {
     solana,
     userRepository,
     transactionRepository,
+    balanceRepository,
     encryptionService,
     config.dcaWallet.devPrivateKey,
   );
@@ -235,6 +240,7 @@ async function main(): Promise<void> {
   const executePurchase = jupiterSwap && priceService
     ? new ExecutePurchaseUseCase(
         userRepository,
+        balanceRepository,
         executeSwapUseCase,
         solana,
         priceService,
@@ -245,6 +251,7 @@ async function main(): Promise<void> {
   const getPortfolioStatus = priceService
     ? new GetPortfolioStatusUseCase(
         userRepository,
+        balanceRepository,
         solana,
         priceService,
         config.dcaWallet.devPrivateKey,

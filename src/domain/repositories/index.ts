@@ -8,3 +8,4 @@ export * from "./PurchaseRepository.js";
 export * from "./SchedulerRepository.js";
 export * from "./AuthRepository.js";
 export * from "./InviteTokenRepository.js";
+export * from "./BalanceRepository.js";
