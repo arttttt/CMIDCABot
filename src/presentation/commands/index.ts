@@ -32,6 +32,7 @@ export {
   createSwapCommand,
   createAdminCommand,
   createStartCommand,
+  createVersionCommand,
   type WalletCommandDeps,
   type DcaCommandDeps,
   type PortfolioCommandDeps,
@@ -39,6 +40,7 @@ export {
   type SwapCommandDeps,
   type AdminCommandDeps,
   type StartCommandDeps,
+  type VersionCommandDeps,
 } from "./handlers.js";
 
 // Registries
