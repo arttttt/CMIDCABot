@@ -260,6 +260,8 @@ async function main(): Promise<void> {
       )
     : undefined;
 
+  console.log("[init] getPortfolioStatus:", getPortfolioStatus ? "created" : "undefined (priceService missing)");
+
   // Create invite use cases
   const generateInvite = new GenerateInviteUseCase(inviteTokenRepository, authRepository);
   const activateInvite = new ActivateInviteUseCase(inviteTokenRepository, authRepository);
@@ -339,6 +341,7 @@ async function main(): Promise<void> {
         },
         admin: adminDeps,
       };
+      console.log("[init] DevCommandRegistry: getPortfolioStatus =", deps.portfolio.getPortfolioStatus ? "present" : "undefined");
       registry = new DevCommandRegistry(deps);
     } else {
       const deps: ProdCommandRegistryDeps = {
@@ -359,6 +362,7 @@ async function main(): Promise<void> {
         },
         admin: adminDeps,
       };
+      console.log("[init] ProdCommandRegistry: getPortfolioStatus =", deps.portfolio.getPortfolioStatus ? "present" : "undefined");
       registry = new ProdCommandRegistry(deps);
     }
 
