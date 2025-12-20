@@ -121,7 +121,6 @@ async function main(): Promise<void> {
   // Create authorization service
   const authService = new AuthorizationService(authRepository, config.auth.ownerTelegramId);
   await authService.initialize();
-  console.log(`Authorization: Owner ID ${config.auth.ownerTelegramId}`);
 
   // Create user resolver (will be connected to bot API later)
   const userResolver = new TelegramUserResolver();

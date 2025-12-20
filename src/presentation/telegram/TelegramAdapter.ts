@@ -6,7 +6,7 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { ProtocolHandler } from "../protocol/index.js";
 import { UIResponse } from "../protocol/types.js";
-import { logger, redactSensitiveData } from "../../services/logger.js";
+import { logger, LogSanitizer } from "../../services/logger.js";
 
 function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
   if (!response.buttons?.length) return undefined;
@@ -48,7 +48,7 @@ export function createTelegramBot(
       logger.debug("TelegramBot", "Incoming message", {
         user: user?.username ?? user?.id ?? "unknown",
         chatId: chat?.id ?? "unknown",
-        message: redactSensitiveData(text),
+        message: LogSanitizer.redactText(text),
       });
 
       await next();

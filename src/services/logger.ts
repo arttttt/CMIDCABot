@@ -4,37 +4,94 @@
  */
 
 /**
- * List of sensitive commands that should have their arguments redacted
- * These commands may contain private keys, mnemonics, or other secrets
+ * Utility class for masking and redacting sensitive data in logs
  */
-const SENSITIVE_COMMANDS = ["/wallet import"];
+export class LogSanitizer {
+  private static readonly SENSITIVE_COMMANDS = ["/wallet import"];
 
-/**
- * Redacts sensitive data from log messages
- * Protects: mnemonics, private keys, and arguments to sensitive commands
- */
-export function redactSensitiveData(text: string): string {
-  // Check if this is a sensitive command - redact everything after the command
-  for (const cmd of SENSITIVE_COMMANDS) {
-    if (text.toLowerCase().startsWith(cmd.toLowerCase())) {
-      return `${cmd} [REDACTED]`;
+  private static readonly SENSITIVE_FIELDS = new Set([
+    "telegramId",
+    "telegram_id",
+    "userId",
+    "user_id",
+    "ownerId",
+    "owner_id",
+    "ownerTelegramId",
+    "targetTelegramId",
+    "addedBy",
+    "added_by",
+  ]);
+
+  /**
+   * Masks a numeric ID, showing only first 2 and last 2 digits
+   * Example: 123456789 -> "12***89"
+   */
+  private static maskNumericId(value: number | string): string {
+    const str = String(value);
+    if (str.length <= 4) {
+      return "***";
     }
+    return `${str.slice(0, 2)}***${str.slice(-2)}`;
   }
 
-  // Check for potential mnemonic (12 or 24 words, all lowercase letters)
-  const words = text.trim().split(/\s+/);
-  if ((words.length === 12 || words.length === 24) && words.every((w) => /^[a-z]+$/.test(w))) {
-    return "[REDACTED MNEMONIC]";
+  /**
+   * Recursively masks sensitive fields in a data object
+   */
+  static maskFields(data: Record<string, unknown>): Record<string, unknown> {
+    const masked: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(data)) {
+      if (this.SENSITIVE_FIELDS.has(key)) {
+        if (typeof value === "number" || typeof value === "string") {
+          masked[key] = this.maskNumericId(value);
+        } else if (value === null || value === undefined) {
+          masked[key] = value;
+        } else {
+          masked[key] = "[REDACTED]";
+        }
+      } else if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+        masked[key] = this.maskFields(value as Record<string, unknown>);
+      } else if (Array.isArray(value)) {
+        masked[key] = value.map((item) =>
+          item !== null && typeof item === "object"
+            ? this.maskFields(item as Record<string, unknown>)
+            : item,
+        );
+      } else {
+        masked[key] = value;
+      }
+    }
+
+    return masked;
   }
 
-  // Check for potential base58 private key (44-88 chars, base58 alphabet)
-  // Solana private keys are typically 64 or 88 characters in base58
-  const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{44,88}$/;
-  if (base58Regex.test(text.trim())) {
-    return "[REDACTED KEY]";
-  }
+  /**
+   * Redacts sensitive data from log messages
+   * Protects: mnemonics, private keys, and arguments to sensitive commands
+   */
+  static redactText(text: string): string {
+    // Check if this is a sensitive command - redact everything after the command
+    for (const cmd of this.SENSITIVE_COMMANDS) {
+      if (text.toLowerCase().startsWith(cmd.toLowerCase())) {
+        return `${cmd} [REDACTED]`;
+      }
+    }
 
-  return text;
+    // Check for potential mnemonic (12 or 24 words, all lowercase letters)
+    const words = text.trim().split(/\s+/);
+    if ((words.length === 12 || words.length === 24) && words.every((w) => /^[a-z]+$/.test(w))) {
+      return "[REDACTED MNEMONIC]";
+    }
+
+    // Check for potential base58 private key (44-88 chars, base58 alphabet)
+    // Solana private keys are typically 64 or 88 characters in base58
+    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{44,88}$/;
+    if (base58Regex.test(text.trim())) {
+      return "[REDACTED KEY]";
+    }
+
+    return text;
+  }
 }
 
 export interface Logger {
@@ -49,7 +106,7 @@ export interface Logger {
 
 /**
  * Debug logger for development mode
- * Outputs detailed logs to console
+ * Outputs detailed logs to console without masking for full debugging
  */
 export class DebugLogger implements Logger {
   private formatTimestamp(): string {
