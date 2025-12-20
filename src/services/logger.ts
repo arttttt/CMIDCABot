@@ -10,6 +10,66 @@
 const SENSITIVE_COMMANDS = ["/wallet import"];
 
 /**
+ * List of sensitive field names that should be masked in log data objects
+ * These fields may contain user identifiers or other private information
+ */
+const SENSITIVE_FIELDS = new Set([
+  "telegramId",
+  "telegram_id",
+  "userId",
+  "user_id",
+  "ownerId",
+  "owner_id",
+  "ownerTelegramId",
+  "targetTelegramId",
+  "addedBy",
+  "added_by",
+]);
+
+/**
+ * Masks a numeric ID, showing only first 2 and last 2 digits
+ * Example: 123456789 -> "12***89"
+ */
+function maskNumericId(value: number | string): string {
+  const str = String(value);
+  if (str.length <= 4) {
+    return "***";
+  }
+  return `${str.slice(0, 2)}***${str.slice(-2)}`;
+}
+
+/**
+ * Recursively masks sensitive fields in a data object
+ */
+export function maskSensitiveFields(data: Record<string, unknown>): Record<string, unknown> {
+  const masked: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(data)) {
+    if (SENSITIVE_FIELDS.has(key)) {
+      if (typeof value === "number" || typeof value === "string") {
+        masked[key] = maskNumericId(value);
+      } else if (value === null || value === undefined) {
+        masked[key] = value;
+      } else {
+        masked[key] = "[REDACTED]";
+      }
+    } else if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+      masked[key] = maskSensitiveFields(value as Record<string, unknown>);
+    } else if (Array.isArray(value)) {
+      masked[key] = value.map((item) =>
+        item !== null && typeof item === "object"
+          ? maskSensitiveFields(item as Record<string, unknown>)
+          : item
+      );
+    } else {
+      masked[key] = value;
+    }
+  }
+
+  return masked;
+}
+
+/**
  * Redacts sensitive data from log messages
  * Protects: mnemonics, private keys, and arguments to sensitive commands
  */
@@ -49,17 +109,21 @@ export interface Logger {
 
 /**
  * Debug logger for development mode
- * Outputs detailed logs to console
+ * Outputs detailed logs to console with sensitive data masking
  */
 export class DebugLogger implements Logger {
   private formatTimestamp(): string {
     return new Date().toISOString();
   }
 
+  private formatData(data: Record<string, unknown>): string {
+    return JSON.stringify(maskSensitiveFields(data), null, 2);
+  }
+
   debug(component: string, message: string, data?: Record<string, unknown>): void {
     const timestamp = this.formatTimestamp();
     if (data) {
-      console.log(`[DEBUG] ${timestamp} [${component}] ${message}`, JSON.stringify(data, null, 2));
+      console.log(`[DEBUG] ${timestamp} [${component}] ${message}`, this.formatData(data));
     } else {
       console.log(`[DEBUG] ${timestamp} [${component}] ${message}`);
     }
@@ -68,7 +132,7 @@ export class DebugLogger implements Logger {
   info(component: string, message: string, data?: Record<string, unknown>): void {
     const timestamp = this.formatTimestamp();
     if (data) {
-      console.log(`[INFO] ${timestamp} [${component}] ${message}`, JSON.stringify(data, null, 2));
+      console.log(`[INFO] ${timestamp} [${component}] ${message}`, this.formatData(data));
     } else {
       console.log(`[INFO] ${timestamp} [${component}] ${message}`);
     }
@@ -77,7 +141,7 @@ export class DebugLogger implements Logger {
   warn(component: string, message: string, data?: Record<string, unknown>): void {
     const timestamp = this.formatTimestamp();
     if (data) {
-      console.log(`[WARN] ${timestamp} [${component}] ${message}`, JSON.stringify(data, null, 2));
+      console.log(`[WARN] ${timestamp} [${component}] ${message}`, this.formatData(data));
     } else {
       console.log(`[WARN] ${timestamp} [${component}] ${message}`);
     }
@@ -86,7 +150,7 @@ export class DebugLogger implements Logger {
   error(component: string, message: string, data?: Record<string, unknown>): void {
     const timestamp = this.formatTimestamp();
     if (data) {
-      console.error(`[ERROR] ${timestamp} [${component}] ${message}`, JSON.stringify(data, null, 2));
+      console.error(`[ERROR] ${timestamp} [${component}] ${message}`, this.formatData(data));
     } else {
       console.error(`[ERROR] ${timestamp} [${component}] ${message}`);
     }
@@ -107,7 +171,7 @@ export class DebugLogger implements Logger {
   tx(component: string, event: string, data?: Record<string, unknown>): void {
     const timestamp = this.formatTimestamp();
     if (data) {
-      console.log(`[TX] ${timestamp} [${component}] ${event}`, JSON.stringify(data, null, 2));
+      console.log(`[TX] ${timestamp} [${component}] ${event}`, this.formatData(data));
     } else {
       console.log(`[TX] ${timestamp} [${component}] ${event}`);
     }
