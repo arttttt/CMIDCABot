@@ -4,6 +4,7 @@
 
 import { ExecuteSwapResult } from "../../domain/usecases/ExecuteSwapUseCase.js";
 import { UIResponse } from "../protocol/types.js";
+import { Markdown } from "./markdown.js";
 
 export class SwapFormatter {
   format(result: ExecuteSwapResult): UIResponse {
@@ -13,7 +14,7 @@ export class SwapFormatter {
 
     if (result.status === "no_wallet") {
       return {
-        text: "No wallet found. Create one with `/wallet create`",
+        text: `No wallet found. Create one with ${Markdown.code("/wallet create")}`,
       };
     }
 
@@ -24,23 +25,23 @@ export class SwapFormatter {
     }
 
     if (result.status === "invalid_amount") {
-      return { text: `Invalid amount: ${result.message}` };
+      return { text: `Invalid amount: ${Markdown.escape(result.message ?? "")}` };
     }
 
     if (result.status === "invalid_asset") {
-      return { text: `Invalid asset: ${result.message}` };
+      return { text: `Invalid asset: ${Markdown.escape(result.message ?? "")}` };
     }
 
     if (result.status === "quote_error") {
-      return { text: `Failed to get quote: ${result.message}` };
+      return { text: `Failed to get quote: ${Markdown.escape(result.message ?? "")}` };
     }
 
     if (result.status === "build_error") {
-      return { text: `Failed to build transaction: ${result.message}` };
+      return { text: `Failed to build transaction: ${Markdown.escape(result.message ?? "")}` };
     }
 
     if (result.status === "send_error") {
-      return { text: `Transaction failed: ${result.message}` };
+      return { text: `Transaction failed: ${Markdown.escape(result.message ?? "")}` };
     }
 
     if (result.status === "rpc_error") {
@@ -60,15 +61,15 @@ export class SwapFormatter {
       `*Swap ${statusIcon}*`,
       "",
       "*Trade:*",
-      `  Spent: ${this.formatAmount(quote.inputAmount)} ${quote.inputSymbol}`,
-      `  Received: ${this.formatAmount(quote.outputAmount)} ${quote.outputSymbol}`,
-      `  Price: 1 ${quote.outputSymbol} = ${this.formatPrice(pricePerUnit)} USDC`,
+      `  Spent: ${this.formatAmount(quote.inputAmount)} ${Markdown.escape(quote.inputSymbol)}`,
+      `  Received: ${this.formatAmount(quote.outputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
+      `  Price: 1 ${Markdown.escape(quote.outputSymbol)} = ${this.formatPrice(pricePerUnit)} USDC`,
       "",
       "*Transaction:*",
-      `  Signature: \`${this.truncateSignature(signature)}\``,
+      `  Signature: ${Markdown.code(this.truncateSignature(signature))}`,
       `  Status: ${confirmed ? "Confirmed" : "Pending confirmation..."}`,
       "",
-      `[View on Solscan](https://solscan.io/tx/${signature})`,
+      Markdown.link("View on Solscan", `https://solscan.io/tx/${signature}`),
     ];
 
     return { text: lines.join("\n") };
