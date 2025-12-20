@@ -8,6 +8,8 @@
  * 3. Sign and send transaction
  * 4. Wait for confirmation
  * 5. Return result with signature
+ *
+ * Streams progress via execute() AsyncGenerator.
  */
 
 import { JupiterSwapService, SwapQuote } from "../../services/jupiter-swap.js";
@@ -19,23 +21,7 @@ import { BalanceRepository } from "../repositories/BalanceRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../services/logger.js";
 import type { KeyEncryptionService } from "../../services/encryption.js";
-
-export type ExecuteSwapResult =
-  | {
-      status: "success";
-      quote: SwapQuote;
-      signature: string;
-      confirmed: boolean;
-    }
-  | { status: "unavailable" }
-  | { status: "no_wallet" }
-  | { status: "invalid_amount"; message: string }
-  | { status: "invalid_asset"; message: string }
-  | { status: "insufficient_balance"; required: number; available: number }
-  | { status: "rpc_error"; message: string }
-  | { status: "quote_error"; message: string }
-  | { status: "build_error"; message: string }
-  | { status: "send_error"; message: string };
+import { SwapStep, SwapSteps } from "../models/index.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
@@ -51,16 +37,17 @@ export class ExecuteSwapUseCase {
   ) {}
 
   /**
-   * Execute USDC → asset swap
+   * Execute USDC → asset swap with streaming progress
    * @param telegramId User's Telegram ID
    * @param amountUsdc Amount of USDC to spend
    * @param asset Target asset (BTC, ETH, SOL). Defaults to SOL.
+   * @yields SwapStep - progress updates and final result
    */
-  async execute(
+  async *execute(
     telegramId: number,
     amountUsdc: number,
     asset: string = "SOL",
-  ): Promise<ExecuteSwapResult> {
+  ): AsyncGenerator<SwapStep> {
     logger.info("ExecuteSwap", "Starting swap execution", {
       telegramId,
       amountUsdc,
@@ -70,31 +57,35 @@ export class ExecuteSwapUseCase {
     // Check if Jupiter is available
     if (!this.jupiterSwap) {
       logger.warn("ExecuteSwap", "Jupiter service unavailable");
-      return { status: "unavailable" };
+      yield SwapSteps.completed({ status: "unavailable" });
+      return;
     }
 
     // Validate amount
     if (isNaN(amountUsdc) || amountUsdc <= 0) {
-      return {
+      yield SwapSteps.completed({
         status: "invalid_amount",
         message: "Amount must be a positive number",
-      };
+      });
+      return;
     }
 
     if (amountUsdc < 0.01) {
-      return {
+      yield SwapSteps.completed({
         status: "invalid_amount",
         message: "Minimum amount is 0.01 USDC",
-      };
+      });
+      return;
     }
 
     // Validate asset
     const assetUpper = asset.toUpperCase() as AssetSymbol;
     if (!SUPPORTED_ASSETS.includes(assetUpper)) {
-      return {
+      yield SwapSteps.completed({
         status: "invalid_asset",
         message: `Unsupported asset: ${asset}. Supported: ${SUPPORTED_ASSETS.join(", ")}`,
-      };
+      });
+      return;
     }
 
     // Get user's wallet info
@@ -116,7 +107,8 @@ export class ExecuteSwapUseCase {
     }
 
     if (!walletAddress || (!useDevKey && !encryptedPrivateKey)) {
-      return { status: "no_wallet" };
+      yield SwapSteps.completed({ status: "no_wallet" });
+      return;
     }
 
     // Check USDC balance before calling Jupiter API (uses cache)
@@ -126,7 +118,8 @@ export class ExecuteSwapUseCase {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Failed to fetch USDC balance", { error: message });
-      return { status: "rpc_error", message };
+      yield SwapSteps.completed({ status: "rpc_error", message });
+      return;
     }
 
     if (usdcBalance < amountUsdc) {
@@ -134,28 +127,45 @@ export class ExecuteSwapUseCase {
         required: amountUsdc,
         available: usdcBalance,
       });
-      return {
+      yield SwapSteps.completed({
         status: "insufficient_balance",
         required: amountUsdc,
         available: usdcBalance,
-      };
+      });
+      return;
     }
 
     const outputMint = TOKEN_MINTS[assetUpper];
 
     // Step 1: Get quote
+    yield SwapSteps.gettingQuote();
     logger.step("ExecuteSwap", 1, 3, "Getting quote from Jupiter...");
+
     let quote: SwapQuote;
     try {
       quote = await this.jupiterSwap.getQuoteUsdcToToken(amountUsdc, outputMint);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Quote failed", { error: message });
-      return { status: "quote_error", message };
+      yield SwapSteps.completed({ status: "quote_error", message });
+      return;
     }
 
+    // Emit quote received with data
+    yield SwapSteps.quoteReceived({
+      inputAmount: quote.inputAmount,
+      inputSymbol: quote.inputSymbol,
+      outputAmount: quote.outputAmount,
+      outputSymbol: quote.outputSymbol,
+      priceImpactPct: quote.priceImpactPct,
+      slippageBps: quote.slippageBps,
+      route: quote.route,
+    });
+
     // Step 2: Build transaction
+    yield SwapSteps.buildingTransaction();
     logger.step("ExecuteSwap", 2, 3, "Building transaction...");
+
     let transactionBase64: string;
     try {
       const swapTx = await this.jupiterSwap.buildSwapTransaction(quote, walletAddress);
@@ -163,16 +173,22 @@ export class ExecuteSwapUseCase {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Build failed", { error: message });
-      return { status: "build_error", message };
+      yield SwapSteps.completed({ status: "build_error", message });
+      return;
     }
 
     // Step 3: Sign and send transaction
+    yield SwapSteps.sendingTransaction();
     logger.step("ExecuteSwap", 3, 3, "Signing and sending transaction...");
+
     let sendResult: SendTransactionResult;
     try {
       if (useDevKey && this.devPrivateKey) {
         // Dev mode: use plaintext key
-        sendResult = await this.solanaService.signAndSendTransaction(transactionBase64, this.devPrivateKey);
+        sendResult = await this.solanaService.signAndSendTransaction(
+          transactionBase64,
+          this.devPrivateKey,
+        );
       } else {
         // Production: use encrypted key with secure signing
         sendResult = await this.solanaService.signAndSendTransactionSecure(
@@ -184,17 +200,19 @@ export class ExecuteSwapUseCase {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Send failed", { error: message });
-      return { status: "send_error", message };
+      yield SwapSteps.completed({ status: "send_error", message });
+      return;
     }
 
     if (!sendResult.success || !sendResult.signature) {
       logger.error("ExecuteSwap", "Transaction failed", {
         error: sendResult.error,
       });
-      return {
+      yield SwapSteps.completed({
         status: "send_error",
         message: sendResult.error ?? "Transaction failed",
-      };
+      });
+      return;
     }
 
     // Invalidate balance cache after successful transaction
@@ -224,11 +242,11 @@ export class ExecuteSwapUseCase {
       outputAmount: `${quote.outputAmount} ${quote.outputSymbol}`,
     });
 
-    return {
+    yield SwapSteps.completed({
       status: "success",
       quote,
       signature: sendResult.signature,
       confirmed: sendResult.confirmed,
-    };
+    });
   }
 }

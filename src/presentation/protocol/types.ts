@@ -22,6 +22,25 @@ export interface UIResponse {
 }
 
 /**
+ * Streaming response item with display mode
+ */
+export interface UIStreamItem {
+  response: UIResponse;
+  /**
+   * How to display this response:
+   * - 'edit': Update the existing message (for status updates)
+   * - 'new': Send a new message (for items with useful data)
+   * - 'final': The final response after operation completes
+   */
+  mode: "edit" | "new" | "final";
+}
+
+/**
+ * Streaming response - AsyncGenerator yielding UI updates
+ */
+export type UIResponseStream = AsyncGenerator<UIStreamItem, void, undefined>;
+
+/**
  * Message context from adapter
  */
 export interface UIMessageContext {

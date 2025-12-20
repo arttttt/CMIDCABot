@@ -8,8 +8,14 @@
 
 import { HelpFormatter } from "../formatters/index.js";
 import { CommandRegistry, Command } from "../commands/types.js";
-import { routeCommand, findCallbackByPath } from "../commands/router.js";
-import { UIResponse, UIMessageContext, UICallbackContext, UICommand } from "./types.js";
+import { routeCommand, routeCommandStreaming, findCallbackByPath } from "../commands/router.js";
+import {
+  UIResponse,
+  UIMessageContext,
+  UICallbackContext,
+  UICommand,
+  UIResponseStream,
+} from "./types.js";
 import { AuthorizationService } from "../../services/authorization.js";
 import { hasRequiredRole, type UserRole } from "../../domain/models/AuthorizedUser.js";
 
@@ -39,7 +45,7 @@ export class ProtocolHandler {
   }
 
   /**
-   * Handle incoming message
+   * Handle incoming message (non-streaming)
    */
   async handleMessage(ctx: UIMessageContext): Promise<UIResponse> {
     const text = ctx.text.trim();
@@ -52,6 +58,27 @@ export class ProtocolHandler {
     }
 
     return { text: "Unknown command. Use /help to see available commands." };
+  }
+
+  /**
+   * Handle incoming message with streaming support
+   * Returns a generator that yields progress updates and final result
+   */
+  async *handleMessageStreaming(ctx: UIMessageContext): UIResponseStream {
+    const text = ctx.text.trim();
+
+    if (text.startsWith("/")) {
+      const parts = text.split(/\s+/);
+      const command = parts[0].toLowerCase();
+      const args = parts.slice(1);
+      yield* this.handleCommandStreaming(command, args, ctx.telegramId);
+      return;
+    }
+
+    yield {
+      response: { text: "Unknown command. Use /help to see available commands." },
+      mode: "final",
+    };
   }
 
   private async handleCommand(
@@ -90,6 +117,54 @@ export class ProtocolHandler {
 
     // Route through command tree
     return routeCommand(cmd, args, telegramId);
+  }
+
+  private async *handleCommandStreaming(
+    command: string,
+    args: string[],
+    telegramId: number,
+  ): UIResponseStream {
+    const modeInfo = this.registry.getModeInfo();
+
+    // Get user role, default to 'guest' for unauthorized users
+    const userRole: UserRole = (await this.authService.getRole(telegramId)) ?? "guest";
+
+    // /help - show commands available to user based on role
+    if (command === "/help") {
+      const availableCommands = this.filterCommandsByRole(this.registry.getCommands(), userRole);
+      yield {
+        response: { text: this.helpFormatter.formatHelp(availableCommands, modeInfo) },
+        mode: "final",
+      };
+      return;
+    }
+
+    // Extract command name (remove leading /)
+    const commandName = command.slice(1);
+
+    // Look up command in registry
+    const cmd = this.registry.getCommand(commandName);
+    if (!cmd) {
+      yield {
+        response: { text: `Unknown command: ${command}\nUse /help to see available commands.` },
+        mode: "final",
+      };
+      return;
+    }
+
+    // Check if user has required role for this command
+    const requiredRole = cmd.requiredRole;
+    if (requiredRole && !hasRequiredRole(userRole, requiredRole)) {
+      // Return "unknown command" to hide restricted commands
+      yield {
+        response: { text: `Unknown command: ${command}\nUse /help to see available commands.` },
+        mode: "final",
+      };
+      return;
+    }
+
+    // Route through command tree with streaming
+    yield* routeCommandStreaming(cmd, args, telegramId);
   }
 
   /**

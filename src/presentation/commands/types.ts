@@ -7,7 +7,7 @@
  * - Routing is done by traversing the command tree
  */
 
-import { UIResponse } from "../protocol/types.js";
+import { UIResponse, UIResponseStream } from "../protocol/types.js";
 import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 
 /**
@@ -24,6 +24,11 @@ export interface CommandDefinition {
  * Command handler function signature
  */
 export type CommandHandler = (args: string[], telegramId: number) => Promise<UIResponse>;
+
+/**
+ * Streaming command handler - returns AsyncGenerator for progress updates
+ */
+export type StreamingCommandHandler = (args: string[], telegramId: number) => UIResponseStream;
 
 /**
  * Callback handler function signature
@@ -45,6 +50,7 @@ export interface CallbackLookupResult {
  * - definition: metadata for help/registration
  * - requiredRole: minimum role required to access this command
  * - handler: executes when command is called (with remaining args)
+ * - streamingHandler: alternative to handler that yields progress updates
  * - subcommands: nested commands (recursive structure)
  * - callbacks: inline button handlers for this command
  */
@@ -57,6 +63,12 @@ export interface Command {
    */
   requiredRole?: UserRole;
   handler?: CommandHandler;
+  /**
+   * Streaming handler for operations that report progress.
+   * If present, takes precedence over handler.
+   * Yields UIStreamItems for progress updates and final result.
+   */
+  streamingHandler?: StreamingCommandHandler;
   subcommands?: Map<string, Command>;
   callbacks?: Map<string, CallbackHandler>;
 }

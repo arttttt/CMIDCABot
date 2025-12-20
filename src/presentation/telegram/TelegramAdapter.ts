@@ -1,11 +1,11 @@
 /**
  * Telegram adapter - grammY <-> protocol mapping
- * Pure mapping, no logic
+ * Handles streaming progress with message updates
  */
 
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { ProtocolHandler } from "../protocol/index.js";
-import { UIResponse } from "../protocol/types.js";
+import { UIResponse, UIStreamItem } from "../protocol/types.js";
 import { logger, LogSanitizer } from "../../services/logger.js";
 
 function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
@@ -21,12 +21,129 @@ function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
   return keyboard;
 }
 
-async function sendResponse(ctx: Context, response: UIResponse): Promise<void> {
-  const keyboard = toInlineKeyboard(response);
-  if (keyboard) {
-    await ctx.reply(response.text, { reply_markup: keyboard, parse_mode: "Markdown" });
-  } else {
-    await ctx.reply(response.text, { parse_mode: "Markdown" });
+/**
+ * Handle streaming responses from protocol handler
+ * - 'edit' mode: Update the status message
+ * - 'new' mode: Send a new message (preserving previous)
+ * - 'final' mode: Final result, update or send based on context
+ *
+ * If first item has deleteUserMessage=true, the user's message is deleted immediately.
+ */
+async function handleStreamingResponse(
+  ctx: Context,
+  stream: AsyncGenerator<UIStreamItem, void, undefined>,
+): Promise<void> {
+  let statusMessageId: number | undefined;
+  let isFirstItem = true;
+  const chatId = ctx.chat?.id;
+
+  if (!chatId) {
+    logger.warn("TelegramBot", "No chat ID for streaming response");
+    return;
+  }
+
+  for await (const item of stream) {
+    // Check deleteUserMessage from first item and delete immediately
+    if (isFirstItem) {
+      isFirstItem = false;
+      if (item.response.deleteUserMessage) {
+        // Delete user message IMMEDIATELY to remove sensitive data from chat
+        try {
+          await ctx.deleteMessage();
+        } catch (error) {
+          logger.debug("TelegramBot", "Failed to delete user message", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+    }
+
+    const keyboard = toInlineKeyboard(item.response);
+
+    switch (item.mode) {
+      case "edit": {
+        // Update status message (or create if first)
+        if (statusMessageId) {
+          try {
+            await ctx.api.editMessageText(chatId, statusMessageId, item.response.text, {
+              parse_mode: "Markdown",
+              reply_markup: keyboard,
+            });
+          } catch (error) {
+            // Edit might fail if content is the same - ignore
+            logger.debug("TelegramBot", "Edit message failed", {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        } else {
+          // First message - send new
+          try {
+            const msg = await ctx.reply(item.response.text, {
+              parse_mode: "Markdown",
+              reply_markup: keyboard,
+            });
+            statusMessageId = msg.message_id;
+          } catch (error) {
+            logger.error("TelegramBot", "Failed to send initial status message", {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+        break;
+      }
+
+      case "new":
+        // Send new message (keep status message for future updates)
+        try {
+          await ctx.reply(item.response.text, {
+            parse_mode: "Markdown",
+            reply_markup: keyboard,
+          });
+        } catch (error) {
+          logger.error("TelegramBot", "Failed to send new message", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+        break;
+
+      case "final":
+        // Final result - update status message or send new
+        if (statusMessageId) {
+          try {
+            await ctx.api.editMessageText(chatId, statusMessageId, item.response.text, {
+              parse_mode: "Markdown",
+              reply_markup: keyboard,
+            });
+          } catch (error) {
+            // If edit fails, send new message
+            logger.debug("TelegramBot", "Final edit failed, sending new", {
+              error: error instanceof Error ? error.message : String(error),
+            });
+            try {
+              await ctx.reply(item.response.text, {
+                parse_mode: "Markdown",
+                reply_markup: keyboard,
+              });
+            } catch (replyError) {
+              logger.error("TelegramBot", "Failed to send final message", {
+                error: replyError instanceof Error ? replyError.message : String(replyError),
+              });
+            }
+          }
+        } else {
+          try {
+            await ctx.reply(item.response.text, {
+              parse_mode: "Markdown",
+              reply_markup: keyboard,
+            });
+          } catch (error) {
+            logger.error("TelegramBot", "Failed to send final message", {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+        break;
+    }
   }
 }
 
@@ -58,28 +175,19 @@ export function createTelegramBot(
     });
   }
 
-  // Handle text messages: Context -> Protocol -> Response
+  // Handle text messages: Context -> Protocol -> Streaming Response
   bot.on("message:text", async (ctx) => {
-    const response = await handler.handleMessage({
+    const messageContext = {
       userId: String(ctx.from.id),
       telegramId: ctx.from.id,
       username: ctx.from.username,
       text: ctx.message.text,
-    });
+    };
 
-    // Delete user's message if it contains sensitive data (e.g., private keys)
-    if (response.deleteUserMessage) {
-      try {
-        await ctx.deleteMessage();
-      } catch (error) {
-        // Deletion may fail if bot lacks permissions or message is too old
-        logger.debug("TelegramBot", "Failed to delete user message", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
-
-    await sendResponse(ctx, response);
+    // Use streaming handler for all commands
+    // deleteUserMessage is handled inside handleStreamingResponse (immediate deletion)
+    const stream = handler.handleMessageStreaming(messageContext);
+    await handleStreamingResponse(ctx, stream);
   });
 
   // Handle callback queries: Context -> Protocol -> Edit message

@@ -4,7 +4,37 @@
 
 import { Command, CallbackHandler, CallbackLookupResult } from "./types.js";
 import type { UserRole } from "../../domain/models/AuthorizedUser.js";
-import { UIResponse } from "../protocol/types.js";
+import { UIResponse, UIResponseStream } from "../protocol/types.js";
+
+/**
+ * Result of finding a routed command
+ */
+export interface RoutedCommand {
+  command: Command;
+  args: string[];
+}
+
+/**
+ * Find target command by navigating the command tree
+ *
+ * @param cmd - Root command to start from
+ * @param args - Arguments to parse
+ * @returns RoutedCommand with target command and remaining args
+ */
+export function findTargetCommand(cmd: Command, args: string[]): RoutedCommand {
+  const [first, ...rest] = args;
+
+  // Try to find a subcommand
+  if (first && cmd.subcommands) {
+    const sub = cmd.subcommands.get(first.toLowerCase());
+    if (sub) {
+      return findTargetCommand(sub, rest);
+    }
+  }
+
+  // No subcommand found - this is the target
+  return { command: cmd, args };
+}
 
 /**
  * Route command execution through the command tree
@@ -19,23 +49,53 @@ export async function routeCommand(
   args: string[],
   telegramId: number,
 ): Promise<UIResponse> {
-  const [first, ...rest] = args;
+  const { command, args: finalArgs } = findTargetCommand(cmd, args);
 
-  // Try to find a subcommand
-  if (first && cmd.subcommands) {
-    const sub = cmd.subcommands.get(first.toLowerCase());
-    if (sub) {
-      return routeCommand(sub, rest, telegramId);
-    }
-  }
-
-  // No subcommand found - execute this command's handler
-  if (cmd.handler) {
-    return cmd.handler(args, telegramId);
+  // Execute this command's handler
+  if (command.handler) {
+    return command.handler(finalArgs, telegramId);
   }
 
   // No handler - return unknown subcommand message
   return { text: `Unknown subcommand. Use /help for available commands.` };
+}
+
+/**
+ * Route command with streaming support
+ *
+ * If the target command has a streamingHandler, uses it.
+ * Otherwise falls back to regular handler wrapped in a single-item stream.
+ *
+ * @param cmd - Command to execute
+ * @param args - Remaining arguments
+ * @param telegramId - User's telegram ID
+ * @returns UIResponseStream for progress and final result
+ */
+export async function* routeCommandStreaming(
+  cmd: Command,
+  args: string[],
+  telegramId: number,
+): UIResponseStream {
+  const { command, args: finalArgs } = findTargetCommand(cmd, args);
+
+  // Prefer streaming handler if available
+  if (command.streamingHandler) {
+    yield* command.streamingHandler(finalArgs, telegramId);
+    return;
+  }
+
+  // Fall back to regular handler
+  if (command.handler) {
+    const response = await command.handler(finalArgs, telegramId);
+    yield { response, mode: "final" };
+    return;
+  }
+
+  // No handler - return unknown subcommand message
+  yield {
+    response: { text: `Unknown subcommand. Use /help for available commands.` },
+    mode: "final",
+  };
 }
 
 /**
