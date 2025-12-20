@@ -5,6 +5,7 @@
 import { PortfolioStatusResult } from "../../domain/usecases/types.js";
 import { TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { UIResponse } from "../protocol/types.js";
+import { Markdown } from "./markdown.js";
 
 export class PortfolioFormatter {
   formatStatus(result: PortfolioStatusResult): UIResponse {
@@ -44,7 +45,7 @@ export class PortfolioFormatter {
           const devIndicator = alloc.deviation >= 0 ? "▲" : "▼";
           const devSign = alloc.deviation >= 0 ? "+" : "-";
 
-          text += `${alloc.symbol}\n`;
+          text += `${Markdown.escape(alloc.symbol)}\n`;
           text += `  Balance: ${this.formatBalance(alloc.balance, alloc.symbol)}\n`;
           text += `  Value: $${alloc.valueInUsdc.toFixed(2)}\n`;
           text += `  Alloc: ${currentPct}% / ${targetPct}% ${devIndicator} ${devSign}${devPct}%\n\n`;
@@ -55,7 +56,7 @@ export class PortfolioFormatter {
 
         if (status.maxDeviation < 0) {
           const deviationPct = Math.abs(status.maxDeviation * 100).toFixed(1);
-          text += `Next buy: ${status.assetToBuy} (${deviationPct}% below target)\n\n`;
+          text += `Next buy: ${Markdown.escape(status.assetToBuy ?? "")} (${deviationPct}% below target)\n\n`;
           text += `_Command: /portfolio buy <usdc>_`;
         } else {
           text += `Portfolio is balanced`;

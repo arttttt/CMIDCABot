@@ -5,6 +5,7 @@ import { ROLE_LABELS } from "../../domain/models/AuthorizedUser.js";
 import { GenerateInviteResult } from "../../domain/usecases/GenerateInviteUseCase.js";
 import { ActivateInviteResult } from "../../domain/usecases/ActivateInviteUseCase.js";
 import { UIResponse } from "../protocol/types.js";
+import { Markdown } from "./markdown.js";
 
 export class InviteFormatter {
   constructor(private botUsername: string) {}
@@ -15,10 +16,10 @@ export class InviteFormatter {
   formatGenerateResult(result: GenerateInviteResult): UIResponse {
     switch (result.type) {
       case "success": {
-        // Build link and escape _ for Markdown (otherwise it's interpreted as italic)
+        // Build link and escape special Markdown characters
         const rawLink = `https://t.me/${this.botUsername}?start=inv_${result.token}`;
-        const link = rawLink.replace(/_/g, "\\_");
-        const roleLabel = ROLE_LABELS[result.role];
+        const link = Markdown.escape(rawLink);
+        const roleLabel = Markdown.escape(ROLE_LABELS[result.role]);
         const expiresIn = this.formatExpiresIn(result.expiresAt);
 
         return {
@@ -28,7 +29,7 @@ export class InviteFormatter {
       case "not_authorized":
         return { text: "Error: You are not authorized to create invites." };
       case "cannot_create_role":
-        return { text: `Error: You cannot create invites for role '${result.role}'.` };
+        return { text: `Error: You cannot create invites for role '${Markdown.escape(result.role ?? "")}'.` };
     }
   }
 
@@ -38,7 +39,7 @@ export class InviteFormatter {
   formatActivateResult(result: ActivateInviteResult): UIResponse {
     switch (result.type) {
       case "success": {
-        const roleLabel = ROLE_LABELS[result.role];
+        const roleLabel = Markdown.escape(ROLE_LABELS[result.role]);
         return {
           text: `Welcome! You have been authorized as '${roleLabel}'.\nUse /help to see available commands.`,
         };

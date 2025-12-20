@@ -4,6 +4,7 @@
 import { AuthorizedUser, ROLE_LABELS, UserRole } from "../../domain/models/AuthorizedUser.js";
 import { AdminOperationResult } from "../../services/authorization.js";
 import { UIResponse } from "../protocol/types.js";
+import { Markdown } from "./markdown.js";
 
 export class AdminFormatter {
   /**
@@ -63,9 +64,9 @@ Examples:
    */
   formatResult(result: AdminOperationResult): UIResponse {
     if (result.success) {
-      return { text: `${result.message}` };
+      return { text: Markdown.escape(result.message ?? "") };
     }
-    return { text: `Error: ${result.error}` };
+    return { text: `Error: ${Markdown.escape(result.error ?? "")}` };
   }
 
   /**
@@ -80,8 +81,8 @@ Examples:
 
     for (const user of users) {
       const role = ROLE_LABELS[user.role];
-      const addedBy = user.addedBy ? ` (added by ${user.addedBy})` : "";
-      lines.push(`${user.telegramId} - ${role}${addedBy}`);
+      const addedBy = user.addedBy ? ` (added by ${Markdown.escape(String(user.addedBy))})` : "";
+      lines.push(`${user.telegramId} - ${Markdown.escape(role)}${addedBy}`);
     }
 
     lines.push("");
@@ -137,7 +138,7 @@ Examples:
    * Format invalid role message
    */
   formatInvalidRole(role: string): UIResponse {
-    return { text: `Invalid role: ${role}\nValid roles: user, admin` };
+    return { text: `Invalid role: ${Markdown.escape(role)}\nValid roles: user, admin` };
   }
 
   /**
@@ -145,9 +146,9 @@ Examples:
    */
   formatResolveError(identifier: string, error?: string): UIResponse {
     if (error) {
-      return { text: `Error: ${error}` };
+      return { text: `Error: ${Markdown.escape(error)}` };
     }
-    return { text: `Could not resolve user: ${identifier}` };
+    return { text: `Could not resolve user: ${Markdown.escape(identifier)}` };
   }
 }
 

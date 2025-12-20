@@ -4,6 +4,7 @@
 
 import { GetQuoteResult } from "../../domain/usecases/GetQuoteUseCase.js";
 import { UIResponse } from "../protocol/types.js";
+import { Markdown } from "./markdown.js";
 
 export class QuoteFormatter {
   format(result: GetQuoteResult): UIResponse {
@@ -12,15 +13,15 @@ export class QuoteFormatter {
     }
 
     if (result.status === "invalid_amount") {
-      return { text: `❌ Invalid amount: ${result.message}` };
+      return { text: `❌ Invalid amount: ${Markdown.escape(result.message ?? "")}` };
     }
 
     if (result.status === "invalid_asset") {
-      return { text: `❌ Invalid asset: ${result.message}` };
+      return { text: `❌ Invalid asset: ${Markdown.escape(result.message ?? "")}` };
     }
 
     if (result.status === "error") {
-      return { text: `❌ Failed to get quote: ${result.message}` };
+      return { text: `❌ Failed to get quote: ${Markdown.escape(result.message ?? "")}` };
     }
 
     const { quote } = result;
@@ -28,19 +29,21 @@ export class QuoteFormatter {
     const pricePerUnit = quote.inputAmount / quote.outputAmount;
     const slippagePct = quote.slippageBps / 100;
 
+    const routeDisplay = quote.route.map((r) => Markdown.escape(r)).join(" → ") || "Direct";
+
     const lines = [
       "📊 *Swap Quote*",
       "",
-      `*Spend:* ${this.formatAmount(quote.inputAmount)} ${quote.inputSymbol}`,
-      `*Receive:* ${this.formatAmount(quote.outputAmount)} ${quote.outputSymbol}`,
+      `*Spend:* ${this.formatAmount(quote.inputAmount)} ${Markdown.escape(quote.inputSymbol)}`,
+      `*Receive:* ${this.formatAmount(quote.outputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
       "",
-      `*Price:* 1 ${quote.outputSymbol} = ${this.formatPrice(pricePerUnit)} USDC`,
-      `*Min Receive:* ${this.formatAmount(quote.minOutputAmount)} ${quote.outputSymbol}`,
+      `*Price:* 1 ${Markdown.escape(quote.outputSymbol)} = ${this.formatPrice(pricePerUnit)} USDC`,
+      `*Min Receive:* ${this.formatAmount(quote.minOutputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
       "",
       `*Price Impact:* ${this.formatPercent(quote.priceImpactPct)}`,
       `*Slippage:* ${slippagePct}%`,
       "",
-      `*Route:* ${quote.route.join(" → ") || "Direct"}`,
+      `*Route:* ${routeDisplay}`,
       "",
       `_Quote valid for ~30 seconds_`,
     ];

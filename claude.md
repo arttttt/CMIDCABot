@@ -111,6 +111,7 @@ Next step (single actionable line)
 - Explicit types, avoid `any`
 - async/await, avoid callback hell
 - Small modules with single responsibility
+- Utility functions: prefer class with static methods over top-level exports (cleaner autocomplete, better grouping)
 
 ## Style & Output Language
 

@@ -4,6 +4,7 @@
 
 import { GetPricesResult } from "../../domain/usecases/GetPricesUseCase.js";
 import { UIResponse } from "../protocol/types.js";
+import { Markdown } from "./markdown.js";
 
 export class PriceFormatter {
   format(result: GetPricesResult): UIResponse {
@@ -12,7 +13,7 @@ export class PriceFormatter {
     }
 
     if (result.status === "error") {
-      return { text: `❌ Failed to fetch prices: ${result.message}` };
+      return { text: `❌ Failed to fetch prices: ${Markdown.escape(result.message ?? "")}` };
     }
 
     const { prices, source, fetchedAt } = result;
@@ -23,7 +24,7 @@ export class PriceFormatter {
     const lines = [
       "💰 *Current Prices*",
       "",
-      ...prices.map((p) => `• *${p.symbol}*: $${this.formatPrice(p.priceUsd)}`),
+      ...prices.map((p) => `• *${Markdown.escape(p.symbol)}*: $${this.formatPrice(p.priceUsd)}`),
       "",
       `Source: ${sourceLabel}`,
       `Updated: ${timeStr}`,

@@ -4,6 +4,7 @@
 
 import { SimulateSwapResult } from "../../domain/usecases/SimulateSwapUseCase.js";
 import { UIResponse } from "../protocol/types.js";
+import { Markdown } from "./markdown.js";
 
 export class SimulateFormatter {
   format(result: SimulateSwapResult): UIResponse {
@@ -13,7 +14,7 @@ export class SimulateFormatter {
 
     if (result.status === "no_wallet") {
       return {
-        text: "No wallet found. Create one with `/wallet create`",
+        text: `No wallet found. Create one with ${Markdown.code("/wallet create")}`,
       };
     }
 
@@ -24,23 +25,23 @@ export class SimulateFormatter {
     }
 
     if (result.status === "invalid_amount") {
-      return { text: `Invalid amount: ${result.message}` };
+      return { text: `Invalid amount: ${Markdown.escape(result.message ?? "")}` };
     }
 
     if (result.status === "invalid_asset") {
-      return { text: `Invalid asset: ${result.message}` };
+      return { text: `Invalid asset: ${Markdown.escape(result.message ?? "")}` };
     }
 
     if (result.status === "quote_error") {
-      return { text: `Failed to get quote: ${result.message}` };
+      return { text: `Failed to get quote: ${Markdown.escape(result.message ?? "")}` };
     }
 
     if (result.status === "build_error") {
-      return { text: `Failed to build transaction: ${result.message}` };
+      return { text: `Failed to build transaction: ${Markdown.escape(result.message ?? "")}` };
     }
 
     if (result.status === "simulation_error") {
-      return { text: `Simulation failed: ${result.message}` };
+      return { text: `Simulation failed: ${Markdown.escape(result.message ?? "")}` };
     }
 
     const { quote, simulation } = result;
@@ -48,14 +49,16 @@ export class SimulateFormatter {
     const statusIcon = simulation.success ? "PASSED" : "FAILED";
     const pricePerUnit = quote.inputAmount / quote.outputAmount;
 
+    const routeDisplay = quote.route.map((r) => Markdown.escape(r)).join(" -> ") || "Direct";
+
     const lines = [
       `*Swap Simulation: ${statusIcon}*`,
       "",
       "*Quote:*",
-      `  Spend: ${this.formatAmount(quote.inputAmount)} ${quote.inputSymbol}`,
-      `  Receive: ${this.formatAmount(quote.outputAmount)} ${quote.outputSymbol}`,
-      `  Price: 1 ${quote.outputSymbol} = ${this.formatPrice(pricePerUnit)} USDC`,
-      `  Route: ${quote.route.join(" -> ") || "Direct"}`,
+      `  Spend: ${this.formatAmount(quote.inputAmount)} ${Markdown.escape(quote.inputSymbol)}`,
+      `  Receive: ${this.formatAmount(quote.outputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
+      `  Price: 1 ${Markdown.escape(quote.outputSymbol)} = ${this.formatPrice(pricePerUnit)} USDC`,
+      `  Route: ${routeDisplay}`,
       "",
       "*Simulation:*",
       `  Status: ${simulation.success ? "Success" : "Failed"}`,
@@ -67,7 +70,7 @@ export class SimulateFormatter {
 
     if (simulation.error) {
       lines.push("");
-      lines.push(`*Error:* ${this.formatError(simulation.error)}`);
+      lines.push(`*Error:* ${Markdown.escape(this.formatError(simulation.error))}`);
     }
 
     // Show relevant logs (filter out noise)
@@ -76,7 +79,7 @@ export class SimulateFormatter {
       lines.push("");
       lines.push("*Logs:*");
       relevantLogs.slice(0, 5).forEach((log) => {
-        lines.push(`  ${log}`);
+        lines.push(`  ${Markdown.escape(log)}`);
       });
       if (relevantLogs.length > 5) {
         lines.push(`  ... and ${relevantLogs.length - 5} more`);

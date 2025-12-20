@@ -4,6 +4,7 @@
 
 import { PurchaseResult } from "../../domain/usecases/types.js";
 import { UIResponse } from "../protocol/types.js";
+import { Markdown } from "./markdown.js";
 
 export class PurchaseFormatter {
   format(result: PurchaseResult): UIResponse {
@@ -16,7 +17,7 @@ export class PurchaseFormatter {
       case "invalid_amount":
         return {
           text: result.error
-            ? `Invalid amount: ${result.error}`
+            ? `Invalid amount: ${Markdown.escape(result.error)}`
             : "Invalid amount. Please provide a positive number.\n\nExample: /portfolio buy 10",
         };
 
@@ -37,17 +38,17 @@ export class PurchaseFormatter {
 
       case "quote_error":
         return {
-          text: `Failed to get quote: ${result.error}`,
+          text: `Failed to get quote: ${Markdown.escape(result.error ?? "")}`,
         };
 
       case "build_error":
         return {
-          text: `Failed to build transaction: ${result.error}`,
+          text: `Failed to build transaction: ${Markdown.escape(result.error ?? "")}`,
         };
 
       case "send_error":
         return {
-          text: `Transaction failed: ${result.error}`,
+          text: `Transaction failed: ${Markdown.escape(result.error ?? "")}`,
         };
 
       case "rpc_error":
@@ -65,12 +66,12 @@ export class PurchaseFormatter {
           text:
             `Purchase Complete\n` +
             `${"─".repeat(25)}\n\n` +
-            `Asset: ${result.asset}\n` +
-            `Amount: ${result.amountAsset!.toFixed(8)} ${result.asset}\n` +
+            `Asset: ${Markdown.escape(result.asset ?? "")}\n` +
+            `Amount: ${result.amountAsset!.toFixed(8)} ${Markdown.escape(result.asset ?? "")}\n` +
             `Cost: ${result.amountUsdc} USDC\n` +
             `Price: $${result.priceUsd!.toLocaleString()}\n\n` +
             `Status: ${confirmStatus}\n` +
-            `[View on Solscan](${explorerUrl})\n\n` +
+            `${Markdown.link("View on Solscan", explorerUrl)}\n\n` +
             `Use /portfolio to see your updated portfolio.`,
         };
       }

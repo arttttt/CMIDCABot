@@ -11,12 +11,13 @@ import {
   DcaWalletInfo,
 } from "../../domain/usecases/types.js";
 import { UIResponse } from "../protocol/types.js";
+import { Markdown } from "./markdown.js";
 
 export class DcaWalletFormatter {
   private formatWalletInfo(wallet: DcaWalletInfo): string {
     const lines: string[] = [];
 
-    lines.push(`Address: \`${wallet.address}\``);
+    lines.push(`Address: ${Markdown.code(wallet.address)}`);
 
     if (wallet.balance !== null) {
       lines.push(`Balance: ${wallet.balance.toFixed(4)} SOL`);
@@ -65,7 +66,7 @@ export class DcaWalletFormatter {
               `**Wallet Created!**\n\n` +
               this.formatWalletInfo(result.wallet!) +
               `\n\n**Recovery Phrase (tap to copy):**\n` +
-              `\`${result.mnemonic}\`\n\n` +
+              `${Markdown.code(result.mnemonic)}\n\n` +
               `**WARNING:** This phrase is shown ONLY ONCE!\n` +
               `- Write it down and store securely offline\n` +
               `- Anyone with this phrase can access your funds\n` +
@@ -174,7 +175,7 @@ export class DcaWalletFormatter {
             `- Anyone with this key can access your funds\n` +
             `- Store it securely offline\n\n` +
             `Private Key (base64):\n` +
-            `\`${result.privateKey}\`\n\n` +
+            `${Markdown.code(result.privateKey ?? "")}\n\n` +
             `_Press the button below after saving to clear this message._`,
           buttons: clearButton,
         };
@@ -186,7 +187,7 @@ export class DcaWalletFormatter {
             `You are using a shared development wallet.\n` +
             `This key is configured via DEV_WALLET_PRIVATE_KEY.\n\n` +
             `Private Key (base64):\n` +
-            `\`${result.privateKey}\`\n\n` +
+            `${Markdown.code(result.privateKey ?? "")}\n\n` +
             `_Press the button below after saving to clear this message._`,
           buttons: clearButton,
         };
@@ -234,13 +235,13 @@ export class DcaWalletFormatter {
         return {
           text:
             `**Invalid Key or Mnemonic**\n\n` +
-            `${result.error || "The provided input is not a valid Solana private key or mnemonic."}\n\n` +
+            `${Markdown.escape(result.error || "The provided input is not a valid Solana private key or mnemonic.")}\n\n` +
             `**Supported formats:**\n` +
             `- Recovery phrase: 12 or 24 words\n` +
             `- Private key: base64-encoded (32 or 64 bytes)\n\n` +
             `**Examples:**\n` +
-            `\`/wallet import word1 word2 ... word12\`\n` +
-            `\`/wallet import ABC123...xyz=\`\n\n` +
+            `${Markdown.code("/wallet import word1 word2 ... word12")}\n` +
+            `${Markdown.code("/wallet import ABC123...xyz=")}\n\n` +
             `**Note:** Only Solana wallets are supported. Ethereum and other chain keys will not work.` +
             securityNotice,
           deleteUserMessage,
