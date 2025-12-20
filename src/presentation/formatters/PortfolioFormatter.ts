@@ -12,7 +12,7 @@ export class PortfolioFormatter {
     switch (result.type) {
       case "unavailable":
         return {
-          text: "Portfolio tracking is not available. JUPITER_API_KEY is required.",
+          text: `Portfolio tracking is not available. ${Markdown.code("JUPITER_API_KEY")} is required.`,
         };
 
       case "not_found":

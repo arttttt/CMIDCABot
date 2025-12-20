@@ -9,7 +9,7 @@ import { Markdown } from "./markdown.js";
 export class SwapFormatter {
   format(result: ExecuteSwapResult): UIResponse {
     if (result.status === "unavailable") {
-      return { text: "Swap unavailable (requires JUPITER_API_KEY)" };
+      return { text: `Swap unavailable (requires ${Markdown.code("JUPITER_API_KEY")})` };
     }
 
     if (result.status === "no_wallet") {
