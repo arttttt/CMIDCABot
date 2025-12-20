@@ -53,6 +53,10 @@ import {
 // Protocol types
 import { UIStreamItem } from "../protocol/types.js";
 
+// Domain types
+import type { PurchaseResult } from "../../domain/usecases/types.js";
+import type { SwapResult } from "../../domain/models/SwapStep.js";
+
 // ============================================================
 // Helper functions
 // ============================================================
@@ -290,7 +294,7 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
         return deps.purchaseFormatter.formatUsage();
       }
       // Collect result from streaming execute
-      let result: import("../../domain/usecases/types.js").PurchaseResult = { type: "unavailable" };
+      let result: PurchaseResult = { type: "unavailable" };
       for await (const step of deps.executePurchase.execute(telegramId, amount)) {
         if (step.step === "completed") {
           result = step.result;
@@ -428,7 +432,7 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
       }
       const asset = args[1] || "SOL";
       // Collect result from streaming execute
-      let result: import("../../domain/models/SwapStep.js").SwapResult = { status: "unavailable" };
+      let result: SwapResult = { status: "unavailable" };
       for await (const step of deps.executeSwap.execute(telegramId, amount, asset)) {
         if (step.step === "completed") {
           result = step.result;
