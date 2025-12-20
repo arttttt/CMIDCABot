@@ -16,7 +16,8 @@ import { derivePath } from "ed25519-hd-key";
 import { SolanaConfig } from "../types/index.js";
 import { logger } from "./logger.js";
 import type { KeyEncryptionService } from "./encryption.js";
-import { BatchRpcClient, type BatchResult } from "./batch-rpc.js";
+import { BatchRpcClient } from "./batch-rpc.js";
+import { withRetry } from "./retry.js";
 
 /**
  * Solana BIP44 derivation path (compatible with Phantom, Solflare, etc.)
@@ -39,62 +40,6 @@ function sanitizeErrorMessage(error: unknown): string {
   return message
     .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]") // Long base64 strings (keys, transactions)
     .replace(/https?:\/\/[^\s]+/g, "[RPC_URL]"); // RPC URLs
-}
-
-/**
- * Check if an error is a rate limit error (HTTP 429)
- */
-function isRateLimitError(error: unknown): boolean {
-  if (error instanceof Error) {
-    return error.message.includes("429") || error.message.includes("Too Many Requests");
-  }
-  return false;
-}
-
-/**
- * Sleep for a given number of milliseconds
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Retry a function with exponential backoff
- * @param fn - Function to retry
- * @param maxRetries - Maximum number of retries (default 3)
- * @param baseDelayMs - Base delay in milliseconds (default 1000)
- * @returns Result of the function
- */
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3,
-  baseDelayMs: number = 1000,
-): Promise<T> {
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-
-      // Only retry on rate limit errors
-      if (!isRateLimitError(error) || attempt === maxRetries) {
-        throw error;
-      }
-
-      // Exponential backoff: 1s, 2s, 4s
-      const delayMs = baseDelayMs * Math.pow(2, attempt);
-      logger.debug("Solana", "Rate limited, retrying", {
-        attempt: attempt + 1,
-        maxRetries,
-        delayMs,
-      });
-      await sleep(delayMs);
-    }
-  }
-
-  throw lastError;
 }
 
 /**
@@ -307,11 +252,10 @@ export class SolanaService {
    * - Reduces rate limit consumption
    * - Reduces network overhead
    *
-   * Falls back to parallel requests if batch fails.
-   *
    * @param walletAddress - Wallet address to check
    * @param tokens - Token configurations for BTC, ETH, USDC
    * @returns All balances
+   * @throws Error if batch request fails
    */
   async getAllBalancesBatch(
     walletAddress: string,
@@ -321,131 +265,74 @@ export class SolanaService {
       usdc: TokenConfig;
     },
   ): Promise<BatchBalancesResult> {
-    try {
-      logger.debug("Solana", "Fetching balances via batch RPC", {
-        wallet: walletAddress.slice(0, 8),
-      });
+    logger.debug("Solana", "Fetching balances via batch RPC", {
+      wallet: walletAddress.slice(0, 8),
+    });
 
-      // Build batch request for all 4 balances
-      const results = await this.batchClient.batch<[
-        // getBalance result
-        { value: bigint },
-        // getTokenAccountsByOwner results (BTC, ETH, USDC)
-        { value: TokenAccountResult[] },
-        { value: TokenAccountResult[] },
-        { value: TokenAccountResult[] },
-      ]>([
-        // SOL balance
-        {
-          method: "getBalance",
-          params: [walletAddress],
-        },
-        // BTC token account
-        {
-          method: "getTokenAccountsByOwner",
-          params: [
-            walletAddress,
-            { mint: tokens.btc.mint },
-            { encoding: "jsonParsed" },
-          ],
-        },
-        // ETH token account
-        {
-          method: "getTokenAccountsByOwner",
-          params: [
-            walletAddress,
-            { mint: tokens.eth.mint },
-            { encoding: "jsonParsed" },
-          ],
-        },
-        // USDC token account
-        {
-          method: "getTokenAccountsByOwner",
-          params: [
-            walletAddress,
-            { mint: tokens.usdc.mint },
-            { encoding: "jsonParsed" },
-          ],
-        },
-      ]);
-
-      // Parse results
-      const sol = this.parseSolBalance(results[0]);
-      const btc = this.parseTokenAccountBalance(results[1]);
-      const eth = this.parseTokenAccountBalance(results[2]);
-      const usdc = this.parseTokenAccountBalance(results[3]);
-
-      logger.debug("Solana", "Batch balances fetched", {
-        wallet: walletAddress.slice(0, 8),
-        sol,
-        btc,
-        eth,
-        usdc,
-      });
-
-      return { sol, btc, eth, usdc };
-    } catch (error) {
-      // Log error and fall back to parallel requests
-      const message = error instanceof Error ? error.message : String(error);
-      logger.warn("Solana", "Batch RPC failed, falling back to parallel", {
-        error: message,
-      });
-
-      return this.getAllBalancesParallel(walletAddress, tokens);
-    }
-  }
-
-  /**
-   * Fallback: Get all balances using parallel requests.
-   * Used when batch RPC is not supported or fails.
-   */
-  private async getAllBalancesParallel(
-    walletAddress: string,
-    tokens: {
-      btc: TokenConfig;
-      eth: TokenConfig;
-      usdc: TokenConfig;
-    },
-  ): Promise<BatchBalancesResult> {
-    const [sol, btc, eth, usdc] = await Promise.all([
-      this.getBalance(walletAddress),
-      this.getTokenBalance(walletAddress, tokens.btc.mint, tokens.btc.decimals),
-      this.getTokenBalance(walletAddress, tokens.eth.mint, tokens.eth.decimals),
-      this.getTokenBalance(walletAddress, tokens.usdc.mint, tokens.usdc.decimals),
+    // Build batch request for all 4 balances
+    const [solResult, btcResult, ethResult, usdcResult] = await this.batchClient.batch<[
+      // getBalance result
+      { value: bigint },
+      // getTokenAccountsByOwner results (BTC, ETH, USDC)
+      { value: TokenAccountResult[] },
+      { value: TokenAccountResult[] },
+      { value: TokenAccountResult[] },
+    ]>([
+      // SOL balance
+      {
+        method: "getBalance",
+        params: [walletAddress],
+      },
+      // BTC token account
+      {
+        method: "getTokenAccountsByOwner",
+        params: [
+          walletAddress,
+          { mint: tokens.btc.mint },
+          { encoding: "jsonParsed" },
+        ],
+      },
+      // ETH token account
+      {
+        method: "getTokenAccountsByOwner",
+        params: [
+          walletAddress,
+          { mint: tokens.eth.mint },
+          { encoding: "jsonParsed" },
+        ],
+      },
+      // USDC token account
+      {
+        method: "getTokenAccountsByOwner",
+        params: [
+          walletAddress,
+          { mint: tokens.usdc.mint },
+          { encoding: "jsonParsed" },
+        ],
+      },
     ]);
+
+    // Parse results
+    const sol = Number(solResult.value) / Number(LAMPORTS_PER_SOL);
+    const btc = this.parseTokenAccountBalance(btcResult.value);
+    const eth = this.parseTokenAccountBalance(ethResult.value);
+    const usdc = this.parseTokenAccountBalance(usdcResult.value);
+
+    logger.debug("Solana", "Batch balances fetched", {
+      wallet: walletAddress.slice(0, 8),
+      sol,
+      btc,
+      eth,
+      usdc,
+    });
 
     return { sol, btc, eth, usdc };
   }
 
   /**
-   * Parse SOL balance from batch result
+   * Parse token account balance from getTokenAccountsByOwner result
    */
-  private parseSolBalance(result: BatchResult<{ value: bigint }>): number {
-    if (!result.success) {
-      logger.warn("Solana", "Failed to get SOL balance in batch", {
-        error: result.error.message,
-      });
-      return 0;
-    }
-
-    return Number(result.value.value) / Number(LAMPORTS_PER_SOL);
-  }
-
-  /**
-   * Parse token account balance from batch result
-   */
-  private parseTokenAccountBalance(
-    result: BatchResult<{ value: TokenAccountResult[] }>,
-  ): number {
-    if (!result.success) {
-      logger.warn("Solana", "Failed to get token balance in batch", {
-        error: result.error.message,
-      });
-      return 0;
-    }
-
-    const accounts = result.value.value;
-
+  private parseTokenAccountBalance(accounts: TokenAccountResult[]): number {
     // No token account = balance is 0
     if (accounts.length === 0) {
       return 0;
