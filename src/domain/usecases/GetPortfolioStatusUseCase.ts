@@ -108,10 +108,9 @@ export class GetPortfolioStatusUseCase {
 
       return { type: "success", status };
     } catch (error) {
-      logger.error("GetPortfolioStatus", "Failed to fetch portfolio", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return { type: "unavailable" };
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error("GetPortfolioStatus", "Failed to fetch portfolio", { error: errorMessage });
+      return { type: "error", error: errorMessage };
     }
   }
 }

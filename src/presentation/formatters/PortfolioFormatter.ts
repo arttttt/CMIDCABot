@@ -15,6 +15,11 @@ export class PortfolioFormatter {
           text: `Portfolio tracking is not available. ${Markdown.code("JUPITER_API_KEY")} is required.`,
         };
 
+      case "error":
+        return {
+          text: `Failed to fetch portfolio: ${Markdown.escape(result.error ?? "Unknown error")}`,
+        };
+
       case "not_found":
         return {
           text:
