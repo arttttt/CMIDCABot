@@ -4,7 +4,7 @@ Telegram bot for automated DCA (Dollar Cost Averaging) investing in cryptocurren
 
 Implements the "Crypto Majors Index" strategy — a basket of three assets:
 - **BTC (cbBTC)** — 40%
-- **ETH** — 30%
+- **ETH (wETH)** — 30%
 - **SOL** — 30%
 
 On each purchase, the bot selects the asset whose portfolio share lags furthest behind its target allocation.
