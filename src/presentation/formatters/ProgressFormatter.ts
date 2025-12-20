@@ -4,6 +4,10 @@
  * Converts domain step types to UI responses with mode indicator:
  * - 'edit': Update existing message (status-only steps)
  * - 'new': Send new message (steps with useful data)
+ *
+ * Note: Status messages (getting_quote, building_transaction, etc.) are static
+ * English strings that don't contain user input, so Markdown.escape() is not needed.
+ * Dynamic content (quotes, allocations) uses Markdown.escape() for safety.
  */
 
 import type { SwapStep, PurchaseStep, QuoteInfo, AssetSelectionInfo } from "../../domain/models/index.js";
@@ -19,15 +23,26 @@ export interface FormattedProgress {
 }
 
 /**
+ * Exhaustive type check helper - ensures all cases are handled at compile time
+ */
+function assertNever(value: never): never {
+  throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
+}
+
+/**
  * Progress formatter for swap and purchase operations
  */
 export class ProgressFormatter {
   /**
-   * Format swap step
+   * Format swap step (progress only, not completed)
+   *
+   * Note: Completed steps should be filtered out by the caller and formatted
+   * by SwapFormatter instead. This method uses exhaustive type checking.
    */
   formatSwapStep(step: SwapStep): FormattedProgress {
     switch (step.step) {
       case "getting_quote":
+        // Static status message - no escape needed
         return {
           response: { text: "Getting quote from Jupiter..." },
           mode: "edit",
@@ -40,29 +55,35 @@ export class ProgressFormatter {
         };
 
       case "building_transaction":
+        // Static status message - no escape needed
         return {
           response: { text: "Building transaction..." },
           mode: "edit",
         };
 
       case "sending_transaction":
+        // Static status message - no escape needed
         return {
           response: { text: "Signing and sending transaction..." },
           mode: "edit",
         };
 
       case "completed":
-        // Completed steps are formatted by SwapFormatter, not ProgressFormatter
-        throw new Error("ProgressFormatter should not receive completed step");
+        // Completed steps must be handled by caller, not ProgressFormatter
+        return assertNever(step.step as never);
     }
   }
 
   /**
-   * Format purchase step
+   * Format purchase step (progress only, not completed)
+   *
+   * Note: Completed steps should be filtered out by the caller and formatted
+   * by PurchaseFormatter instead. This method uses exhaustive type checking.
    */
   formatPurchaseStep(step: PurchaseStep): FormattedProgress {
     switch (step.step) {
       case "selecting_asset":
+        // Static status message - no escape needed
         return {
           response: { text: "Analyzing portfolio allocation..." },
           mode: "edit",
@@ -78,8 +99,8 @@ export class ProgressFormatter {
         return this.formatSwapStep(step.swapStep);
 
       case "completed":
-        // Completed steps are formatted by PurchaseFormatter, not ProgressFormatter
-        throw new Error("ProgressFormatter should not receive completed step");
+        // Completed steps must be handled by caller, not ProgressFormatter
+        return assertNever(step.step as never);
     }
   }
 
