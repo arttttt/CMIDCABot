@@ -1,6 +1,6 @@
 {
   "name": "cmi-dca-bot",
-  "version": "0.5.0-status-1",
+  "version": "0.5.0-status-2",
   "description": "CMI DCA - Crypto Majors Index DCA bot for Solana",
   "main": "dist/index.js",
   "type": "module",
