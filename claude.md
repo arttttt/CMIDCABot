@@ -6,18 +6,10 @@ Telegram bot for automated DCA (Dollar Cost Averaging) investing in cryptocurren
 
 Implements "Crypto Majors Index" — a basket of three assets with target allocations:
 - **BTC (cbBTC)** — 40%
-- **ETH** — 30%
+- **ETH (wETH)** — 30%
 - **SOL** — 30%
 
 On each purchase, the bot selects the asset whose portfolio share lags furthest behind the target.
-
-## Current Stage
-
-**Development and testing on Solana Devnet.**
-
-- Using testnet only, not mainnet
-- RPC endpoint: `https://api.devnet.solana.com`
-- Production is out of scope for now
 
 ## Audience
 
@@ -56,6 +48,7 @@ Clean Architecture with explicit layer separation.
 - Jupiter API for swaps
 - Local storage (SQLite)
 - Iterative development — each step must be testable
+- Keep `.env.example` up-to-date when adding/changing environment variables
 
 **Don't:**
 - Mainnet configurations
@@ -123,16 +116,9 @@ Next step (single actionable line)
 
 Correctness over completeness. A compact, accurate patch beats a broad, speculative answer.
 
-## Environment
-
-```env
-TELEGRAM_BOT_TOKEN=           # from @BotFather
-SOLANA_RPC_URL=https://api.devnet.solana.com
-```
-
 ## Useful Links
 
 - [grammY](https://grammy.dev/)
-- [Solana Web3.js](https://solana-labs.github.io/solana-web3.js/)
+- [@solana/kit](https://github.com/anza-xyz/solana-web3.js)
 - [Jupiter API](https://station.jup.ag/docs/apis/swap-api)
 - [Solana Devnet Faucet](https://faucet.solana.com/)
