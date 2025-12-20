@@ -4,7 +4,7 @@ Telegram bot for automated DCA (Dollar Cost Averaging) investing in cryptocurren
 
 Implements the "Crypto Majors Index" strategy — a basket of three assets:
 - **BTC (cbBTC)** — 40%
-- **ETH** — 30%
+- **ETH (wETH)** — 30%
 - **SOL** — 30%
 
 On each purchase, the bot selects the asset whose portfolio share lags furthest behind its target allocation.
@@ -185,31 +185,6 @@ Generate webhook secret:
 openssl rand -hex 32
 ```
 
-### Deployment (Koyeb)
-
-1. Create a new app on [Koyeb](https://app.koyeb.com)
-
-2. Set environment variables:
-   ```
-   NODE_ENV=production
-   BOT_TRANSPORT=webhook
-   WEBHOOK_URL=https://<your-app>.koyeb.app/webhook
-   WEBHOOK_SECRET=<generated-secret>
-   HEALTH_HOST=0.0.0.0
-   HEALTH_PORT=8000
-   TELEGRAM_BOT_TOKEN=<your-token>
-   OWNER_TELEGRAM_ID=<your-id>
-   MASTER_ENCRYPTION_KEY=<your-key>
-   SOLANA_RPC_URL=<your-rpc-url>
-   JUPITER_API_KEY=<your-api-key>
-   ```
-
-3. Configure the service:
-   - **Port:** `8000`
-   - **Health check path:** `/health`
-
-4. Deploy. The bot will automatically register the webhook with Telegram.
-
 ## Build
 
 ```bash
@@ -263,7 +238,7 @@ npx tsc --noEmit
 
 - **TypeScript** 5.9
 - **grammY** — Telegram Bot Framework
-- **@solana/kit** v2 — Solana SDK
+- **@solana/kit** v5 — Solana SDK
 - **better-sqlite3** + **Kysely** — Local database with type-safe query builder
 - **tsx** — Run TypeScript without compilation
 
