@@ -6,7 +6,7 @@
 /**
  * Utility class for masking and redacting sensitive data in logs
  */
-export class LogRedactor {
+export class LogSanitizer {
   private static readonly SENSITIVE_COMMANDS = ["/wallet import"];
 
   private static readonly SENSITIVE_FIELDS = new Set([
