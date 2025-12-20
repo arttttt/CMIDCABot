@@ -3,10 +3,9 @@
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
+import { BalanceRepository } from "../repositories/BalanceRepository.js";
 import { SolanaService } from "../../services/solana.js";
 import { PriceService } from "../../services/price.js";
-import { TOKEN_MINTS } from "../../services/price.js";
-import { TOKEN_DECIMALS } from "../../services/jupiter-swap.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { PortfolioStatusResult } from "./types.js";
 import { AllocationInfo, PortfolioStatus } from "../../services/dca.js";
@@ -15,6 +14,7 @@ import { logger } from "../../services/logger.js";
 export class GetPortfolioStatusUseCase {
   constructor(
     private userRepository: UserRepository,
+    private balanceRepository: BalanceRepository,
     private solanaService: SolanaService,
     private priceService: PriceService,
     private devPrivateKey?: string,
@@ -39,13 +39,13 @@ export class GetPortfolioStatusUseCase {
     }
 
     try {
-      // Fetch balances in parallel
-      const [solBalance, btcBalance, ethBalance, prices] = await Promise.all([
-        this.solanaService.getBalance(walletAddress),
-        this.solanaService.getTokenBalance(walletAddress, TOKEN_MINTS.BTC, TOKEN_DECIMALS.BTC),
-        this.solanaService.getTokenBalance(walletAddress, TOKEN_MINTS.ETH, TOKEN_DECIMALS.ETH),
+      // Fetch balances (cached) and prices in parallel
+      const [balances, prices] = await Promise.all([
+        this.balanceRepository.getBalances(walletAddress),
         this.priceService.getPricesRecord(),
       ]);
+
+      const { sol: solBalance, btc: btcBalance, eth: ethBalance } = balances;
 
       logger.debug("GetPortfolioStatus", "Balances fetched", {
         SOL: solBalance,

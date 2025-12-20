@@ -15,6 +15,7 @@ import { SolanaService, SendTransactionResult } from "../../services/solana.js";
 import { TOKEN_MINTS } from "../../services/price.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { TransactionRepository } from "../repositories/TransactionRepository.js";
+import { BalanceRepository } from "../repositories/BalanceRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../services/logger.js";
 import type { KeyEncryptionService } from "../../services/encryption.js";
@@ -44,6 +45,7 @@ export class ExecuteSwapUseCase {
     private solanaService: SolanaService,
     private userRepository: UserRepository,
     private transactionRepository: TransactionRepository,
+    private balanceRepository: BalanceRepository,
     private encryptionService: KeyEncryptionService,
     private devPrivateKey?: string,
   ) {}
@@ -117,10 +119,10 @@ export class ExecuteSwapUseCase {
       return { status: "no_wallet" };
     }
 
-    // Check USDC balance before calling Jupiter API
+    // Check USDC balance before calling Jupiter API (uses cache)
     let usdcBalance: number;
     try {
-      usdcBalance = await this.solanaService.getUsdcBalance(walletAddress);
+      usdcBalance = await this.balanceRepository.getUsdcBalance(walletAddress);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Failed to fetch USDC balance", { error: message });
@@ -194,6 +196,9 @@ export class ExecuteSwapUseCase {
         message: sendResult.error ?? "Transaction failed",
       };
     }
+
+    // Invalidate balance cache after successful transaction
+    this.balanceRepository.invalidate(walletAddress);
 
     // Save transaction to database
     try {
