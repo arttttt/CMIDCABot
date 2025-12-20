@@ -16,6 +16,7 @@ import { derivePath } from "ed25519-hd-key";
 import { SolanaConfig } from "../types/index.js";
 import { logger } from "./logger.js";
 import type { KeyEncryptionService } from "./encryption.js";
+import { BatchRpcClient, type BatchResult } from "./batch-rpc.js";
 
 /**
  * Solana BIP44 derivation path (compatible with Phantom, Solflare, etc.)
@@ -151,11 +152,52 @@ export interface ValidatePrivateKeyResult {
   error?: string;
 }
 
+/**
+ * Result of batch balance fetch
+ */
+export interface BatchBalancesResult {
+  sol: number;
+  btc: number;
+  eth: number;
+  usdc: number;
+}
+
+/**
+ * Token configuration for batch balance fetching
+ */
+export interface TokenConfig {
+  mint: string;
+  decimals: number;
+}
+
+/**
+ * Token account data structure from getTokenAccountsByOwner RPC
+ */
+interface TokenAccountResult {
+  pubkey: string;
+  account: {
+    data: {
+      parsed: {
+        info: {
+          tokenAmount: {
+            amount: string;
+            decimals: number;
+            uiAmount: number | null;
+            uiAmountString: string;
+          };
+        };
+      };
+    };
+  };
+}
+
 export class SolanaService {
   private rpc: Rpc<SolanaRpcApi>;
+  private batchClient: BatchRpcClient;
 
   constructor(config: SolanaConfig) {
     this.rpc = createSolanaRpc(config.rpcUrl);
+    this.batchClient = new BatchRpcClient(config.rpcUrl);
   }
 
   /**
@@ -249,6 +291,198 @@ export class SolanaService {
     // Circle USDC on Solana mainnet
     const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
     return this.getTokenBalance(walletAddress, USDC_MINT, 6);
+  }
+
+  /**
+   * Get all portfolio balances in a single batch RPC request.
+   *
+   * This combines 4 RPC calls into 1 HTTP request:
+   * - getBalance (SOL)
+   * - getTokenAccountsByOwner (BTC)
+   * - getTokenAccountsByOwner (ETH)
+   * - getTokenAccountsByOwner (USDC)
+   *
+   * Benefits:
+   * - Reduces RPC billing (1 call instead of 4)
+   * - Reduces rate limit consumption
+   * - Reduces network overhead
+   *
+   * Falls back to parallel requests if batch fails.
+   *
+   * @param walletAddress - Wallet address to check
+   * @param tokens - Token configurations for BTC, ETH, USDC
+   * @returns All balances
+   */
+  async getAllBalancesBatch(
+    walletAddress: string,
+    tokens: {
+      btc: TokenConfig;
+      eth: TokenConfig;
+      usdc: TokenConfig;
+    },
+  ): Promise<BatchBalancesResult> {
+    try {
+      logger.debug("Solana", "Fetching balances via batch RPC", {
+        wallet: walletAddress.slice(0, 8),
+      });
+
+      // Build batch request for all 4 balances
+      const results = await this.batchClient.batch<[
+        // getBalance result
+        { value: bigint },
+        // getTokenAccountsByOwner results (BTC, ETH, USDC)
+        { value: TokenAccountResult[] },
+        { value: TokenAccountResult[] },
+        { value: TokenAccountResult[] },
+      ]>([
+        // SOL balance
+        {
+          method: "getBalance",
+          params: [walletAddress],
+        },
+        // BTC token account
+        {
+          method: "getTokenAccountsByOwner",
+          params: [
+            walletAddress,
+            { mint: tokens.btc.mint },
+            { encoding: "jsonParsed" },
+          ],
+        },
+        // ETH token account
+        {
+          method: "getTokenAccountsByOwner",
+          params: [
+            walletAddress,
+            { mint: tokens.eth.mint },
+            { encoding: "jsonParsed" },
+          ],
+        },
+        // USDC token account
+        {
+          method: "getTokenAccountsByOwner",
+          params: [
+            walletAddress,
+            { mint: tokens.usdc.mint },
+            { encoding: "jsonParsed" },
+          ],
+        },
+      ]);
+
+      // Parse results
+      const sol = this.parseSolBalance(results[0]);
+      const btc = this.parseTokenAccountBalance(results[1]);
+      const eth = this.parseTokenAccountBalance(results[2]);
+      const usdc = this.parseTokenAccountBalance(results[3]);
+
+      logger.debug("Solana", "Batch balances fetched", {
+        wallet: walletAddress.slice(0, 8),
+        sol,
+        btc,
+        eth,
+        usdc,
+      });
+
+      return { sol, btc, eth, usdc };
+    } catch (error) {
+      // Log error and fall back to parallel requests
+      const message = error instanceof Error ? error.message : String(error);
+      logger.warn("Solana", "Batch RPC failed, falling back to parallel", {
+        error: message,
+      });
+
+      return this.getAllBalancesParallel(walletAddress, tokens);
+    }
+  }
+
+  /**
+   * Fallback: Get all balances using parallel requests.
+   * Used when batch RPC is not supported or fails.
+   */
+  private async getAllBalancesParallel(
+    walletAddress: string,
+    tokens: {
+      btc: TokenConfig;
+      eth: TokenConfig;
+      usdc: TokenConfig;
+    },
+  ): Promise<BatchBalancesResult> {
+    const [sol, btc, eth, usdc] = await Promise.all([
+      this.getBalance(walletAddress),
+      this.getTokenBalance(walletAddress, tokens.btc.mint, tokens.btc.decimals),
+      this.getTokenBalance(walletAddress, tokens.eth.mint, tokens.eth.decimals),
+      this.getTokenBalance(walletAddress, tokens.usdc.mint, tokens.usdc.decimals),
+    ]);
+
+    return { sol, btc, eth, usdc };
+  }
+
+  /**
+   * Parse SOL balance from batch result
+   */
+  private parseSolBalance(result: BatchResult<{ value: bigint }>): number {
+    if (!result.success) {
+      logger.warn("Solana", "Failed to get SOL balance in batch", {
+        error: result.error.message,
+      });
+      return 0;
+    }
+
+    return Number(result.value.value) / Number(LAMPORTS_PER_SOL);
+  }
+
+  /**
+   * Parse token account balance from batch result
+   */
+  private parseTokenAccountBalance(
+    result: BatchResult<{ value: TokenAccountResult[] }>,
+  ): number {
+    if (!result.success) {
+      logger.warn("Solana", "Failed to get token balance in batch", {
+        error: result.error.message,
+      });
+      return 0;
+    }
+
+    const accounts = result.value.value;
+
+    // No token account = balance is 0
+    if (accounts.length === 0) {
+      return 0;
+    }
+
+    // Get the first token account
+    const accountData = accounts[0].account.data;
+
+    // Type guard for parsed data
+    if (typeof accountData === "object" && "parsed" in accountData) {
+      const parsed = accountData.parsed as {
+        info: {
+          tokenAmount: {
+            amount: string;
+            decimals: number;
+            uiAmount: number | null;
+            uiAmountString: string;
+          };
+        };
+      };
+      const tokenAmount = parsed.info.tokenAmount;
+
+      // Use uiAmountString (most reliable)
+      if (tokenAmount.uiAmountString) {
+        return parseFloat(tokenAmount.uiAmountString);
+      }
+
+      // Fallback: calculate from raw amount and decimals
+      if (tokenAmount.amount && tokenAmount.decimals !== undefined) {
+        return Number(tokenAmount.amount) / Math.pow(10, tokenAmount.decimals);
+      }
+
+      // Last resort: use uiAmount if available
+      return tokenAmount.uiAmount ?? 0;
+    }
+
+    return 0;
   }
 
   isValidAddress(walletAddress: string): boolean {
