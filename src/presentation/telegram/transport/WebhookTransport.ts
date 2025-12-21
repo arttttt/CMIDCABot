@@ -108,8 +108,17 @@ export class WebhookTransport implements BotTransport {
 
       // Try custom handlers (e.g., SecretPageHandler)
       for (const handler of handlers) {
-        const handled = await handler.handle(req, res);
-        if (handled) {
+        try {
+          const handled = await handler.handle(req, res);
+          if (handled) {
+            return;
+          }
+        } catch (error) {
+          console.error("HTTP handler error:", error);
+          if (!res.headersSent) {
+            res.writeHead(500);
+            res.end();
+          }
           return;
         }
       }
