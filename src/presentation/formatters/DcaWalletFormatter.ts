@@ -57,7 +57,7 @@ export class DcaWalletFormatter {
     }
   }
 
-  formatCreateWallet(result: CreateWalletResult, seedTtlMinutes?: number): UIResponse {
+  formatCreateWallet(result: CreateWalletResult, commandPath: string, seedTtlMinutes?: number): UIResponse {
     switch (result.type) {
       case "created": {
         if (result.seedUrl) {
@@ -73,7 +73,7 @@ export class DcaWalletFormatter {
               `- Link works only ONCE\n` +
               `- Write down the phrase and store offline\n` +
               `- Compatible with Phantom, Solflare, and other Solana wallets`,
-            buttons: [[{ text: "View Recovery Phrase", url: result.seedUrl }]],
+            buttons: [[{ text: "View Recovery Phrase", callbackData: `${commandPath}:view_seed` }]],
           };
         }
 
@@ -107,6 +107,30 @@ export class DcaWalletFormatter {
     }
   }
 
+  formatSeedRevealed(seedUrl: string): UIResponse {
+    return {
+      text:
+        `**Recovery Phrase Link**\n\n` +
+        `Click the link below to view your seed phrase:\n` +
+        `${seedUrl}\n\n` +
+        `**Remember:**\n` +
+        `- This link works only ONCE\n` +
+        `- Write down the phrase and store offline\n` +
+        `- Never share it with anyone`,
+    };
+  }
+
+  formatSeedAlreadyViewed(): UIResponse {
+    return {
+      text:
+        `**Recovery Phrase**\n\n` +
+        `The link has already been revealed.\n\n` +
+        `If you haven't saved your seed phrase, you can:\n` +
+        `1. Delete wallet with /wallet delete\n` +
+        `2. Create new wallet with /wallet create`,
+    };
+  }
+
   formatDeleteWallet(result: DeleteWalletResult): UIResponse {
     switch (result.type) {
       case "deleted":
@@ -133,7 +157,7 @@ export class DcaWalletFormatter {
     }
   }
 
-  formatExportKey(result: ExportKeyResult, keyTtlMinutes?: number): UIResponse {
+  formatExportKey(result: ExportKeyResult, commandPath: string, keyTtlMinutes?: number): UIResponse {
     const ttl = keyTtlMinutes ?? 5;
 
     switch (result.type) {
@@ -148,7 +172,7 @@ export class DcaWalletFormatter {
             `- Never share this key with anyone\n` +
             `- Anyone with this key can access your funds\n` +
             `- Store it securely offline`,
-          buttons: [[{ text: "View Private Key", url: result.keyUrl! }]],
+          buttons: [[{ text: "View Private Key", callbackData: `${commandPath}:view_key` }]],
         };
 
       case "dev_mode":
@@ -158,7 +182,7 @@ export class DcaWalletFormatter {
             `You are using a shared development wallet.\n` +
             `This key is configured via DEV_WALLET_PRIVATE_KEY.\n\n` +
             `Link expires in ${ttl} minutes and works only once.`,
-          buttons: [[{ text: "View Private Key", url: result.keyUrl! }]],
+          buttons: [[{ text: "View Private Key", callbackData: `${commandPath}:view_key` }]],
         };
 
       case "no_wallet":
@@ -171,6 +195,28 @@ export class DcaWalletFormatter {
       default:
         return { text: "Unable to export private key." };
     }
+  }
+
+  formatKeyRevealed(keyUrl: string): UIResponse {
+    return {
+      text:
+        `**Private Key Link**\n\n` +
+        `Click the link below to view your private key:\n` +
+        `${keyUrl}\n\n` +
+        `**Remember:**\n` +
+        `- This link works only ONCE\n` +
+        `- Store it securely offline\n` +
+        `- Never share it with anyone`,
+    };
+  }
+
+  formatKeyAlreadyViewed(): UIResponse {
+    return {
+      text:
+        `**Private Key**\n\n` +
+        `The link has already been revealed.\n\n` +
+        `Use /wallet export again to generate a new link.`,
+    };
   }
 
   formatImportWallet(result: ImportWalletResult): UIResponse {

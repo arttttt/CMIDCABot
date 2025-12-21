@@ -142,16 +142,54 @@ export interface VersionCommandDeps {
 }
 
 // ============================================================
+// Temporary URL store for secret links
+// URLs are stored until revealed, then cleared
+// ============================================================
+
+const pendingSecretUrls = new Map<string, string>();
+
+function storeSecretUrl(telegramId: number, type: "seed" | "key", url: string): void {
+  pendingSecretUrls.set(`${telegramId}:${type}`, url);
+}
+
+function consumeSecretUrl(telegramId: number, type: "seed" | "key"): string | undefined {
+  const key = `${telegramId}:${type}`;
+  const url = pendingSecretUrls.get(key);
+  if (url) {
+    pendingSecretUrls.delete(key);
+  }
+  return url;
+}
+
+// ============================================================
 // Wallet subcommand factories
 // ============================================================
 
 function createWalletCreateCommand(deps: WalletCommandDeps): Command {
+  const commandPath = "wallet/create";
+
   return {
     definition: { name: "create", description: "Create new wallet" },
     handler: async (_args, telegramId) => {
       const result = await deps.createWallet.execute(telegramId);
-      return deps.formatter.formatCreateWallet(result);
+      // Store seed URL for later reveal
+      if (result.seedUrl) {
+        storeSecretUrl(telegramId, "seed", result.seedUrl);
+      }
+      return deps.formatter.formatCreateWallet(result, commandPath);
     },
+    callbacks: new Map([
+      [
+        "view_seed",
+        async (telegramId) => {
+          const seedUrl = consumeSecretUrl(telegramId, "seed");
+          if (seedUrl) {
+            return deps.formatter.formatSeedRevealed(seedUrl);
+          }
+          return deps.formatter.formatSeedAlreadyViewed();
+        },
+      ],
+    ]),
   };
 }
 
@@ -171,12 +209,30 @@ function createWalletImportCommand(deps: WalletCommandDeps): Command {
 }
 
 function createWalletExportCommand(deps: WalletCommandDeps): Command {
+  const commandPath = "wallet/export";
+
   return {
     definition: { name: "export", description: "Export private key" },
     handler: async (_args, telegramId) => {
       const result = await deps.exportWalletKey.execute(telegramId);
-      return deps.formatter.formatExportKey(result);
+      // Store key URL for later reveal
+      if (result.keyUrl) {
+        storeSecretUrl(telegramId, "key", result.keyUrl);
+      }
+      return deps.formatter.formatExportKey(result, commandPath);
     },
+    callbacks: new Map([
+      [
+        "view_key",
+        async (telegramId) => {
+          const keyUrl = consumeSecretUrl(telegramId, "key");
+          if (keyUrl) {
+            return deps.formatter.formatKeyRevealed(keyUrl);
+          }
+          return deps.formatter.formatKeyAlreadyViewed();
+        },
+      ],
+    ]),
   };
 }
 

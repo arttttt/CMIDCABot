@@ -139,14 +139,22 @@ export class SecretPageHandler {
       gap: 12px;
     }
     .word {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       background: #252525;
-      padding: 10px 8px;
+      padding: 12px 8px;
       border-radius: 8px;
       font-family: 'SF Mono', Monaco, 'Consolas', monospace;
       font-size: 14px;
-      text-align: center;
+      min-height: 44px;
     }
-    .num { color: #666; margin-right: 4px; }
+    .num {
+      color: #666;
+      min-width: 24px;
+      text-align: right;
+    }
   </style>
 </head>
 <body>
