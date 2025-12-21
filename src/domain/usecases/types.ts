@@ -69,7 +69,8 @@ export interface DeleteWalletResult {
 
 export interface ExportKeyResult {
   type: "success" | "no_wallet" | "dev_mode";
-  privateKey?: string;
+  /** One-time URL to view private key securely */
+  keyUrl?: string;
   isDevWallet?: boolean;
 }
 

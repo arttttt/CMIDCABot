@@ -14,7 +14,7 @@ export class CreateWalletUseCase {
     private userRepository: UserRepository,
     private solana: SolanaService,
     private walletHelper: WalletInfoHelper,
-    private secretStore?: SecretStore,
+    private secretStore: SecretStore,
   ) {}
 
   async execute(telegramId: number): Promise<CreateWalletResult> {
@@ -50,13 +50,7 @@ export class CreateWalletUseCase {
     const wallet = await this.walletHelper.getWalletInfo(keypair.privateKeyBase64, false);
 
     // Store seed phrase securely and return one-time URL
-    if (this.secretStore) {
-      const seedUrl = await this.secretStore.store(keypair.mnemonic, telegramId);
-      return { type: "created", wallet, seedUrl };
-    }
-
-    // Fallback: no SecretStore configured (should not happen in production)
-    logger.warn("CreateWallet", "SecretStore not configured, seed phrase not available");
-    return { type: "created", wallet };
+    const seedUrl = await this.secretStore.store(keypair.mnemonic, telegramId);
+    return { type: "created", wallet, seedUrl };
   }
 }

@@ -1,4 +1,4 @@
-import { Config, DatabaseMode, PriceSource, AuthConfig, HealthConfig, TransportConfig, TransportMode } from "../types/config.js";
+import { Config, DatabaseMode, PriceSource, AuthConfig, HttpConfig, TransportConfig, TransportMode } from "../types/config.js";
 
 /**
  * MED-004: Environment variables that are forbidden in production mode.
@@ -88,12 +88,13 @@ export function loadConfig(): Config {
     dbPath: getEnvOrDefault("AUTH_DATABASE_PATH", "./data/auth.db"),
   };
 
-  const health: HealthConfig = {
-    port: getEnvInt("HEALTH_PORT", 8000),
-    // Default to localhost for safety; set HEALTH_HOST=0.0.0.0 for container platforms
-    host: getEnvOrDefault("HEALTH_HOST", "127.0.0.1"),
-    // Public URL for one-time seed phrase links
-    publicUrl: process.env.PUBLIC_URL || undefined,
+  // PUBLIC_URL is required for secure seed/key delivery
+  const publicUrl = getEnvOrThrow("PUBLIC_URL");
+
+  const http: HttpConfig = {
+    port: getEnvInt("HTTP_PORT", 8000),
+    host: getEnvOrDefault("HTTP_HOST", "127.0.0.1"),
+    publicUrl,
   };
 
   // Transport configuration (polling or webhook)
@@ -145,7 +146,7 @@ export function loadConfig(): Config {
       jupiterApiKey: process.env.JUPITER_API_KEY,
     },
     auth,
-    health,
+    http,
     transport,
     web: webEnabled
       ? {

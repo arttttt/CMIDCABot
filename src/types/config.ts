@@ -31,11 +31,11 @@ export interface WebConfig {
   port: number;
 }
 
-export interface HealthConfig {
+export interface HttpConfig {
   port: number;
   host: string;
-  /** Public URL for generating one-time seed links (optional) */
-  publicUrl?: string;
+  /** Public URL for generating one-time secret links (required for secure seed/key delivery) */
+  publicUrl: string;
 }
 
 export interface DcaConfig {
@@ -74,7 +74,7 @@ export interface Config {
   encryption: EncryptionConfig;
   price: PriceConfig;
   auth: AuthConfig;
-  health: HealthConfig;
+  http: HttpConfig;
   transport: TransportConfig;
   web?: WebConfig;
   isDev: boolean;

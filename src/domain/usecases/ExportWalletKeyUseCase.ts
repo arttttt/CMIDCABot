@@ -1,13 +1,13 @@
 /**
  * Export wallet key use case
  *
- * This is the only place where we explicitly decrypt the private key
- * to show it to the user. The decrypted key exists briefly in memory
- * during this operation.
+ * Exports the private key via a one-time secure URL.
+ * The decrypted key is stored in SecretStore and shown only once.
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
 import { DcaWalletConfig } from "../../types/config.js";
+import { SecretStore } from "../../services/SecretStore.js";
 import { ExportKeyResult } from "./types.js";
 import { logger } from "../../services/logger.js";
 import type { KeyEncryptionService } from "../../services/encryption.js";
@@ -16,6 +16,7 @@ export class ExportWalletKeyUseCase {
   constructor(
     private userRepository: UserRepository,
     private encryptionService: KeyEncryptionService,
+    private secretStore: SecretStore,
     private config: DcaWalletConfig,
   ) {}
 
@@ -24,9 +25,10 @@ export class ExportWalletKeyUseCase {
 
     if (this.config.devPrivateKey) {
       logger.debug("ExportWalletKey", "Dev mode - exporting shared wallet key");
+      const keyUrl = await this.secretStore.store(this.config.devPrivateKey, telegramId);
       return {
         type: "dev_mode",
-        privateKey: this.config.devPrivateKey,
+        keyUrl,
         isDevWallet: true,
       };
     }
@@ -38,14 +40,16 @@ export class ExportWalletKeyUseCase {
       return { type: "no_wallet" };
     }
 
-    // Decrypt the private key for export
-    // This is intentional - user explicitly requested to see their key
+    // Decrypt the private key for secure storage
     const decryptedKey = await this.encryptionService.decrypt(user.privateKey);
 
-    logger.info("ExportWalletKey", "Wallet key exported", { telegramId });
+    // Store in SecretStore and return one-time URL
+    const keyUrl = await this.secretStore.store(decryptedKey, telegramId);
+
+    logger.info("ExportWalletKey", "Wallet key export URL generated", { telegramId });
     return {
       type: "success",
-      privateKey: decryptedKey,
+      keyUrl,
       isDevWallet: false,
     };
   }

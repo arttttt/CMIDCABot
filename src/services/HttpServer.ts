@@ -1,28 +1,30 @@
 /**
- * Health check HTTP server for container orchestration platforms
- * Provides a minimal endpoint for liveness/readiness probes (Koyeb, Kubernetes, etc.)
+ * HTTP Server for the bot
  *
- * Also handles /seed/:token routes for one-time seed phrase display.
+ * Handles:
+ * - Health checks for container orchestration (/health)
+ * - One-time secret pages (/secret/:token)
+ * - Extensible via pluggable handlers
  */
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
-import type { HealthConfig } from "../types/config.js";
+import type { HttpConfig } from "../types/config.js";
 
 export interface HttpHandler {
   handle(req: IncomingMessage, res: ServerResponse): Promise<boolean>;
 }
 
-export class HealthService {
+export class HttpServer {
   private server: Server | null = null;
-  private readonly config: HealthConfig;
+  private readonly config: HttpConfig;
   private handlers: HttpHandler[] = [];
 
-  constructor(config: HealthConfig) {
+  constructor(config: HttpConfig) {
     this.config = config;
   }
 
   /**
-   * Register an additional HTTP handler
+   * Register an HTTP handler
    * Handlers are called in order until one returns true
    */
   addHandler(handler: HttpHandler): void {
@@ -37,8 +39,17 @@ export class HealthService {
     this.server = createServer(async (req, res) => {
       // Try registered handlers first
       for (const handler of this.handlers) {
-        const handled = await handler.handle(req, res);
-        if (handled) {
+        try {
+          const handled = await handler.handle(req, res);
+          if (handled) {
+            return;
+          }
+        } catch (error) {
+          console.error("HTTP handler error:", error);
+          if (!res.headersSent) {
+            res.writeHead(500);
+            res.end();
+          }
           return;
         }
       }
@@ -54,7 +65,7 @@ export class HealthService {
     });
 
     this.server.listen(this.config.port, this.config.host, () => {
-      console.log(`Health check server listening on port ${this.config.port}`);
+      console.log(`HTTP server listening on ${this.config.host}:${this.config.port}`);
     });
   }
 
@@ -63,5 +74,9 @@ export class HealthService {
       this.server.close();
       this.server = null;
     }
+  }
+
+  isRunning(): boolean {
+    return this.server !== null;
   }
 }

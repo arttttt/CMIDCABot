@@ -1,19 +1,24 @@
 /**
- * SecretStore - in-memory storage for one-time secrets (seed phrases)
+ * SecretStore - in-memory storage for one-time secrets (seed phrases, private keys)
  *
  * Features:
  * - AES-256-GCM encryption of payload
  * - TTL with automatic expiration
  * - One-time consumption (get + delete atomically)
- * - Periodic cleanup of expired entries
+ * - Token format validation
+ *
+ * Note: Cleanup is handled by SecretCleanupScheduler (SRP)
  */
 
 import { randomBytes } from "node:crypto";
 import { KeyEncryptionService } from "./encryption.js";
 import { logger } from "./logger.js";
 
-const DEFAULT_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const CLEANUP_INTERVAL_MS = 60 * 1000; // 1 minute
+/** Default TTL: 5 minutes */
+export const DEFAULT_SECRET_TTL_MS = 5 * 60 * 1000;
+
+/** Token format: base64url, 22 characters (16 bytes) */
+const TOKEN_REGEX = /^[A-Za-z0-9_-]{22}$/;
 
 interface SecretEntry {
   encryptedPayload: string;
@@ -29,7 +34,6 @@ export interface SecretStoreConfig {
 
 export class SecretStore {
   private secrets = new Map<string, SecretEntry>();
-  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
   private readonly ttlMs: number;
   private readonly publicUrl: string;
 
@@ -37,40 +41,14 @@ export class SecretStore {
     private readonly encryptionService: KeyEncryptionService,
     config: SecretStoreConfig,
   ) {
-    this.ttlMs = config.ttlMs ?? DEFAULT_TTL_MS;
+    this.ttlMs = config.ttlMs ?? DEFAULT_SECRET_TTL_MS;
     this.publicUrl = config.publicUrl.replace(/\/$/, ""); // Remove trailing slash
-  }
-
-  /**
-   * Start periodic cleanup of expired entries
-   */
-  startCleanup(): void {
-    if (this.cleanupTimer) {
-      return;
-    }
-
-    this.cleanupTimer = setInterval(() => {
-      this.deleteExpired();
-    }, CLEANUP_INTERVAL_MS);
-
-    // Don't prevent process exit
-    this.cleanupTimer.unref();
-  }
-
-  /**
-   * Stop periodic cleanup
-   */
-  stopCleanup(): void {
-    if (this.cleanupTimer) {
-      clearInterval(this.cleanupTimer);
-      this.cleanupTimer = null;
-    }
   }
 
   /**
    * Store a secret and return the one-time URL
    *
-   * @param payload - The secret data (e.g., mnemonic phrase)
+   * @param payload - The secret data (e.g., mnemonic phrase, private key)
    * @param telegramId - User ID for audit logging
    * @returns URL to access the secret once
    */
@@ -97,16 +75,22 @@ export class SecretStore {
       expiresIn: `${this.ttlMs / 1000}s`,
     });
 
-    return `${this.publicUrl}/seed/${token}`;
+    return `${this.publicUrl}/secret/${token}`;
   }
 
   /**
    * Consume a secret (get and delete atomically)
    *
    * @param token - The secret token
-   * @returns Decrypted payload or null if not found/expired
+   * @returns Decrypted payload or null if not found/expired/invalid
    */
   async consume(token: string): Promise<string | null> {
+    // Validate token format first
+    if (!TOKEN_REGEX.test(token)) {
+      logger.debug("SecretStore", "Invalid token format");
+      return null;
+    }
+
     const entry = this.secrets.get(token);
 
     if (!entry) {
@@ -168,7 +152,7 @@ export class SecretStore {
   }
 
   /**
-   * Get TTL in human-readable format
+   * Get TTL in minutes
    */
   getTtlMinutes(): number {
     return Math.round(this.ttlMs / 60000);

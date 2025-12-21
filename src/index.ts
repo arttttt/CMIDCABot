@@ -78,9 +78,10 @@ import {
   type TransportConfig as TelegramTransportConfig,
 } from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
-import { HealthService } from "./services/health.js";
+import { HttpServer } from "./services/HttpServer.js";
 import { SecretStore } from "./services/SecretStore.js";
-import { SeedPageHandler } from "./presentation/web/SeedPageHandler.js";
+import { SecretCleanupScheduler } from "./services/SecretCleanupScheduler.js";
+import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
 import type { MainDatabase, MockDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
@@ -134,14 +135,14 @@ async function main(): Promise<void> {
   // Initialize balance repository with caching
   const balanceRepository = new CachedBalanceRepository(solana);
 
-  // Initialize SecretStore for one-time seed phrase links (if PUBLIC_URL is configured)
-  let secretStore: SecretStore | undefined;
-  if (config.health.publicUrl) {
-    secretStore = new SecretStore(encryptionService, {
-      publicUrl: config.health.publicUrl,
-    });
-    secretStore.startCleanup();
-  }
+  // Initialize SecretStore for one-time secret links
+  const secretStore = new SecretStore(encryptionService, {
+    publicUrl: config.http.publicUrl,
+  });
+
+  // Start cleanup scheduler for expired secrets
+  const secretCleanupScheduler = new SecretCleanupScheduler(secretStore);
+  secretCleanupScheduler.start();
 
   // Initialize PriceService (required for portfolio and swap operations)
   let priceService: PriceService | undefined;
@@ -234,7 +235,7 @@ async function main(): Promise<void> {
   const createWallet = new CreateWalletUseCase(userRepository, solana, walletHelper, secretStore);
   const importWallet = new ImportWalletUseCase(userRepository, solana, walletHelper);
   const deleteWallet = new DeleteWalletUseCase(userRepository, walletHelper);
-  const exportWalletKey = new ExportWalletKeyUseCase(userRepository, encryptionService, config.dcaWallet);
+  const exportWalletKey = new ExportWalletKeyUseCase(userRepository, encryptionService, secretStore, config.dcaWallet);
   const startDca = new StartDcaUseCase(userRepository, dcaScheduler);
   const stopDca = new StopDcaUseCase(userRepository, dcaScheduler);
   const getDcaStatus = new GetDcaStatusUseCase(userRepository, dcaScheduler);
@@ -391,7 +392,7 @@ async function main(): Promise<void> {
 
   // Cleanup function
   const cleanup = async (): Promise<void> => {
-    secretStore?.stopCleanup();
+    secretCleanupScheduler.stop();
     dcaScheduler?.stop();
     await mockDb?.destroy();
     await mainDb?.destroy();
@@ -449,8 +450,8 @@ async function main(): Promise<void> {
       ? {
           url: config.transport.webhookUrl,
           secret: config.transport.webhookSecret,
-          port: config.health.port,
-          host: config.health.host,
+          port: config.http.port,
+          host: config.http.host,
         }
       : undefined,
   };
@@ -458,29 +459,26 @@ async function main(): Promise<void> {
   // Validate transport configuration
   validateTransportConfig(transportConfig);
 
-  // Start health/seed server
-  // - Production + polling: health checks + seed pages
+  // Start HTTP server
+  // - Production + polling: health checks + secret pages
   // - Production + webhook: webhook transport handles its own server
-  // - Development: seed pages only (if PUBLIC_URL configured)
-  let healthService: HealthService | undefined;
-  const needsSeedServer = secretStore !== undefined;
-  const needsHealthServer = !config.isDev && config.transport.mode === "polling";
+  // - Development: secret pages for testing
+  let httpServer: HttpServer | undefined;
+  const needsHttpServer = !config.isDev && config.transport.mode === "polling";
 
-  if (needsHealthServer || needsSeedServer) {
-    // In webhook mode, seed pages are not supported yet (would need integration with WebhookTransport)
-    if (config.transport.mode === "webhook" && needsSeedServer) {
-      console.warn("WARNING: Seed phrase links are not supported in webhook mode yet.");
-      console.warn("Consider using polling mode or implementing seed pages in WebhookTransport.");
+  if (needsHttpServer || config.isDev) {
+    // In webhook mode, secret pages are not supported yet (would need integration with WebhookTransport)
+    if (config.transport.mode === "webhook") {
+      console.warn("WARNING: One-time secret links are not supported in webhook mode yet.");
+      console.warn("Consider using polling mode or implementing secret pages in WebhookTransport.");
     } else {
-      healthService = new HealthService(config.health);
+      httpServer = new HttpServer(config.http);
 
-      // Add seed page handler if SecretStore is configured
-      if (secretStore) {
-        const seedPageHandler = new SeedPageHandler(secretStore);
-        healthService.addHandler(seedPageHandler);
-      }
+      // Add secret page handler
+      const secretPageHandler = new SecretPageHandler(secretStore);
+      httpServer.addHandler(secretPageHandler);
 
-      healthService.start();
+      httpServer.start();
     }
   }
 
@@ -517,7 +515,7 @@ async function main(): Promise<void> {
   // Graceful shutdown
   const shutdown = async (): Promise<void> => {
     console.log("\nShutting down...");
-    healthService?.stop();
+    httpServer?.stop();
     await transport.stop();
     await cleanup();
     process.exit(0);
@@ -540,11 +538,7 @@ async function main(): Promise<void> {
       console.log(`DCA: ${config.dca.amountUsdc} USDC every ${formatInterval(config.dca.intervalMs)}`);
     }
     console.log(`Prices: ${config.price.source === "jupiter" ? "Jupiter API (real-time)" : "Mock (static)"}`);
-    if (secretStore) {
-      console.log(`Seed links: ${config.health.publicUrl}/seed/{token}`);
-    } else {
-      console.log("Seed links: DISABLED (set PUBLIC_URL to enable)");
-    }
+    console.log(`Secret links: ${config.http.publicUrl}/secret/{token}`);
     console.log("─".repeat(50));
     console.log("Bot is ready! Send /start in Telegram to test.");
     console.log("Press Ctrl+C to stop.\n");
