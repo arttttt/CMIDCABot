@@ -443,6 +443,9 @@ async function main(): Promise<void> {
   // Telegram bot mode
   console.log("Starting DCA Telegram Bot...");
 
+  // Create secret page handler (shared between polling and webhook modes)
+  const secretPageHandler = new SecretPageHandler(secretStore);
+
   // Build transport configuration
   const transportConfig: TelegramTransportConfig = {
     mode: config.transport.mode,
@@ -452,6 +455,7 @@ async function main(): Promise<void> {
           secret: config.transport.webhookSecret,
           port: config.http.port,
           host: config.http.host,
+          handlers: [secretPageHandler],
         }
       : undefined,
   };
@@ -459,27 +463,13 @@ async function main(): Promise<void> {
   // Validate transport configuration
   validateTransportConfig(transportConfig);
 
-  // Start HTTP server
-  // - Production + polling: health checks + secret pages
-  // - Production + webhook: webhook transport handles its own server
-  // - Development: secret pages for testing
+  // Start HTTP server for polling mode (webhook mode has its own server with handlers)
   let httpServer: HttpServer | undefined;
-  const needsHttpServer = !config.isDev && config.transport.mode === "polling";
 
-  if (needsHttpServer || config.isDev) {
-    // In webhook mode, secret pages are not supported yet (would need integration with WebhookTransport)
-    if (config.transport.mode === "webhook") {
-      console.warn("WARNING: One-time secret links are not supported in webhook mode yet.");
-      console.warn("Consider using polling mode or implementing secret pages in WebhookTransport.");
-    } else {
-      httpServer = new HttpServer(config.http);
-
-      // Add secret page handler
-      const secretPageHandler = new SecretPageHandler(secretStore);
-      httpServer.addHandler(secretPageHandler);
-
-      httpServer.start();
-    }
+  if (config.transport.mode === "polling") {
+    httpServer = new HttpServer(config.http);
+    httpServer.addHandler(secretPageHandler);
+    httpServer.start();
   }
 
   // Get bot info first to have botUsername for invite links

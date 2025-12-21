@@ -70,7 +70,7 @@ export class SecretStore {
     this.secrets.set(token, entry);
 
     logger.debug("SecretStore", "Secret stored", {
-      token: token.substring(0, 8) + "...",
+      token: token.substring(0, 4) + "...",
       telegramId,
       expiresIn: `${this.ttlMs / 1000}s`,
     });
@@ -95,7 +95,7 @@ export class SecretStore {
 
     if (!entry) {
       logger.debug("SecretStore", "Secret not found", {
-        token: token.substring(0, 8) + "...",
+        token: token.substring(0, 4) + "...",
       });
       return null;
     }
@@ -106,14 +106,14 @@ export class SecretStore {
     // Check if expired
     if (Date.now() > entry.expiresAt) {
       logger.debug("SecretStore", "Secret expired", {
-        token: token.substring(0, 8) + "...",
+        token: token.substring(0, 4) + "...",
         telegramId: entry.telegramId,
       });
       return null;
     }
 
     logger.info("SecretStore", "Secret consumed", {
-      token: token.substring(0, 8) + "...",
+      token: token.substring(0, 4) + "...",
       telegramId: entry.telegramId,
     });
 

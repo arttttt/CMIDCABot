@@ -5,6 +5,7 @@
 
 import type { Bot, Context } from "grammy";
 import type { TransportMode } from "../../../types/config.js";
+import type { HttpHandler } from "../../../services/HttpServer.js";
 
 export type { TransportMode };
 
@@ -22,6 +23,8 @@ export interface WebhookConfig {
   port: number;
   /** Host for webhook server */
   host: string;
+  /** Additional HTTP handlers (e.g., SecretPageHandler) */
+  handlers?: HttpHandler[];
 }
 
 export interface BotTransport {
