@@ -196,6 +196,20 @@ export class WebhookTransport implements BotTransport {
       await this.bot.handleUpdate(update);
     } catch (error) {
       console.error(`Failed to process webhook update ${update.update_id}:`, error);
+
+      // Try to notify the user about the error
+      const chatId = update.message?.chat?.id ?? update.callback_query?.message?.chat?.id;
+
+      if (chatId) {
+        try {
+          await this.bot.api.sendMessage(
+            chatId,
+            "Произошла ошибка при выполнении команды. Попробуйте позже или обратитесь в поддержку.",
+          );
+        } catch {
+          // Failed to send error message - nothing more we can do
+        }
+      }
     }
   }
 
