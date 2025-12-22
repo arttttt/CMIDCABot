@@ -12,6 +12,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { SecretStore } from "../../services/SecretStore.js";
 import { logger } from "../../services/logger.js";
+import { HtmlUtils } from "./utils/html.js";
 
 // Security headers for secret pages
 const SECURITY_HEADERS = {
@@ -114,7 +115,7 @@ export class SecretPageHandler {
 
   private sendSeedPhrasePage(res: ServerResponse, words: string[]): void {
     const wordRows = words
-      .map((word, i) => `<span class="word"><span class="num">${i + 1}.</span> ${this.escapeHtml(word)}</span>`)
+      .map((word, i) => `<span class="word"><span class="num">${i + 1}.</span> ${HtmlUtils.escape(word)}</span>`)
       .join("");
 
     const html = `<!DOCTYPE html>
@@ -218,7 +219,7 @@ export class SecretPageHandler {
       <h1>Private Key</h1>
     </div>
     <div class="secret-box">
-      <div class="key">${this.escapeHtml(privateKey)}</div>
+      <div class="key">${HtmlUtils.escape(privateKey)}</div>
     </div>
     <div class="warning">
       <div class="warning-title">⚠️ Security Warning</div>
@@ -291,14 +292,5 @@ export class SecretPageHandler {
 
     res.writeHead(500, SECURITY_HEADERS);
     res.end(html);
-  }
-
-  private escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
   }
 }

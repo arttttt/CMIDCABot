@@ -2,19 +2,33 @@
  * SecretCleanupScheduler - periodic cleanup of expired secrets
  *
  * Separated from SecretStore for Single Responsibility Principle.
+ * Supports multiple stores with deleteExpired() method.
  */
 
-import { SecretStore } from "./SecretStore.js";
+/** Interface for stores that support expiration cleanup */
+export interface CleanableStore {
+  deleteExpired(): number;
+}
 
 const DEFAULT_CLEANUP_INTERVAL_MS = 60 * 1000; // 1 minute
 
 export class SecretCleanupScheduler {
   private timer: ReturnType<typeof setInterval> | null = null;
+  private readonly stores: CleanableStore[];
 
   constructor(
-    private readonly secretStore: SecretStore,
+    store: CleanableStore,
     private readonly intervalMs: number = DEFAULT_CLEANUP_INTERVAL_MS,
-  ) {}
+  ) {
+    this.stores = [store];
+  }
+
+  /**
+   * Add additional store to cleanup
+   */
+  addStore(store: CleanableStore): void {
+    this.stores.push(store);
+  }
 
   /**
    * Start periodic cleanup
@@ -25,7 +39,9 @@ export class SecretCleanupScheduler {
     }
 
     this.timer = setInterval(() => {
-      this.secretStore.deleteExpired();
+      for (const store of this.stores) {
+        store.deleteExpired();
+      }
     }, this.intervalMs);
 
     // Don't prevent process exit

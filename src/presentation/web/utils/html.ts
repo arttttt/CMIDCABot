@@ -1,0 +1,17 @@
+/**
+ * HTML utility functions for web handlers
+ */
+
+export class HtmlUtils {
+  /**
+   * Escape HTML special characters to prevent XSS
+   */
+  static escape(text: string): string {
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+}

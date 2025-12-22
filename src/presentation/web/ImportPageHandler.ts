@@ -15,8 +15,10 @@ import type { ImportSessionStore } from "../../services/ImportSessionStore.js";
 import type { ImportWalletUseCase } from "../../domain/usecases/ImportWalletUseCase.js";
 import type { MessageSender } from "../../services/MessageSender.js";
 import { logger } from "../../services/logger.js";
+import { HtmlUtils } from "./utils/html.js";
 
 // Security headers for all pages
+// Note: script-src 'unsafe-inline' required for client-side validation JS
 const SECURITY_HEADERS = {
   "Content-Type": "text/html; charset=utf-8",
   "Cache-Control": "no-store, no-cache, must-revalidate, private",
@@ -153,6 +155,10 @@ export class ImportPageHandler {
 
       switch (result.type) {
         case "imported":
+          logger.info("ImportPageHandler", "Wallet imported successfully", {
+            telegramId,
+            address: result.wallet!.address.slice(0, 8) + "...",
+          });
           this.sendSuccessPage(res, result.wallet!.address);
           await this.notifyUser(telegramId, true, undefined, result.wallet!.address);
           break;
@@ -192,11 +198,18 @@ export class ImportPageHandler {
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
       const maxSize = 10 * 1024; // 10KB limit
+      const timeoutMs = 30 * 1000; // 30 sec timeout (slow loris protection)
       let size = 0;
+
+      const timeout = setTimeout(() => {
+        req.destroy();
+        reject(new Error("Request timeout"));
+      }, timeoutMs);
 
       req.on("data", (chunk: Buffer) => {
         size += chunk.length;
         if (size > maxSize) {
+          clearTimeout(timeout);
           req.destroy();
           reject(new Error("Request body too large"));
           return;
@@ -205,10 +218,14 @@ export class ImportPageHandler {
       });
 
       req.on("end", () => {
+        clearTimeout(timeout);
         resolve(Buffer.concat(chunks).toString("utf-8"));
       });
 
-      req.on("error", reject);
+      req.on("error", (err) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
     });
   }
 
@@ -345,7 +362,9 @@ export class ImportPageHandler {
         return 'Seed phrase should contain only lowercase words';
       }
 
-      // Check for private key (base58: 43-88 chars, alphanumeric)
+      // Check for private key
+      // base58: 43-88 chars (32-64 bytes encoded, Solana uses 64-byte keypairs)
+      // base64: 43+ chars with padding
       if (words.length === 1) {
         const key = words[0];
         if (key.length >= 43 && key.length <= 88 && /^[A-Za-z0-9]+$/.test(key)) {
@@ -419,7 +438,7 @@ export class ImportPageHandler {
   <div class="container">
     <div class="success-icon">✅</div>
     <h1>Wallet Imported Successfully</h1>
-    <div class="address">${this.escapeHtml(shortAddress)}</div>
+    <div class="address">${HtmlUtils.escape(shortAddress)}</div>
     <p>You can close this page.<br>Check Telegram for details.</p>
   </div>
 </body>
@@ -456,7 +475,7 @@ export class ImportPageHandler {
   <div class="container">
     <div class="error-icon">❌</div>
     <h1>Import Failed</h1>
-    <div class="error-message">${this.escapeHtml(errorMessage)}</div>
+    <div class="error-message">${HtmlUtils.escape(errorMessage)}</div>
     <p>Please try again later.</p>
   </div>
 </body>
@@ -492,14 +511,5 @@ export class ImportPageHandler {
 
     res.writeHead(410, SECURITY_HEADERS);
     res.end(html);
-  }
-
-  private escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
   }
 }
