@@ -15,7 +15,7 @@ import type { ImportSessionStore } from "../../services/ImportSessionStore.js";
 import type { ImportWalletUseCase } from "../../domain/usecases/ImportWalletUseCase.js";
 import type { MessageSender } from "../../services/MessageSender.js";
 import { logger } from "../../services/logger.js";
-import { HtmlUtils } from "./html.js";
+import { HtmlUtils, BASE_STYLES } from "./html.js";
 
 // Security headers for all pages
 // Note: script-src 'unsafe-inline' required for client-side validation JS
@@ -28,43 +28,6 @@ const SECURITY_HEADERS = {
   "X-Frame-Options": "DENY",
   "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'",
 };
-
-// Base styles shared by all pages
-const BASE_STYLES = `
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #0a0a0a;
-    color: #e5e5e5;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  .container { max-width: 480px; width: 100%; }
-  .header { text-align: center; margin-bottom: 24px; }
-  .icon { font-size: 48px; margin-bottom: 12px; }
-  h1 { font-size: 24px; font-weight: 600; }
-  .warning {
-    background: #2a1f00;
-    border: 1px solid #5c4100;
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 20px;
-  }
-  .warning-title {
-    color: #fbbf24;
-    font-weight: 600;
-    margin-bottom: 12px;
-  }
-  .warning ul {
-    color: #d4d4d4;
-    padding-left: 20px;
-    line-height: 1.6;
-  }
-  .warning li { margin-bottom: 4px; }
-`;
 
 export class ImportPageHandler {
   constructor(
@@ -360,55 +323,14 @@ export class ImportPageHandler {
     const error = document.getElementById('error');
     const btn = document.getElementById('submitBtn');
 
-    function validate(value) {
-      const trimmed = value.trim();
-      if (!trimmed) return 'Please enter a seed phrase or private key';
-
-      const words = trimmed.split(/\\s+/);
-
-      // Check for seed phrase (12 or 24 words)
-      if (words.length === 12 || words.length === 24) {
-        // Basic check: all words should be lowercase letters only
-        const allValid = words.every(w => /^[a-z]+$/.test(w));
-        if (allValid) return null;
-        return 'Seed phrase should contain only lowercase words';
-      }
-
-      // Check for private key
-      // base58: 43-88 chars (32-64 bytes encoded, Solana uses 64-byte keypairs)
-      // base64: 43+ chars with padding
-      if (words.length === 1) {
-        const key = words[0];
-        if (key.length >= 43 && key.length <= 88 && /^[A-Za-z0-9]+$/.test(key)) {
-          return null;
-        }
-        // Also accept base64 format
-        if (key.length >= 43 && /^[A-Za-z0-9+/]+=*$/.test(key)) {
-          return null;
-        }
-      }
-
-      return 'Enter a valid 12/24 word seed phrase or private key';
-    }
-
-    secret.addEventListener('input', () => {
-      const err = validate(secret.value);
-      if (err) {
-        error.textContent = err;
-        error.classList.add('show');
-      } else {
-        error.classList.remove('show');
-      }
-    });
-
     form.addEventListener('submit', (e) => {
-      const err = validate(secret.value);
-      if (err) {
+      if (!secret.value.trim()) {
         e.preventDefault();
-        error.textContent = err;
+        error.textContent = 'Please enter a seed phrase or private key';
         error.classList.add('show');
         return;
       }
+      error.classList.remove('show');
       btn.disabled = true;
       btn.textContent = 'Importing...';
     });

@@ -294,8 +294,8 @@ async function main(): Promise<void> {
   const adminFormatter = new AdminFormatter();
   const progressFormatter = new ProgressFormatter();
 
-  // Helper function to build registry and handler with optional botUsername
-  function createRegistryAndHandler(botUsername?: string, withImportSession?: ImportSessionStore) {
+  // Helper function to build registry and handler
+  function createRegistryAndHandler(withImportSession: ImportSessionStore, botUsername?: string) {
     // Create invite formatter if botUsername is available
     const inviteFormatter = botUsername ? new InviteFormatter(botUsername) : undefined;
 
@@ -422,7 +422,7 @@ async function main(): Promise<void> {
     }
 
     // Create handler without botUsername (invite links won't work in web mode)
-    const { handler } = createRegistryAndHandler();
+    const { handler } = createRegistryAndHandler(importSessionStore);
 
     console.log("Starting DCA Bot in WEB MODE...");
     console.log("─".repeat(50));
@@ -496,8 +496,8 @@ async function main(): Promise<void> {
     httpServer.start();
   }
 
-  // Create handler with botUsername and importSessionStore
-  const { registry, handler } = createRegistryAndHandler(botInfo.username, importSessionStore);
+  // Create handler with importSessionStore and botUsername
+  const { registry, handler } = createRegistryAndHandler(importSessionStore, botInfo.username);
 
   const modeInfo = registry.getModeInfo();
   const modeLabel = modeInfo?.label ?? "Production";

@@ -33,6 +33,7 @@ import {
 // Services
 import { AuthorizationService } from "../../services/authorization.js";
 import { UserResolver } from "../../services/userResolver.js";
+import type { ImportSessionStorePort } from "../../services/ImportSessionStore.js";
 
 // Formatters
 import {
@@ -87,10 +88,7 @@ export interface WalletCommandDeps {
   deleteWallet: DeleteWalletUseCase;
   exportWalletKey: ExportWalletKeyUseCase;
   formatter: DcaWalletFormatter;
-  importSessionStore?: {
-    store(telegramId: number): string;
-    getTtlMinutes(): number;
-  };
+  importSessionStore: ImportSessionStorePort;
 }
 
 export interface DcaCommandDeps {
@@ -163,11 +161,6 @@ function createWalletImportCommand(deps: WalletCommandDeps): Command {
   return {
     definition: { name: "import", description: "Import wallet via secure web form" },
     handler: async (_args, telegramId) => {
-      // Generate secure import link
-      if (!deps.importSessionStore) {
-        return deps.formatter.formatImportUsage();
-      }
-
       const url = deps.importSessionStore.store(telegramId);
       const ttlMinutes = deps.importSessionStore.getTtlMinutes();
       return deps.formatter.formatImportLink(url, ttlMinutes);

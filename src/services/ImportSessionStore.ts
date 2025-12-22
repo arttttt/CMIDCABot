@@ -7,7 +7,7 @@
  * Features:
  * - TTL with automatic expiration (10 minutes)
  * - One-time consumption (get + delete atomically)
- * - Peek without deletion (for GET form requests)
+ * - CSRF protection via form sessions
  * - Token format validation
  */
 
@@ -37,6 +37,14 @@ interface FormSession {
 export interface ImportSessionStoreConfig {
   ttlMs?: number;
   publicUrl: string;
+}
+
+/**
+ * Port interface for import session store (used by command handlers)
+ */
+export interface ImportSessionStorePort {
+  store(telegramId: number): string;
+  getTtlMinutes(): number;
 }
 
 export class ImportSessionStore {
@@ -76,31 +84,6 @@ export class ImportSessionStore {
     });
 
     return `${this.publicUrl}/import/${token}`;
-  }
-
-  /**
-   * Check if token is valid without consuming it (for GET form requests)
-   *
-   * @param token - The session token
-   * @returns true if token exists and not expired
-   */
-  peek(token: string): boolean {
-    if (!TOKEN_REGEX.test(token)) {
-      return false;
-    }
-
-    const session = this.sessions.get(token);
-    if (!session) {
-      return false;
-    }
-
-    // Check if expired
-    if (Date.now() > session.expiresAt) {
-      this.sessions.delete(token);
-      return false;
-    }
-
-    return true;
   }
 
   /**
