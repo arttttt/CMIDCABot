@@ -22,11 +22,20 @@ Transform raw ideas and feature requests into clear, actionable specifications t
 
 1. **Receive** raw request from user
 2. **Clarify** — ask up to 3 focused questions if needed (batch them in one message)
-3. **Output** — structured specification in the format below
+3. **Output** — create markdown file with structured specification (format below)
+
+## File Output Rules
+
+- **DO:** Create `.md` file in `docs/tasks/` directory (e.g., `docs/tasks/TASK_portfolio_display.md`)
+- **DO NOT:** Create git branch
+- **DO NOT:** Commit or push to git
+- **DO NOT:** Any git operations
+
+The file is for local use only. User decides when/if to commit.
 
 ## Output Format
 
-Always produce a specification in this exact structure:
+Create a file `docs/tasks/TASK_[short_name].md` with this exact structure:
 
 ```markdown
 # Task: [Short descriptive title]
@@ -60,13 +69,17 @@ Always produce a specification in this exact structure:
 3. **Define done** — every criterion must be verifiable
 4. **Stay lean** — don't over-specify implementation details
 5. **One task = one focus** — split large requests into separate tasks
+6. **Always create file** — output must be a `.md` file, not just text in chat
+7. **No git operations** — never create branches, commit, or push
 
 ## Example
 
 **Input:**
 > I want the bot to show current portfolio
 
-**Output:**
+**Action:** Create file `docs/tasks/TASK_portfolio_display.md`
+
+**File content:**
 ```markdown
 # Task: Portfolio Display Command
 
