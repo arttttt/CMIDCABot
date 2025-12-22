@@ -3,10 +3,14 @@
  * Handles streaming progress with message updates
  */
 
-import { Bot, Context, InlineKeyboard } from "grammy";
+import { Bot, BotError, Context, InlineKeyboard } from "grammy";
 import { ProtocolHandler } from "../protocol/index.js";
 import { UIResponse, UIStreamItem } from "../protocol/types.js";
 import { logger, LogSanitizer } from "../../services/logger.js";
+import { tryWithRetry } from "../../services/retry.js";
+
+const ERROR_MESSAGE_COMMAND_FAILED = "An error occurred while executing the command. Please try again later.";
+const ERROR_MESSAGE_SEND_FAILED = "Failed to send message. Please try the command again.";
 
 function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
   if (!response.buttons?.length) return undefined;
@@ -70,85 +74,127 @@ async function handleStreamingResponse(
       case "edit": {
         // Update status message (or create if first)
         if (statusMessageId) {
-          try {
-            await ctx.api.editMessageText(chatId, statusMessageId, item.response.text, {
+          const messageId = statusMessageId;
+          await tryWithRetry(
+            () => ctx.api.editMessageText(chatId, messageId, item.response.text, {
               parse_mode: "Markdown",
               reply_markup: keyboard,
-            });
-          } catch (error) {
-            // Edit might fail if content is the same - ignore
-            logger.debug("TelegramBot", "Edit message failed", {
-              error: error instanceof Error ? error.message : String(error),
-            });
-          }
+            }),
+            (error) => {
+              // Edit might fail if content is the same - ignore
+              logger.debug("TelegramBot", "Edit message failed", {
+                error: error instanceof Error ? error.message : String(error),
+              });
+            },
+          );
         } else {
-          // First message - send new
-          try {
-            const msg = await ctx.reply(item.response.text, {
+          // First message - send new with retry
+          const msg = await tryWithRetry(
+            () => ctx.reply(item.response.text, {
               parse_mode: "Markdown",
               reply_markup: keyboard,
-            });
+            }),
+            (error) => {
+              logger.error("TelegramBot", "Failed to send initial status message", {
+                error: error instanceof Error ? error.message : String(error),
+              });
+            },
+          );
+
+          if (msg) {
             statusMessageId = msg.message_id;
-          } catch (error) {
-            logger.error("TelegramBot", "Failed to send initial status message", {
-              error: error instanceof Error ? error.message : String(error),
-            });
+          } else {
+            // Retry failed - try to send error message to user
+            try {
+              await ctx.reply(ERROR_MESSAGE_SEND_FAILED);
+            } catch {
+              // Nothing more we can do
+            }
           }
         }
         break;
       }
 
-      case "new":
-        // Send new message (keep status message for future updates)
-        try {
-          await ctx.reply(item.response.text, {
+      case "new": {
+        // Send new message (keep status message for future updates) with retry
+        const sent = await tryWithRetry(
+          () => ctx.reply(item.response.text, {
             parse_mode: "Markdown",
             reply_markup: keyboard,
-          });
-        } catch (error) {
-          logger.error("TelegramBot", "Failed to send new message", {
-            error: error instanceof Error ? error.message : String(error),
-          });
+          }),
+          (error) => {
+            logger.error("TelegramBot", "Failed to send new message", {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          },
+        );
+
+        if (!sent) {
+          // Retry failed - try to send error message to user
+          try {
+            await ctx.reply(ERROR_MESSAGE_SEND_FAILED);
+          } catch {
+            // Nothing more we can do
+          }
         }
         break;
+      }
 
-      case "final":
+      case "final": {
         // Final result - update status message or send new
+        let finalSent = false;
+
         if (statusMessageId) {
           try {
             await ctx.api.editMessageText(chatId, statusMessageId, item.response.text, {
               parse_mode: "Markdown",
               reply_markup: keyboard,
             });
+            finalSent = true;
           } catch (error) {
-            // If edit fails, send new message
+            // If edit fails, try to send new message with retry
             logger.debug("TelegramBot", "Final edit failed, sending new", {
               error: error instanceof Error ? error.message : String(error),
             });
-            try {
-              await ctx.reply(item.response.text, {
+
+            const sent = await tryWithRetry(
+              () => ctx.reply(item.response.text, {
                 parse_mode: "Markdown",
                 reply_markup: keyboard,
-              });
-            } catch (replyError) {
-              logger.error("TelegramBot", "Failed to send final message", {
-                error: replyError instanceof Error ? replyError.message : String(replyError),
-              });
-            }
+              }),
+              (retryError) => {
+                logger.error("TelegramBot", "Failed to send final message", {
+                  error: retryError instanceof Error ? retryError.message : String(retryError),
+                });
+              },
+            );
+            finalSent = !!sent;
           }
         } else {
-          try {
-            await ctx.reply(item.response.text, {
+          const sent = await tryWithRetry(
+            () => ctx.reply(item.response.text, {
               parse_mode: "Markdown",
               reply_markup: keyboard,
-            });
-          } catch (error) {
-            logger.error("TelegramBot", "Failed to send final message", {
-              error: error instanceof Error ? error.message : String(error),
-            });
+            }),
+            (error) => {
+              logger.error("TelegramBot", "Failed to send final message", {
+                error: error instanceof Error ? error.message : String(error),
+              });
+            },
+          );
+          finalSent = !!sent;
+        }
+
+        if (!finalSent) {
+          // Retry failed - try to send error message to user
+          try {
+            await ctx.reply(ERROR_MESSAGE_SEND_FAILED);
+          } catch {
+            // Nothing more we can do
           }
         }
         break;
+      }
     }
   }
 }
@@ -261,10 +307,25 @@ export function createTelegramBot(
     });
   });
 
-  // Error handling
-  bot.catch((err) => {
-    const message = err instanceof Error ? err.message : "Unknown error";
+  // Error handling with user notification
+  bot.catch(async (err: BotError<Context>) => {
+    const message = err.error instanceof Error ? err.error.message : "Unknown error";
     logger.error("TelegramBot", "Bot error", { error: message });
+
+    // Try to notify the user about the error
+    const ctx = err.ctx;
+    const chatId = ctx?.chat?.id;
+
+    if (chatId) {
+      try {
+        await ctx.api.sendMessage(chatId, ERROR_MESSAGE_COMMAND_FAILED);
+      } catch (sendError) {
+        // Failed to send error message - nothing more we can do
+        logger.debug("TelegramBot", "Failed to send error notification to user", {
+          error: sendError instanceof Error ? sendError.message : String(sendError),
+        });
+      }
+    }
   });
 
   return bot;

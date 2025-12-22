@@ -153,3 +153,34 @@ export async function pollWithBackoff<T>(
 
   return { status: "timeout" };
 }
+
+/**
+ * Try to execute a function with retry, returning undefined on failure.
+ *
+ * Unlike `withRetry`, this function:
+ * - Returns `undefined` instead of throwing on failure
+ * - Retries all errors by default (not just rate limits)
+ * - Calls `onError` callback with the final error
+ *
+ * Useful for non-critical operations like sending messages where
+ * failure should be handled gracefully without throwing.
+ *
+ * @param fn - Function to execute
+ * @param onError - Callback for the final error after all retries exhausted
+ * @param maxRetries - Maximum number of retries (default 1)
+ * @param baseDelayMs - Base delay in milliseconds (default 1000)
+ * @returns Result of the function or undefined on failure
+ */
+export async function tryWithRetry<T>(
+  fn: () => Promise<T>,
+  onError: (error: unknown) => void,
+  maxRetries: number = 1,
+  baseDelayMs: number = 1000,
+): Promise<T | undefined> {
+  try {
+    return await withRetry(fn, maxRetries, baseDelayMs, () => true);
+  } catch (error) {
+    onError(error);
+    return undefined;
+  }
+}
