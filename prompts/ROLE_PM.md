@@ -101,6 +101,6 @@ User needs visibility into current holdings to track DCA progress and verify all
 
 ## Reminders
 
-- All `CLAUDE.md` rules remain in effect
+- All `claude.md` rules remain in effect
 - Response language: Russian
 - When in doubt — ask, don't assume
