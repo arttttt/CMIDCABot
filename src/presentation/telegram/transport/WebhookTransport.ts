@@ -8,6 +8,7 @@ import { createServer, type Server, type IncomingMessage, type ServerResponse } 
 import type { Bot, Context } from "grammy";
 import type { Update } from "@grammyjs/types";
 import type { BotTransport, TransportDeps, WebhookConfig } from "./types.js";
+import { logger } from "../../../services/logger.js";
 
 export class WebhookTransport implements BotTransport {
   private readonly bot: Bot<Context>;
@@ -192,24 +193,15 @@ export class WebhookTransport implements BotTransport {
     res.end();
 
     // Process the update asynchronously
+    // Note: Error notification to user is handled by bot.catch in TelegramAdapter
     try {
       await this.bot.handleUpdate(update);
     } catch (error) {
-      console.error(`Failed to process webhook update ${update.update_id}:`, error);
-
-      // Try to notify the user about the error
-      const chatId = update.message?.chat?.id ?? update.callback_query?.message?.chat?.id;
-
-      if (chatId) {
-        try {
-          await this.bot.api.sendMessage(
-            chatId,
-            "An error occurred while executing the command. Please try again later.",
-          );
-        } catch {
-          // Failed to send error message - nothing more we can do
-        }
-      }
+      // Log error but don't send message - bot.catch handles user notification
+      logger.error("WebhookTransport", "Failed to process webhook update", {
+        updateId: update.update_id,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

@@ -3,11 +3,12 @@
  * Handles streaming progress with message updates
  */
 
-import { Bot, Context, InlineKeyboard } from "grammy";
+import { Bot, BotError, Context, InlineKeyboard } from "grammy";
 import { ProtocolHandler } from "../protocol/index.js";
 import { UIResponse, UIStreamItem } from "../protocol/types.js";
 import { logger, LogSanitizer } from "../../services/logger.js";
 
+const ERROR_MESSAGE_COMMAND_FAILED = "An error occurred while executing the command. Please try again later.";
 const ERROR_MESSAGE_SEND_FAILED = "Failed to send message. Please try the command again.";
 const RETRY_DELAY_MS = 1000;
 
@@ -22,6 +23,11 @@ async function withRetry<T>(
   try {
     return await operation();
   } catch (firstError) {
+    // Log first error for debugging
+    logger.debug("TelegramBot", "First attempt failed, retrying", {
+      error: firstError instanceof Error ? firstError.message : String(firstError),
+    });
+
     // Wait before retry
     await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
 
@@ -96,17 +102,19 @@ async function handleStreamingResponse(
       case "edit": {
         // Update status message (or create if first)
         if (statusMessageId) {
-          try {
-            await ctx.api.editMessageText(chatId, statusMessageId, item.response.text, {
+          const messageId = statusMessageId;
+          await withRetry(
+            () => ctx.api.editMessageText(chatId, messageId, item.response.text, {
               parse_mode: "Markdown",
               reply_markup: keyboard,
-            });
-          } catch (error) {
-            // Edit might fail if content is the same - ignore
-            logger.debug("TelegramBot", "Edit message failed", {
-              error: error instanceof Error ? error.message : String(error),
-            });
-          }
+            }),
+            (error) => {
+              // Edit might fail if content is the same - ignore
+              logger.debug("TelegramBot", "Edit message failed", {
+                error: error instanceof Error ? error.message : String(error),
+              });
+            },
+          );
         } else {
           // First message - send new with retry
           const msg = await withRetry(
@@ -328,7 +336,7 @@ export function createTelegramBot(
   });
 
   // Error handling with user notification
-  bot.catch(async (err) => {
+  bot.catch(async (err: BotError<Context>) => {
     const message = err.error instanceof Error ? err.error.message : "Unknown error";
     logger.error("TelegramBot", "Bot error", { error: message });
 
@@ -338,10 +346,7 @@ export function createTelegramBot(
 
     if (chatId) {
       try {
-        await ctx.api.sendMessage(
-          chatId,
-          "An error occurred while executing the command. Please try again later.",
-        );
+        await ctx.api.sendMessage(chatId, ERROR_MESSAGE_COMMAND_FAILED);
       } catch (sendError) {
         // Failed to send error message - nothing more we can do
         logger.debug("TelegramBot", "Failed to send error notification to user", {
