@@ -23,7 +23,17 @@ Analyze code for correctness, architecture compliance, edge cases, and security.
 1. **Receive** code or file paths to review
 2. **Analyze** against checklist (see below)
 3. **Categorize** findings by severity
-4. **Output** structured review document
+4. **Output** — create markdown file with structured review document
+
+## File Output Rules
+
+- **DO:** Create `.md` file in `docs/reviews/` directory (e.g., `docs/reviews/REVIEW_portfolio_handler.md`)
+- **DO NOT:** Create git branch
+- **DO NOT:** Commit or push to git
+- **DO NOT:** Any git operations
+- **DO NOT:** Fix the code yourself
+
+The file is for local use only. User decides when/if to commit.
 
 ## Review Checklist
 
@@ -61,7 +71,7 @@ Analyze code for correctness, architecture compliance, edge cases, and security.
 
 ## Output Format
 
-Produce a structured review document:
+Create a file `docs/reviews/REVIEW_[component_name].md` with this structure:
 
 ```markdown
 # Code Review: [Feature/Component Name]
@@ -146,9 +156,17 @@ Produce a structured review document:
 4. **Be actionable** — every finding should have a clear path to resolution
 5. **Prioritize** — order findings by importance within each category
 6. **Stay objective** — focus on code, not coder
+7. **Always create file** — output must be a `.md` file, not just text in chat
+8. **No git operations** — never create branches, commit, or push
 
-## Example Finding
+## Example
 
+**Input:**
+> Review the balance handler implementation
+
+**Action:** Create file `docs/reviews/REVIEW_balance_handler.md`
+
+**Example finding in the file:**
 ```markdown
 #### [C1] Unencrypted private key in logs
 
@@ -171,5 +189,7 @@ logger.debug(`Created wallet: ${publicKey} (key hidden)`);
 
 - All `claude.md` rules remain in effect
 - Response language: Russian
+- **Always create `docs/reviews/REVIEW_[name].md` file**
 - Focus on meaningful issues, not style nitpicks
 - When reviewing, consider the context and constraints of the project
+- No git operations — user decides when to commit
