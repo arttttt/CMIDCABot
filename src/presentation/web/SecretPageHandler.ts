@@ -12,6 +12,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { SecretStore } from "../../services/SecretStore.js";
 import { logger } from "../../services/logger.js";
+import { HtmlUtils, BASE_STYLES } from "./html.js";
 
 // Security headers for secret pages
 const SECURITY_HEADERS = {
@@ -23,42 +24,6 @@ const SECURITY_HEADERS = {
   "X-Frame-Options": "DENY",
   "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'",
 };
-
-// Base styles shared by all pages
-const BASE_STYLES = `
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #0a0a0a;
-    color: #e5e5e5;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  .container { max-width: 480px; width: 100%; }
-  .header { text-align: center; margin-bottom: 24px; }
-  .icon { font-size: 48px; margin-bottom: 12px; }
-  h1 { font-size: 24px; font-weight: 600; }
-  .warning {
-    background: #2a1f00;
-    border: 1px solid #5c4100;
-    border-radius: 12px;
-    padding: 16px;
-  }
-  .warning-title {
-    color: #fbbf24;
-    font-weight: 600;
-    margin-bottom: 12px;
-  }
-  .warning ul {
-    color: #d4d4d4;
-    padding-left: 20px;
-    line-height: 1.6;
-  }
-  .warning li { margin-bottom: 4px; }
-`;
 
 export class SecretPageHandler {
   constructor(private readonly secretStore: SecretStore) {}
@@ -114,7 +79,7 @@ export class SecretPageHandler {
 
   private sendSeedPhrasePage(res: ServerResponse, words: string[]): void {
     const wordRows = words
-      .map((word, i) => `<span class="word"><span class="num">${i + 1}.</span> ${this.escapeHtml(word)}</span>`)
+      .map((word, i) => `<span class="word"><span class="num">${i + 1}.</span> ${HtmlUtils.escape(word)}</span>`)
       .join("");
 
     const html = `<!DOCTYPE html>
@@ -218,7 +183,7 @@ export class SecretPageHandler {
       <h1>Private Key</h1>
     </div>
     <div class="secret-box">
-      <div class="key">${this.escapeHtml(privateKey)}</div>
+      <div class="key">${HtmlUtils.escape(privateKey)}</div>
     </div>
     <div class="warning">
       <div class="warning-title">⚠️ Security Warning</div>
@@ -291,14 +256,5 @@ export class SecretPageHandler {
 
     res.writeHead(500, SECURITY_HEADERS);
     res.end(html);
-  }
-
-  private escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
   }
 }
