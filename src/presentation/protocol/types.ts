@@ -8,7 +8,10 @@
  */
 export interface UIButton {
   text: string;
-  callbackData: string;
+  /** Callback data for button press (mutually exclusive with url) */
+  callbackData?: string;
+  /** URL to open when button is pressed (mutually exclusive with callbackData) */
+  url?: string;
 }
 
 /**

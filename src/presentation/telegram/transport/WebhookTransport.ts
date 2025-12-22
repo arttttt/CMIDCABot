@@ -90,6 +90,7 @@ export class WebhookTransport implements BotTransport {
 
   private async startServer(): Promise<void> {
     const webhookPath = this.getWebhookPath();
+    const handlers = this.config.handlers ?? [];
 
     this.server = createServer(async (req, res) => {
       // Handle webhook endpoint
@@ -103,6 +104,23 @@ export class WebhookTransport implements BotTransport {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ status: "ok" }));
         return;
+      }
+
+      // Try custom handlers (e.g., SecretPageHandler)
+      for (const handler of handlers) {
+        try {
+          const handled = await handler.handle(req, res);
+          if (handled) {
+            return;
+          }
+        } catch (error) {
+          console.error("HTTP handler error:", error);
+          if (!res.headersSent) {
+            res.writeHead(500);
+            res.end();
+          }
+          return;
+        }
       }
 
       // 404 for unknown routes

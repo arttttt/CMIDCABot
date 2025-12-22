@@ -5,6 +5,7 @@
 import { UserRepository } from "../repositories/UserRepository.js";
 import { SolanaService } from "../../services/solana.js";
 import { WalletInfoHelper } from "./helpers/WalletInfoHelper.js";
+import { SecretStore } from "../../services/SecretStore.js";
 import { CreateWalletResult } from "./types.js";
 import { logger } from "../../services/logger.js";
 
@@ -13,6 +14,7 @@ export class CreateWalletUseCase {
     private userRepository: UserRepository,
     private solana: SolanaService,
     private walletHelper: WalletInfoHelper,
+    private secretStore: SecretStore,
   ) {}
 
   async execute(telegramId: number): Promise<CreateWalletResult> {
@@ -46,6 +48,9 @@ export class CreateWalletUseCase {
     });
 
     const wallet = await this.walletHelper.getWalletInfo(keypair.privateKeyBase64, false);
-    return { type: "created", wallet, mnemonic: keypair.mnemonic };
+
+    // Store seed phrase securely and return one-time URL
+    const seedUrl = await this.secretStore.store(keypair.mnemonic, telegramId);
+    return { type: "created", wallet, seedUrl };
   }
 }

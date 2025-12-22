@@ -53,8 +53,9 @@ cp .env.example .env
 | `BOT_TRANSPORT` | No | `polling` | Transport mode (`polling` \| `webhook`) |
 | `WEBHOOK_URL` | Yes*** | - | Public HTTPS URL for webhook |
 | `WEBHOOK_SECRET` | No | - | Secret token for webhook validation |
-| `HEALTH_PORT` | No | `8000` | Port for health check endpoint |
-| `HEALTH_HOST` | No | `127.0.0.1` | Host for health check (use `0.0.0.0` for containers) |
+| `HTTP_PORT` | No | `8000` | Port for HTTP server (health checks, secret pages) |
+| `HTTP_HOST` | No | `127.0.0.1` | Host for HTTP server (use `0.0.0.0` for containers) |
+| `PUBLIC_URL` | Yes | - | Public URL for one-time secret links |
 
 \* Not required if `WEB_ENABLED=true`
 \** Required when `PRICE_SOURCE=jupiter`
@@ -79,6 +80,32 @@ MASTER_ENCRYPTION_KEY=<your-generated-key>
 - Keep this key safe — losing it means losing access to all encrypted wallets
 - Do not change this key after users have created wallets
 - Back up this key securely (e.g., in a password manager or secure vault)
+
+### Secure Secret Delivery
+
+Seed phrases and private keys are delivered via one-time links instead of being sent directly in Telegram chat. This prevents secrets from being stored in chat history.
+
+Configure the public URL for secret links:
+
+```env
+PUBLIC_URL=https://your-app.example.com
+```
+
+For local development with ngrok:
+```env
+PUBLIC_URL=https://abc123.ngrok.io
+```
+
+**How it works:**
+- When creating a wallet, a one-time URL is generated: `{PUBLIC_URL}/secret/{token}`
+- The user clicks the link to view their seed phrase
+- Link expires after 5 minutes and works only once
+- Same mechanism is used for `/wallet export`
+
+**Important:**
+- `PUBLIC_URL` is required — the bot will not start without it
+- The URL must be publicly accessible (or accessible to the user)
+- Secrets are encrypted at rest and decrypted only on access
 
 ### Authorization Setup
 
@@ -177,7 +204,7 @@ Receives updates via HTTP endpoint. Recommended for production deployments.
 BOT_TRANSPORT=webhook
 WEBHOOK_URL=https://your-app.koyeb.app/webhook
 WEBHOOK_SECRET=your-secret-here
-HEALTH_HOST=0.0.0.0
+HTTP_HOST=0.0.0.0
 ```
 
 Generate webhook secret:

@@ -78,7 +78,10 @@ import {
   type TransportConfig as TelegramTransportConfig,
 } from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
-import { HealthService } from "./services/health.js";
+import { HttpServer } from "./services/HttpServer.js";
+import { SecretStore } from "./services/SecretStore.js";
+import { SecretCleanupScheduler } from "./services/SecretCleanupScheduler.js";
+import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
 import type { MainDatabase, MockDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
@@ -131,6 +134,15 @@ async function main(): Promise<void> {
 
   // Initialize balance repository with caching
   const balanceRepository = new CachedBalanceRepository(solana);
+
+  // Initialize SecretStore for one-time secret links
+  const secretStore = new SecretStore(encryptionService, {
+    publicUrl: config.http.publicUrl,
+  });
+
+  // Start cleanup scheduler for expired secrets
+  const secretCleanupScheduler = new SecretCleanupScheduler(secretStore);
+  secretCleanupScheduler.start();
 
   // Initialize PriceService (required for portfolio and swap operations)
   let priceService: PriceService | undefined;
@@ -220,10 +232,10 @@ async function main(): Promise<void> {
   // Create use cases
   const initUser = new InitUserUseCase(userRepository, dca);
   const showWallet = new ShowWalletUseCase(userRepository, walletHelper);
-  const createWallet = new CreateWalletUseCase(userRepository, solana, walletHelper);
+  const createWallet = new CreateWalletUseCase(userRepository, solana, walletHelper, secretStore);
   const importWallet = new ImportWalletUseCase(userRepository, solana, walletHelper);
   const deleteWallet = new DeleteWalletUseCase(userRepository, walletHelper);
-  const exportWalletKey = new ExportWalletKeyUseCase(userRepository, encryptionService, config.dcaWallet);
+  const exportWalletKey = new ExportWalletKeyUseCase(userRepository, encryptionService, secretStore, config.dcaWallet);
   const startDca = new StartDcaUseCase(userRepository, dcaScheduler);
   const stopDca = new StopDcaUseCase(userRepository, dcaScheduler);
   const getDcaStatus = new GetDcaStatusUseCase(userRepository, dcaScheduler);
@@ -380,6 +392,7 @@ async function main(): Promise<void> {
 
   // Cleanup function
   const cleanup = async (): Promise<void> => {
+    secretCleanupScheduler.stop();
     dcaScheduler?.stop();
     await mockDb?.destroy();
     await mainDb?.destroy();
@@ -430,6 +443,9 @@ async function main(): Promise<void> {
   // Telegram bot mode
   console.log("Starting DCA Telegram Bot...");
 
+  // Create secret page handler (shared between polling and webhook modes)
+  const secretPageHandler = new SecretPageHandler(secretStore);
+
   // Build transport configuration
   const transportConfig: TelegramTransportConfig = {
     mode: config.transport.mode,
@@ -437,8 +453,9 @@ async function main(): Promise<void> {
       ? {
           url: config.transport.webhookUrl,
           secret: config.transport.webhookSecret,
-          port: config.health.port,
-          host: config.health.host,
+          port: config.http.port,
+          host: config.http.host,
+          handlers: [secretPageHandler],
         }
       : undefined,
   };
@@ -446,12 +463,13 @@ async function main(): Promise<void> {
   // Validate transport configuration
   validateTransportConfig(transportConfig);
 
-  // Start health check server in production for polling mode only
-  // Webhook mode handles health checks on its own server
-  let healthService: HealthService | undefined;
-  if (!config.isDev && config.transport.mode === "polling") {
-    healthService = new HealthService(config.health);
-    healthService.start();
+  // Start HTTP server for polling mode (webhook mode has its own server with handlers)
+  let httpServer: HttpServer | undefined;
+
+  if (config.transport.mode === "polling") {
+    httpServer = new HttpServer(config.http);
+    httpServer.addHandler(secretPageHandler);
+    httpServer.start();
   }
 
   // Get bot info first to have botUsername for invite links
@@ -487,7 +505,7 @@ async function main(): Promise<void> {
   // Graceful shutdown
   const shutdown = async (): Promise<void> => {
     console.log("\nShutting down...");
-    healthService?.stop();
+    httpServer?.stop();
     await transport.stop();
     await cleanup();
     process.exit(0);
@@ -509,7 +527,8 @@ async function main(): Promise<void> {
     if (dcaScheduler) {
       console.log(`DCA: ${config.dca.amountUsdc} USDC every ${formatInterval(config.dca.intervalMs)}`);
     }
-    console.log(`Prices: ${config.price.source === "jupiter" ? "Jupiter API (real-time)" : "Mock (static)"}`)
+    console.log(`Prices: ${config.price.source === "jupiter" ? "Jupiter API (real-time)" : "Mock (static)"}`);
+    console.log(`Secret links: ${config.http.publicUrl}/secret/{token}`);
     console.log("─".repeat(50));
     console.log("Bot is ready! Send /start in Telegram to test.");
     console.log("Press Ctrl+C to stop.\n");

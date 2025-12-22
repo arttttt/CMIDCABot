@@ -57,22 +57,23 @@ export class DcaWalletFormatter {
     }
   }
 
-  formatCreateWallet(result: CreateWalletResult): UIResponse {
+  formatCreateWallet(result: CreateWalletResult, seedTtlMinutes?: number): UIResponse {
     switch (result.type) {
       case "created": {
-        if (result.mnemonic) {
+        if (result.seedUrl) {
+          const ttl = seedTtlMinutes ?? 5;
           return {
             text:
               `**Wallet Created!**\n\n` +
               this.formatWalletInfo(result.wallet!) +
-              `\n\n**Recovery Phrase (tap to copy):**\n` +
-              `${Markdown.code(result.mnemonic)}\n\n` +
-              `**WARNING:** This phrase is shown ONLY ONCE!\n` +
-              `- Write it down and store securely offline\n` +
-              `- Anyone with this phrase can access your funds\n` +
-              `- Compatible with Phantom, Solflare, and other Solana wallets\n\n` +
-              `_Press the button below after saving to hide the phrase._`,
-            buttons: [[{ text: "✓ I saved the recovery phrase", callbackData: "mnemonic_saved" }]],
+              `\n\n**Recovery Phrase:**\n` +
+              `Your seed phrase is available via secure one-time link.\n\n` +
+              `**IMPORTANT:**\n` +
+              `- Link expires in ${ttl} minutes\n` +
+              `- Link works only ONCE\n` +
+              `- Write down the phrase and store offline\n` +
+              `- Compatible with Phantom, Solflare, and other Solana wallets`,
+            buttons: [[{ text: "View Recovery Phrase", url: result.seedUrl }]],
           };
         }
 
@@ -132,64 +133,32 @@ export class DcaWalletFormatter {
     }
   }
 
-  formatExportKey(result: ExportKeyResult, commandPath: string): UIResponse {
-    // First step: show confirmation screen (don't show key yet)
-    switch (result.type) {
-      case "success":
-      case "dev_mode":
-        return {
-          text:
-            `**Export Private Key?**\n\n` +
-            `**WARNING:** Your private key will be shown in this chat.\n\n` +
-            `**Security risks:**\n` +
-            `- The key may remain in chat history\n` +
-            `- Anyone with access to this chat can see it\n` +
-            `- Never share your private key with anyone\n\n` +
-            `Are you sure you want to export?`,
-          buttons: [[{ text: "Yes, show my private key", callbackData: `${commandPath}:confirm_export` }]],
-        };
-
-      case "no_wallet":
-        return {
-          text:
-            `No wallet found.\n\n` +
-            `Use /wallet create to generate a wallet first.`,
-        };
-
-      default:
-        return { text: "Unable to export private key." };
-    }
-  }
-
-  formatExportKeyConfirmed(result: ExportKeyResult): UIResponse {
-    // Second step: show the actual key with clear button
-    const clearButton = [[{ text: "✓ I saved it", callbackData: "delete_sensitive" }]];
+  formatExportKey(result: ExportKeyResult, keyTtlMinutes?: number): UIResponse {
+    const ttl = keyTtlMinutes ?? 5;
 
     switch (result.type) {
       case "success":
         return {
           text:
-            `**Private Key Export**\n\n` +
-            `**SECURITY WARNING**\n` +
+            `**Export Private Key**\n\n` +
+            `Your private key is available via secure one-time link.\n\n` +
+            `**IMPORTANT:**\n` +
+            `- Link expires in ${ttl} minutes\n` +
+            `- Link works only ONCE\n` +
             `- Never share this key with anyone\n` +
             `- Anyone with this key can access your funds\n` +
-            `- Store it securely offline\n\n` +
-            `Private Key (base64):\n` +
-            `${Markdown.code(result.privateKey ?? "")}\n\n` +
-            `_Press the button below after saving to clear this message._`,
-          buttons: clearButton,
+            `- Store it securely offline`,
+          buttons: [[{ text: "View Private Key", url: result.keyUrl! }]],
         };
 
       case "dev_mode":
         return {
           text:
-            `**Private Key Export (DEV MODE)**\n\n` +
+            `**Export Private Key (DEV MODE)**\n\n` +
             `You are using a shared development wallet.\n` +
             `This key is configured via DEV_WALLET_PRIVATE_KEY.\n\n` +
-            `Private Key (base64):\n` +
-            `${Markdown.code(result.privateKey ?? "")}\n\n` +
-            `_Press the button below after saving to clear this message._`,
-          buttons: clearButton,
+            `Link expires in ${ttl} minutes and works only once.`,
+          buttons: [[{ text: "View Private Key", url: result.keyUrl! }]],
         };
 
       case "no_wallet":
