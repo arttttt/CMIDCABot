@@ -82,6 +82,9 @@ import { HttpServer } from "./services/HttpServer.js";
 import { SecretStore } from "./services/SecretStore.js";
 import { SecretCleanupScheduler } from "./services/SecretCleanupScheduler.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
+import { ImportSessionStore } from "./services/ImportSessionStore.js";
+import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
+import { TelegramMessageSender } from "./presentation/telegram/TelegramMessageSender.js";
 import type { MainDatabase, MockDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
@@ -137,6 +140,11 @@ async function main(): Promise<void> {
 
   // Initialize SecretStore for one-time secret links
   const secretStore = new SecretStore(encryptionService, {
+    publicUrl: config.http.publicUrl,
+  });
+
+  // Initialize ImportSessionStore for secure wallet import
+  const importSessionStore = new ImportSessionStore({
     publicUrl: config.http.publicUrl,
   });
 
@@ -287,7 +295,7 @@ async function main(): Promise<void> {
   const progressFormatter = new ProgressFormatter();
 
   // Helper function to build registry and handler with optional botUsername
-  function createRegistryAndHandler(botUsername?: string) {
+  function createRegistryAndHandler(botUsername?: string, withImportSession?: ImportSessionStore) {
     // Create invite formatter if botUsername is available
     const inviteFormatter = botUsername ? new InviteFormatter(botUsername) : undefined;
 
@@ -329,6 +337,7 @@ async function main(): Promise<void> {
           deleteWallet,
           exportWalletKey,
           formatter: dcaWalletFormatter,
+          importSessionStore: withImportSession,
         },
         dca: {
           startDca,
@@ -370,6 +379,7 @@ async function main(): Promise<void> {
           deleteWallet,
           exportWalletKey,
           formatter: dcaWalletFormatter,
+          importSessionStore: withImportSession,
         },
         portfolio: {
           getPortfolioStatus,
@@ -443,8 +453,21 @@ async function main(): Promise<void> {
   // Telegram bot mode
   console.log("Starting DCA Telegram Bot...");
 
-  // Create secret page handler (shared between polling and webhook modes)
+  // Get bot info first to have botUsername for invite links and API for message sending
+  const { Bot } = await import("grammy");
+  const tempBot = new Bot(config.telegram.botToken);
+  const botInfo = await tempBot.api.getMe();
+
+  // Create message sender for notifications from HTTP handlers
+  const messageSender = new TelegramMessageSender(tempBot.api);
+
+  // Create HTTP page handlers (shared between polling and webhook modes)
   const secretPageHandler = new SecretPageHandler(secretStore);
+  const importPageHandler = new ImportPageHandler(
+    importSessionStore,
+    importWallet,
+    messageSender,
+  );
 
   // Build transport configuration
   const transportConfig: TelegramTransportConfig = {
@@ -455,7 +478,7 @@ async function main(): Promise<void> {
           secret: config.transport.webhookSecret,
           port: config.http.port,
           host: config.http.host,
-          handlers: [secretPageHandler],
+          handlers: [secretPageHandler, importPageHandler],
         }
       : undefined,
   };
@@ -469,16 +492,12 @@ async function main(): Promise<void> {
   if (config.transport.mode === "polling") {
     httpServer = new HttpServer(config.http);
     httpServer.addHandler(secretPageHandler);
+    httpServer.addHandler(importPageHandler);
     httpServer.start();
   }
 
-  // Get bot info first to have botUsername for invite links
-  const { Bot } = await import("grammy");
-  const tempBot = new Bot(config.telegram.botToken);
-  const botInfo = await tempBot.api.getMe();
-
-  // Create handler with botUsername (single creation, no recreation)
-  const { registry, handler } = createRegistryAndHandler(botInfo.username);
+  // Create handler with botUsername and importSessionStore
+  const { registry, handler } = createRegistryAndHandler(botInfo.username, importSessionStore);
 
   const modeInfo = registry.getModeInfo();
   const modeLabel = modeInfo?.label ?? "Production";
@@ -529,6 +548,7 @@ async function main(): Promise<void> {
     }
     console.log(`Prices: ${config.price.source === "jupiter" ? "Jupiter API (real-time)" : "Mock (static)"}`);
     console.log(`Secret links: ${config.http.publicUrl}/secret/{token}`);
+    console.log(`Import links: ${config.http.publicUrl}/import/{token}`);
     console.log("─".repeat(50));
     console.log("Bot is ready! Send /start in Telegram to test.");
     console.log("Press Ctrl+C to stop.\n");

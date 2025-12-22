@@ -87,6 +87,10 @@ export interface WalletCommandDeps {
   deleteWallet: DeleteWalletUseCase;
   exportWalletKey: ExportWalletKeyUseCase;
   formatter: DcaWalletFormatter;
+  importSessionStore?: {
+    store(telegramId: number): string;
+    getTtlMinutes(): number;
+  };
 }
 
 export interface DcaCommandDeps {
@@ -157,15 +161,16 @@ function createWalletCreateCommand(deps: WalletCommandDeps): Command {
 
 function createWalletImportCommand(deps: WalletCommandDeps): Command {
   return {
-    definition: { name: "import", description: "Import wallet from private key or mnemonic", usage: "<key_or_mnemonic>" },
-    handler: async (args, telegramId) => {
-      if (args.length === 0) {
+    definition: { name: "import", description: "Import wallet via secure web form" },
+    handler: async (_args, telegramId) => {
+      // Generate secure import link
+      if (!deps.importSessionStore) {
         return deps.formatter.formatImportUsage();
       }
-      // Join all args to support mnemonic phrases (12-24 words)
-      const privateKeyOrMnemonic = args.join(" ");
-      const result = await deps.importWallet.execute(telegramId, privateKeyOrMnemonic);
-      return deps.formatter.formatImportWallet(result);
+
+      const url = deps.importSessionStore.store(telegramId);
+      const ttlMinutes = deps.importSessionStore.getTtlMinutes();
+      return deps.formatter.formatImportLink(url, ttlMinutes);
     },
   };
 }

@@ -49,7 +49,7 @@ export class DcaWalletFormatter {
           text:
             `No wallet found.\n\n` +
             `Use /wallet create to generate a new wallet\n` +
-            `or /wallet import <key> to import existing one.`,
+            `or /wallet import to import an existing one.`,
         };
 
       default:
@@ -174,10 +174,6 @@ export class DcaWalletFormatter {
   }
 
   formatImportWallet(result: ImportWalletResult): UIResponse {
-    // Always delete user's message containing private key for security
-    const deleteUserMessage = true;
-    const securityNotice = `\n\n**Security:** Your message with the private key has been deleted.`;
-
     switch (result.type) {
       case "imported":
         return {
@@ -185,9 +181,7 @@ export class DcaWalletFormatter {
             `**Wallet Imported!**\n\n` +
             this.formatWalletInfo(result.wallet!) +
             `\n\nYour wallet has been successfully imported.\n\n` +
-            `**Note:** Your private key is stored securely for DCA operations.` +
-            securityNotice,
-          deleteUserMessage,
+            `**Note:** Your private key is stored securely for DCA operations.`,
         };
 
       case "already_exists":
@@ -195,9 +189,7 @@ export class DcaWalletFormatter {
           text:
             `Wallet already exists.\n\n` +
             this.formatWalletInfo(result.wallet!) +
-            `\n\nTo import a different wallet, first delete the existing one with /wallet delete.` +
-            securityNotice,
-          deleteUserMessage,
+            `\n\nTo import a different wallet, first delete the existing one with /wallet delete.`,
         };
 
       case "invalid_key":
@@ -208,12 +200,7 @@ export class DcaWalletFormatter {
             `**Supported formats:**\n` +
             `- Recovery phrase: 12 or 24 words\n` +
             `- Private key: base64-encoded (32 or 64 bytes)\n\n` +
-            `**Examples:**\n` +
-            `${Markdown.code("/wallet import word1 word2 ... word12")}\n` +
-            `${Markdown.code("/wallet import ABC123...xyz=")}\n\n` +
-            `**Note:** Only Solana wallets are supported. Ethereum and other chain keys will not work.` +
-            securityNotice,
-          deleteUserMessage,
+            `**Note:** Only Solana wallets are supported. Ethereum and other chain keys will not work.`,
         };
 
       case "dev_mode":
@@ -221,30 +208,38 @@ export class DcaWalletFormatter {
           text:
             `[DEV MODE] Cannot import wallets.\n\n` +
             `Using shared development wallet:\n` +
-            this.formatWalletInfo(result.wallet!) +
-            securityNotice,
-          deleteUserMessage,
+            this.formatWalletInfo(result.wallet!),
         };
 
       default:
-        return { text: "Unable to import wallet.", deleteUserMessage };
+        return { text: "Unable to import wallet." };
     }
+  }
+
+  formatImportLink(url: string, ttlMinutes: number): UIResponse {
+    return {
+      text:
+        `**Import Wallet**\n\n` +
+        `For secure import, use the link below to enter your seed phrase or private key.\n\n` +
+        `**Security:**\n` +
+        `- Link expires in ${ttlMinutes} minutes\n` +
+        `- Link works only ONCE\n` +
+        `- Data is sent directly via HTTPS (not through Telegram)`,
+      buttons: [[{ text: "Open Import Form", url }]],
+    };
   }
 
   formatImportUsage(): UIResponse {
     return {
       text:
-        `**Import Wallet Usage**\n\n` +
-        `/wallet import <recovery_phrase or private_key>\n\n` +
+        `**Import Wallet**\n\n` +
+        `Use /wallet import to get a secure link for importing your wallet.\n\n` +
         `**Supported formats:**\n` +
         `- Recovery phrase (12 or 24 words) - compatible with Phantom, Solflare\n` +
         `- Base64-encoded private key\n\n` +
-        `**Examples:**\n` +
-        `/wallet import word1 word2 word3 ... word12\n` +
-        `/wallet import ABC123...xyz=\n\n` +
         `**Security:**\n` +
-        `- Your message with the key will be automatically deleted\n` +
-        `- Only import keys you trust\n` +
+        `- Your key is entered via secure web form\n` +
+        `- Data is sent directly via HTTPS (not through Telegram)\n` +
         `- The key will be stored securely for DCA operations`,
     };
   }
@@ -256,7 +251,7 @@ export class DcaWalletFormatter {
         `Available commands:\n` +
         `/wallet - Show current wallet\n` +
         `/wallet create - Create new wallet\n` +
-        `/wallet import <key> - Import existing wallet\n` +
+        `/wallet import - Import existing wallet\n` +
         `/wallet export - Export private key\n` +
         `/wallet delete - Delete wallet`,
     };
