@@ -140,6 +140,15 @@ Next step (single actionable line)
 
 Correctness over completeness. A compact, accurate patch beats a broad, speculative answer.
 
+## Roles
+
+Available roles in `prompts/`:
+- `ROLE_PM.md` — converts ideas into specs
+- `ROLE_DEV.md` — implements features
+- `ROLE_REVIEWER.md` — reviews code
+
+Activate with: `[PM]`, `[DEV]`, or `[REVIEW]` prefix in message.
+
 ## Useful Links
 
 - [grammY](https://grammy.dev/)
