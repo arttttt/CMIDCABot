@@ -204,7 +204,7 @@ export class WebhookTransport implements BotTransport {
         try {
           await this.bot.api.sendMessage(
             chatId,
-            "Произошла ошибка при выполнении команды. Попробуйте позже или обратитесь в поддержку.",
+            "An error occurred while executing the command. Please try again later or contact support.",
           );
         } catch {
           // Failed to send error message - nothing more we can do

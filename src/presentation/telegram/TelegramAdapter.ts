@@ -8,7 +8,7 @@ import { ProtocolHandler } from "../protocol/index.js";
 import { UIResponse, UIStreamItem } from "../protocol/types.js";
 import { logger, LogSanitizer } from "../../services/logger.js";
 
-const ERROR_MESSAGE_SEND_FAILED = "Не удалось отправить сообщение. Попробуйте команду ещё раз.";
+const ERROR_MESSAGE_SEND_FAILED = "Failed to send message. Please try the command again.";
 const RETRY_DELAY_MS = 1000;
 
 /**
@@ -340,7 +340,7 @@ export function createTelegramBot(
       try {
         await ctx.api.sendMessage(
           chatId,
-          "Произошла ошибка при выполнении команды. Попробуйте позже или обратитесь в поддержку.",
+          "An error occurred while executing the command. Please try again later or contact support.",
         );
       } catch (sendError) {
         // Failed to send error message - nothing more we can do
