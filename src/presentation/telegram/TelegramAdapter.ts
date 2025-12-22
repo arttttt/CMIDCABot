@@ -7,38 +7,10 @@ import { Bot, BotError, Context, InlineKeyboard } from "grammy";
 import { ProtocolHandler } from "../protocol/index.js";
 import { UIResponse, UIStreamItem } from "../protocol/types.js";
 import { logger, LogSanitizer } from "../../services/logger.js";
+import { tryWithRetry } from "../../services/retry.js";
 
 const ERROR_MESSAGE_COMMAND_FAILED = "An error occurred while executing the command. Please try again later.";
 const ERROR_MESSAGE_SEND_FAILED = "Failed to send message. Please try the command again.";
-const RETRY_DELAY_MS = 1000;
-
-/**
- * Retry wrapper for message sending operations
- * Attempts once, waits, then retries once more
- */
-async function withRetry<T>(
-  operation: () => Promise<T>,
-  onError: (error: unknown) => void,
-): Promise<T | undefined> {
-  try {
-    return await operation();
-  } catch (firstError) {
-    // Log first error for debugging
-    logger.debug("TelegramBot", "First attempt failed, retrying", {
-      error: firstError instanceof Error ? firstError.message : String(firstError),
-    });
-
-    // Wait before retry
-    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-
-    try {
-      return await operation();
-    } catch (secondError) {
-      onError(secondError);
-      return undefined;
-    }
-  }
-}
 
 function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
   if (!response.buttons?.length) return undefined;
@@ -103,7 +75,7 @@ async function handleStreamingResponse(
         // Update status message (or create if first)
         if (statusMessageId) {
           const messageId = statusMessageId;
-          await withRetry(
+          await tryWithRetry(
             () => ctx.api.editMessageText(chatId, messageId, item.response.text, {
               parse_mode: "Markdown",
               reply_markup: keyboard,
@@ -117,7 +89,7 @@ async function handleStreamingResponse(
           );
         } else {
           // First message - send new with retry
-          const msg = await withRetry(
+          const msg = await tryWithRetry(
             () => ctx.reply(item.response.text, {
               parse_mode: "Markdown",
               reply_markup: keyboard,
@@ -145,7 +117,7 @@ async function handleStreamingResponse(
 
       case "new": {
         // Send new message (keep status message for future updates) with retry
-        const sent = await withRetry(
+        const sent = await tryWithRetry(
           () => ctx.reply(item.response.text, {
             parse_mode: "Markdown",
             reply_markup: keyboard,
@@ -185,7 +157,7 @@ async function handleStreamingResponse(
               error: error instanceof Error ? error.message : String(error),
             });
 
-            const sent = await withRetry(
+            const sent = await tryWithRetry(
               () => ctx.reply(item.response.text, {
                 parse_mode: "Markdown",
                 reply_markup: keyboard,
@@ -199,7 +171,7 @@ async function handleStreamingResponse(
             finalSent = !!sent;
           }
         } else {
-          const sent = await withRetry(
+          const sent = await tryWithRetry(
             () => ctx.reply(item.response.text, {
               parse_mode: "Markdown",
               reply_markup: keyboard,
