@@ -8,7 +8,7 @@
 
 import { TOKEN_MINTS } from "./price.js";
 import { logger } from "./logger.js";
-import { toRawAmount, toHumanAmountNumber } from "../utils/precision.js";
+import { toRawAmount, toHumanAmountNumber } from "./precision.js";
 
 // Jupiter Swap API v1 endpoint
 const JUPITER_SWAP_API = "https://api.jup.ag/swap/v1";

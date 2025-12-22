@@ -12,7 +12,7 @@ import { PriceService } from "./price.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../types/portfolio.js";
 import { PriceSource } from "../types/config.js";
 import { logger } from "./logger.js";
-import { divideAmount, multiplyAmount, toDecimal, Decimal } from "../utils/precision.js";
+import { divideAmount, multiplyAmount, toDecimal, Decimal } from "./precision.js";
 
 // Mock prices (USD) - used when PRICE_SOURCE=mock
 export const MOCK_PRICES: Record<AssetSymbol, number> = {

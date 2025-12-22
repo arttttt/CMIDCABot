@@ -18,7 +18,7 @@ import { logger } from "./logger.js";
 import type { KeyEncryptionService } from "./encryption.js";
 import { BatchRpcClient } from "./batch-rpc.js";
 import { withRetry, pollWithBackoff, type PollResult } from "./retry.js";
-import { toHumanAmountNumber } from "../utils/precision.js";
+import { toHumanAmountNumber } from "./precision.js";
 
 /**
  * Solana BIP44 derivation path (compatible with Phantom, Solflare, etc.)
