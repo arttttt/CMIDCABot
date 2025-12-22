@@ -340,7 +340,7 @@ export function createTelegramBot(
       try {
         await ctx.api.sendMessage(
           chatId,
-          "An error occurred while executing the command. Please try again later or contact support.",
+          "An error occurred while executing the command. Please try again later.",
         );
       } catch (sendError) {
         // Failed to send error message - nothing more we can do
