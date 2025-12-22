@@ -149,8 +149,7 @@ async function main(): Promise<void> {
   });
 
   // Start cleanup scheduler for expired secrets and import sessions
-  const secretCleanupScheduler = new SecretCleanupScheduler(secretStore);
-  secretCleanupScheduler.addStore(importSessionStore);
+  const secretCleanupScheduler = new SecretCleanupScheduler([secretStore, importSessionStore]);
   secretCleanupScheduler.start();
 
   // Initialize PriceService (required for portfolio and swap operations)

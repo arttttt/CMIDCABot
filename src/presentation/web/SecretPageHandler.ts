@@ -12,7 +12,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { SecretStore } from "../../services/SecretStore.js";
 import { logger } from "../../services/logger.js";
-import { HtmlUtils } from "./utils/html.js";
+import { HtmlUtils } from "./html.js";
 
 // Security headers for secret pages
 const SECURITY_HEADERS = {

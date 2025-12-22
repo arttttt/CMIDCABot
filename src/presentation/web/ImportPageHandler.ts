@@ -15,7 +15,7 @@ import type { ImportSessionStore } from "../../services/ImportSessionStore.js";
 import type { ImportWalletUseCase } from "../../domain/usecases/ImportWalletUseCase.js";
 import type { MessageSender } from "../../services/MessageSender.js";
 import { logger } from "../../services/logger.js";
-import { HtmlUtils } from "./utils/html.js";
+import { HtmlUtils } from "./html.js";
 
 // Security headers for all pages
 // Note: script-src 'unsafe-inline' required for client-side validation JS

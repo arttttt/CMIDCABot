@@ -14,21 +14,11 @@ const DEFAULT_CLEANUP_INTERVAL_MS = 60 * 1000; // 1 minute
 
 export class SecretCleanupScheduler {
   private timer: ReturnType<typeof setInterval> | null = null;
-  private readonly stores: CleanableStore[];
 
   constructor(
-    store: CleanableStore,
+    private readonly stores: CleanableStore[],
     private readonly intervalMs: number = DEFAULT_CLEANUP_INTERVAL_MS,
-  ) {
-    this.stores = [store];
-  }
-
-  /**
-   * Add additional store to cleanup
-   */
-  addStore(store: CleanableStore): void {
-    this.stores.push(store);
-  }
+  ) {}
 
   /**
    * Start periodic cleanup
