@@ -107,30 +107,26 @@ export class ImportPageHandler {
   }
 
   private handleGet(token: string, res: ServerResponse): boolean {
-    // Check token validity without consuming
-    if (!this.sessionStore.peek(token)) {
+    // Consume import token and create form session with CSRF token.
+    // This prevents race condition: attacker can't POST with intercepted URL
+    // because the import token is already consumed.
+    const formSession = this.sessionStore.consumeToForm(token);
+
+    if (!formSession) {
       this.sendExpiredPage(res);
       return true;
     }
 
-    this.sendFormPage(res);
+    this.sendFormPage(res, formSession.csrfToken);
     return true;
   }
 
   private async handlePost(
-    token: string,
+    _token: string,
     req: IncomingMessage,
     res: ServerResponse,
   ): Promise<boolean> {
-    // Consume token and get telegramId
-    const telegramId = this.sessionStore.consume(token);
-
-    if (telegramId === null) {
-      this.sendExpiredPage(res);
-      return true;
-    }
-
-    // Parse POST body
+    // Parse POST body first to get CSRF token
     let body: string;
     try {
       body = await this.readBody(req);
@@ -139,8 +135,23 @@ export class ImportPageHandler {
       return true;
     }
 
-    // Parse form data
+    // Parse form data and validate CSRF token
     const params = new URLSearchParams(body);
+    const csrfToken = params.get("csrf");
+
+    if (!csrfToken) {
+      this.sendExpiredPage(res);
+      return true;
+    }
+
+    // Consume form session and get telegramId
+    const telegramId = this.sessionStore.consumeForm(csrfToken);
+
+    if (telegramId === null) {
+      this.sendExpiredPage(res);
+      return true;
+    }
+
     const secretInput = params.get("secret")?.trim();
 
     if (!secretInput) {
@@ -247,7 +258,7 @@ export class ImportPageHandler {
     }
   }
 
-  private sendFormPage(res: ServerResponse): void {
+  private sendFormPage(res: ServerResponse, csrfToken: string): void {
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -321,6 +332,7 @@ export class ImportPageHandler {
     </div>
     <div class="form-box">
       <form method="POST" id="importForm">
+        <input type="hidden" name="csrf" value="${csrfToken}">
         <textarea
           name="secret"
           id="secret"

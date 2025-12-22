@@ -14,8 +14,11 @@
 import { randomBytes } from "node:crypto";
 import { logger } from "./logger.js";
 
-/** Default TTL: 10 minutes */
+/** Default TTL: 10 minutes for import sessions */
 export const DEFAULT_IMPORT_SESSION_TTL_MS = 10 * 60 * 1000;
+
+/** TTL for form sessions: 5 minutes (shorter, form is already open) */
+const FORM_SESSION_TTL_MS = 5 * 60 * 1000;
 
 /** Token format: base64url, 22 characters (16 bytes) */
 const TOKEN_REGEX = /^[A-Za-z0-9_-]{22}$/;
@@ -26,6 +29,11 @@ interface ImportSession {
   expiresAt: number;
 }
 
+interface FormSession {
+  telegramId: number;
+  expiresAt: number;
+}
+
 export interface ImportSessionStoreConfig {
   ttlMs?: number;
   publicUrl: string;
@@ -33,6 +41,7 @@ export interface ImportSessionStoreConfig {
 
 export class ImportSessionStore {
   private sessions = new Map<string, ImportSession>();
+  private formSessions = new Map<string, FormSession>();
   private readonly ttlMs: number;
   private readonly publicUrl: string;
 
@@ -137,7 +146,80 @@ export class ImportSessionStore {
   }
 
   /**
-   * Delete all expired entries
+   * Consume import token and create a form session with CSRF token.
+   * Used on GET to prevent race condition between GET and POST.
+   *
+   * @param token - The import session token
+   * @returns Object with csrfToken and telegramId, or null if invalid/expired
+   */
+  consumeToForm(token: string): { csrfToken: string; telegramId: number } | null {
+    const telegramId = this.consume(token);
+
+    if (telegramId === null) {
+      return null;
+    }
+
+    // Generate CSRF token for the form
+    const csrfToken = randomBytes(16).toString("base64url");
+
+    const formSession: FormSession = {
+      telegramId,
+      expiresAt: Date.now() + FORM_SESSION_TTL_MS,
+    };
+
+    this.formSessions.set(csrfToken, formSession);
+
+    logger.debug("ImportSessionStore", "Form session created", {
+      csrfToken: csrfToken.substring(0, 4) + "...",
+      telegramId,
+    });
+
+    return { csrfToken, telegramId };
+  }
+
+  /**
+   * Consume form session by CSRF token.
+   * Used on POST to validate the form submission.
+   *
+   * @param csrfToken - The CSRF token from the form
+   * @returns telegramId or null if invalid/expired
+   */
+  consumeForm(csrfToken: string): number | null {
+    if (!TOKEN_REGEX.test(csrfToken)) {
+      logger.debug("ImportSessionStore", "Invalid CSRF token format");
+      return null;
+    }
+
+    const formSession = this.formSessions.get(csrfToken);
+
+    if (!formSession) {
+      logger.debug("ImportSessionStore", "Form session not found", {
+        csrfToken: csrfToken.substring(0, 4) + "...",
+      });
+      return null;
+    }
+
+    // Delete immediately (one-time access)
+    this.formSessions.delete(csrfToken);
+
+    // Check if expired
+    if (Date.now() > formSession.expiresAt) {
+      logger.debug("ImportSessionStore", "Form session expired", {
+        csrfToken: csrfToken.substring(0, 4) + "...",
+      });
+      return null;
+    }
+
+    logger.info("ImportSessionStore", "Form session consumed", {
+      csrfToken: csrfToken.substring(0, 4) + "...",
+      telegramId: formSession.telegramId,
+    });
+
+    return formSession.telegramId;
+  }
+
+  /**
+   * Delete all expired entries from both import sessions and form sessions
    *
    * @returns Number of deleted entries
    */
@@ -145,9 +227,18 @@ export class ImportSessionStore {
     const now = Date.now();
     let deleted = 0;
 
+    // Clean import sessions
     for (const [token, session] of this.sessions) {
       if (now > session.expiresAt) {
         this.sessions.delete(token);
+        deleted++;
+      }
+    }
+
+    // Clean form sessions
+    for (const [csrfToken, formSession] of this.formSessions) {
+      if (now > formSession.expiresAt) {
+        this.formSessions.delete(csrfToken);
         deleted++;
       }
     }
