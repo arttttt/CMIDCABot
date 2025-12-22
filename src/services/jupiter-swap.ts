@@ -321,7 +321,7 @@ export class JupiterSwapService {
     return this.getQuote({
       inputMint: TOKEN_MINTS.SOL,
       outputMint: TOKEN_MINTS.USDC,
-      amount: amountLamports.toString(),
+      amount: amountLamports,
       slippageBps,
     });
   }
@@ -339,7 +339,7 @@ export class JupiterSwapService {
     return this.getQuote({
       inputMint: TOKEN_MINTS.USDC,
       outputMint,
-      amount: amountRaw.toString(),
+      amount: amountRaw,
       slippageBps,
     });
   }
