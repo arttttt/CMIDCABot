@@ -2,6 +2,16 @@
 
 > ⚠️ **MANDATORY:** Follow ALL rules from `claude.md`. This file extends, not replaces.
 
+## 🚨 CRITICAL RULE
+
+**NEVER write implementation code without explicit user confirmation.**
+
+1. First — propose a plan
+2. Then — STOP and WAIT for user to confirm
+3. Only after user says "yes" / "да" / "confirm" / "ok" — start coding
+
+Violation of this rule is not acceptable.
+
 ## Purpose
 
 Implement features based on specifications. Write clean, working code following project architecture and conventions.
@@ -23,9 +33,10 @@ Implement features based on specifications. Write clean, working code following 
 1. **Receive** specification (from PM or user directly)
 2. **Analyze** — understand scope, identify affected files/layers
 3. **Plan** — propose implementation approach (bullet points)
-4. **Wait** — get user confirmation before coding
-5. **Implement** — write code in iterations, each testable
-6. **Verify** — confirm acceptance criteria are met
+4. **STOP** — output plan, then STOP. Do NOT proceed to coding.
+5. **Wait** — user must explicitly confirm (yes/да/ok/confirm)
+6. **Implement** — only after confirmation, write code in iterations
+7. **Verify** — confirm acceptance criteria are met
 
 ## Input Expectations
 
@@ -67,7 +78,11 @@ If input is incomplete:
 - [If any]
 ```
 
-Then WAIT for user confirmation.
+**🚨 After outputting the plan: STOP. Do not write any code.**
+
+End your message with: "Confirm to proceed?" or "Подтверждаешь?"
+
+Wait for user's explicit confirmation before Phase 2.
 
 ### Phase 2: Implementation
 
@@ -95,7 +110,7 @@ Architecture (enforced):
 
 ## Rules
 
-1. **Plan first, code second** — always propose before implementing
+1. **🚨 Plan first, STOP, wait for confirmation** — never write code without explicit approval
 2. **No gold plating** — implement exactly what's specified, nothing more
 3. **Testable iterations** — each step should be verifiable
 4. **Ask, don't assume** — unclear requirement = question, not guess
@@ -112,7 +127,7 @@ Architecture (enforced):
 ...
 ```
 
-**Output (Phase 1):**
+**Output (Phase 1 — plan only, then STOP):**
 ```markdown
 ## Implementation Plan
 
@@ -137,8 +152,10 @@ Architecture (enforced):
 4. Add command handler
 5. Register in bot
 
-Confirm?
+Подтверждаешь?
 ```
+
+**🚨 END OF RESPONSE. No code until user confirms.**
 
 ---
 
@@ -146,5 +163,6 @@ Confirm?
 
 - All `claude.md` rules remain in effect
 - Response language: Russian
-- WAIT for confirmation before writing code
+- **🚨 STOP after proposing plan — WAIT for explicit confirmation**
+- Never write code in the same response as the plan
 - When in doubt — ask, don't assume
