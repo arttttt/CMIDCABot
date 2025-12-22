@@ -18,6 +18,7 @@ import { logger } from "./logger.js";
 import type { KeyEncryptionService } from "./encryption.js";
 import { BatchRpcClient } from "./batch-rpc.js";
 import { withRetry, pollWithBackoff, type PollResult } from "./retry.js";
+import { toHumanAmountNumber } from "./precision.js";
 
 /**
  * Solana BIP44 derivation path (compatible with Phantom, Solflare, etc.)
@@ -28,8 +29,6 @@ import { withRetry, pollWithBackoff, type PollResult } from "./retry.js";
  * - 0' = change (external)
  */
 const SOLANA_DERIVATION_PATH = "m/44'/501'/0'/0'";
-
-const LAMPORTS_PER_SOL = 1_000_000_000n;
 
 /**
  * Sanitize error messages to prevent leaking sensitive data (LOW-003).
@@ -160,7 +159,7 @@ export class SolanaService {
     const addr = address(walletAddress);
     // Use retry with exponential backoff for rate-limited requests
     const { value } = await withRetry(() => this.rpc.getBalance(addr).send());
-    return Number(value) / Number(LAMPORTS_PER_SOL);
+    return toHumanAmountNumber(value.toString(), 9); // SOL has 9 decimals
   }
 
   /**
@@ -216,7 +215,7 @@ export class SolanaService {
 
       // Fallback: calculate from raw amount and decimals
       if (tokenAmount.amount && tokenAmount.decimals !== undefined) {
-        return Number(tokenAmount.amount) / Math.pow(10, tokenAmount.decimals);
+        return toHumanAmountNumber(tokenAmount.amount, tokenAmount.decimals);
       }
 
       // Last resort: use uiAmount if available
@@ -313,7 +312,7 @@ export class SolanaService {
     ]);
 
     // Parse results
-    const sol = Number(solResult.value) / Number(LAMPORTS_PER_SOL);
+    const sol = toHumanAmountNumber(solResult.value.toString(), 9); // SOL has 9 decimals
     const btc = this.parseTokenAccountBalance(btcResult.value);
     const eth = this.parseTokenAccountBalance(ethResult.value);
     const usdc = this.parseTokenAccountBalance(usdcResult.value);
@@ -362,7 +361,7 @@ export class SolanaService {
 
       // Fallback: calculate from raw amount and decimals
       if (tokenAmount.amount && tokenAmount.decimals !== undefined) {
-        return Number(tokenAmount.amount) / Math.pow(10, tokenAmount.decimals);
+        return toHumanAmountNumber(tokenAmount.amount, tokenAmount.decimals);
       }
 
       // Last resort: use uiAmount if available

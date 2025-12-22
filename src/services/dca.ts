@@ -12,6 +12,7 @@ import { PriceService } from "./price.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../types/portfolio.js";
 import { PriceSource } from "../types/config.js";
 import { logger } from "./logger.js";
+import { divideAmount, multiplyAmount, toDecimal, Decimal } from "./precision.js";
 
 // Mock prices (USD) - used when PRICE_SOURCE=mock
 export const MOCK_PRICES: Record<AssetSymbol, number> = {
@@ -158,27 +159,29 @@ export class DcaService {
       { symbol: "SOL", balance: portfolio.solBalance },
     ];
 
-    // Step 1: Calculate USD value of each asset
-    let totalValueInUsdc = 0;
-    const values: { symbol: AssetSymbol; balance: number; valueInUsdc: number }[] = [];
+    // Step 1: Calculate USD value of each asset using Decimal for precision
+    let totalValueDecimal = toDecimal(0);
+    const values: { symbol: AssetSymbol; balance: number; valueInUsdc: Decimal }[] = [];
 
     for (const asset of assets) {
-      const valueInUsdc = asset.balance * prices[asset.symbol];
-      totalValueInUsdc += valueInUsdc;
+      const valueInUsdc = multiplyAmount(asset.balance, prices[asset.symbol]);
+      totalValueDecimal = totalValueDecimal.plus(valueInUsdc);
       values.push({ ...asset, valueInUsdc });
     }
 
     // Step 2: Calculate allocation percentage and deviation from target
     return values.map((v) => {
       // Avoid division by zero for empty portfolios
-      const currentAllocation = totalValueInUsdc > 0 ? v.valueInUsdc / totalValueInUsdc : 0;
+      const currentAllocation = totalValueDecimal.gt(0)
+        ? divideAmount(v.valueInUsdc, totalValueDecimal).toNumber()
+        : 0;
       const targetAllocation = TARGET_ALLOCATIONS[v.symbol];
       const deviation = currentAllocation - targetAllocation;
 
       return {
         symbol: v.symbol,
         balance: v.balance,
-        valueInUsdc: v.valueInUsdc,
+        valueInUsdc: v.valueInUsdc.toNumber(),
         currentAllocation,
         targetAllocation,
         deviation,
@@ -233,7 +236,7 @@ export class DcaService {
 
     // Calculate amount of asset to receive (amountUsdc / price in USD)
     const priceUsd = prices[selectedAsset];
-    const amountAsset = amountUsdc / priceUsd;
+    const amountAsset = divideAmount(amountUsdc, priceUsd).toNumber();
 
     // Update portfolio balance
     await this.portfolioRepository.updateBalance(telegramId, selectedAsset, amountAsset);
@@ -291,7 +294,7 @@ export class DcaService {
 
     // Get current prices for SOL conversion
     const prices = await this.getCurrentPrices();
-    const requiredSol = amountUsdc / prices.SOL;
+    const requiredSol = divideAmount(amountUsdc, prices.SOL).toNumber();
 
     for (const user of users) {
       processed++;
@@ -344,7 +347,7 @@ export class DcaService {
 
     // Get current prices for SOL conversion
     const prices = await this.getCurrentPrices();
-    const requiredSol = amountUsdc / prices.SOL;
+    const requiredSol = divideAmount(amountUsdc, prices.SOL).toNumber();
 
     for (const user of users) {
       processed++;

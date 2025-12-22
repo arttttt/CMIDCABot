@@ -8,6 +8,7 @@
 
 import { TOKEN_MINTS } from "./price.js";
 import { logger } from "./logger.js";
+import { toRawAmount, toHumanAmountNumber } from "./precision.js";
 
 // Jupiter Swap API v1 endpoint
 const JUPITER_SWAP_API = "https://api.jup.ag/swap/v1";
@@ -191,9 +192,9 @@ export class JupiterSwapService {
     const inputDecimals = this.getDecimalsForMint(data.inputMint);
     const outputDecimals = this.getDecimalsForMint(data.outputMint);
 
-    const inputAmount = Number(data.inAmount) / Math.pow(10, inputDecimals);
-    const outputAmount = Number(data.outAmount) / Math.pow(10, outputDecimals);
-    const minOutputAmount = Number(data.otherAmountThreshold) / Math.pow(10, outputDecimals);
+    const inputAmount = toHumanAmountNumber(data.inAmount, inputDecimals);
+    const outputAmount = toHumanAmountNumber(data.outAmount, outputDecimals);
+    const minOutputAmount = toHumanAmountNumber(data.otherAmountThreshold, outputDecimals);
 
     // Extract route labels
     const route = data.routePlan.map((step) => step.swapInfo.label);
@@ -315,12 +316,12 @@ export class JupiterSwapService {
    * conversion automatically in the swap transaction.
    */
   async getQuoteSolToUsdc(amountSol: number, slippageBps?: number): Promise<SwapQuote> {
-    const amountLamports = Math.floor(amountSol * Math.pow(10, TOKEN_DECIMALS.SOL));
+    const amountLamports = toRawAmount(amountSol, TOKEN_DECIMALS.SOL);
 
     return this.getQuote({
       inputMint: TOKEN_MINTS.SOL,
       outputMint: TOKEN_MINTS.USDC,
-      amount: amountLamports.toString(),
+      amount: amountLamports,
       slippageBps,
     });
   }
@@ -333,12 +334,12 @@ export class JupiterSwapService {
     outputMint: string,
     slippageBps?: number,
   ): Promise<SwapQuote> {
-    const amountRaw = Math.floor(amountUsdc * Math.pow(10, TOKEN_DECIMALS.USDC));
+    const amountRaw = toRawAmount(amountUsdc, TOKEN_DECIMALS.USDC);
 
     return this.getQuote({
       inputMint: TOKEN_MINTS.USDC,
       outputMint,
-      amount: amountRaw.toString(),
+      amount: amountRaw,
       slippageBps,
     });
   }
