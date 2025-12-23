@@ -5,7 +5,7 @@
 
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
-import { WalletInfoHelper } from "./helpers/WalletInfoHelper.js";
+import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
 import { ImportWalletResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 

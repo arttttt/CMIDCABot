@@ -8,7 +8,7 @@ import { PortfolioRepository } from "../repositories/PortfolioRepository.js";
 import { PurchaseRepository } from "../repositories/PurchaseRepository.js";
 import { PriceRepository } from "../repositories/PriceRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
-import { AllocationCalculator } from "./helpers/AllocationCalculator.js";
+import { AllocationCalculator } from "../helpers/AllocationCalculator.js";
 import { divideAmount } from "../../infrastructure/shared/math/index.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 

@@ -14,7 +14,7 @@ export { ExecutePurchaseUseCase } from "./ExecutePurchaseUseCase.js";
 export { GetPortfolioStatusUseCase } from "./GetPortfolioStatusUseCase.js";
 
 // Wallet
-export { WalletInfoHelper } from "./helpers/WalletInfoHelper.js";
+export { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
 export { ShowWalletUseCase } from "./ShowWalletUseCase.js";
 export { CreateWalletUseCase } from "./CreateWalletUseCase.js";
 export { ImportWalletUseCase } from "./ImportWalletUseCase.js";
@@ -54,8 +54,7 @@ export { GetAllAuthorizedUsersUseCase, type GetAllAuthorizedUsersResult } from "
 
 // Mock Purchase (dev-only)
 export { ExecuteMockPurchaseUseCase, type MockPurchaseResult } from "./ExecuteMockPurchaseUseCase.js";
-export { ResetPortfolioUseCase, type ResetPortfolioResult } from "./ResetPortfolioUseCase.js";
 export { ExecuteBatchDcaUseCase, type BatchDcaResult } from "./ExecuteBatchDcaUseCase.js";
 
-// Helpers
-export * from "./helpers/index.js";
+// Helpers (re-export from domain/helpers)
+export * from "../helpers/index.js";

@@ -4,7 +4,7 @@
 
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { canManageRole, isAdminRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
-import { AuthorizationHelper } from "./helpers/AuthorizationHelper.js";
+import { AuthorizationHelper } from "../helpers/AuthorizationHelper.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export type RemoveAuthorizedUserResult =

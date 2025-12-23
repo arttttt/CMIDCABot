@@ -95,3 +95,10 @@ export interface DcaStatusResult {
   type: "active" | "inactive" | "no_wallet" | "unavailable";
   isSchedulerRunning?: boolean;
 }
+
+/**
+ * Result of an admin operation (add/remove/update user)
+ */
+export type AdminOperationResult =
+  | { success: true; message: string }
+  | { success: false; error: string };

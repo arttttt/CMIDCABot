@@ -5,8 +5,8 @@
  * All mutations (add/remove/update) are handled by dedicated use cases.
  */
 
-import { AuthRepository } from "../../repositories/AuthRepository.js";
-import { AuthorizedUser, UserRole, isAdminRole } from "../../models/AuthorizedUser.js";
+import { AuthRepository } from "../repositories/AuthRepository.js";
+import { AuthorizedUser, UserRole, isAdminRole } from "../models/AuthorizedUser.js";
 
 /**
  * Result of an authorization check

@@ -16,7 +16,7 @@ import {
   UICommand,
   UIResponseStream,
 } from "./types.js";
-import { AuthorizationHelper } from "../../domain/usecases/helpers/AuthorizationHelper.js";
+import { AuthorizationHelper } from "../../domain/helpers/AuthorizationHelper.js";
 import { hasRequiredRole, type UserRole } from "../../domain/models/AuthorizedUser.js";
 
 export class ProtocolHandler {
