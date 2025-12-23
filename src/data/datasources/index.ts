@@ -1,5 +1,5 @@
 /**
- * Data sources barrel export
+ * @deprecated Use data/sources/database instead
  */
-export * from "./KyselyDatabase.js";
-export * from "./AuthDatabase.js";
+export { createAuthDatabase } from "../sources/database/index.js";
+export { createMainDatabase, createMockDatabase } from "../sources/database/index.js";

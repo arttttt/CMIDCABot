@@ -5,8 +5,8 @@ import { Kysely, SqliteDialect, sql } from "kysely";
 import SQLite from "better-sqlite3";
 import { mkdirSync, existsSync } from "fs";
 import { dirname } from "path";
-import type { AuthDatabase } from "../types/authDatabase.js";
-import { logger } from "../../services/logger.js";
+import type { AuthDatabase } from "../../types/authDatabase.js";
+import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 /**
  * Create a Kysely instance for the authorization database
