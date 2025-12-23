@@ -18,13 +18,13 @@
 - `src/services/index.ts`
 
 **Date:** 2025-12-23
-**Status:** 🟡 Approved with comments
+**Status:** 🟢 Approved
 
 ---
 
 ## Summary
 
-Рефакторинг выполнен корректно. Компоненты перемещены согласно спецификации, re-exports с `@deprecated` обеспечивают обратную совместимость. Сборка проходит. Есть несколько архитектурных замечаний для рассмотрения.
+Рефакторинг выполнен корректно. Компоненты перемещены согласно спецификации, re-exports с `@deprecated` обеспечивают обратную совместимость. Все замечания из ревью исправлены.
 
 ---
 
@@ -38,58 +38,30 @@
 
 ### 🟡 Should Fix (important but not blocking)
 
-#### [S1] HttpServer импортирует из types/config.ts
+#### [S1] ~~HttpServer импортирует из types/config.ts~~ ✅ FIXED
 
 **Location:** `src/infrastructure/shared/http/HttpServer.ts:11`
-**Issue:** Infrastructure layer импортирует `HttpConfig` из `../../../types/config.js`. Согласно ARCHITECTURE.md: `infrastructure → (nothing, except shared between own modules)`.
-**Impact:** Нарушение layer isolation. Infrastructure становится зависим от верхнеуровневых типов.
-**Suggestion:**
-Вариант 1: Переместить `HttpConfig` в `infrastructure/shared/config/`
-Вариант 2: Определить локальный интерфейс `HttpServerConfig` в самом HttpServer.ts
-Вариант 3: Принять как допустимое исключение (types/ — это shared types без зависимостей)
+**Issue:** Infrastructure layer импортировал `HttpConfig` из `../../../types/config.js`.
+**Resolution:** Создан локальный интерфейс `HttpServerConfig` в HttpServer.ts. Infrastructure layer теперь независим.
 
 ---
 
 ### 🟢 Consider (nice to have, minor improvements)
 
-#### [N1] TelegramMessageSender использует legacy путь к logger
+#### [N1] ~~TelegramMessageSender использует legacy путь к logger~~ ✅ FIXED
 
 **Location:** `src/presentation/telegram/TelegramMessageSender.ts:12`
-**Observation:** Импорт `logger` из `../../services/logger.js` — работает через re-export, но не соответствует новому паттерну.
-**Suggestion:** Обновить на прямой импорт:
-```typescript
-// Было
-import { logger } from "../../services/logger.js";
+**Resolution:** Обновлён импорт на прямой путь `../../infrastructure/shared/logging/index.js`
 
-// Рекомендуется
-import { logger } from "../../infrastructure/shared/logging/index.js";
-```
-
-#### [N2] UserResolver содержит standalone функции
+#### [N2] UserResolver содержит standalone функции — NOT FIXED (by design)
 
 **Location:** `src/presentation/telegram/UserResolver.ts:32-57`
-**Observation:** Функции `isUsername`, `parseNumericId`, `normalizeUsername` — top-level exports. По конвенции проекта, utility функции должны быть в классе со static методами.
-**Suggestion:** Рассмотреть создание `UserIdentifierParser` class:
-```typescript
-export class UserIdentifierParser {
-  static isUsername(identifier: string): boolean { ... }
-  static parseNumericId(identifier: string): number | undefined { ... }
-  static normalizeUsername(username: string): string { ... }
-}
-```
-*Примечание:* Это существующий код, не введённый этим рефакторингом. Можно оставить как есть для backward compatibility.
+**Decision:** Оставлено как есть для backward compatibility. Это существующий код, не введённый этим рефакторингом.
 
-#### [N3] Отсутствует trailing comma в некоторых местах
+#### [N3] ~~Отсутствует trailing comma~~ ✅ FALSE POSITIVE
 
 **Location:** `src/infrastructure/shared/scheduling/CleanupScheduler.ts:21`
-**Observation:** Параметр `intervalMs` без trailing comma.
-**Suggestion:** Добавить для consistency:
-```typescript
-constructor(
-  private readonly stores: CleanableStore[],
-  private readonly intervalMs: number = DEFAULT_CLEANUP_INTERVAL_MS,
-) {}
-```
+**Resolution:** Trailing comma уже присутствует в коде.
 
 ---
 
@@ -98,18 +70,18 @@ constructor(
 | Category | Status | Notes |
 |----------|--------|-------|
 | Correctness | ✅ | Логика сохранена, re-exports работают |
-| Architecture | ⚠️ | HttpServer импортирует из types/ (minor) |
+| Architecture | ✅ | HttpServer использует локальный интерфейс |
 | Security | ✅ | Нет изменений в security-sensitive коде |
 | Code Quality | ✅ | Типы явные, no any, SRP соблюдён |
-| Conventions | ⚠️ | Legacy logger path, missing trailing comma |
+| Conventions | ✅ | Прямые импорты, trailing commas |
 
 ---
 
 ## Action Items
 
-- [ ] [S1] Решить вопрос с импортом HttpConfig в infrastructure layer
-- [ ] [N1] Обновить импорт logger в TelegramMessageSender (optional)
-- [ ] [N3] Добавить trailing comma в CleanupScheduler (optional)
+- [x] [S1] Решить вопрос с импортом HttpConfig в infrastructure layer
+- [x] [N1] Обновить импорт logger в TelegramMessageSender
+- [x] [N3] Trailing comma уже присутствует
 
 ---
 

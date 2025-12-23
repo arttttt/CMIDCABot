@@ -8,7 +8,11 @@
  */
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
-import type { HttpConfig } from "../../../types/config.js";
+
+export interface HttpServerConfig {
+  port: number;
+  host: string;
+}
 
 export interface HttpHandler {
   handle(req: IncomingMessage, res: ServerResponse): Promise<boolean>;
@@ -16,10 +20,10 @@ export interface HttpHandler {
 
 export class HttpServer {
   private server: Server | null = null;
-  private readonly config: HttpConfig;
+  private readonly config: HttpServerConfig;
   private handlers: HttpHandler[] = [];
 
-  constructor(config: HttpConfig) {
+  constructor(config: HttpServerConfig) {
     this.config = config;
   }
 

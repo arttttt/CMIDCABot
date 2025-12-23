@@ -9,7 +9,7 @@ import type { Api } from "grammy";
 import type { MessageSender } from "./MessageSender.js";
 import type { UIResponse } from "../protocol/types.js";
 import { InlineKeyboard } from "grammy";
-import { logger } from "../../services/logger.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 
 function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
   if (!response.buttons?.length) return undefined;
