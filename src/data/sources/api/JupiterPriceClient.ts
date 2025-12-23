@@ -29,7 +29,7 @@ const JUPITER_PRICE_API = "https://api.jup.ag/price/v3";
  * - WSOL: SPL token with this mint, needed for DEX swaps
  *
  * In our code:
- * - SolanaService.getBalance() returns NATIVE SOL balance (lamports)
+ * - SolanaRpcClient.getBalance() returns NATIVE SOL balance (lamports)
  * - TOKEN_MINTS.SOL is used only for Jupiter API calls (prices, quotes, swaps)
  * - Jupiter handles wrap/unwrap automatically — we don't manage WSOL accounts manually
  *

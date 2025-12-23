@@ -7,5 +7,5 @@ export type {
   SwapQuote,
   JupiterSwapResponse,
   SwapTransaction,
-  QuoteParams,
+  SwapQuoteParams as QuoteParams,
 } from "../data/sources/api/index.js";

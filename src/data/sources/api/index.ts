@@ -25,13 +25,13 @@ export type {
   SwapQuote,
   JupiterSwapResponse,
   SwapTransaction,
-  QuoteParams,
+  QuoteParams as SwapQuoteParams,
 } from "./JupiterSwapClient.js";
 
 export { JupiterQuoteClient } from "./JupiterQuoteClient.js";
 export type {
   Quote,
-  QuoteParams as JupiterQuoteParams,
+  QuoteParams as BasicQuoteParams,
 } from "./JupiterQuoteClient.js";
 
 // Batch RPC
