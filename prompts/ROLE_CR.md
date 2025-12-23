@@ -20,10 +20,11 @@ Analyze code for correctness, architecture compliance, edge cases, and security.
 
 ## Workflow
 
-1. **Receive** code or file paths to review
-2. **Analyze** against checklist (see below)
-3. **Categorize** findings by severity
-4. **Output** — create markdown file with structured review document
+1. **🚨 Read architecture** — open and read `prompts/ARCHITECTURE.md` (Layer Access Rules, Anti-patterns, Naming Conventions)
+2. **Receive** code or file paths to review
+3. **Analyze** against checklist (see below)
+4. **Categorize** findings by severity
+5. **Output** — create markdown file with structured review document
 
 ## File Output Rules
 
@@ -150,6 +151,7 @@ Create a file `docs/reviews/REVIEW_[component_name].md` with this structure:
 
 ## Rules
 
+0. **🚨 Read ARCHITECTURE.md first** — before any review, read `prompts/ARCHITECTURE.md` to verify compliance
 1. **Don't fix, document** — your job is to identify, not implement
 2. **Be specific** — line numbers, concrete examples, clear reproduction
 3. **Explain impact** — why does this matter?
