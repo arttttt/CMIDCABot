@@ -1,2 +1,5 @@
-// Cryptographic utilities (data layer only)
-export {};
+export {
+  KeyEncryptionService,
+  getEncryptionService,
+  initializeEncryption,
+} from "./KeyEncryption.js";
