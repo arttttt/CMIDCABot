@@ -12,6 +12,8 @@ import type {
   SwapTransaction,
 } from "../../domain/repositories/SwapRepository.js";
 import type { JupiterSwapClient, SwapQuote as ClientSwapQuote } from "../sources/api/JupiterSwapClient.js";
+import { TOKEN_MINTS } from "../sources/api/JupiterPriceClient.js";
+import type { AssetSymbol } from "../../types/portfolio.js";
 
 export class JupiterSwapRepository implements SwapRepository {
   constructor(private client: JupiterSwapClient) {}
@@ -28,6 +30,15 @@ export class JupiterSwapRepository implements SwapRepository {
   ): Promise<SwapQuote> {
     const quote = await this.client.getQuoteUsdcToToken(amountUsdc, outputMint, slippageBps);
     return this.mapQuote(quote);
+  }
+
+  async getQuoteUsdcToAsset(
+    amountUsdc: number,
+    asset: AssetSymbol,
+    slippageBps?: number,
+  ): Promise<SwapQuote> {
+    const outputMint = TOKEN_MINTS[asset];
+    return this.getQuoteUsdcToToken(amountUsdc, outputMint, slippageBps);
   }
 
   async getQuoteSolToUsdc(amountSol: number, slippageBps?: number): Promise<SwapQuote> {

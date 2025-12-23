@@ -17,7 +17,6 @@ import { TransactionRepository } from "../repositories/TransactionRepository.js"
 import { BalanceRepository } from "../repositories/BalanceRepository.js";
 import { BlockchainRepository, SendTransactionResult } from "../repositories/BlockchainRepository.js";
 import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
-import { TOKEN_MINTS } from "../../data/sources/api/JupiterPriceClient.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import type { KeyEncryptionService } from "../../infrastructure/internal/crypto/index.js";
@@ -135,15 +134,13 @@ export class ExecuteSwapUseCase {
       return;
     }
 
-    const outputMint = TOKEN_MINTS[assetUpper];
-
     // Step 1: Get quote
     yield SwapSteps.gettingQuote();
     logger.step("ExecuteSwap", 1, 3, "Getting quote from Jupiter...");
 
     let quote: SwapQuote;
     try {
-      quote = await this.swapRepository!.getQuoteUsdcToToken(amountUsdc, outputMint);
+      quote = await this.swapRepository!.getQuoteUsdcToAsset(amountUsdc, assetUpper);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Quote failed", { error: message });

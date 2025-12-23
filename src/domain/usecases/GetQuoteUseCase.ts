@@ -4,7 +4,6 @@
  */
 
 import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
-import { TOKEN_MINTS } from "../../data/sources/api/JupiterPriceClient.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
@@ -61,10 +60,8 @@ export class GetQuoteUseCase {
       };
     }
 
-    const outputMint = TOKEN_MINTS[assetUpper];
-
     try {
-      const quote = await this.swapRepository!.getQuoteUsdcToToken(amountUsdc, outputMint);
+      const quote = await this.swapRepository!.getQuoteUsdcToAsset(amountUsdc, assetUpper);
       logger.info("GetQuote", "Quote received", {
         inputAmount: quote.inputAmount,
         outputAmount: quote.outputAmount,

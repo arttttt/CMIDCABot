@@ -11,7 +11,6 @@
 
 import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
 import { BlockchainRepository, SimulationResult } from "../repositories/BlockchainRepository.js";
-import { TOKEN_MINTS } from "../../data/sources/api/JupiterPriceClient.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
@@ -117,13 +116,11 @@ export class SimulateSwapUseCase {
       };
     }
 
-    const outputMint = TOKEN_MINTS[assetUpper];
-
     // Step 1: Get quote
     logger.step("SimulateSwap", 1, 3, "Getting quote...");
     let quote: SwapQuote;
     try {
-      quote = await this.swapRepository!.getQuoteUsdcToToken(amountUsdc, outputMint);
+      quote = await this.swapRepository!.getQuoteUsdcToAsset(amountUsdc, assetUpper);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("SimulateSwap", "Quote failed", { error: message });

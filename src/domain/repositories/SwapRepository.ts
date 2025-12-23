@@ -5,6 +5,8 @@
  * Abstracts Jupiter swap API details from domain layer.
  */
 
+import type { AssetSymbol } from "../../types/portfolio.js";
+
 /**
  * Quote parameters for swap
  */
@@ -59,12 +61,22 @@ export interface SwapRepository {
   getQuote(params: SwapQuoteParams): Promise<SwapQuote>;
 
   /**
-   * Get quote for USDC → token swap
-   * Convenience method for common use case
+   * Get quote for USDC → token swap by mint address
+   * Low-level method - prefer getQuoteUsdcToAsset for domain use
    */
   getQuoteUsdcToToken(
     amountUsdc: number,
     outputMint: string,
+    slippageBps?: number,
+  ): Promise<SwapQuote>;
+
+  /**
+   * Get quote for USDC → asset swap by asset symbol
+   * Domain-friendly method - handles mint address resolution internally
+   */
+  getQuoteUsdcToAsset(
+    amountUsdc: number,
+    asset: AssetSymbol,
     slippageBps?: number,
   ): Promise<SwapQuote>;
 
