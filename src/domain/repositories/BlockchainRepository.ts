@@ -10,7 +10,6 @@
  * - Token operations (token balances)
  */
 
-import type { KeyEncryptionService } from "../../infrastructure/internal/crypto/index.js";
 
 /**
  * Generated keypair with extractable private key
@@ -148,7 +147,6 @@ export interface BlockchainRepository {
   signAndSendTransactionSecure(
     transactionBase64: string,
     encryptedPrivateKey: string,
-    encryptionService: KeyEncryptionService,
   ): Promise<SendTransactionResult>;
 
   /**

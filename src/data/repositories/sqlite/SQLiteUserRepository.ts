@@ -3,13 +3,13 @@
  *
  * Private keys are encrypted at rest using AES-256-GCM.
  * Keys are stored encrypted and returned encrypted - decryption happens
- * only at the moment of signing (in SolanaService) to minimize exposure.
+ * only at the moment of signing (in SolanaRpcClient) to minimize exposure.
  */
 import { Kysely, sql, Selectable } from "kysely";
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
 import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../../../domain/models/User.js";
 import type { MainDatabase, UsersTable } from "../../types/database.js";
-import { KeyEncryptionService } from "../../../services/encryption.js";
+import { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 
 type UserRow = Selectable<UsersTable>;
 
@@ -113,6 +113,19 @@ export class SQLiteUserRepository implements UserRepository {
       })
       .where("telegram_id", "=", telegramId)
       .execute();
+  }
+
+  async getDecryptedPrivateKey(telegramId: number): Promise<string | null> {
+    const row = await this.db
+      .selectFrom("users")
+      .select("private_key")
+      .where("telegram_id", "=", telegramId)
+      .executeTakeFirst();
+
+    if (!row?.private_key) {
+      return null;
+    }
+    return this.encryptionService.decrypt(row.private_key);
   }
 
   /**

@@ -3,11 +3,11 @@
  */
 
 import { UserRepository } from "../domain/repositories/UserRepository.js";
-import { SolanaService } from "../services/solana.js";
+import { SolanaRpcClient } from "../data/sources/api/index.js";
 
 export interface ServiceContext {
   userRepository: UserRepository;
-  solana: SolanaService;
+  solana: SolanaRpcClient;
 }
 
 export interface MessageContext {

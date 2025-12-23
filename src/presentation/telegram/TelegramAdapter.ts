@@ -6,8 +6,8 @@
 import { Bot, BotError, Context, InlineKeyboard } from "grammy";
 import { ProtocolHandler } from "../protocol/index.js";
 import { UIResponse, UIStreamItem } from "../protocol/types.js";
-import { logger, LogSanitizer } from "../../services/logger.js";
-import { tryWithRetry } from "../../services/retry.js";
+import { logger, LogSanitizer } from "../../infrastructure/shared/logging/index.js";
+import { tryWithRetry } from "../../infrastructure/shared/resilience/index.js";
 
 const ERROR_MESSAGE_COMMAND_FAILED = "An error occurred while executing the command. Please try again later.";
 const ERROR_MESSAGE_SEND_FAILED = "Failed to send message. Please try the command again.";

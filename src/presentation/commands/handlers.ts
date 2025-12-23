@@ -35,8 +35,8 @@ import {
 } from "../../domain/usecases/index.js";
 
 // Services
-import { UserResolver } from "../../services/userResolver.js";
-import type { ImportSessionStorePort } from "../../services/ImportSessionStore.js";
+import { UserResolver } from "../telegram/UserResolver.js";
+import type { ImportSessionStorePort } from "../../data/sources/memory/index.js";
 
 // Formatters
 import {

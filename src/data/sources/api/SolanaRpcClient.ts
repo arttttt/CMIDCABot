@@ -138,10 +138,12 @@ interface TokenAccountResult {
 export class SolanaRpcClient {
   private rpc: Rpc<SolanaRpcApi>;
   private batchClient: BatchRpcClient;
+  private encryptionService: KeyEncryptionService;
 
-  constructor(config: SolanaConfig) {
+  constructor(config: SolanaConfig, encryptionService: KeyEncryptionService) {
     this.rpc = createSolanaRpc(config.rpcUrl);
     this.batchClient = new BatchRpcClient(config.rpcUrl);
+    this.encryptionService = encryptionService;
   }
 
   /**
@@ -775,13 +777,11 @@ export class SolanaRpcClient {
    *
    * @param transactionBase64 - Base64 encoded serialized transaction (from Jupiter API)
    * @param encryptedPrivateKey - AES-256-GCM encrypted private key from database
-   * @param encryptionService - Service to decrypt the key
    * @returns SendTransactionResult with signature, confirmation status, and any errors
    */
   async signAndSendTransactionSecure(
     transactionBase64: string,
     encryptedPrivateKey: string,
-    encryptionService: KeyEncryptionService,
   ): Promise<SendTransactionResult> {
     try {
       // STEP 1: Decode transaction BEFORE decrypting key (no sensitive data yet)
@@ -797,7 +797,7 @@ export class SolanaRpcClient {
       let signedBase64: Base64EncodedWireTransaction;
       {
         // Decrypt key into buffer
-        const decryptedBase64 = await encryptionService.decrypt(encryptedPrivateKey);
+        const decryptedBase64 = await this.encryptionService.decrypt(encryptedPrivateKey);
         const privateKeyBytes = Buffer.from(decryptedBase64, "base64");
 
         try {

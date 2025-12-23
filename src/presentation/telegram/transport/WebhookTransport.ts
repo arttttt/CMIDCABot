@@ -8,7 +8,7 @@ import { createServer, type Server, type IncomingMessage, type ServerResponse } 
 import type { Bot, Context } from "grammy";
 import type { Update } from "@grammyjs/types";
 import type { BotTransport, TransportDeps, WebhookConfig } from "./types.js";
-import { logger } from "../../../services/logger.js";
+import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 export class WebhookTransport implements BotTransport {
   private readonly bot: Bot<Context>;

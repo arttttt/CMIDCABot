@@ -5,7 +5,7 @@
 
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { ProtocolHandler } from "../protocol/index.js";
-import { logger } from "../../services/logger.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 
 const HTML_PAGE = `<!DOCTYPE html>
 <html lang="en">

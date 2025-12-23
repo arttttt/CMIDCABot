@@ -40,7 +40,7 @@ src/
 ## Layer Access Rules
 
 ```
-domain          → (nothing, only own interfaces)
+domain          → infrastructure/shared (logging, math, config)
 data            → domain/repositories (interfaces)
                 → infrastructure/internal
                 → infrastructure/shared
@@ -48,6 +48,9 @@ presentation    → domain/usecases
                 → infrastructure/shared
 infrastructure  → (nothing, except shared between own modules)
 ```
+
+> **Note:** Domain may use `infrastructure/shared` for pure utilities (logging, math).
+> Domain must NOT use `infrastructure/internal` — those are for data layer only.
 
 **Key rule:** Dependencies point inward only.
 

@@ -3,11 +3,11 @@
  *
  * Private keys are encrypted at rest using AES-256-GCM.
  * Keys are stored encrypted and returned encrypted - decryption happens
- * only at the moment of signing (in SolanaService) to minimize exposure.
+ * only at the moment of signing (in SolanaRpcClient) to minimize exposure.
  */
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
 import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../../../domain/models/User.js";
-import { KeyEncryptionService } from "../../../services/encryption.js";
+import { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 
 export class InMemoryUserRepository implements UserRepository {
   private users = new Map<number, User>();
@@ -85,6 +85,14 @@ export class InMemoryUserRepository implements UserRepository {
       user.privateKey = null;
       user.updatedAt = new Date();
     }
+  }
+
+  async getDecryptedPrivateKey(telegramId: number): Promise<string | null> {
+    const user = this.users.get(telegramId);
+    if (!user?.privateKey) {
+      return null;
+    }
+    return this.encryptionService.decrypt(user.privateKey);
   }
 
   /**

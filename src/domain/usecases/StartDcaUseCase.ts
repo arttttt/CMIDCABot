@@ -3,7 +3,7 @@
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
-import { DcaScheduler } from "../../services/DcaScheduler.js";
+import { DcaScheduler } from "../../_wip/dca-scheduling/index.js";
 import { DcaStartResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 

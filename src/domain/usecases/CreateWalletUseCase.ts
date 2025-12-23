@@ -4,8 +4,8 @@
 
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
+import { SecretStoreRepository } from "../repositories/SecretStoreRepository.js";
 import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
-import { SecretStore } from "../../services/SecretStore.js";
 import { CreateWalletResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
@@ -14,7 +14,7 @@ export class CreateWalletUseCase {
     private userRepository: UserRepository,
     private blockchainRepository: BlockchainRepository,
     private walletHelper: WalletInfoHelper,
-    private secretStore: SecretStore,
+    private secretStore: SecretStoreRepository,
   ) {}
 
   async execute(telegramId: number): Promise<CreateWalletResult> {

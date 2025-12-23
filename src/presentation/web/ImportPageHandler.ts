@@ -11,10 +11,10 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { ImportSessionStore } from "../../services/ImportSessionStore.js";
+import type { ImportSessionCache } from "../../data/sources/memory/index.js";
 import type { ImportWalletUseCase } from "../../domain/usecases/ImportWalletUseCase.js";
-import type { MessageSender } from "../../services/MessageSender.js";
-import { logger } from "../../services/logger.js";
+import type { MessageSender } from "../telegram/MessageSender.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 import { HtmlUtils, BASE_STYLES } from "./html.js";
 
 // Security headers for all pages
@@ -31,7 +31,7 @@ const SECURITY_HEADERS = {
 
 export class ImportPageHandler {
   constructor(
-    private readonly sessionStore: ImportSessionStore,
+    private readonly sessionStore: ImportSessionCache,
     private readonly importWallet: ImportWalletUseCase,
     private readonly messageSender: MessageSender,
   ) {}
