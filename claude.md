@@ -43,27 +43,9 @@ Developer with Android/Kotlin background, less familiar with TS/JS.
 
 ## Architecture
 
-Clean Architecture with explicit layer separation.
+See `prompts/ARCHITECTURE.md` for detailed architecture documentation.
 
-**Layers (inside → outside):**
-- **Domain** — pure business logic: entities, repository interfaces, use cases. No external dependencies.
-- **Data** — repository implementations, database adapters, external data sources.
-- **Services** — integrations with external systems (blockchain, APIs, schedulers).
-- **Presentation** — UI adapters, response formatters. Thin mapping layer.
-
-**Principles:**
-- Dependencies point inward only
-- Repository pattern: interface in domain, implementation in data layer
-- Use cases return domain objects, not UI structures
-- Formatters transform domain → UI (separation of concerns)
-- Adapters are thin: map external input/output to internal protocol
-- Explicit dependencies via constructor injection, no global state
-
-**Anti-patterns to avoid:**
-- Event bus / implicit coupling
-- Business logic in adapters or formatters
-- Direct database access from presentation layer
-- Framework dependencies in domain layer
+**Key principle:** Clean Architecture with explicit layer separation. Dependencies point inward only.
 
 ## Scope & Boundaries
 

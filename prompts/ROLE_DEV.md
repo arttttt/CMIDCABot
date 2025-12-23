@@ -102,11 +102,9 @@ From `CLAUDE.md` (enforced):
 - Utility classes with static methods over loose functions
 
 Architecture (enforced):
+- See `prompts/ARCHITECTURE.md` for complete rules
 - Dependencies point inward only
 - Repository pattern: interface in Domain, implementation in Data
-- Use cases return domain objects
-- Formatters in Presentation layer
-- No business logic in adapters
 
 ## Rules
 
