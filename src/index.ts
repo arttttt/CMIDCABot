@@ -19,14 +19,18 @@ import { SQLiteInviteTokenRepository } from "./data/repositories/sqlite/SQLiteIn
 import { InMemoryAuthRepository } from "./data/repositories/memory/InMemoryAuthRepository.js";
 import { InMemoryInviteTokenRepository } from "./data/repositories/memory/InMemoryInviteTokenRepository.js";
 import { CachedBalanceRepository } from "./data/repositories/memory/CachedBalanceRepository.js";
-import { SolanaService } from "./services/solana.js";
+import { SolanaBlockchainRepository } from "./data/repositories/SolanaBlockchainRepository.js";
+import { JupiterPriceRepository } from "./data/repositories/JupiterPriceRepository.js";
+import { JupiterSwapRepository } from "./data/repositories/JupiterSwapRepository.js";
+import { SolanaRpcClient } from "./data/sources/api/SolanaRpcClient.js";
+import { JupiterPriceClient } from "./data/sources/api/JupiterPriceClient.js";
+import { JupiterSwapClient } from "./data/sources/api/JupiterSwapClient.js";
 import { getEncryptionService, initializeEncryption } from "./services/encryption.js";
 import { AuthorizationService } from "./services/authorization.js";
 import { TelegramUserResolver } from "./services/userResolver.js";
 import { DcaService } from "./services/dca.js";
 import { DcaScheduler } from "./services/DcaScheduler.js";
 import { PriceService } from "./services/price.js";
-import { JupiterSwapService } from "./services/jupiter-swap.js";
 import type { AuthDatabase } from "./data/types/authDatabase.js";
 import {
   InitUserUseCase,
@@ -132,11 +136,12 @@ async function main(): Promise<void> {
   // Create user resolver (will be connected to bot API later)
   const userResolver = new TelegramUserResolver();
 
-  // Initialize Solana service
-  const solana = new SolanaService(config.solana);
+  // Initialize Solana RPC client and blockchain repository
+  const solanaRpcClient = new SolanaRpcClient(config.solana);
+  const blockchainRepository = new SolanaBlockchainRepository(solanaRpcClient);
 
-  // Initialize balance repository with caching
-  const balanceRepository = new CachedBalanceRepository(solana);
+  // Initialize balance repository with caching (still uses RPC client internally)
+  const balanceRepository = new CachedBalanceRepository(solanaRpcClient);
 
   // Initialize SecretStore for one-time secret links
   const secretStore = new SecretStore(encryptionService, {
@@ -152,18 +157,20 @@ async function main(): Promise<void> {
   const secretCleanupScheduler = new SecretCleanupScheduler([secretStore, importSessionStore]);
   secretCleanupScheduler.start();
 
-  // Initialize PriceService (required for portfolio and swap operations)
+  // Initialize Price and Swap repositories (require API key)
+  let priceRepository: JupiterPriceRepository | undefined;
+  let swapRepository: JupiterSwapRepository | undefined;
   let priceService: PriceService | undefined;
 
   if (config.price.jupiterApiKey) {
+    const jupiterPriceClient = new JupiterPriceClient(config.price.jupiterApiKey);
+    priceRepository = new JupiterPriceRepository(jupiterPriceClient);
+
+    const jupiterSwapClient = new JupiterSwapClient(config.price.jupiterApiKey);
+    swapRepository = new JupiterSwapRepository(jupiterSwapClient);
+
+    // Keep PriceService for DcaService (will be removed in stage 7)
     priceService = new PriceService(config.price.jupiterApiKey);
-  }
-
-  // Initialize JupiterSwapService (for quote/swap operations, requires API key)
-  let jupiterSwap: JupiterSwapService | undefined;
-
-  if (config.price.jupiterApiKey) {
-    jupiterSwap = new JupiterSwapService(config.price.jupiterApiKey);
   }
 
   // Initialize mock database, DCA service and scheduler only in development mode
@@ -191,7 +198,7 @@ async function main(): Promise<void> {
       userRepository,
       mockRepos.portfolioRepository,
       mockRepos.purchaseRepository,
-      solana,
+      solanaRpcClient, // DcaService still uses SolanaRpcClient (will be refactored in stage 7)
       config.isDev,
       config.price.source,
       priceService,
@@ -224,12 +231,12 @@ async function main(): Promise<void> {
   }
 
   // Create helpers
-  const walletHelper = new WalletInfoHelper(solana, config.dcaWallet);
+  const walletHelper = new WalletInfoHelper(blockchainRepository, config.dcaWallet);
 
   // Create ExecuteSwapUseCase first (used by ExecutePurchaseUseCase)
   const executeSwapUseCase = new ExecuteSwapUseCase(
-    jupiterSwap,
-    solana,
+    swapRepository,
+    blockchainRepository,
     userRepository,
     transactionRepository,
     balanceRepository,
@@ -240,40 +247,40 @@ async function main(): Promise<void> {
   // Create use cases
   const initUser = new InitUserUseCase(userRepository, dca);
   const showWallet = new ShowWalletUseCase(userRepository, walletHelper);
-  const createWallet = new CreateWalletUseCase(userRepository, solana, walletHelper, secretStore);
-  const importWallet = new ImportWalletUseCase(userRepository, solana, walletHelper);
+  const createWallet = new CreateWalletUseCase(userRepository, blockchainRepository, walletHelper, secretStore);
+  const importWallet = new ImportWalletUseCase(userRepository, blockchainRepository, walletHelper);
   const deleteWallet = new DeleteWalletUseCase(userRepository, walletHelper);
   const exportWalletKey = new ExportWalletKeyUseCase(userRepository, encryptionService, secretStore, config.dcaWallet);
   const startDca = new StartDcaUseCase(userRepository, dcaScheduler);
   const stopDca = new StopDcaUseCase(userRepository, dcaScheduler);
   const getDcaStatus = new GetDcaStatusUseCase(userRepository, dcaScheduler);
-  const getPrices = new GetPricesUseCase(dca);
-  const getQuote = new GetQuoteUseCase(jupiterSwap);
+  const getPrices = new GetPricesUseCase(priceRepository);
+  const getQuote = new GetQuoteUseCase(swapRepository);
   const simulateSwap = new SimulateSwapUseCase(
-    jupiterSwap,
-    solana,
+    swapRepository,
+    blockchainRepository,
     userRepository,
     config.dcaWallet.devPrivateKey,
   );
 
-  // Create use cases that require Jupiter
-  const executePurchase = jupiterSwap && priceService
+  // Create use cases that require Jupiter repositories
+  const executePurchase = swapRepository && priceRepository
     ? new ExecutePurchaseUseCase(
         userRepository,
         balanceRepository,
         executeSwapUseCase,
-        solana,
-        priceService,
+        blockchainRepository,
+        priceRepository,
         config.dcaWallet.devPrivateKey,
       )
     : undefined;
 
-  const getPortfolioStatus = priceService
+  const getPortfolioStatus = priceRepository
     ? new GetPortfolioStatusUseCase(
         userRepository,
         balanceRepository,
-        solana,
-        priceService,
+        blockchainRepository,
+        priceRepository,
         config.dcaWallet.devPrivateKey,
       )
     : undefined;

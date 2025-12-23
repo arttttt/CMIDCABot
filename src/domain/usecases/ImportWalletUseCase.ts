@@ -4,15 +4,15 @@
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
-import { SolanaService } from "../../services/solana.js";
+import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { WalletInfoHelper } from "./helpers/WalletInfoHelper.js";
 import { ImportWalletResult } from "./types.js";
-import { logger } from "../../services/logger.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export class ImportWalletUseCase {
   constructor(
     private userRepository: UserRepository,
-    private solana: SolanaService,
+    private blockchainRepository: BlockchainRepository,
     private walletHelper: WalletInfoHelper,
   ) {}
 
@@ -48,7 +48,7 @@ export class ImportWalletUseCase {
     if (isMnemonic) {
       // Validate as BIP39 mnemonic
       logger.debug("ImportWallet", "Detected mnemonic input");
-      const mnemonicValidation = await this.solana.validateMnemonic(privateKeyBase64);
+      const mnemonicValidation = await this.blockchainRepository.validateMnemonic(privateKeyBase64);
       if (!mnemonicValidation.valid) {
         logger.warn("ImportWallet", "Invalid mnemonic", {
           telegramId,
@@ -60,7 +60,7 @@ export class ImportWalletUseCase {
       walletAddress = mnemonicValidation.address!;
     } else {
       // Validate as base64 private key
-      const validation = await this.solana.validatePrivateKey(privateKeyBase64);
+      const validation = await this.blockchainRepository.validatePrivateKey(privateKeyBase64);
       if (!validation.valid) {
         logger.warn("ImportWallet", "Invalid private key", {
           telegramId,

@@ -7,13 +7,13 @@
 
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BalanceRepository } from "../repositories/BalanceRepository.js";
-import { SolanaService } from "../../services/solana.js";
-import { PriceService } from "../../services/price.js";
+import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
+import { PriceRepository } from "../repositories/PriceRepository.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { PurchaseResult } from "./types.js";
 import { ExecuteSwapUseCase } from "./ExecuteSwapUseCase.js";
 import { SwapResult } from "../models/SwapStep.js";
-import { logger } from "../../services/logger.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 import { PurchaseStep, PurchaseSteps } from "../models/index.js";
 
 /**
@@ -31,8 +31,8 @@ export class ExecutePurchaseUseCase {
     private userRepository: UserRepository,
     private balanceRepository: BalanceRepository,
     private executeSwapUseCase: ExecuteSwapUseCase,
-    private solanaService: SolanaService,
-    private priceService: PriceService | undefined,
+    private blockchainRepository: BlockchainRepository,
+    private priceRepository: PriceRepository | undefined,
     private devPrivateKey?: string,
   ) {}
 
@@ -51,9 +51,9 @@ export class ExecutePurchaseUseCase {
       amountUsdc,
     });
 
-    // Check if PriceService is available (needed for selectAssetToBuy)
-    if (!this.priceService) {
-      logger.warn("ExecutePurchase", "Price service unavailable");
+    // Check if PriceRepository is available (needed for selectAssetToBuy)
+    if (!this.priceRepository) {
+      logger.warn("ExecutePurchase", "Price repository unavailable");
       yield PurchaseSteps.completed({ type: "unavailable" });
       return;
     }
@@ -77,7 +77,7 @@ export class ExecutePurchaseUseCase {
     let walletAddress: string | undefined;
 
     if (this.devPrivateKey) {
-      walletAddress = await this.solanaService.getAddressFromPrivateKey(this.devPrivateKey);
+      walletAddress = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
     } else {
       const user = await this.userRepository.getById(telegramId);
       walletAddress = user?.walletAddress ?? undefined;
@@ -200,7 +200,7 @@ export class ExecutePurchaseUseCase {
       // Fetch balances (cached) and prices in parallel for efficiency
       const [balances, prices] = await Promise.all([
         this.balanceRepository.getBalances(walletAddress),
-        this.priceService!.getPricesRecord(),
+        this.priceRepository!.getPricesRecord(),
       ]);
 
       // Calculate USD value of each asset holding

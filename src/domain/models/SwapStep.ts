@@ -7,7 +7,7 @@
  * The completed step contains the final result.
  */
 
-import type { SwapQuote } from "../../services/jupiter-swap.js";
+import type { SwapQuote } from "../repositories/SwapRepository.js";
 
 /**
  * Quote information for display

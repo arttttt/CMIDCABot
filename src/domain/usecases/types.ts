@@ -4,7 +4,7 @@
  */
 
 import { AssetSymbol } from "../../types/portfolio.js";
-import { PortfolioStatus } from "../../services/dca.js";
+import { PortfolioStatus } from "../models/PortfolioTypes.js";
 
 // Wallet info (used by balance)
 export interface WalletInfo {

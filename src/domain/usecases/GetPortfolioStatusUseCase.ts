@@ -4,19 +4,19 @@
 
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BalanceRepository } from "../repositories/BalanceRepository.js";
-import { SolanaService } from "../../services/solana.js";
-import { PriceService } from "../../services/price.js";
+import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
+import { PriceRepository } from "../repositories/PriceRepository.js";
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { PortfolioStatusResult } from "./types.js";
-import { AllocationInfo, PortfolioStatus } from "../../services/dca.js";
-import { logger } from "../../services/logger.js";
+import { AllocationInfo, PortfolioStatus } from "../models/PortfolioTypes.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export class GetPortfolioStatusUseCase {
   constructor(
     private userRepository: UserRepository,
     private balanceRepository: BalanceRepository,
-    private solanaService: SolanaService,
-    private priceService: PriceService,
+    private blockchainRepository: BlockchainRepository,
+    private priceRepository: PriceRepository,
     private devPrivateKey?: string,
   ) {}
 
@@ -28,7 +28,7 @@ export class GetPortfolioStatusUseCase {
 
     if (this.devPrivateKey) {
       // In dev mode, use dev wallet
-      walletAddress = await this.solanaService.getAddressFromPrivateKey(this.devPrivateKey);
+      walletAddress = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
     } else {
       const user = await this.userRepository.getById(telegramId);
       walletAddress = user?.walletAddress ?? undefined;
@@ -42,7 +42,7 @@ export class GetPortfolioStatusUseCase {
       // Fetch balances (cached) and prices in parallel
       const [balances, prices] = await Promise.all([
         this.balanceRepository.getBalances(walletAddress),
-        this.priceService.getPricesRecord(),
+        this.priceRepository.getPricesRecord(),
       ]);
 
       const { sol: solBalance, btc: btcBalance, eth: ethBalance } = balances;

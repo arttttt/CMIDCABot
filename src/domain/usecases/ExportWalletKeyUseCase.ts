@@ -9,8 +9,8 @@ import { UserRepository } from "../repositories/UserRepository.js";
 import { DcaWalletConfig } from "../../types/config.js";
 import { SecretStore } from "../../services/SecretStore.js";
 import { ExportKeyResult } from "./types.js";
-import { logger } from "../../services/logger.js";
-import type { KeyEncryptionService } from "../../services/encryption.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
+import type { KeyEncryptionService } from "../../infrastructure/internal/crypto/index.js";
 
 export class ExportWalletKeyUseCase {
   constructor(

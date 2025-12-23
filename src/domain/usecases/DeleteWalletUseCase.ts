@@ -5,7 +5,7 @@
 import { UserRepository } from "../repositories/UserRepository.js";
 import { WalletInfoHelper } from "./helpers/WalletInfoHelper.js";
 import { DeleteWalletResult } from "./types.js";
-import { logger } from "../../services/logger.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export class DeleteWalletUseCase {
   constructor(

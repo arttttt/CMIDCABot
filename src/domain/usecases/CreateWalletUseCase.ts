@@ -3,16 +3,16 @@
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
-import { SolanaService } from "../../services/solana.js";
+import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { WalletInfoHelper } from "./helpers/WalletInfoHelper.js";
 import { SecretStore } from "../../services/SecretStore.js";
 import { CreateWalletResult } from "./types.js";
-import { logger } from "../../services/logger.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export class CreateWalletUseCase {
   constructor(
     private userRepository: UserRepository,
-    private solana: SolanaService,
+    private blockchainRepository: BlockchainRepository,
     private walletHelper: WalletInfoHelper,
     private secretStore: SecretStore,
   ) {}
@@ -38,7 +38,7 @@ export class CreateWalletUseCase {
     }
 
     logger.debug("CreateWallet", "Generating new keypair with mnemonic");
-    const keypair = await this.solana.generateKeypairFromMnemonic();
+    const keypair = await this.blockchainRepository.generateKeypairFromMnemonic();
     await this.userRepository.setPrivateKey(telegramId, keypair.privateKeyBase64);
     await this.userRepository.setWalletAddress(telegramId, keypair.address);
 

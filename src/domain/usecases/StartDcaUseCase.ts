@@ -5,7 +5,7 @@
 import { UserRepository } from "../repositories/UserRepository.js";
 import { DcaScheduler } from "../../services/DcaScheduler.js";
 import { DcaStartResult } from "./types.js";
-import { logger } from "../../services/logger.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export class StartDcaUseCase {
   constructor(

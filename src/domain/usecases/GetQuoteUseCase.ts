@@ -3,10 +3,9 @@
  * Dev-only use case for testing swap integration without executing
  */
 
-import { JupiterSwapService, SwapQuote } from "../../services/jupiter-swap.js";
-import { TOKEN_MINTS } from "../../services/price.js";
+import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
-import { logger } from "../../services/logger.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export type GetQuoteResult =
   | { status: "success"; quote: SwapQuote }
@@ -18,7 +17,7 @@ export type GetQuoteResult =
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
 export class GetQuoteUseCase {
-  constructor(private jupiterSwap: JupiterSwapService | undefined) {}
+  constructor(private swapRepository: SwapRepository | undefined) {}
 
   /**
    * Get quote for USDC → asset swap
@@ -28,8 +27,8 @@ export class GetQuoteUseCase {
   async execute(amountUsdc: number, asset: string = "SOL"): Promise<GetQuoteResult> {
     logger.info("GetQuote", "Getting swap quote", { amountUsdc, asset });
 
-    if (!this.jupiterSwap) {
-      logger.warn("GetQuote", "Jupiter service unavailable");
+    if (!this.swapRepository) {
+      logger.warn("GetQuote", "Swap repository unavailable");
       return { status: "unavailable" };
     }
 
@@ -61,10 +60,8 @@ export class GetQuoteUseCase {
       };
     }
 
-    const outputMint = TOKEN_MINTS[assetUpper];
-
     try {
-      const quote = await this.jupiterSwap.getQuoteUsdcToToken(amountUsdc, outputMint);
+      const quote = await this.swapRepository!.getQuoteUsdcToAsset(amountUsdc, assetUpper);
       logger.info("GetQuote", "Quote received", {
         inputAmount: quote.inputAmount,
         outputAmount: quote.outputAmount,
