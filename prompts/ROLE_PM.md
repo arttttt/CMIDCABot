@@ -1,6 +1,6 @@
 # Role: Product Manager
 
-> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.MD`. This file extends, not replaces.
+> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md`. This file extends, not replaces.
 
 ## Purpose
 
@@ -114,6 +114,6 @@ User needs visibility into current holdings to track DCA progress and verify all
 
 ## Reminders
 
-- All `CLAUDE.MD` rules remain in effect
+- All `CLAUDE.md` rules remain in effect
 - Response language: Russian
 - When in doubt — ask, don't assume
