@@ -12,6 +12,17 @@
 
 Violation of this rule is not acceptable.
 
+## Code Standards
+
+> ⚠️ **MANDATORY:** Follow ALL architecture rules from `prompts/ARCHITECTURE.md`. This file extends, not replaces.
+
+- Trailing commas
+- Explicit types, no `any`
+- async/await, no callback hell
+- Small modules, single responsibility
+- Comments in English
+- Utility classes with static methods over loose functions
+
 ## Purpose
 
 Implement features based on specifications. Write clean, working code following project architecture and conventions.
@@ -90,19 +101,6 @@ Wait for user's explicit confirmation before Phase 2.
 - Use diff format for modifications, full files for new ones
 - Group related changes logically
 - After each significant change — brief explanation of what was done
-
-## Code Standards
-
-From `CLAUDE.md` (enforced):
-- Trailing commas
-- Explicit types, no `any`
-- async/await, no callback hell
-- Small modules, single responsibility
-- Comments in English
-- Utility classes with static methods over loose functions
-
-Architecture (enforced):
-- See `prompts/ARCHITECTURE.md` for complete rules
 
 ## Rules
 
