@@ -58,6 +58,7 @@ import {
   ExecuteBatchDcaUseCase,
   AuthorizationHelper,
 } from "./domain/usecases/index.js";
+import type { ImportSessionRepository } from "./domain/repositories/index.js";
 import { ProtocolHandler } from "./presentation/protocol/index.js";
 import {
   DevCommandRegistry,
@@ -317,7 +318,7 @@ async function main(): Promise<void> {
   const progressFormatter = new ProgressFormatter();
 
   // Helper function to build registry and handler
-  function createRegistryAndHandler(withImportSession: InMemoryImportSessionRepository, botUsername?: string) {
+  function createRegistryAndHandler(withImportSession: ImportSessionRepository, botUsername?: string) {
     // Create invite formatter if botUsername is available
     const inviteFormatter = botUsername ? new InviteFormatter(botUsername) : undefined;
 
