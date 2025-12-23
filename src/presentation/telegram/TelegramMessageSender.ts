@@ -6,7 +6,7 @@
  */
 
 import type { Api } from "grammy";
-import type { MessageSender } from "../../services/MessageSender.js";
+import type { MessageSender } from "./MessageSender.js";
 import type { UIResponse } from "../protocol/types.js";
 import { InlineKeyboard } from "grammy";
 import { logger } from "../../services/logger.js";
