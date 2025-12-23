@@ -118,6 +118,6 @@ let portfolioRepository: import("./domain/repositories/PortfolioRepository.js").
 ## Action Items
 
 - [ ] [S1] Переместить DcaScheduler в _wip/dca-scheduling/ → **отложено до Task 08**
-- [ ] [S2] Переместить helpers из usecases в `src/domain/helpers/`
-- [ ] [S3] Перенести AdminOperationResult в domain layer
-- [ ] [N4] Удалить ResetPortfolioUseCase (не используется)
+- [x] [S2] Переместить helpers из usecases в `src/domain/helpers/`
+- [x] [S3] Перенести AdminOperationResult в domain layer
+- [x] [N4] Удалить ResetPortfolioUseCase (не используется)
