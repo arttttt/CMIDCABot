@@ -1,2 +1,3 @@
 // Database adapters
-export {};
+export { createAuthDatabase } from "./AuthDatabase.js";
+export { createMainDatabase, createMockDatabase } from "./KyselyDatabase.js";

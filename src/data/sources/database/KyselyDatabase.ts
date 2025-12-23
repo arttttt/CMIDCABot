@@ -5,8 +5,8 @@ import { Kysely, SqliteDialect, sql } from "kysely";
 import SQLite, { Database } from "better-sqlite3";
 import { mkdirSync, existsSync } from "fs";
 import { dirname } from "path";
-import type { MainDatabase, MockDatabase } from "../types/database.js";
-import { logger } from "../../services/logger.js";
+import type { MainDatabase, MockDatabase } from "../../types/database.js";
+import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 /**
  * Create a Kysely instance for the main database
