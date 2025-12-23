@@ -9,3 +9,5 @@ export * from "./InMemorySchedulerRepository.js";
 export * from "./InMemoryAuthRepository.js";
 export * from "./InMemoryInviteTokenRepository.js";
 export * from "./CachedBalanceRepository.js";
+export * from "./InMemorySecretRepository.js";
+export * from "./InMemoryImportSessionRepository.js";

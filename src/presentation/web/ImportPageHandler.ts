@@ -11,7 +11,7 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { ImportSessionCache } from "../../data/sources/memory/index.js";
+import type { ImportSessionRepository } from "../../domain/repositories/index.js";
 import type { ImportWalletUseCase } from "../../domain/usecases/ImportWalletUseCase.js";
 import type { MessageSender } from "../telegram/MessageSender.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
@@ -31,7 +31,7 @@ const SECURITY_HEADERS = {
 
 export class ImportPageHandler {
   constructor(
-    private readonly sessionStore: ImportSessionCache,
+    private readonly sessionStore: ImportSessionRepository,
     private readonly importWallet: ImportWalletUseCase,
     private readonly messageSender: MessageSender,
   ) {}

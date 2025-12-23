@@ -58,6 +58,7 @@ import {
   ExecuteBatchDcaUseCase,
   AuthorizationHelper,
 } from "./domain/usecases/index.js";
+import type { ImportSessionRepository } from "./domain/repositories/index.js";
 import { ProtocolHandler } from "./presentation/protocol/index.js";
 import {
   DevCommandRegistry,
@@ -88,10 +89,10 @@ import {
 } from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
 import { HttpServer } from "./infrastructure/shared/http/index.js";
-import { SecretCache } from "./data/sources/memory/index.js";
+import { SecretCache, ImportSessionCache } from "./data/sources/memory/index.js";
+import { InMemorySecretRepository, InMemoryImportSessionRepository } from "./data/repositories/memory/index.js";
 import { CleanupScheduler } from "./infrastructure/shared/scheduling/index.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
-import { ImportSessionCache } from "./data/sources/memory/index.js";
 import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
 import { TelegramMessageSender } from "./presentation/telegram/TelegramMessageSender.js";
 import type { MainDatabase, MockDatabase } from "./data/types/database.js";
@@ -150,17 +151,19 @@ async function main(): Promise<void> {
   const balanceRepository = new CachedBalanceRepository(solanaRpcClient);
 
   // Initialize SecretCache for one-time secret links
-  const secretStore = new SecretCache(encryptionService, {
+  const secretCache = new SecretCache(encryptionService, {
     publicUrl: config.http.publicUrl,
   });
+  const secretStore = new InMemorySecretRepository(secretCache);
 
   // Initialize ImportSessionCache for secure wallet import
-  const importSessionStore = new ImportSessionCache({
+  const importSessionCache = new ImportSessionCache({
     publicUrl: config.http.publicUrl,
   });
+  const importSessionStore = new InMemoryImportSessionRepository(importSessionCache);
 
   // Start cleanup scheduler for expired secrets and import sessions
-  const cleanupScheduler = new CleanupScheduler([secretStore, importSessionStore]);
+  const cleanupScheduler = new CleanupScheduler([secretCache, importSessionCache]);
   cleanupScheduler.start();
 
   // Initialize Price and Swap repositories (require API key)
@@ -315,7 +318,7 @@ async function main(): Promise<void> {
   const progressFormatter = new ProgressFormatter();
 
   // Helper function to build registry and handler
-  function createRegistryAndHandler(withImportSession: ImportSessionCache, botUsername?: string) {
+  function createRegistryAndHandler(withImportSession: ImportSessionRepository, botUsername?: string) {
     // Create invite formatter if botUsername is available
     const inviteFormatter = botUsername ? new InviteFormatter(botUsername) : undefined;
 

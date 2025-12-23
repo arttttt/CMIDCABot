@@ -18,6 +18,14 @@ export interface SecretStoreRepository {
   store(payload: string, telegramId: number): Promise<string>;
 
   /**
+   * Consume a secret (get and delete atomically)
+   *
+   * @param token - The secret token
+   * @returns Decrypted payload or null if not found/expired/invalid
+   */
+  consume(token: string): Promise<string | null>;
+
+  /**
    * Get TTL in minutes (for user display)
    */
   getTtlMinutes(): number;

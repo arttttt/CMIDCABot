@@ -11,7 +11,6 @@
  */
 
 import { randomBytes } from "node:crypto";
-import { SecretStoreRepository } from "../../../domain/repositories/SecretStoreRepository.js";
 import { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 
@@ -33,7 +32,7 @@ export interface SecretStoreConfig {
   publicUrl: string;
 }
 
-export class SecretCache implements SecretStoreRepository {
+export class SecretCache {
   private secrets = new Map<string, SecretEntry>();
   private readonly ttlMs: number;
   private readonly publicUrl: string;

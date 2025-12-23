@@ -36,7 +36,7 @@ import {
 
 // Services
 import { UserResolver } from "../telegram/UserResolver.js";
-import type { ImportSessionStorePort } from "../../data/sources/memory/index.js";
+import type { ImportSessionRepository } from "../../domain/repositories/index.js";
 
 // Formatters
 import {
@@ -91,7 +91,7 @@ export interface WalletCommandDeps {
   deleteWallet: DeleteWalletUseCase;
   exportWalletKey: ExportWalletKeyUseCase;
   formatter: DcaWalletFormatter;
-  importSessionStore: ImportSessionStorePort;
+  importSessionStore: ImportSessionRepository;
 }
 
 export interface DcaCommandDeps {
