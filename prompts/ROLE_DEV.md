@@ -103,8 +103,6 @@ From `CLAUDE.md` (enforced):
 
 Architecture (enforced):
 - See `prompts/ARCHITECTURE.md` for complete rules
-- Dependencies point inward only
-- Repository pattern: interface in Domain, implementation in Data
 
 ## Rules
 
