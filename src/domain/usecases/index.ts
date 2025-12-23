@@ -14,7 +14,7 @@ export { ExecutePurchaseUseCase } from "./ExecutePurchaseUseCase.js";
 export { GetPortfolioStatusUseCase } from "./GetPortfolioStatusUseCase.js";
 
 // Wallet
-export { WalletInfoHelper } from "./helpers/WalletInfoHelper.js";
+export { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
 export { ShowWalletUseCase } from "./ShowWalletUseCase.js";
 export { CreateWalletUseCase } from "./CreateWalletUseCase.js";
 export { ImportWalletUseCase } from "./ImportWalletUseCase.js";
@@ -44,3 +44,17 @@ export { ActivateInviteUseCase, type ActivateInviteResult } from "./ActivateInvi
 
 // Admin
 export { DeleteUserDataUseCase } from "./DeleteUserDataUseCase.js";
+
+// Authorization
+export { InitializeAuthorizationUseCase } from "./InitializeAuthorizationUseCase.js";
+export { AddAuthorizedUserUseCase, type AddAuthorizedUserResult } from "./AddAuthorizedUserUseCase.js";
+export { RemoveAuthorizedUserUseCase, type RemoveAuthorizedUserResult } from "./RemoveAuthorizedUserUseCase.js";
+export { UpdateUserRoleUseCase, type UpdateUserRoleResult } from "./UpdateUserRoleUseCase.js";
+export { GetAllAuthorizedUsersUseCase, type GetAllAuthorizedUsersResult } from "./GetAllAuthorizedUsersUseCase.js";
+
+// Mock Purchase (dev-only)
+export { ExecuteMockPurchaseUseCase, type MockPurchaseResult } from "./ExecuteMockPurchaseUseCase.js";
+export { ExecuteBatchDcaUseCase, type BatchDcaResult } from "./ExecuteBatchDcaUseCase.js";
+
+// Helpers (re-export from domain/helpers)
+export * from "../helpers/index.js";

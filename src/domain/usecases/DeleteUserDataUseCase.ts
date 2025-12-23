@@ -13,21 +13,21 @@ import { UserRepository } from "../repositories/UserRepository.js";
 import { TransactionRepository } from "../repositories/TransactionRepository.js";
 import { PortfolioRepository } from "../repositories/PortfolioRepository.js";
 import { PurchaseRepository } from "../repositories/PurchaseRepository.js";
-import { AuthorizationService, AdminOperationResult } from "../../services/authorization.js";
+import { RemoveAuthorizedUserUseCase, RemoveAuthorizedUserResult } from "./RemoveAuthorizedUserUseCase.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export class DeleteUserDataUseCase {
   constructor(
-    private authService: AuthorizationService,
+    private removeAuthorizedUser: RemoveAuthorizedUserUseCase,
     private userRepository: UserRepository,
     private transactionRepository: TransactionRepository,
     private portfolioRepository?: PortfolioRepository,
     private purchaseRepository?: PurchaseRepository,
   ) {}
 
-  async execute(adminTelegramId: number, targetTelegramId: number): Promise<AdminOperationResult> {
+  async execute(adminTelegramId: number, targetTelegramId: number): Promise<RemoveAuthorizedUserResult> {
     // Remove user authorization (includes permission checks)
-    const result = await this.authService.removeUser(adminTelegramId, targetTelegramId);
+    const result = await this.removeAuthorizedUser.execute(adminTelegramId, targetTelegramId);
     if (!result.success) {
       return result;
     }

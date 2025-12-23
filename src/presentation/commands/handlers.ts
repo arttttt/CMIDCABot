@@ -28,10 +28,13 @@ import {
   GenerateInviteUseCase,
   ActivateInviteUseCase,
   DeleteUserDataUseCase,
+  AddAuthorizedUserUseCase,
+  GetAllAuthorizedUsersUseCase,
+  UpdateUserRoleUseCase,
+  AuthorizationHelper,
 } from "../../domain/usecases/index.js";
 
 // Services
-import { AuthorizationService } from "../../services/authorization.js";
 import { UserResolver } from "../../services/userResolver.js";
 import type { ImportSessionStorePort } from "../../services/ImportSessionStore.js";
 
@@ -122,7 +125,9 @@ export interface SwapCommandDeps {
 }
 
 export interface AdminCommandDeps {
-  authService: AuthorizationService;
+  addAuthorizedUser: AddAuthorizedUserUseCase;
+  getAllAuthorizedUsers: GetAllAuthorizedUsersUseCase;
+  updateUserRole: UpdateUserRoleUseCase;
   formatter: AdminFormatter;
   userResolver: UserResolver;
   deleteUserData: DeleteUserDataUseCase;
@@ -133,7 +138,7 @@ export interface AdminCommandDeps {
 
 export interface StartCommandDeps {
   initUser: InitUserUseCase;
-  authService: AuthorizationService;
+  authHelper: AuthorizationHelper;
   activateInvite?: ActivateInviteUseCase;
   inviteFormatter?: InviteFormatter;
 }
@@ -506,7 +511,7 @@ function createAdminAddCommand(deps: AdminCommandDeps): Command {
         return deps.formatter.formatInvalidRole(roleStr);
       }
 
-      const result = await deps.authService.addUser(telegramId, targetId, role);
+      const result = await deps.addAuthorizedUser.execute(telegramId, targetId, role);
       return deps.formatter.formatResult(result);
     },
   };
@@ -537,8 +542,8 @@ function createAdminListCommand(deps: AdminCommandDeps): Command {
   return {
     definition: { name: "list", description: "List all authorized users" },
     handler: async () => {
-      const users = await deps.authService.getAllUsers();
-      return deps.formatter.formatUserList(users);
+      const result = await deps.getAllAuthorizedUsers.execute();
+      return deps.formatter.formatUserList(result.users);
     },
   };
 }
@@ -565,7 +570,7 @@ function createAdminRoleCommand(deps: AdminCommandDeps): Command {
         return deps.formatter.formatInvalidRole(roleStr);
       }
 
-      const result = await deps.authService.updateRole(telegramId, targetId, role);
+      const result = await deps.updateUserRole.execute(telegramId, targetId, role);
       return deps.formatter.formatResult(result);
     },
   };
@@ -641,7 +646,7 @@ export function createStartCommand(deps: StartCommandDeps): Command {
       }
 
       // Check if user is authorized
-      const role = await deps.authService.getRole(telegramId);
+      const role = await deps.authHelper.getRole(telegramId);
       if (!role) {
         return { text: "You need an invite link to use this bot." };
       }

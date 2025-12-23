@@ -4,12 +4,10 @@
 
 import { UserRepository } from "../domain/repositories/UserRepository.js";
 import { SolanaService } from "../services/solana.js";
-import { DcaService } from "../services/dca.js";
 
 export interface ServiceContext {
   userRepository: UserRepository;
   solana: SolanaService;
-  dca?: DcaService;
 }
 
 export interface MessageContext {

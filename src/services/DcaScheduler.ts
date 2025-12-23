@@ -5,8 +5,8 @@
 
 import { UserRepository } from "../domain/repositories/UserRepository.js";
 import { SchedulerRepository } from "../domain/repositories/SchedulerRepository.js";
-import { DcaService } from "./dca.js";
-import { logger } from "./logger.js";
+import { ExecuteBatchDcaUseCase } from "../domain/usecases/ExecuteBatchDcaUseCase.js";
+import { logger } from "../infrastructure/shared/logging/index.js";
 
 export interface DcaSchedulerConfig {
   intervalMs: number;
@@ -23,7 +23,7 @@ export class DcaScheduler {
   constructor(
     private userRepository: UserRepository,
     private schedulerRepository: SchedulerRepository,
-    private dcaService: DcaService,
+    private executeBatchDcaUseCase: ExecuteBatchDcaUseCase,
     private config: DcaSchedulerConfig,
   ) {}
 
@@ -138,7 +138,7 @@ export class DcaScheduler {
     });
 
     try {
-      const result = await this.dcaService.executeDcaForActiveUsers(this.config.amountUsdc);
+      const result = await this.executeBatchDcaUseCase.execute(this.config.amountUsdc);
       logger.info("DcaScheduler", "Completed", {
         successful: result.successful,
         processed: result.processed,

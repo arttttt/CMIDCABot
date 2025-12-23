@@ -2,9 +2,12 @@
  * Admin command response formatter
  */
 import { AuthorizedUser, ROLE_LABELS, UserRole } from "../../domain/models/AuthorizedUser.js";
-import { AdminOperationResult } from "../../services/authorization.js";
+import { AdminOperationResult } from "../../domain/usecases/types.js";
 import { UIResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
+
+// Re-export for backwards compatibility
+export type { AdminOperationResult };
 
 export class AdminFormatter {
   /**

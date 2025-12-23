@@ -14,9 +14,9 @@
 
 import { BalanceRepository, WalletBalances } from "../../../domain/repositories/BalanceRepository.js";
 import { SolanaService } from "../../../services/solana.js";
-import { TOKEN_MINTS } from "../../../services/price.js";
-import { TOKEN_DECIMALS } from "../../../services/jupiter-swap.js";
-import { logger } from "../../../services/logger.js";
+import { TOKEN_MINTS } from "../../sources/api/JupiterPriceClient.js";
+import { TOKEN_DECIMALS } from "../../sources/api/JupiterSwapClient.js";
+import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 /**
  * Token configurations for batch balance fetching

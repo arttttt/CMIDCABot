@@ -2,9 +2,9 @@
  * Helper for getting wallet info
  */
 
-import { BlockchainRepository } from "../../repositories/BlockchainRepository.js";
-import { DcaWalletConfig } from "../../../types/config.js";
-import { DcaWalletInfo } from "../types.js";
+import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
+import { DcaWalletConfig } from "../../types/config.js";
+import { DcaWalletInfo } from "../usecases/types.js";
 
 export class WalletInfoHelper {
   constructor(
