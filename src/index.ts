@@ -10,9 +10,9 @@ import { Kysely } from "kysely";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
-import { loadConfig } from "./config/index.js";
-import { setLogger, DebugLogger, NoOpLogger } from "./services/logger.js";
-import { createMainDatabase, createMockDatabase, createAuthDatabase } from "./data/datasources/index.js";
+import { loadConfig } from "./infrastructure/shared/config/index.js";
+import { setLogger, DebugLogger, NoOpLogger } from "./infrastructure/shared/logging/index.js";
+import { createMainDatabase, createMockDatabase, createAuthDatabase } from "./data/sources/database/index.js";
 import { createMainRepositories, createMockRepositories } from "./data/factories/RepositoryFactory.js";
 import { SQLiteAuthRepository } from "./data/repositories/sqlite/SQLiteAuthRepository.js";
 import { SQLiteInviteTokenRepository } from "./data/repositories/sqlite/SQLiteInviteTokenRepository.js";
@@ -25,9 +25,9 @@ import { JupiterSwapRepository } from "./data/repositories/JupiterSwapRepository
 import { SolanaRpcClient } from "./data/sources/api/SolanaRpcClient.js";
 import { JupiterPriceClient } from "./data/sources/api/JupiterPriceClient.js";
 import { JupiterSwapClient } from "./data/sources/api/JupiterSwapClient.js";
-import { getEncryptionService, initializeEncryption } from "./services/encryption.js";
-import { TelegramUserResolver } from "./services/userResolver.js";
-import { DcaScheduler } from "./services/DcaScheduler.js";
+import { getEncryptionService, initializeEncryption } from "./infrastructure/internal/crypto/index.js";
+import { TelegramUserResolver } from "./presentation/telegram/UserResolver.js";
+import { DcaScheduler } from "./_wip/dca-scheduling/index.js";
 import type { AuthDatabase } from "./data/types/authDatabase.js";
 import {
   InitUserUseCase,
@@ -87,11 +87,11 @@ import {
   type TransportConfig as TelegramTransportConfig,
 } from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
-import { HttpServer } from "./services/HttpServer.js";
-import { SecretStore } from "./services/SecretStore.js";
-import { SecretCleanupScheduler } from "./services/SecretCleanupScheduler.js";
+import { HttpServer } from "./infrastructure/shared/http/index.js";
+import { SecretCache } from "./data/sources/memory/index.js";
+import { CleanupScheduler } from "./infrastructure/shared/scheduling/index.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
-import { ImportSessionStore } from "./services/ImportSessionStore.js";
+import { ImportSessionCache } from "./data/sources/memory/index.js";
 import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
 import { TelegramMessageSender } from "./presentation/telegram/TelegramMessageSender.js";
 import type { MainDatabase, MockDatabase } from "./data/types/database.js";
@@ -149,19 +149,19 @@ async function main(): Promise<void> {
   // Initialize balance repository with caching (still uses RPC client internally)
   const balanceRepository = new CachedBalanceRepository(solanaRpcClient);
 
-  // Initialize SecretStore for one-time secret links
-  const secretStore = new SecretStore(encryptionService, {
+  // Initialize SecretCache for one-time secret links
+  const secretStore = new SecretCache(encryptionService, {
     publicUrl: config.http.publicUrl,
   });
 
-  // Initialize ImportSessionStore for secure wallet import
-  const importSessionStore = new ImportSessionStore({
+  // Initialize ImportSessionCache for secure wallet import
+  const importSessionStore = new ImportSessionCache({
     publicUrl: config.http.publicUrl,
   });
 
   // Start cleanup scheduler for expired secrets and import sessions
-  const secretCleanupScheduler = new SecretCleanupScheduler([secretStore, importSessionStore]);
-  secretCleanupScheduler.start();
+  const cleanupScheduler = new CleanupScheduler([secretStore, importSessionStore]);
+  cleanupScheduler.start();
 
   // Initialize Price and Swap repositories (require API key)
   let priceRepository: JupiterPriceRepository | undefined;
@@ -316,7 +316,7 @@ async function main(): Promise<void> {
   const progressFormatter = new ProgressFormatter();
 
   // Helper function to build registry and handler
-  function createRegistryAndHandler(withImportSession: ImportSessionStore, botUsername?: string) {
+  function createRegistryAndHandler(withImportSession: ImportSessionCache, botUsername?: string) {
     // Create invite formatter if botUsername is available
     const inviteFormatter = botUsername ? new InviteFormatter(botUsername) : undefined;
 
@@ -425,7 +425,7 @@ async function main(): Promise<void> {
 
   // Cleanup function
   const cleanup = async (): Promise<void> => {
-    secretCleanupScheduler.stop();
+    cleanupScheduler.stop();
     dcaScheduler?.stop();
     await mockDb?.destroy();
     await mainDb?.destroy();

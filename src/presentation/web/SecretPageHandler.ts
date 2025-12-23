@@ -10,8 +10,8 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { SecretStore } from "../../services/SecretStore.js";
-import { logger } from "../../services/logger.js";
+import { SecretCache } from "../../data/sources/memory/index.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 import { HtmlUtils, BASE_STYLES } from "./html.js";
 
 // Security headers for secret pages
@@ -26,7 +26,7 @@ const SECURITY_HEADERS = {
 };
 
 export class SecretPageHandler {
-  constructor(private readonly secretStore: SecretStore) {}
+  constructor(private readonly secretStore: SecretCache) {}
 
   /**
    * Handle secret page request

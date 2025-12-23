@@ -7,7 +7,7 @@
  */
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
 import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../../../domain/models/User.js";
-import { KeyEncryptionService } from "../../../services/encryption.js";
+import { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 
 export class InMemoryUserRepository implements UserRepository {
   private users = new Map<number, User>();

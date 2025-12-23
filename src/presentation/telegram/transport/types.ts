@@ -5,7 +5,7 @@
 
 import type { Bot, Context } from "grammy";
 import type { TransportMode } from "../../../types/config.js";
-import type { HttpHandler } from "../../../services/HttpServer.js";
+import type { HttpHandler } from "../../../infrastructure/shared/http/index.js";
 
 export type { TransportMode };
 

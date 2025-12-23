@@ -13,7 +13,7 @@
  */
 
 import { BalanceRepository, WalletBalances } from "../../../domain/repositories/BalanceRepository.js";
-import { SolanaService } from "../../../services/solana.js";
+import { SolanaRpcClient } from "../../sources/api/index.js";
 import { TOKEN_MINTS } from "../../sources/api/JupiterPriceClient.js";
 import { TOKEN_DECIMALS } from "../../sources/api/JupiterSwapClient.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
@@ -46,7 +46,7 @@ export class CachedBalanceRepository implements BalanceRepository {
   private cacheTtlMs: number;
 
   constructor(
-    private solanaService: SolanaService,
+    private solanaRpcClient: SolanaRpcClient,
     cacheTtlMs: number = DEFAULT_CACHE_TTL_MS,
   ) {
     this.cacheTtlMs = cacheTtlMs;
@@ -81,7 +81,7 @@ export class CachedBalanceRepository implements BalanceRepository {
 
     try {
       // Try batch RPC first (4x more efficient)
-      const result = await this.solanaService.getAllBalancesBatch(
+      const result = await this.solanaRpcClient.getAllBalancesBatch(
         walletAddress,
         TOKEN_CONFIGS,
       );
@@ -158,10 +158,10 @@ export class CachedBalanceRepository implements BalanceRepository {
     walletAddress: string,
   ): Promise<{ sol: number; btc: number; eth: number; usdc: number }> {
     const [sol, btc, eth, usdc] = await Promise.all([
-      this.solanaService.getBalance(walletAddress),
-      this.solanaService.getTokenBalance(walletAddress, TOKEN_CONFIGS.btc.mint, TOKEN_CONFIGS.btc.decimals),
-      this.solanaService.getTokenBalance(walletAddress, TOKEN_CONFIGS.eth.mint, TOKEN_CONFIGS.eth.decimals),
-      this.solanaService.getTokenBalance(walletAddress, TOKEN_CONFIGS.usdc.mint, TOKEN_CONFIGS.usdc.decimals),
+      this.solanaRpcClient.getBalance(walletAddress),
+      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.btc.mint, TOKEN_CONFIGS.btc.decimals),
+      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.eth.mint, TOKEN_CONFIGS.eth.decimals),
+      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.usdc.mint, TOKEN_CONFIGS.usdc.decimals),
     ]);
 
     return { sol, btc, eth, usdc };
