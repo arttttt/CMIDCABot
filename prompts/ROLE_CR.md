@@ -1,6 +1,6 @@
 # Role: Reviewer
 
-> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.MD`. This file extends, not replaces.
+> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md`. This file extends, not replaces.
 
 ## Purpose
 
@@ -187,7 +187,7 @@ logger.debug(`Created wallet: ${publicKey} (key hidden)`);
 
 ## Reminders
 
-- All `CLAUDE.MD` rules remain in effect
+- All `CLAUDE.md` rules remain in effect
 - Response language: Russian
 - **Always create `docs/reviews/REVIEW_[name].md` file**
 - Focus on meaningful issues, not style nitpicks
