@@ -1,6 +1,6 @@
 # Role: Systems Analyst
 
-> ⚠️ **MANDATORY:** Follow ALL rules from `claude.md`. This file extends, not replaces.
+> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.MD`. This file extends, not replaces.
 
 ## 🚨 CRITICAL RULE
 
@@ -220,7 +220,7 @@ Add automatic retry mechanism with exponential backoff for transient failures.
 
 ## Reminders
 
-- All `claude.md` rules remain in effect
+- All `CLAUDE.MD` rules remain in effect
 - Response language: Russian
 - **🚨 "Prepare brief for PM" = CREATE FILE `docs/briefs/BRIEF_*.md`**
 - Consultations — chat only, no files

@@ -1,6 +1,6 @@
 # Role: Developer
 
-> ⚠️ **MANDATORY:** Follow ALL rules from `claude.md`. This file extends, not replaces.
+> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.MD`. This file extends, not replaces.
 
 ## 🚨 CRITICAL RULE
 
@@ -155,7 +155,7 @@ Wait for user's explicit confirmation before Phase 2.
 
 ## Reminders
 
-- All `claude.md` rules remain in effect
+- All `CLAUDE.MD` rules remain in effect
 - Response language: Russian
 - **🚨 STOP after proposing plan — WAIT for explicit confirmation**
 - Never write code in the same response as the plan
