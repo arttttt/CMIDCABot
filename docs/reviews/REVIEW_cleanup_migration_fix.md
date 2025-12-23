@@ -83,6 +83,52 @@ export interface EncryptionService {
 
 ---
 
+#### [S2] KeyEncryptionService как параметр метода интерфейса
+
+**Location:** `src/domain/repositories/BlockchainRepository.ts:148-152`
+
+**Issue:**
+```typescript
+signAndSendTransactionSecure(
+  transactionBase64: string,
+  encryptedPrivateKey: string,
+  encryptionService: KeyEncryptionService,  // ← leaky abstraction
+): Promise<SendTransactionResult>;
+```
+
+`KeyEncryptionService` передаётся как параметр метода интерфейса. Это:
+1. **Leaky abstraction** — интерфейс раскрывает детали реализации (что ключ зашифрован)
+2. **Нарушение DI** — сервис должен инжектиться через конструктор реализации, а не передаваться в каждый вызов
+3. **Domain зависит от infrastructure** — интерфейс знает о конкретном типе
+
+**Suggestion:**
+```typescript
+// Интерфейс (domain) — чистый, не знает о шифровании
+signAndSendTransactionSecure(
+  transactionBase64: string,
+  encryptedPrivateKey: string,
+): Promise<SendTransactionResult>;
+
+// Реализация (data) — получает encryption через конструктор
+class SolanaBlockchainRepository implements BlockchainRepository {
+  constructor(
+    private client: SolanaRpcClient,
+    private encryptionService: KeyEncryptionService,  // ← здесь
+  ) {}
+
+  async signAndSendTransactionSecure(
+    transactionBase64: string,
+    encryptedPrivateKey: string,
+  ): Promise<SendTransactionResult> {
+    // Использует this.encryptionService для расшифровки
+  }
+}
+```
+
+**Impact:** Medium. Требует рефакторинга `SolanaBlockchainRepository`, `SolanaRpcClient`, и вызывающего кода.
+
+---
+
 ### 🟢 Consider (observations)
 
 #### [N4] Domain использует infrastructure/shared для logging и math
@@ -116,6 +162,7 @@ import { divideAmount } from "../../infrastructure/shared/math/index.js";
 
 - [x] [C1] SecretStoreRepository — правильно
 - [ ] [S1] Создать интерфейс `EncryptionService` в domain (или обновить ARCHITECTURE.md)
+- [ ] [S2] Убрать `KeyEncryptionService` из параметров метода интерфейса, инжектить через конструктор реализации
 - [x] [N1-N3] Комментарии — правильно
 
 ---
@@ -125,6 +172,10 @@ import { divideAmount } from "../../infrastructure/shared/math/index.js";
 **Исправления частично корректны.**
 
 - ✅ C1 (SecretStoreRepository) — образцовая реализация Dependency Inversion
-- ⚠️ C3 (KeyEncryptionService) — перемещён в shared, что противоречит ARCHITECTURE.md. Нужно либо создать интерфейс (как для C1), либо обновить документацию
+- ⚠️ C3 (KeyEncryptionService) — перемещён в shared, что противоречит ARCHITECTURE.md
+- ⚠️ S2 — `KeyEncryptionService` передаётся как параметр метода вместо инъекции через конструктор
 
-**Рекомендация:** Для консистентности применить тот же паттерн к `KeyEncryptionService`, что и к `SecretCache` — создать интерфейс в domain. Или принять решение обновить ARCHITECTURE.md, разрешив domain доступ к shared utilities.
+**Рекомендации:**
+1. Применить тот же паттерн к `KeyEncryptionService`, что и к `SecretCache` — создать интерфейс `EncryptionService` в domain
+2. Убрать `encryptionService` из параметров `signAndSendTransactionSecure`, инжектить через конструктор `SolanaBlockchainRepository`
+3. Или принять решение обновить ARCHITECTURE.md, разрешив domain доступ к shared utilities
