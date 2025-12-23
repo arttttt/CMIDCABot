@@ -3,18 +3,19 @@
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
-import { DcaService } from "../../services/dca.js";
+import { PortfolioRepository } from "../repositories/PortfolioRepository.js";
 import { InitUserResult } from "./types.js";
 
 export class InitUserUseCase {
   constructor(
     private userRepository: UserRepository,
-    private dca: DcaService | undefined,
+    private portfolioRepository?: PortfolioRepository,
   ) {}
 
   async execute(telegramId: number): Promise<InitUserResult> {
     await this.userRepository.create(telegramId);
-    await this.dca?.createPortfolio(telegramId);
+    // Create portfolio in dev mode if repository available
+    await this.portfolioRepository?.create(telegramId);
     return { type: "success" };
   }
 }

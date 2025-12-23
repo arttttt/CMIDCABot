@@ -26,11 +26,8 @@ import { SolanaRpcClient } from "./data/sources/api/SolanaRpcClient.js";
 import { JupiterPriceClient } from "./data/sources/api/JupiterPriceClient.js";
 import { JupiterSwapClient } from "./data/sources/api/JupiterSwapClient.js";
 import { getEncryptionService, initializeEncryption } from "./services/encryption.js";
-import { AuthorizationService } from "./services/authorization.js";
 import { TelegramUserResolver } from "./services/userResolver.js";
-import { DcaService } from "./services/dca.js";
 import { DcaScheduler } from "./services/DcaScheduler.js";
-import { PriceService } from "./services/price.js";
 import type { AuthDatabase } from "./data/types/authDatabase.js";
 import {
   InitUserUseCase,
@@ -52,6 +49,14 @@ import {
   GenerateInviteUseCase,
   ActivateInviteUseCase,
   DeleteUserDataUseCase,
+  InitializeAuthorizationUseCase,
+  AddAuthorizedUserUseCase,
+  RemoveAuthorizedUserUseCase,
+  GetAllAuthorizedUsersUseCase,
+  UpdateUserRoleUseCase,
+  ExecuteMockPurchaseUseCase,
+  ExecuteBatchDcaUseCase,
+  AuthorizationHelper,
 } from "./domain/usecases/index.js";
 import { ProtocolHandler } from "./presentation/protocol/index.js";
 import {
@@ -129,9 +134,10 @@ async function main(): Promise<void> {
     ? new SQLiteInviteTokenRepository(authDb)
     : new InMemoryInviteTokenRepository();
 
-  // Create authorization service
-  const authService = new AuthorizationService(authRepository, config.auth.ownerTelegramId);
-  await authService.initialize();
+  // Create authorization helper and initialize owner
+  const authHelper = new AuthorizationHelper(authRepository, config.auth.ownerTelegramId);
+  const initializeAuth = new InitializeAuthorizationUseCase(authRepository, config.auth.ownerTelegramId);
+  await initializeAuth.execute();
 
   // Create user resolver (will be connected to bot API later)
   const userResolver = new TelegramUserResolver();
@@ -160,7 +166,6 @@ async function main(): Promise<void> {
   // Initialize Price and Swap repositories (require API key)
   let priceRepository: JupiterPriceRepository | undefined;
   let swapRepository: JupiterSwapRepository | undefined;
-  let priceService: PriceService | undefined;
 
   if (config.price.jupiterApiKey) {
     const jupiterPriceClient = new JupiterPriceClient(config.price.jupiterApiKey);
@@ -168,15 +173,18 @@ async function main(): Promise<void> {
 
     const jupiterSwapClient = new JupiterSwapClient(config.price.jupiterApiKey);
     swapRepository = new JupiterSwapRepository(jupiterSwapClient);
-
-    // Keep PriceService for DcaService (will be removed in stage 7)
-    priceService = new PriceService(config.price.jupiterApiKey);
   }
 
-  // Initialize mock database, DCA service and scheduler only in development mode
-  let dca: DcaService | undefined;
+  // Create authorization use cases
+  const addAuthorizedUser = new AddAuthorizedUserUseCase(authRepository, authHelper);
+  const removeAuthorizedUser = new RemoveAuthorizedUserUseCase(authRepository, authHelper);
+  const getAllAuthorizedUsers = new GetAllAuthorizedUsersUseCase(authRepository);
+  const updateUserRole = new UpdateUserRoleUseCase(authRepository, authHelper);
+
+  // Initialize mock database and scheduler only in development mode
   let dcaScheduler: DcaScheduler | undefined;
   let deleteUserData: DeleteUserDataUseCase;
+  let portfolioRepository: import("./domain/repositories/PortfolioRepository.js").PortfolioRepository | undefined;
 
   if (config.isDev) {
     if (dbMode === "sqlite") {
@@ -184,32 +192,38 @@ async function main(): Promise<void> {
     }
 
     const mockRepos = createMockRepositories(dbMode, mockDb);
+    portfolioRepository = mockRepos.portfolioRepository;
 
     // Create delete user data use case with dev-mode repositories
     deleteUserData = new DeleteUserDataUseCase(
-      authService,
+      removeAuthorizedUser,
       userRepository,
       transactionRepository,
       mockRepos.portfolioRepository,
       mockRepos.purchaseRepository,
     );
 
-    dca = new DcaService(
-      userRepository,
-      mockRepos.portfolioRepository,
-      mockRepos.purchaseRepository,
-      solanaRpcClient, // DcaService still uses SolanaRpcClient (will be refactored in stage 7)
-      config.isDev,
-      config.price.source,
-      priceService,
-    );
+    // Create DCA scheduler if configured (requires price repository)
+    if (config.dca.amountUsdc > 0 && config.dca.intervalMs > 0 && priceRepository) {
+      // Create mock purchase use case for scheduler
+      const executeMockPurchase = new ExecuteMockPurchaseUseCase(
+        mockRepos.portfolioRepository,
+        mockRepos.purchaseRepository,
+        priceRepository,
+      );
 
-    // Create DCA scheduler if configured
-    if (config.dca.amountUsdc > 0 && config.dca.intervalMs > 0) {
+      // Create batch DCA use case for scheduler
+      const executeBatchDca = new ExecuteBatchDcaUseCase(
+        userRepository,
+        balanceRepository,
+        priceRepository,
+        executeMockPurchase,
+      );
+
       dcaScheduler = new DcaScheduler(
         userRepository,
         mockRepos.schedulerRepository,
-        dca,
+        executeBatchDca,
         {
           intervalMs: config.dca.intervalMs,
           amountUsdc: config.dca.amountUsdc,
@@ -224,7 +238,7 @@ async function main(): Promise<void> {
   } else {
     // Create delete user data use case for production (no mock repositories)
     deleteUserData = new DeleteUserDataUseCase(
-      authService,
+      removeAuthorizedUser,
       userRepository,
       transactionRepository,
     );
@@ -245,7 +259,7 @@ async function main(): Promise<void> {
   );
 
   // Create use cases
-  const initUser = new InitUserUseCase(userRepository, dca);
+  const initUser = new InitUserUseCase(userRepository, portfolioRepository);
   const showWallet = new ShowWalletUseCase(userRepository, walletHelper);
   const createWallet = new CreateWalletUseCase(userRepository, blockchainRepository, walletHelper, secretStore);
   const importWallet = new ImportWalletUseCase(userRepository, blockchainRepository, walletHelper);
@@ -309,14 +323,16 @@ async function main(): Promise<void> {
     // Start command deps (shared between dev and prod)
     const startDeps = {
       initUser,
-      authService,
+      authHelper,
       activateInvite: inviteFormatter ? activateInvite : undefined,
       inviteFormatter,
     };
 
     // Admin command deps (shared between dev and prod)
     const adminDeps = {
-      authService,
+      addAuthorizedUser,
+      getAllAuthorizedUsers,
+      updateUserRole,
       formatter: adminFormatter,
       userResolver,
       deleteUserData,
@@ -402,7 +418,7 @@ async function main(): Promise<void> {
     }
 
     // Create protocol handler
-    const handler = new ProtocolHandler(registry, authService);
+    const handler = new ProtocolHandler(registry, authHelper);
 
     return { registry, handler };
   }

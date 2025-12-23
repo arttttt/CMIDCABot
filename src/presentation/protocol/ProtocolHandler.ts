@@ -16,7 +16,7 @@ import {
   UICommand,
   UIResponseStream,
 } from "./types.js";
-import { AuthorizationService } from "../../services/authorization.js";
+import { AuthorizationHelper } from "../../domain/usecases/helpers/AuthorizationHelper.js";
 import { hasRequiredRole, type UserRole } from "../../domain/models/AuthorizedUser.js";
 
 export class ProtocolHandler {
@@ -24,7 +24,7 @@ export class ProtocolHandler {
 
   constructor(
     private registry: CommandRegistry,
-    private authService: AuthorizationService,
+    private authHelper: AuthorizationHelper,
   ) {
     this.helpFormatter = new HelpFormatter();
   }
@@ -89,7 +89,7 @@ export class ProtocolHandler {
     const modeInfo = this.registry.getModeInfo();
 
     // Get user role, default to 'guest' for unauthorized users
-    const userRole: UserRole = (await this.authService.getRole(telegramId)) ?? "guest";
+    const userRole: UserRole = (await this.authHelper.getRole(telegramId)) ?? "guest";
 
     // /help - show commands available to user based on role
     if (command === "/help") {
@@ -127,7 +127,7 @@ export class ProtocolHandler {
     const modeInfo = this.registry.getModeInfo();
 
     // Get user role, default to 'guest' for unauthorized users
-    const userRole: UserRole = (await this.authService.getRole(telegramId)) ?? "guest";
+    const userRole: UserRole = (await this.authHelper.getRole(telegramId)) ?? "guest";
 
     // /help - show commands available to user based on role
     if (command === "/help") {
@@ -193,7 +193,7 @@ export class ProtocolHandler {
 
     // Check role requirement
     if (result.requiredRole) {
-      const userRole: UserRole = (await this.authService.getRole(ctx.telegramId)) ?? "guest";
+      const userRole: UserRole = (await this.authHelper.getRole(ctx.telegramId)) ?? "guest";
       if (!hasRequiredRole(userRole, result.requiredRole)) {
         return { text: "Unknown action." };
       }
@@ -202,10 +202,4 @@ export class ProtocolHandler {
     return result.handler(ctx.telegramId);
   }
 
-  /**
-   * Get authorization service (for admin commands)
-   */
-  getAuthService(): AuthorizationService {
-    return this.authService;
-  }
 }
