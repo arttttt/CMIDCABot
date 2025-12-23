@@ -25,7 +25,7 @@ import { JupiterSwapRepository } from "./data/repositories/JupiterSwapRepository
 import { SolanaRpcClient } from "./data/sources/api/SolanaRpcClient.js";
 import { JupiterPriceClient } from "./data/sources/api/JupiterPriceClient.js";
 import { JupiterSwapClient } from "./data/sources/api/JupiterSwapClient.js";
-import { getEncryptionService, initializeEncryption } from "./infrastructure/internal/crypto/index.js";
+import { KeyEncryptionService } from "./infrastructure/internal/crypto/index.js";
 import { TelegramUserResolver } from "./presentation/telegram/UserResolver.js";
 import { DcaScheduler } from "./_wip/dca-scheduling/index.js";
 import type { AuthDatabase } from "./data/types/authDatabase.js";
@@ -109,8 +109,8 @@ async function main(): Promise<void> {
   console.log(`Database mode: ${dbMode}`);
 
   // Initialize encryption service (required for private key protection)
-  await initializeEncryption(config.encryption.masterKey);
-  const encryptionService = getEncryptionService();
+  const encryptionService = new KeyEncryptionService();
+  await encryptionService.initialize(config.encryption.masterKey);
 
   // Initialize database connections (only for sqlite mode)
   let mainDb: Kysely<MainDatabase> | undefined;

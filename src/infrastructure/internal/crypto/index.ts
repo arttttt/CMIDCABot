@@ -1,5 +1,1 @@
-export {
-  KeyEncryptionService,
-  getEncryptionService,
-  initializeEncryption,
-} from "./KeyEncryption.js";
+export { KeyEncryptionService } from "./KeyEncryption.js";

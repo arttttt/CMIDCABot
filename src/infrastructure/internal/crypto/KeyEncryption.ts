@@ -205,28 +205,3 @@ export class KeyEncryptionService {
     }
   }
 }
-
-// Singleton instance
-let encryptionService: KeyEncryptionService | null = null;
-
-/**
- * Get the singleton encryption service instance.
- * Must be initialized before use via initializeEncryption().
- */
-export function getEncryptionService(): KeyEncryptionService {
-  if (!encryptionService) {
-    encryptionService = new KeyEncryptionService();
-  }
-  return encryptionService;
-}
-
-/**
- * Initialize the encryption service with master key from environment.
- * Should be called once at application startup.
- *
- * @param masterKeyBase64 - Base64-encoded 32-byte master key
- */
-export async function initializeEncryption(masterKeyBase64: string): Promise<void> {
-  const service = getEncryptionService();
-  await service.initialize(masterKeyBase64);
-}
