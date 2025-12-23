@@ -23,7 +23,7 @@ import { InMemoryPortfolioRepository } from "../repositories/memory/InMemoryPort
 import { InMemoryPurchaseRepository } from "../repositories/memory/InMemoryPurchaseRepository.js";
 import { InMemorySchedulerRepository } from "../repositories/memory/InMemorySchedulerRepository.js";
 
-import { KeyEncryptionService } from "../../infrastructure/shared/crypto/index.js";
+import { KeyEncryptionService } from "../../infrastructure/internal/crypto/index.js";
 
 export interface MainRepositories {
   userRepository: UserRepository;

@@ -30,6 +30,12 @@ export interface UserRepository {
   setPrivateKey(telegramId: number, privateKey: string): Promise<void>;
 
   /**
+   * Get decrypted private key for signing operations.
+   * Returns null if user has no private key.
+   */
+  getDecryptedPrivateKey(telegramId: number): Promise<string | null>;
+
+  /**
    * Clear user's DCA wallet private key
    */
   clearPrivateKey(telegramId: number): Promise<void>;

@@ -7,7 +7,7 @@
  */
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
 import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../../../domain/models/User.js";
-import { KeyEncryptionService } from "../../../infrastructure/shared/crypto/index.js";
+import { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 
 export class InMemoryUserRepository implements UserRepository {
   private users = new Map<number, User>();
@@ -85,6 +85,14 @@ export class InMemoryUserRepository implements UserRepository {
       user.privateKey = null;
       user.updatedAt = new Date();
     }
+  }
+
+  async getDecryptedPrivateKey(telegramId: number): Promise<string | null> {
+    const user = this.users.get(telegramId);
+    if (!user?.privateKey) {
+      return null;
+    }
+    return this.encryptionService.decrypt(user.privateKey);
   }
 
   /**

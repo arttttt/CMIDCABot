@@ -16,7 +16,6 @@ import type {
   TokenConfig,
   BatchBalancesResult,
 } from "../../domain/repositories/BlockchainRepository.js";
-import type { KeyEncryptionService } from "../../infrastructure/shared/crypto/index.js";
 import type { SolanaRpcClient } from "../sources/api/SolanaRpcClient.js";
 
 export class SolanaBlockchainRepository implements BlockchainRepository {
@@ -68,12 +67,10 @@ export class SolanaBlockchainRepository implements BlockchainRepository {
   async signAndSendTransactionSecure(
     transactionBase64: string,
     encryptedPrivateKey: string,
-    encryptionService: KeyEncryptionService,
   ): Promise<SendTransactionResult> {
     return this.client.signAndSendTransactionSecure(
       transactionBase64,
       encryptedPrivateKey,
-      encryptionService,
     );
   }
 

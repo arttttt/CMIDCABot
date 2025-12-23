@@ -10,12 +10,10 @@ import { SecretStoreRepository } from "../repositories/SecretStoreRepository.js"
 import { DcaWalletConfig } from "../../types/config.js";
 import { ExportKeyResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
-import type { KeyEncryptionService } from "../../infrastructure/shared/crypto/index.js";
 
 export class ExportWalletKeyUseCase {
   constructor(
     private userRepository: UserRepository,
-    private encryptionService: KeyEncryptionService,
     private secretStore: SecretStoreRepository,
     private config: DcaWalletConfig,
   ) {}
@@ -33,15 +31,13 @@ export class ExportWalletKeyUseCase {
       };
     }
 
-    const user = await this.userRepository.getById(telegramId);
+    // Get decrypted key from repository
+    const decryptedKey = await this.userRepository.getDecryptedPrivateKey(telegramId);
 
-    if (!user?.privateKey) {
+    if (!decryptedKey) {
       logger.warn("ExportWalletKey", "No wallet to export", { telegramId });
       return { type: "no_wallet" };
     }
-
-    // Decrypt the private key for secure storage
-    const decryptedKey = await this.encryptionService.decrypt(user.privateKey);
 
     // Store in SecretStore and return one-time URL
     const keyUrl = await this.secretStore.store(decryptedKey, telegramId);

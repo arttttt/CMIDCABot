@@ -19,7 +19,6 @@ import { BlockchainRepository, SendTransactionResult } from "../repositories/Blo
 import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
-import type { KeyEncryptionService } from "../../infrastructure/shared/crypto/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
@@ -31,7 +30,6 @@ export class ExecuteSwapUseCase {
     private userRepository: UserRepository,
     private transactionRepository: TransactionRepository,
     private balanceRepository: BalanceRepository,
-    private encryptionService: KeyEncryptionService,
     private devPrivateKey?: string,
   ) {}
 
@@ -191,7 +189,6 @@ export class ExecuteSwapUseCase {
         sendResult = await this.blockchainRepository.signAndSendTransactionSecure(
           transactionBase64,
           encryptedPrivateKey!,
-          this.encryptionService,
         );
       }
     } catch (error) {

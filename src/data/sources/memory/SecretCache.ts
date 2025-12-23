@@ -12,7 +12,7 @@
 
 import { randomBytes } from "node:crypto";
 import { SecretStoreRepository } from "../../../domain/repositories/SecretStoreRepository.js";
-import { KeyEncryptionService } from "../../../infrastructure/shared/crypto/index.js";
+import { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 /** Default TTL: 5 minutes */

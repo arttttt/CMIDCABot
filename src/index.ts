@@ -25,7 +25,7 @@ import { JupiterSwapRepository } from "./data/repositories/JupiterSwapRepository
 import { SolanaRpcClient } from "./data/sources/api/SolanaRpcClient.js";
 import { JupiterPriceClient } from "./data/sources/api/JupiterPriceClient.js";
 import { JupiterSwapClient } from "./data/sources/api/JupiterSwapClient.js";
-import { getEncryptionService, initializeEncryption } from "./infrastructure/shared/crypto/index.js";
+import { getEncryptionService, initializeEncryption } from "./infrastructure/internal/crypto/index.js";
 import { TelegramUserResolver } from "./presentation/telegram/UserResolver.js";
 import { DcaScheduler } from "./_wip/dca-scheduling/index.js";
 import type { AuthDatabase } from "./data/types/authDatabase.js";
@@ -143,7 +143,7 @@ async function main(): Promise<void> {
   const userResolver = new TelegramUserResolver();
 
   // Initialize Solana RPC client and blockchain repository
-  const solanaRpcClient = new SolanaRpcClient(config.solana);
+  const solanaRpcClient = new SolanaRpcClient(config.solana, encryptionService);
   const blockchainRepository = new SolanaBlockchainRepository(solanaRpcClient);
 
   // Initialize balance repository with caching (still uses RPC client internally)
@@ -254,7 +254,6 @@ async function main(): Promise<void> {
     userRepository,
     transactionRepository,
     balanceRepository,
-    encryptionService,
     config.dcaWallet.devPrivateKey,
   );
 
@@ -264,7 +263,7 @@ async function main(): Promise<void> {
   const createWallet = new CreateWalletUseCase(userRepository, blockchainRepository, walletHelper, secretStore);
   const importWallet = new ImportWalletUseCase(userRepository, blockchainRepository, walletHelper);
   const deleteWallet = new DeleteWalletUseCase(userRepository, walletHelper);
-  const exportWalletKey = new ExportWalletKeyUseCase(userRepository, encryptionService, secretStore, config.dcaWallet);
+  const exportWalletKey = new ExportWalletKeyUseCase(userRepository, secretStore, config.dcaWallet);
   const startDca = new StartDcaUseCase(userRepository, dcaScheduler);
   const stopDca = new StopDcaUseCase(userRepository, dcaScheduler);
   const getDcaStatus = new GetDcaStatusUseCase(userRepository, dcaScheduler);
