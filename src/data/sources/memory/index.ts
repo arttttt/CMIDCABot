@@ -6,4 +6,4 @@ export {
   ImportSessionCache,
   DEFAULT_IMPORT_SESSION_TTL_MS,
 } from "./ImportSessionCache.js";
-export type { ImportSessionStoreConfig, ImportSessionStorePort } from "./ImportSessionCache.js";
+export type { ImportSessionStoreConfig } from "./ImportSessionCache.js";

@@ -39,9 +39,10 @@ export default [
         default: 'disallow',
         rules: [
           // Domain: only own interfaces + infra-shared + types
+          // NOTE: 'wip' is temporarily allowed during migration period
           {
             from: 'domain',
-            allow: ['domain', 'infra-shared', 'types'],
+            allow: ['domain', 'infra-shared', 'types', 'wip'],
           },
           // Data: domain interfaces + all infrastructure
           {

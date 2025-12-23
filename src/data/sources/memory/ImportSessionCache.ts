@@ -39,14 +39,6 @@ export interface ImportSessionStoreConfig {
   publicUrl: string;
 }
 
-/**
- * Port interface for import session store (used by command handlers)
- */
-export interface ImportSessionStorePort {
-  store(telegramId: number): string;
-  getTtlMinutes(): number;
-}
-
 export class ImportSessionCache {
   private sessions = new Map<string, ImportSession>();
   private formSessions = new Map<string, FormSession>();
