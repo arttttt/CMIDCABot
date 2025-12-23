@@ -59,6 +59,10 @@ infrastructure  → (nothing, except shared between own modules)
 | Services behind repositories | Domain works only with interfaces |
 | Data sources by type | Separation: database / memory / api |
 | Infrastructure: internal/shared | internal — data only, shared — all layers |
+| Use cases return domain objects | Not UI structures — formatters handle transformation |
+| Formatters: domain → UI | Separation of concerns between layers |
+| Thin adapters | Map external input/output to internal protocol only |
+| Explicit dependencies | Constructor injection, no global state |
 | Single documentation | `prompts/ARCHITECTURE.md` |
 
 ## Anti-patterns (Prohibited)
@@ -69,6 +73,10 @@ infrastructure  → (nothing, except shared between own modules)
 | **Domain Services** | Not used. All business logic in Use Cases |
 | **Direct service access from domain** | Domain works only with repository interfaces |
 | **Business logic in data layer** | Data only stores/retrieves data, makes no decisions |
+| **Event bus / implicit coupling** | Makes dependencies hidden and hard to trace |
+| **Business logic in adapters/formatters** | Adapters are thin, logic belongs in use cases |
+| **Direct DB access from presentation** | Violates layer separation, use repositories |
+| **Framework deps in domain** | Domain must be pure, no external framework imports |
 
 ## Naming Conventions
 
