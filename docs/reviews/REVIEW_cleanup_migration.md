@@ -2,21 +2,21 @@
 
 **Reviewed:** Task 09 — финализация миграции, удаление deprecated services layer
 **Date:** 2025-12-23
-**Status:** 🟡 Approved with comments
+**Status:** 🔴 Needs work
 
 ---
 
 ## Summary
 
-Миграция выполнена корректно: все deprecated re-exports удалены, папки `src/services/`, `src/config/`, `src/data/datasources/` удалены, импорты обновлены, сборка проходит. Однако обнаружены **архитектурные нарушения** в domain layer, которые существовали до миграции и не были исправлены. Эти нарушения не блокируют merge, но требуют внимания в будущем.
+Миграция выполнена частично: deprecated re-exports удалены, папки удалены, сборка проходит. Однако обнаружены **архитектурные нарушения** в domain layer, которые **должны быть исправлены** перед merge. Domain layer напрямую зависит от data layer и infrastructure/internal, что нарушает Clean Architecture.
 
 ---
 
 ## Findings
 
-### 🟡 Should Fix (important but not blocking)
+### 🔴 Critical (must fix before merge)
 
-#### [S1] Domain layer импортирует из data layer
+#### [C1] Domain layer импортирует из data layer
 
 **Location:**
 - `src/domain/usecases/CreateWalletUseCase.ts:8`
@@ -41,7 +41,7 @@ domain → (nothing, only own interfaces)
 
 ---
 
-#### [S2] Domain layer импортирует из _wip
+#### [C2] Domain layer импортирует из _wip
 
 **Location:**
 - `src/domain/usecases/GetDcaStatusUseCase.ts:6`
@@ -62,7 +62,7 @@ Domain зависит от WIP компонента, который находи
 
 ---
 
-#### [S3] Domain импортирует из infrastructure/internal
+#### [C3] Domain импортирует из infrastructure/internal
 
 **Location:**
 - `src/domain/repositories/BlockchainRepository.ts:13`
@@ -127,11 +127,11 @@ infrastructure/internal — data only
 
 | Category | Status | Notes |
 |----------|--------|-------|
-| Correctness | ✅ | Все acceptance criteria выполнены |
-| Architecture | ⚠️ | Domain импортирует из data/infrastructure/internal (pre-existing) |
+| Correctness | ✅ | Deprecated файлы удалены, сборка проходит |
+| Architecture | ❌ | Domain импортирует из data/infrastructure/internal — нарушение Clean Architecture |
 | Security | ✅ | Нет проблем |
 | Code Quality | ✅ | Типы явные, нет `any` |
-| Conventions | ✅ | Trailing commas, English comments |
+| Conventions | ⚠️ | Комментарии ссылаются на старые имена классов |
 
 ---
 
@@ -148,15 +148,15 @@ infrastructure/internal — data only
 
 ## Action Items
 
-- [ ] [S1] Создать интерфейс `SecretStoreRepository` в domain layer (отдельная задача)
-- [ ] [S2] Создать интерфейс `DcaSchedulerPort` при рефакторинге DcaScheduler (связано с _wip)
-- [ ] [S3] Решить архитектурный вопрос с `KeyEncryptionService` (отдельная задача)
-- [ ] [N1-N3] Обновить комментарии SolanaService → SolanaRpcClient (minor)
+- [ ] [C1] Создать интерфейс `SecretStoreRepository` в domain layer
+- [ ] [C2] Создать интерфейс `DcaSchedulerPort` в domain layer
+- [ ] [C3] Переместить `KeyEncryptionService` в `infrastructure/shared/crypto/`
+- [ ] [N1-N3] Обновить комментарии SolanaService → SolanaRpcClient
 
 ---
 
 ## Verdict
 
-**Задача Task 09 выполнена корректно.** Все acceptance criteria удовлетворены. Архитектурные нарушения (S1-S3) — это pre-existing issues, которые существовали до миграции. Они не являются результатом этой задачи и должны быть адресованы отдельными задачами.
+**Задача Task 09 требует доработки.** Основная работа по удалению deprecated файлов выполнена, но архитектурные нарушения (C1-C3) должны быть исправлены перед merge. Domain layer не должен напрямую зависеть от data layer и infrastructure/internal.
 
-**Рекомендация:** Merge approved. Создать отдельные задачи для исправления архитектурных нарушений.
+**Рекомендация:** Исправить все critical issues, затем повторное ревью.
