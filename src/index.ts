@@ -25,7 +25,7 @@ import { JupiterSwapRepository } from "./data/repositories/JupiterSwapRepository
 import { SolanaRpcClient } from "./data/sources/api/SolanaRpcClient.js";
 import { JupiterPriceClient } from "./data/sources/api/JupiterPriceClient.js";
 import { JupiterSwapClient } from "./data/sources/api/JupiterSwapClient.js";
-import { getEncryptionService, initializeEncryption } from "./infrastructure/internal/crypto/index.js";
+import { getEncryptionService, initializeEncryption } from "./infrastructure/shared/crypto/index.js";
 import { TelegramUserResolver } from "./presentation/telegram/UserResolver.js";
 import { DcaScheduler } from "./_wip/dca-scheduling/index.js";
 import type { AuthDatabase } from "./data/types/authDatabase.js";

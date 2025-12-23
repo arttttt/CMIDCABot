@@ -6,17 +6,17 @@
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
+import { SecretStoreRepository } from "../repositories/SecretStoreRepository.js";
 import { DcaWalletConfig } from "../../types/config.js";
-import { SecretCache } from "../../data/sources/memory/index.js";
 import { ExportKeyResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
-import type { KeyEncryptionService } from "../../infrastructure/internal/crypto/index.js";
+import type { KeyEncryptionService } from "../../infrastructure/shared/crypto/index.js";
 
 export class ExportWalletKeyUseCase {
   constructor(
     private userRepository: UserRepository,
     private encryptionService: KeyEncryptionService,
-    private secretStore: SecretCache,
+    private secretStore: SecretStoreRepository,
     private config: DcaWalletConfig,
   ) {}
 

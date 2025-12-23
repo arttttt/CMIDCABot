@@ -10,7 +10,7 @@
  * - Token operations (token balances)
  */
 
-import type { KeyEncryptionService } from "../../infrastructure/internal/crypto/index.js";
+import type { KeyEncryptionService } from "../../infrastructure/shared/crypto/index.js";
 
 /**
  * Generated keypair with extractable private key

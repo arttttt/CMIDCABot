@@ -12,3 +12,4 @@ export * from "./BalanceRepository.js";
 export * from "./BlockchainRepository.js";
 export * from "./PriceRepository.js";
 export * from "./SwapRepository.js";
+export * from "./SecretStoreRepository.js";

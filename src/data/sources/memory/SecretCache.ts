@@ -11,7 +11,8 @@
  */
 
 import { randomBytes } from "node:crypto";
-import { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
+import { SecretStoreRepository } from "../../../domain/repositories/SecretStoreRepository.js";
+import { KeyEncryptionService } from "../../../infrastructure/shared/crypto/index.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 /** Default TTL: 5 minutes */
@@ -32,7 +33,7 @@ export interface SecretStoreConfig {
   publicUrl: string;
 }
 
-export class SecretCache {
+export class SecretCache implements SecretStoreRepository {
   private secrets = new Map<string, SecretEntry>();
   private readonly ttlMs: number;
   private readonly publicUrl: string;

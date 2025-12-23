@@ -19,7 +19,7 @@ import { BlockchainRepository, SendTransactionResult } from "../repositories/Blo
 import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
-import type { KeyEncryptionService } from "../../infrastructure/internal/crypto/index.js";
+import type { KeyEncryptionService } from "../../infrastructure/shared/crypto/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];

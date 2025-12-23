@@ -17,7 +17,7 @@
  * - AuthTag: 16 bytes (included in ciphertext by Web Crypto)
  */
 
-import { logger } from "../../shared/logging/index.js";
+import { logger } from "../logging/index.js";
 
 const IV_LENGTH = 12; // 96 bits - recommended for AES-GCM
 const KEY_LENGTH = 32; // 256 bits

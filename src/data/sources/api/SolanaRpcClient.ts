@@ -15,7 +15,7 @@ import * as bip39 from "bip39";
 import { derivePath } from "ed25519-hd-key";
 import { SolanaConfig } from "../../../types/index.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
-import type { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
+import type { KeyEncryptionService } from "../../../infrastructure/shared/crypto/index.js";
 import { BatchRpcClient } from "./BatchRpcClient.js";
 import { withRetry, pollWithBackoff, type PollResult } from "../../../infrastructure/shared/resilience/index.js";
 import { toHumanAmountNumber } from "../../../infrastructure/shared/math/index.js";

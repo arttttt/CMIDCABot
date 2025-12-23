@@ -16,7 +16,7 @@ import type {
   TokenConfig,
   BatchBalancesResult,
 } from "../../domain/repositories/BlockchainRepository.js";
-import type { KeyEncryptionService } from "../../infrastructure/internal/crypto/index.js";
+import type { KeyEncryptionService } from "../../infrastructure/shared/crypto/index.js";
 import type { SolanaRpcClient } from "../sources/api/SolanaRpcClient.js";
 
 export class SolanaBlockchainRepository implements BlockchainRepository {

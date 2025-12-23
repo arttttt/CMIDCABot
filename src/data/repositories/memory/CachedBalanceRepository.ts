@@ -1,7 +1,7 @@
 /**
  * Cached Balance Repository
  *
- * In-memory cache over SolanaService RPC calls.
+ * In-memory cache over SolanaRpcClient RPC calls.
  * Reduces RPC request frequency during sequential read operations.
  *
  * Uses batch RPC requests to fetch all balances in a single HTTP call,
