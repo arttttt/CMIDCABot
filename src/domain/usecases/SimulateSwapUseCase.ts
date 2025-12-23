@@ -9,12 +9,12 @@
  * 4. Return simulation result (success/error, compute units, logs)
  */
 
-import { JupiterSwapService, SwapQuote } from "../../services/jupiter-swap.js";
-import { SolanaService, SimulationResult } from "../../services/solana.js";
-import { TOKEN_MINTS } from "../../services/price.js";
+import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
+import { BlockchainRepository, SimulationResult } from "../repositories/BlockchainRepository.js";
+import { TOKEN_MINTS } from "../../data/sources/api/JupiterPriceClient.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
-import { logger } from "../../services/logger.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export type SimulateSwapResult =
   | {
@@ -35,8 +35,8 @@ const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
 export class SimulateSwapUseCase {
   constructor(
-    private jupiterSwap: JupiterSwapService | undefined,
-    private solanaService: SolanaService,
+    private swapRepository: SwapRepository | undefined,
+    private blockchainRepository: BlockchainRepository,
     private userRepository: UserRepository,
     private devPrivateKey?: string,
   ) {}
@@ -58,9 +58,9 @@ export class SimulateSwapUseCase {
       asset,
     });
 
-    // Check if Jupiter is available
-    if (!this.jupiterSwap) {
-      logger.warn("SimulateSwap", "Jupiter service unavailable");
+    // Check if swap repository is available
+    if (!this.swapRepository) {
+      logger.warn("SimulateSwap", "Swap repository unavailable");
       return { status: "unavailable" };
     }
 
@@ -93,7 +93,7 @@ export class SimulateSwapUseCase {
 
     if (this.devPrivateKey) {
       // In dev mode, derive address from dev private key
-      walletAddress = await this.solanaService.getAddressFromPrivateKey(this.devPrivateKey);
+      walletAddress = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
     } else {
       const user = await this.userRepository.getById(telegramId);
       walletAddress = user?.walletAddress ?? undefined;
@@ -104,7 +104,7 @@ export class SimulateSwapUseCase {
     }
 
     // Check USDC balance before calling Jupiter API
-    const usdcBalance = await this.solanaService.getUsdcBalance(walletAddress);
+    const usdcBalance = await this.blockchainRepository.getUsdcBalance(walletAddress);
     if (usdcBalance < amountUsdc) {
       logger.warn("SimulateSwap", "Insufficient USDC balance", {
         required: amountUsdc,
@@ -120,10 +120,10 @@ export class SimulateSwapUseCase {
     const outputMint = TOKEN_MINTS[assetUpper];
 
     // Step 1: Get quote
-    logger.step("SimulateSwap", 1, 3, "Getting quote from Jupiter...");
+    logger.step("SimulateSwap", 1, 3, "Getting quote...");
     let quote: SwapQuote;
     try {
-      quote = await this.jupiterSwap.getQuoteUsdcToToken(amountUsdc, outputMint);
+      quote = await this.swapRepository!.getQuoteUsdcToToken(amountUsdc, outputMint);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("SimulateSwap", "Quote failed", { error: message });
@@ -134,7 +134,7 @@ export class SimulateSwapUseCase {
     logger.step("SimulateSwap", 2, 3, "Building transaction...");
     let transactionBase64: string;
     try {
-      const swapTx = await this.jupiterSwap.buildSwapTransaction(quote, walletAddress);
+      const swapTx = await this.swapRepository!.buildSwapTransaction(quote, walletAddress);
       transactionBase64 = swapTx.transactionBase64;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -146,7 +146,7 @@ export class SimulateSwapUseCase {
     logger.step("SimulateSwap", 3, 3, "Running simulation...");
     let simulation: SimulationResult;
     try {
-      simulation = await this.solanaService.simulateTransaction(transactionBase64);
+      simulation = await this.blockchainRepository.simulateTransaction(transactionBase64);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("SimulateSwap", "Simulation error", { error: message });

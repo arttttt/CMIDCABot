@@ -14,7 +14,7 @@ import { TransactionRepository } from "../repositories/TransactionRepository.js"
 import { PortfolioRepository } from "../repositories/PortfolioRepository.js";
 import { PurchaseRepository } from "../repositories/PurchaseRepository.js";
 import { AuthorizationService, AdminOperationResult } from "../../services/authorization.js";
-import { logger } from "../../services/logger.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export class DeleteUserDataUseCase {
   constructor(

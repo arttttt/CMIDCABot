@@ -9,3 +9,6 @@ export * from "./SchedulerRepository.js";
 export * from "./AuthRepository.js";
 export * from "./InviteTokenRepository.js";
 export * from "./BalanceRepository.js";
+export * from "./BlockchainRepository.js";
+export * from "./PriceRepository.js";
+export * from "./SwapRepository.js";

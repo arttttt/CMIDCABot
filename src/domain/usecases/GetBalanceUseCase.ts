@@ -3,15 +3,15 @@
  */
 
 import { UserRepository } from "../repositories/UserRepository.js";
-import { SolanaService } from "../../services/solana.js";
+import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { WalletInfoHelper } from "./helpers/WalletInfoHelper.js";
 import { BalanceResult } from "./types.js";
-import { logger } from "../../services/logger.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export class GetBalanceUseCase {
   constructor(
     private userRepository: UserRepository,
-    private solana: SolanaService,
+    private blockchainRepository: BlockchainRepository,
     private walletHelper: WalletInfoHelper,
   ) {}
 
@@ -42,10 +42,10 @@ export class GetBalanceUseCase {
     }
 
     try {
-      logger.debug("GetBalance", "Fetching balance from Solana", {
+      logger.debug("GetBalance", "Fetching balance from blockchain", {
         walletAddress: user.walletAddress,
       });
-      const balance = await this.solana.getBalance(user.walletAddress);
+      const balance = await this.blockchainRepository.getBalance(user.walletAddress);
       logger.info("GetBalance", "Balance retrieved", {
         address: user.walletAddress,
         balance,

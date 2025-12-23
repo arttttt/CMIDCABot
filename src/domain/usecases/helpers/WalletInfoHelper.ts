@@ -2,13 +2,13 @@
  * Helper for getting wallet info
  */
 
-import { SolanaService } from "../../../services/solana.js";
+import { BlockchainRepository } from "../../repositories/BlockchainRepository.js";
 import { DcaWalletConfig } from "../../../types/config.js";
 import { DcaWalletInfo } from "../types.js";
 
 export class WalletInfoHelper {
   constructor(
-    private solana: SolanaService,
+    private blockchainRepository: BlockchainRepository,
     private config: DcaWalletConfig,
   ) {}
 
@@ -21,11 +21,11 @@ export class WalletInfoHelper {
    * Used for newly created/imported wallets before encryption.
    */
   async getWalletInfo(privateKeyBase64: string, isDevWallet: boolean): Promise<DcaWalletInfo> {
-    const address = await this.solana.getAddressFromPrivateKey(privateKeyBase64);
+    const address = await this.blockchainRepository.getAddressFromPrivateKey(privateKeyBase64);
 
     let balance: number | null = null;
     try {
-      balance = await this.solana.getBalance(address);
+      balance = await this.blockchainRepository.getBalance(address);
     } catch {
       // Balance fetch failed - wallet may be new or network issue
     }
@@ -40,7 +40,7 @@ export class WalletInfoHelper {
   async getWalletInfoByAddress(address: string, isDevWallet: boolean): Promise<DcaWalletInfo> {
     let balance: number | null = null;
     try {
-      balance = await this.solana.getBalance(address);
+      balance = await this.blockchainRepository.getBalance(address);
     } catch {
       // Balance fetch failed - wallet may be new or network issue
     }
@@ -56,6 +56,6 @@ export class WalletInfoHelper {
     if (!this.config.devPrivateKey) {
       return undefined;
     }
-    return this.solana.getAddressFromPrivateKey(this.config.devPrivateKey);
+    return this.blockchainRepository.getAddressFromPrivateKey(this.config.devPrivateKey);
   }
 }

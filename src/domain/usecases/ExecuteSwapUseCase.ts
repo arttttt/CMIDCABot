@@ -12,23 +12,23 @@
  * Streams progress via execute() AsyncGenerator.
  */
 
-import { JupiterSwapService, SwapQuote } from "../../services/jupiter-swap.js";
-import { SolanaService, SendTransactionResult } from "../../services/solana.js";
-import { TOKEN_MINTS } from "../../services/price.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { TransactionRepository } from "../repositories/TransactionRepository.js";
 import { BalanceRepository } from "../repositories/BalanceRepository.js";
+import { BlockchainRepository, SendTransactionResult } from "../repositories/BlockchainRepository.js";
+import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
+import { TOKEN_MINTS } from "../../data/sources/api/JupiterPriceClient.js";
 import { AssetSymbol } from "../../types/portfolio.js";
-import { logger } from "../../services/logger.js";
-import type { KeyEncryptionService } from "../../services/encryption.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
+import type { KeyEncryptionService } from "../../infrastructure/internal/crypto/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
 export class ExecuteSwapUseCase {
   constructor(
-    private jupiterSwap: JupiterSwapService | undefined,
-    private solanaService: SolanaService,
+    private swapRepository: SwapRepository | undefined,
+    private blockchainRepository: BlockchainRepository,
     private userRepository: UserRepository,
     private transactionRepository: TransactionRepository,
     private balanceRepository: BalanceRepository,
@@ -54,9 +54,9 @@ export class ExecuteSwapUseCase {
       asset,
     });
 
-    // Check if Jupiter is available
-    if (!this.jupiterSwap) {
-      logger.warn("ExecuteSwap", "Jupiter service unavailable");
+    // Check if swap repository is available
+    if (!this.swapRepository) {
+      logger.warn("ExecuteSwap", "Swap repository unavailable");
       yield SwapSteps.completed({ status: "unavailable" });
       return;
     }
@@ -96,7 +96,7 @@ export class ExecuteSwapUseCase {
     if (this.devPrivateKey) {
       // In dev mode, use dev wallet (key is plaintext from env)
       useDevKey = true;
-      walletAddress = await this.solanaService.getAddressFromPrivateKey(this.devPrivateKey);
+      walletAddress = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
     } else {
       // Get user's wallet from database (key is encrypted)
       const user = await this.userRepository.getById(telegramId);
@@ -143,7 +143,7 @@ export class ExecuteSwapUseCase {
 
     let quote: SwapQuote;
     try {
-      quote = await this.jupiterSwap.getQuoteUsdcToToken(amountUsdc, outputMint);
+      quote = await this.swapRepository!.getQuoteUsdcToToken(amountUsdc, outputMint);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Quote failed", { error: message });
@@ -168,7 +168,7 @@ export class ExecuteSwapUseCase {
 
     let transactionBase64: string;
     try {
-      const swapTx = await this.jupiterSwap.buildSwapTransaction(quote, walletAddress);
+      const swapTx = await this.swapRepository!.buildSwapTransaction(quote, walletAddress);
       transactionBase64 = swapTx.transactionBase64;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -185,13 +185,13 @@ export class ExecuteSwapUseCase {
     try {
       if (useDevKey && this.devPrivateKey) {
         // Dev mode: use plaintext key
-        sendResult = await this.solanaService.signAndSendTransaction(
+        sendResult = await this.blockchainRepository.signAndSendTransaction(
           transactionBase64,
           this.devPrivateKey,
         );
       } else {
         // Production: use encrypted key with secure signing
-        sendResult = await this.solanaService.signAndSendTransactionSecure(
+        sendResult = await this.blockchainRepository.signAndSendTransactionSecure(
           transactionBase64,
           encryptedPrivateKey!,
           this.encryptionService,
