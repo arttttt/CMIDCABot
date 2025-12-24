@@ -109,6 +109,8 @@ export class ExecuteSwapUseCase {
     }
 
     // Check USDC balance before calling Jupiter API (uses cache)
+    yield SwapSteps.checkingBalance();
+
     let usdcBalance: number;
     try {
       usdcBalance = await this.balanceRepository.getUsdcBalance(walletAddress);

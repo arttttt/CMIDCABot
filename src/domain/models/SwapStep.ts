@@ -46,6 +46,7 @@ export type SwapResult =
  * Swap operation steps (including completed)
  */
 export type SwapStep =
+  | { step: "checking_balance" }
   | { step: "getting_quote" }
   | { step: "quote_received"; quote: QuoteInfo }
   | { step: "building_transaction" }
@@ -56,6 +57,10 @@ export type SwapStep =
  * Helper constructors for swap steps
  */
 export const SwapSteps = {
+  checkingBalance(): SwapStep {
+    return { step: "checking_balance" };
+  },
+
   gettingQuote(): SwapStep {
     return { step: "getting_quote" };
   },

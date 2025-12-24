@@ -42,6 +42,13 @@ export class ProgressFormatter {
    */
   formatSwapStep(step: SwapStep): FormattedProgress {
     switch (step.step) {
+      case "checking_balance":
+        // Static status message - no escape needed
+        return {
+          response: { text: "Checking USDC balance..." },
+          mode: "edit",
+        };
+
       case "getting_quote":
         // Static status message - no escape needed
         return {
@@ -83,6 +90,13 @@ export class ProgressFormatter {
    */
   formatPurchaseStep(step: PurchaseStep): FormattedProgress {
     switch (step.step) {
+      case "checking_balance":
+        // Static status message - no escape needed
+        return {
+          response: { text: "Checking USDC balance..." },
+          mode: "edit",
+        };
+
       case "selecting_asset":
         // Static status message - no escape needed
         return {

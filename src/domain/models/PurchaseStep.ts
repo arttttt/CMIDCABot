@@ -15,6 +15,7 @@ import type { AssetAllocation } from "./PortfolioTypes.js";
  * Purchase operation steps (including completed)
  */
 export type PurchaseStep =
+  | { step: "checking_balance" }
   | { step: "selecting_asset" }
   | { step: "asset_selected"; selection: AssetAllocation }
   | { step: "swap"; swapStep: SwapStep }
@@ -24,6 +25,10 @@ export type PurchaseStep =
  * Helper constructors for purchase steps
  */
 export const PurchaseSteps = {
+  checkingBalance(): PurchaseStep {
+    return { step: "checking_balance" };
+  },
+
   selectingAsset(): PurchaseStep {
     return { step: "selecting_asset" };
   },
