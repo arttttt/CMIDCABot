@@ -125,11 +125,12 @@ Correctness over completeness. A compact, accurate patch beats a broad, speculat
 ## Roles
 
 Available roles in `prompts/`:
+- `ROLE_SA.md` — answers technical questions, prepare briefs
 - `ROLE_PM.md` — converts ideas into specs
 - `ROLE_DEV.md` — implements features
-- `ROLE_REVIEWER.md` — reviews code
+- `ROLE_CR.md` — reviews code
 
-Activate with: `[PM]`, `[DEV]`, or `[REVIEW]` prefix in message.
+Activate with: `[SA]`, `[PM]`, `[DEV]`, or `[CR]` prefix in message.
 
 ## Useful Links
 
