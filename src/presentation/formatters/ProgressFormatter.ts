@@ -10,7 +10,8 @@
  * Dynamic content (quotes, allocations) uses Markdown.escape() for safety.
  */
 
-import type { SwapStep, PurchaseStep, QuoteInfo, AssetSelectionInfo } from "../../domain/models/index.js";
+import type { SwapStep, PurchaseStep, QuoteInfo } from "../../domain/models/index.js";
+import type { AssetAllocation } from "../../domain/models/PortfolioTypes.js";
 import type { UIResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
@@ -130,19 +131,19 @@ export class ProgressFormatter {
   /**
    * Format asset selection with allocation details
    */
-  private formatAssetSelected(selection: AssetSelectionInfo): UIResponse {
+  private formatAssetSelected(selection: AssetAllocation): UIResponse {
     const currentPct = (selection.currentAllocation * 100).toFixed(1);
     const targetPct = (selection.targetAllocation * 100).toFixed(1);
     const deviationPct = (selection.deviation * 100).toFixed(1);
 
     const lines = [
-      `*Buying ${Markdown.escape(selection.asset)}*`,
+      `*Buying ${Markdown.escape(selection.symbol)}*`,
       "",
       `Current allocation: ${currentPct}%`,
       `Target allocation: ${targetPct}%`,
       `Deviation: ${deviationPct}%`,
       "",
-      `${Markdown.escape(selection.asset)} is the most underweight asset.`,
+      `${Markdown.escape(selection.symbol)} is the most underweight asset.`,
     ];
 
     return { text: lines.join("\n") };

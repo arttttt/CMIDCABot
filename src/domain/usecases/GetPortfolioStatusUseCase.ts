@@ -6,10 +6,10 @@ import { UserRepository } from "../repositories/UserRepository.js";
 import { BalanceRepository } from "../repositories/BalanceRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { PriceRepository } from "../repositories/PriceRepository.js";
-import { AssetSymbol, TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { PortfolioStatusResult } from "./types.js";
-import { AllocationInfo, PortfolioStatus } from "../models/PortfolioTypes.js";
+import { PortfolioStatus } from "../models/PortfolioTypes.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
+import { AllocationCalculator } from "../helpers/AllocationCalculator.js";
 
 export class GetPortfolioStatusUseCase {
   constructor(
@@ -53,57 +53,20 @@ export class GetPortfolioStatusUseCase {
         ETH: ethBalance,
       });
 
-      // Calculate values in USD
-      const assets: { symbol: AssetSymbol; balance: number; valueInUsdc: number }[] = [
-        { symbol: "BTC", balance: btcBalance, valueInUsdc: btcBalance * prices.BTC },
-        { symbol: "ETH", balance: ethBalance, valueInUsdc: ethBalance * prices.ETH },
-        { symbol: "SOL", balance: solBalance, valueInUsdc: solBalance * prices.SOL },
-      ];
-
-      const totalValueInUsdc = assets.reduce((sum, a) => sum + a.valueInUsdc, 0);
+      // Calculate portfolio status using AllocationCalculator
+      const status: PortfolioStatus = AllocationCalculator.calculatePortfolioStatus(
+        { btcBalance, ethBalance, solBalance },
+        prices,
+      );
 
       // Check if portfolio is empty
-      if (totalValueInUsdc === 0) {
+      if (status.totalValueInUsdc === 0) {
         return { type: "empty" };
       }
 
-      // Calculate allocations
-      const allocations: AllocationInfo[] = assets.map((asset) => {
-        const currentAllocation = totalValueInUsdc > 0 ? asset.valueInUsdc / totalValueInUsdc : 0;
-        const targetAllocation = TARGET_ALLOCATIONS[asset.symbol];
-        const deviation = currentAllocation - targetAllocation;
-
-        return {
-          symbol: asset.symbol,
-          balance: asset.balance,
-          valueInUsdc: asset.valueInUsdc,
-          currentAllocation,
-          targetAllocation,
-          deviation,
-        };
-      });
-
-      // Find asset with maximum negative deviation (most below target)
-      let assetToBuy: AssetSymbol = "BTC";
-      let maxDeviation = 0;
-
-      for (const alloc of allocations) {
-        if (alloc.deviation < maxDeviation) {
-          maxDeviation = alloc.deviation;
-          assetToBuy = alloc.symbol;
-        }
-      }
-
-      const status: PortfolioStatus = {
-        allocations,
-        totalValueInUsdc,
-        assetToBuy,
-        maxDeviation,
-      };
-
       logger.info("GetPortfolioStatus", "Portfolio status calculated", {
-        totalValue: `$${totalValueInUsdc.toFixed(2)}`,
-        nextBuy: assetToBuy,
+        totalValue: `$${status.totalValueInUsdc.toFixed(2)}`,
+        nextBuy: status.assetToBuy,
       });
 
       return { type: "success", status };

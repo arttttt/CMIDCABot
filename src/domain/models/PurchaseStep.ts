@@ -7,26 +7,16 @@
  * 3. Completed with result
  */
 
-import type { AssetSymbol } from "../../types/portfolio.js";
 import type { SwapStep } from "./SwapStep.js";
 import type { PurchaseResult } from "../usecases/types.js";
-
-/**
- * Asset selection information for display
- */
-export interface AssetSelectionInfo {
-  asset: AssetSymbol;
-  currentAllocation: number;
-  targetAllocation: number;
-  deviation: number;
-}
+import type { AssetAllocation } from "./PortfolioTypes.js";
 
 /**
  * Purchase operation steps (including completed)
  */
 export type PurchaseStep =
   | { step: "selecting_asset" }
-  | { step: "asset_selected"; selection: AssetSelectionInfo }
+  | { step: "asset_selected"; selection: AssetAllocation }
   | { step: "swap"; swapStep: SwapStep }
   | { step: "completed"; result: PurchaseResult };
 
@@ -38,7 +28,7 @@ export const PurchaseSteps = {
     return { step: "selecting_asset" };
   },
 
-  assetSelected(selection: AssetSelectionInfo): PurchaseStep {
+  assetSelected(selection: AssetAllocation): PurchaseStep {
     return { step: "asset_selected", selection };
   },
 
