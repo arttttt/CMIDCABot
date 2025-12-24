@@ -7,7 +7,6 @@ import { z } from "zod";
  */
 const FORBIDDEN_IN_PRODUCTION = [
   "DEV_WALLET_PRIVATE_KEY", // Development wallet private key - security risk
-  "DB_MODE", // Should be only sqlite in production
 ];
 
 // Base schema for environment variables
@@ -29,7 +28,6 @@ const envSchema = z
     SOLANA_RPC_URL: z.string().url().default("https://api.devnet.solana.com"),
 
     // Database
-    DB_MODE: z.enum(["sqlite", "memory"]).default("sqlite"),
     DATABASE_PATH: z.string().default("./data/bot.db"),
     MOCK_DATABASE_PATH: z.string().default("./data/mock.db"),
     AUTH_DATABASE_PATH: z.string().default("./data/auth.db"),
@@ -122,7 +120,6 @@ type ValidatedEnv = z.infer<typeof envSchema>;
  * The transformation happens in envToConfig().
  */
 export type TransportMode = "polling" | "webhook";
-export type DatabaseMode = "sqlite" | "memory";
 export type PriceSource = "jupiter" | "mock";
 
 export interface TelegramConfig {
@@ -140,7 +137,6 @@ export interface SolanaConfig {
 }
 
 export interface DatabaseConfig {
-  mode: DatabaseMode;
   path: string;
   mockPath: string;
 }
@@ -206,7 +202,6 @@ function envToConfig(env: ValidatedEnv): Config {
       rpcUrl: env.SOLANA_RPC_URL,
     },
     database: {
-      mode: env.DB_MODE,
       path: env.DATABASE_PATH,
       mockPath: env.MOCK_DATABASE_PATH,
     },
