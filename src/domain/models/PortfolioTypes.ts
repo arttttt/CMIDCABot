@@ -8,9 +8,9 @@
 import { AssetSymbol } from "../../types/portfolio.js";
 
 /**
- * Asset allocation information
+ * Single asset allocation within portfolio
  */
-export interface AllocationInfo {
+export interface AssetAllocation {
   symbol: AssetSymbol;
   balance: number;
   valueInUsdc: number;
@@ -24,7 +24,7 @@ export interface AllocationInfo {
  * Portfolio status with allocations and recommendations
  */
 export interface PortfolioStatus {
-  allocations: AllocationInfo[];
+  allocations: AssetAllocation[];
   totalValueInUsdc: number;
   /** Asset recommended for next purchase (most underweight) */
   assetToBuy: AssetSymbol;

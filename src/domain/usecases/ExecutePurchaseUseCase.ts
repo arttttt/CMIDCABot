@@ -16,7 +16,7 @@ import { SwapResult } from "../models/SwapStep.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { PurchaseStep, PurchaseSteps } from "../models/index.js";
 import { AllocationCalculator } from "../helpers/AllocationCalculator.js";
-import { AllocationInfo } from "../models/PortfolioTypes.js";
+import { AssetAllocation } from "../models/PortfolioTypes.js";
 
 export class ExecutePurchaseUseCase {
   constructor(
@@ -87,7 +87,7 @@ export class ExecutePurchaseUseCase {
     // Determine which asset to buy based on portfolio allocation
     const selection = await this.selectAssetToBuyWithInfo(walletAddress);
     logger.info("ExecutePurchase", "Selected asset to buy", {
-      asset: selection.symbol,
+      symbol: selection.symbol,
       currentAllocation: `${(selection.currentAllocation * 100).toFixed(1)}%`,
       targetAllocation: `${(selection.targetAllocation * 100).toFixed(1)}%`,
       deviation: `${(selection.deviation * 100).toFixed(1)}%`,
@@ -177,7 +177,7 @@ export class ExecutePurchaseUseCase {
    *
    * Uses AllocationCalculator to determine which asset is furthest below target.
    */
-  private async selectAssetToBuyWithInfo(walletAddress: string): Promise<AllocationInfo> {
+  private async selectAssetToBuyWithInfo(walletAddress: string): Promise<AssetAllocation> {
     try {
       // Fetch balances (cached) and prices in parallel for efficiency
       const [balances, prices] = await Promise.all([
@@ -209,7 +209,7 @@ export class ExecutePurchaseUseCase {
   /**
    * Get default allocation info for BTC (used when calculation fails)
    */
-  private getDefaultAllocation(): AllocationInfo {
+  private getDefaultAllocation(): AssetAllocation {
     return {
       symbol: "BTC",
       balance: 0,

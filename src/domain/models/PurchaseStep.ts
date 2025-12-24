@@ -9,14 +9,14 @@
 
 import type { SwapStep } from "./SwapStep.js";
 import type { PurchaseResult } from "../usecases/types.js";
-import type { AllocationInfo } from "./PortfolioTypes.js";
+import type { AssetAllocation } from "./PortfolioTypes.js";
 
 /**
  * Purchase operation steps (including completed)
  */
 export type PurchaseStep =
   | { step: "selecting_asset" }
-  | { step: "asset_selected"; selection: AllocationInfo }
+  | { step: "asset_selected"; selection: AssetAllocation }
   | { step: "swap"; swapStep: SwapStep }
   | { step: "completed"; result: PurchaseResult };
 
@@ -28,7 +28,7 @@ export const PurchaseSteps = {
     return { step: "selecting_asset" };
   },
 
-  assetSelected(selection: AllocationInfo): PurchaseStep {
+  assetSelected(selection: AssetAllocation): PurchaseStep {
     return { step: "asset_selected", selection };
   },
 

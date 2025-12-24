@@ -10,7 +10,7 @@
  */
 
 import { AssetSymbol, TARGET_ALLOCATIONS } from "../../types/portfolio.js";
-import { AllocationInfo, PortfolioStatus } from "../models/PortfolioTypes.js";
+import { AssetAllocation, PortfolioStatus } from "../models/PortfolioTypes.js";
 import { divideAmount, multiplyAmount, toDecimal, Decimal } from "../../infrastructure/shared/math/index.js";
 
 export interface AssetBalances {
@@ -40,7 +40,7 @@ export class AllocationCalculator {
   static calculateAllocations(
     balances: AssetBalances,
     prices: AssetPrices,
-  ): AllocationInfo[] {
+  ): AssetAllocation[] {
     const assets: { symbol: AssetSymbol; balance: number }[] = [
       { symbol: "BTC", balance: balances.btcBalance },
       { symbol: "ETH", balance: balances.ethBalance },

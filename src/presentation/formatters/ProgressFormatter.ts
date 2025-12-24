@@ -11,7 +11,7 @@
  */
 
 import type { SwapStep, PurchaseStep, QuoteInfo } from "../../domain/models/index.js";
-import type { AllocationInfo } from "../../domain/models/PortfolioTypes.js";
+import type { AssetAllocation } from "../../domain/models/PortfolioTypes.js";
 import type { UIResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
@@ -131,7 +131,7 @@ export class ProgressFormatter {
   /**
    * Format asset selection with allocation details
    */
-  private formatAssetSelected(selection: AllocationInfo): UIResponse {
+  private formatAssetSelected(selection: AssetAllocation): UIResponse {
     const currentPct = (selection.currentAllocation * 100).toFixed(1);
     const targetPct = (selection.targetAllocation * 100).toFixed(1);
     const deviationPct = (selection.deviation * 100).toFixed(1);
