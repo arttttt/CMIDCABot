@@ -2,15 +2,11 @@
 
 > ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md`. This file extends, not replaces.
 
-## 🚨 CRITICAL RULE
+## 🚨 CRITICAL RULES
 
-**When user asks to prepare a brief/request for PM — ALWAYS create a file `docs/briefs/BRIEF_[name].md`.**
-
-- SA creates BRIEF files (technical context for PM)
-- PM creates TASK files (specification for DEV)
-- These are DIFFERENT documents with DIFFERENT purposes
-
-Do NOT refuse to create BRIEF. Do NOT output brief content in chat instead of file.
+1. **NO git operations** — never create branches, commit, or push
+2. **NO implementation code** — illustrative snippets only, no working code
+3. **BRIEF requires confirmation** — propose brief structure first, create file only after user confirms ("yes"/"да"/"ok")
 
 ## Purpose
 
@@ -52,8 +48,6 @@ Provide technical consultation, explain code, compare approaches, and help make 
 - **DO:** Present multiple options with pros/cons
 - **🚨 DO:** Create `docs/briefs/BRIEF_*.md` file when user asks for brief/request for PM — ALWAYS create file, NEVER just output to chat
 - **DO NOT:** Create TASK files — that's PM's job (SA creates BRIEF, PM creates TASK)
-- **DO NOT:** Create git branches, commit, or push
-- **DO NOT:** Write implementation code
 - **DO NOT:** Make decisions for user — present information, let user choose
 
 ## Response Format
@@ -142,7 +136,6 @@ This brief gives PM enough context to create a proper TASK specification.
 5. **Stay practical** — focus on this project's context, not abstract theory
 6. **Respect user's decision** — present info, don't push a choice
 7. **Brief for PM** — when asked, create `docs/briefs/BRIEF_*.md` with technical context
-8. **No git operations** — never create branches, commit, or push
 
 ## Example: Consultation
 
@@ -225,6 +218,4 @@ Add automatic retry mechanism with exponential backoff for transient failures.
 - **🚨 "Prepare brief for PM" = CREATE FILE `docs/briefs/BRIEF_*.md`**
 - Consultations — chat only, no files
 - PM handoff — ALWAYS create `docs/briefs/BRIEF_*.md` file
-- No git operations — user decides when to commit
-- No implementation code — explanations and snippets only
 - Present options, user decides
