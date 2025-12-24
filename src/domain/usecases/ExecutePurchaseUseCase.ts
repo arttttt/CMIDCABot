@@ -81,6 +81,32 @@ export class ExecutePurchaseUseCase {
       return;
     }
 
+    // Pre-validate USDC balance before asset selection (early-exit)
+    yield PurchaseSteps.checkingBalance();
+
+    let usdcBalance: number;
+    try {
+      usdcBalance = await this.balanceRepository.getUsdcBalance(walletAddress);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("ExecutePurchase", "Failed to fetch USDC balance", { error: message });
+      yield PurchaseSteps.completed({ type: "rpc_error", error: message });
+      return;
+    }
+
+    if (usdcBalance < amountUsdc) {
+      logger.warn("ExecutePurchase", "Insufficient USDC balance", {
+        required: amountUsdc,
+        available: usdcBalance,
+      });
+      yield PurchaseSteps.completed({
+        type: "insufficient_balance",
+        requiredBalance: amountUsdc,
+        availableBalance: usdcBalance,
+      });
+      return;
+    }
+
     // Step: Selecting asset
     yield PurchaseSteps.selectingAsset();
 
