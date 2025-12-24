@@ -3,7 +3,7 @@
  */
 import { Kysely } from "kysely";
 import type { DatabaseMode } from "../../infrastructure/shared/config/index.js";
-import type { MainDatabase, MockDatabase } from "../types/database.js";
+import type { MainDatabase } from "../types/database.js";
 
 import { UserRepository } from "../../domain/repositories/UserRepository.js";
 import { TransactionRepository } from "../../domain/repositories/TransactionRepository.js";
@@ -25,51 +25,26 @@ import { InMemorySchedulerRepository } from "../repositories/memory/InMemorySche
 
 import { KeyEncryptionService } from "../../infrastructure/internal/crypto/index.js";
 
-export interface MainRepositories {
+export interface Repositories {
   userRepository: UserRepository;
   transactionRepository: TransactionRepository;
-}
-
-export interface MockRepositories {
   portfolioRepository: PortfolioRepository;
   purchaseRepository: PurchaseRepository;
   schedulerRepository: SchedulerRepository;
 }
 
 /**
- * Create main database repositories based on mode
+ * Create all repositories based on database mode
  */
-export function createMainRepositories(
+export function createRepositories(
   mode: DatabaseMode,
   encryptionService: KeyEncryptionService,
   db?: Kysely<MainDatabase>,
-): MainRepositories {
+): Repositories {
   if (mode === "memory") {
     return {
       userRepository: new InMemoryUserRepository(encryptionService),
       transactionRepository: new InMemoryTransactionRepository(),
-    };
-  }
-
-  if (!db) {
-    throw new Error("SQLite mode requires a database instance");
-  }
-
-  return {
-    userRepository: new SQLiteUserRepository(db, encryptionService),
-    transactionRepository: new SQLiteTransactionRepository(db),
-  };
-}
-
-/**
- * Create mock database repositories based on mode
- */
-export function createMockRepositories(
-  mode: DatabaseMode,
-  db?: Kysely<MockDatabase>,
-): MockRepositories {
-  if (mode === "memory") {
-    return {
       portfolioRepository: new InMemoryPortfolioRepository(),
       purchaseRepository: new InMemoryPurchaseRepository(),
       schedulerRepository: new InMemorySchedulerRepository(),
@@ -81,6 +56,8 @@ export function createMockRepositories(
   }
 
   return {
+    userRepository: new SQLiteUserRepository(db, encryptionService),
+    transactionRepository: new SQLiteTransactionRepository(db),
     portfolioRepository: new SQLitePortfolioRepository(db),
     purchaseRepository: new SQLitePurchaseRepository(db),
     schedulerRepository: new SQLiteSchedulerRepository(db),

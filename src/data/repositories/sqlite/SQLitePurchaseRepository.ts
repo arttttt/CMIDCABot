@@ -5,12 +5,12 @@ import { Kysely, Selectable } from "kysely";
 import { PurchaseRepository } from "../../../domain/repositories/PurchaseRepository.js";
 import { Purchase, CreatePurchaseData } from "../../../domain/models/Purchase.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
-import type { MockDatabase, PurchasesTable } from "../../types/database.js";
+import type { MainDatabase, PurchasesTable } from "../../types/database.js";
 
 type PurchaseRow = Selectable<PurchasesTable>;
 
 export class SQLitePurchaseRepository implements PurchaseRepository {
-  constructor(private db: Kysely<MockDatabase>) {}
+  constructor(private db: Kysely<MainDatabase>) {}
 
   private rowToModel(row: PurchaseRow): Purchase {
     return {

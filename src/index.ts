@@ -12,8 +12,8 @@ const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
 import { loadConfig } from "./infrastructure/shared/config/index.js";
 import { setLogger, DebugLogger, NoOpLogger } from "./infrastructure/shared/logging/index.js";
-import { createMainDatabase, createMockDatabase, createAuthDatabase } from "./data/sources/database/index.js";
-import { createMainRepositories, createMockRepositories } from "./data/factories/RepositoryFactory.js";
+import { createMainDatabase, createAuthDatabase } from "./data/sources/database/index.js";
+import { createRepositories } from "./data/factories/RepositoryFactory.js";
 import { SQLiteAuthRepository } from "./data/repositories/sqlite/SQLiteAuthRepository.js";
 import { SQLiteInviteTokenRepository } from "./data/repositories/sqlite/SQLiteInviteTokenRepository.js";
 import { InMemoryAuthRepository } from "./data/repositories/memory/InMemoryAuthRepository.js";
@@ -95,7 +95,7 @@ import { CleanupScheduler } from "./infrastructure/shared/scheduling/index.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
 import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
 import { TelegramMessageSender } from "./presentation/telegram/TelegramMessageSender.js";
-import type { MainDatabase, MockDatabase } from "./data/types/database.js";
+import type { MainDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
   console.log(`CMI DCA Bot v${pkg.version}`);
@@ -114,7 +114,6 @@ async function main(): Promise<void> {
 
   // Initialize database connections (only for sqlite mode)
   let mainDb: Kysely<MainDatabase> | undefined;
-  let mockDb: Kysely<MockDatabase> | undefined;
   let authDb: Kysely<AuthDatabase> | undefined;
 
   if (dbMode === "sqlite") {
@@ -122,8 +121,14 @@ async function main(): Promise<void> {
     authDb = createAuthDatabase(config.auth.dbPath);
   }
 
-  // Create repositories based on mode
-  const { userRepository, transactionRepository } = createMainRepositories(dbMode, encryptionService, mainDb);
+  // Create all repositories based on mode
+  const {
+    userRepository,
+    transactionRepository,
+    portfolioRepository,
+    purchaseRepository,
+    schedulerRepository,
+  } = createRepositories(dbMode, encryptionService, mainDb);
 
   // Create auth repository
   const authRepository = dbMode === "sqlite" && authDb
@@ -184,34 +189,26 @@ async function main(): Promise<void> {
   const getAllAuthorizedUsers = new GetAllAuthorizedUsersUseCase(authRepository);
   const updateUserRole = new UpdateUserRoleUseCase(authRepository, authHelper);
 
-  // Initialize mock database and scheduler only in development mode
+  // Initialize scheduler only in development mode
   let dcaScheduler: DcaScheduler | undefined;
-  let deleteUserData: DeleteUserDataUseCase;
-  let portfolioRepository: import("./domain/repositories/PortfolioRepository.js").PortfolioRepository | undefined;
+
+  // Create delete user data use case with all repositories
+  const deleteUserData = new DeleteUserDataUseCase(
+    removeAuthorizedUser,
+    userRepository,
+    transactionRepository,
+    portfolioRepository,
+    purchaseRepository,
+    mainDb,
+  );
 
   if (config.isDev) {
-    if (dbMode === "sqlite") {
-      mockDb = createMockDatabase(config.database.mockPath);
-    }
-
-    const mockRepos = createMockRepositories(dbMode, mockDb);
-    portfolioRepository = mockRepos.portfolioRepository;
-
-    // Create delete user data use case with dev-mode repositories
-    deleteUserData = new DeleteUserDataUseCase(
-      removeAuthorizedUser,
-      userRepository,
-      transactionRepository,
-      mockRepos.portfolioRepository,
-      mockRepos.purchaseRepository,
-    );
-
     // Create DCA scheduler if configured (requires price repository)
     if (config.dca.amountUsdc > 0 && config.dca.intervalMs > 0 && priceRepository) {
       // Create mock purchase use case for scheduler
       const executeMockPurchase = new ExecuteMockPurchaseUseCase(
-        mockRepos.portfolioRepository,
-        mockRepos.purchaseRepository,
+        portfolioRepository,
+        purchaseRepository,
         priceRepository,
       );
 
@@ -225,7 +222,7 @@ async function main(): Promise<void> {
 
       dcaScheduler = new DcaScheduler(
         userRepository,
-        mockRepos.schedulerRepository,
+        schedulerRepository,
         executeBatchDca,
         {
           intervalMs: config.dca.intervalMs,
@@ -238,13 +235,6 @@ async function main(): Promise<void> {
         console.error("[DCA Scheduler] Failed to check for active users:", error);
       });
     }
-  } else {
-    // Create delete user data use case for production (no mock repositories)
-    deleteUserData = new DeleteUserDataUseCase(
-      removeAuthorizedUser,
-      userRepository,
-      transactionRepository,
-    );
   }
 
   // Create helpers
@@ -429,7 +419,6 @@ async function main(): Promise<void> {
   const cleanup = async (): Promise<void> => {
     cleanupScheduler.stop();
     dcaScheduler?.stop();
-    await mockDb?.destroy();
     await mainDb?.destroy();
     await authDb?.destroy();
   };

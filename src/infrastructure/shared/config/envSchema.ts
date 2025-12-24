@@ -31,7 +31,6 @@ const envSchema = z
     // Database
     DB_MODE: z.enum(["sqlite", "memory"]).default("sqlite"),
     DATABASE_PATH: z.string().default("./data/bot.db"),
-    MOCK_DATABASE_PATH: z.string().default("./data/mock.db"),
     AUTH_DATABASE_PATH: z.string().default("./data/auth.db"),
 
     // HTTP
@@ -142,7 +141,6 @@ export interface SolanaConfig {
 export interface DatabaseConfig {
   mode: DatabaseMode;
   path: string;
-  mockPath: string;
 }
 
 export interface WebConfig {
@@ -208,7 +206,6 @@ function envToConfig(env: ValidatedEnv): Config {
     database: {
       mode: env.DB_MODE,
       path: env.DATABASE_PATH,
-      mockPath: env.MOCK_DATABASE_PATH,
     },
     dca: {
       amountUsdc: env.DCA_AMOUNT_USDC,

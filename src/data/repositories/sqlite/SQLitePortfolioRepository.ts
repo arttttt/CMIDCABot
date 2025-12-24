@@ -5,12 +5,12 @@ import { Kysely, sql, Selectable } from "kysely";
 import { PortfolioRepository } from "../../../domain/repositories/PortfolioRepository.js";
 import { PortfolioBalances } from "../../../domain/models/Portfolio.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
-import type { MockDatabase, PortfolioTable } from "../../types/database.js";
+import type { MainDatabase, PortfolioTable } from "../../types/database.js";
 
 type PortfolioRow = Selectable<PortfolioTable>;
 
 export class SQLitePortfolioRepository implements PortfolioRepository {
-  constructor(private db: Kysely<MockDatabase>) {}
+  constructor(private db: Kysely<MainDatabase>) {}
 
   private rowToModel(row: PortfolioRow): PortfolioBalances {
     return {

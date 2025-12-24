@@ -4,17 +4,11 @@
 import type { Generated } from "kysely";
 
 /**
- * Main database tables (production)
+ * Main database tables
  */
 export interface MainDatabase {
   users: UsersTable;
   transactions: TransactionsTable;
-}
-
-/**
- * Mock database tables (development only)
- */
-export interface MockDatabase {
   portfolio: PortfolioTable;
   purchases: PurchasesTable;
   scheduler_state: SchedulerStateTable;

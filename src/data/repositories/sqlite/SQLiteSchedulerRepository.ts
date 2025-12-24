@@ -4,12 +4,12 @@
 import { Kysely, sql, Selectable } from "kysely";
 import { SchedulerRepository } from "../../../domain/repositories/SchedulerRepository.js";
 import { SchedulerState } from "../../../domain/models/SchedulerState.js";
-import type { MockDatabase, SchedulerStateTable } from "../../types/database.js";
+import type { MainDatabase, SchedulerStateTable } from "../../types/database.js";
 
 type SchedulerStateRow = Selectable<SchedulerStateTable>;
 
 export class SQLiteSchedulerRepository implements SchedulerRepository {
-  constructor(private db: Kysely<MockDatabase>) {}
+  constructor(private db: Kysely<MainDatabase>) {}
 
   private rowToModel(row: SchedulerStateRow): SchedulerState {
     return {
