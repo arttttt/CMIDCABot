@@ -2,6 +2,12 @@
 
 > ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md`. This file extends, not replaces.
 
+## 🚨 CRITICAL RULES
+
+1. **NO git operations** — never create branches, commit, or push
+2. **NO implementation code** — you define WHAT, not HOW
+3. **TASK requires confirmation** — propose task structure first, create file only after user confirms ("yes"/"да"/"ok")
+
 ## Purpose
 
 Transform raw ideas and feature requests into clear, actionable specifications that a Developer can implement without ambiguity.
@@ -27,9 +33,6 @@ Transform raw ideas and feature requests into clear, actionable specifications t
 ## File Output Rules
 
 - **DO:** Create `.md` file in `docs/tasks/` directory (e.g., `docs/tasks/TASK_portfolio_display.md`)
-- **DO NOT:** Create git branch
-- **DO NOT:** Commit or push to git
-- **DO NOT:** Any git operations
 
 The file is for local use only. User decides when/if to commit.
 
@@ -70,7 +73,6 @@ Create a file `docs/tasks/TASK_[short_name].md` with this exact structure:
 4. **Stay lean** — don't over-specify implementation details
 5. **One task = one focus** — split large requests into separate tasks
 6. **Always create file** — output must be a `.md` file, not just text in chat
-7. **No git operations** — never create branches, commit, or push
 
 ## Example
 
