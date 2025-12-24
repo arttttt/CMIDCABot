@@ -7,9 +7,12 @@ import { Bot, BotError, Context, InlineKeyboard } from "grammy";
 import { ProtocolHandler } from "../protocol/index.js";
 import { UIResponse, UIStreamItem } from "../protocol/types.js";
 import { logger, LogSanitizer } from "../../infrastructure/shared/logging/index.js";
-import { tryWithRetry } from "../../infrastructure/shared/resilience/index.js";
+import {
+  tryWithRetry,
+  TelegramErrorClassifier,
+} from "../../infrastructure/shared/resilience/index.js";
+import { TelegramErrorMessages } from "./ErrorMessages.js";
 
-const ERROR_MESSAGE_COMMAND_FAILED = "An error occurred while executing the command. Please try again later.";
 const ERROR_MESSAGE_SEND_FAILED = "Failed to send message. Please try the command again.";
 
 function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
@@ -309,16 +312,32 @@ export function createTelegramBot(
 
   // Error handling with user notification
   bot.catch(async (err: BotError<Context>) => {
-    const message = err.error instanceof Error ? err.error.message : "Unknown error";
-    logger.error("TelegramBot", "Bot error", { error: message });
+    const error = err.error;
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-    // Try to notify the user about the error
+    // Classify the error
+    const errorType = TelegramErrorClassifier.classify(error);
+    const userMessage = TelegramErrorMessages.getMessage(errorType);
+
+    // Log with description if available
+    const description = TelegramErrorClassifier.getDescription(error);
+    logger.error("TelegramBot", "Bot error", {
+      error: errorMessage,
+      errorType,
+      ...(description && { description }),
+    });
+
+    // Try to notify the user (skip for Forbidden - bot is blocked)
+    if (!TelegramErrorMessages.shouldNotifyUser(errorType)) {
+      return;
+    }
+
     const ctx = err.ctx;
     const chatId = ctx?.chat?.id;
 
-    if (chatId) {
+    if (chatId && userMessage) {
       try {
-        await ctx.api.sendMessage(chatId, ERROR_MESSAGE_COMMAND_FAILED);
+        await ctx.api.sendMessage(chatId, userMessage);
       } catch (sendError) {
         // Failed to send error message - nothing more we can do
         logger.debug("TelegramBot", "Failed to send error notification to user", {
