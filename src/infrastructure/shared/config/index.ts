@@ -8,7 +8,6 @@ export {
   type TransportMode,
   type SolanaConfig,
   type DatabaseConfig,
-  type DatabaseMode,
   type WebConfig,
   type HttpConfig,
   type DcaConfig,

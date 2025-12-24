@@ -16,9 +16,7 @@ import { createMainDatabase, createMockDatabase, createAuthDatabase } from "./da
 import { createMainRepositories, createMockRepositories } from "./data/factories/RepositoryFactory.js";
 import { SQLiteAuthRepository } from "./data/repositories/sqlite/SQLiteAuthRepository.js";
 import { SQLiteInviteTokenRepository } from "./data/repositories/sqlite/SQLiteInviteTokenRepository.js";
-import { InMemoryAuthRepository } from "./data/repositories/memory/InMemoryAuthRepository.js";
-import { InMemoryInviteTokenRepository } from "./data/repositories/memory/InMemoryInviteTokenRepository.js";
-import { CachedBalanceRepository } from "./data/repositories/memory/CachedBalanceRepository.js";
+import { CachedBalanceRepository } from "./data/repositories/cache/CachedBalanceRepository.js";
 import { SolanaBlockchainRepository } from "./data/repositories/SolanaBlockchainRepository.js";
 import { JupiterPriceRepository } from "./data/repositories/JupiterPriceRepository.js";
 import { JupiterSwapRepository } from "./data/repositories/JupiterSwapRepository.js";
@@ -28,7 +26,6 @@ import { JupiterSwapClient } from "./data/sources/api/JupiterSwapClient.js";
 import { KeyEncryptionService } from "./infrastructure/internal/crypto/index.js";
 import { TelegramUserResolver } from "./presentation/telegram/UserResolver.js";
 import { DcaScheduler } from "./_wip/dca-scheduling/index.js";
-import type { AuthDatabase } from "./data/types/authDatabase.js";
 import {
   InitUserUseCase,
   ExecutePurchaseUseCase,
@@ -90,50 +87,38 @@ import {
 import { startWebServer } from "./presentation/web/index.js";
 import { HttpServer } from "./infrastructure/shared/http/index.js";
 import { SecretCache, ImportSessionCache } from "./data/sources/memory/index.js";
-import { InMemorySecretRepository, InMemoryImportSessionRepository } from "./data/repositories/memory/index.js";
+import { InMemorySecretRepository, InMemoryImportSessionRepository } from "./data/repositories/cache/index.js";
 import { CleanupScheduler } from "./infrastructure/shared/scheduling/index.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
 import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
 import { TelegramMessageSender } from "./presentation/telegram/TelegramMessageSender.js";
-import type { MainDatabase, MockDatabase } from "./data/types/database.js";
+import type { MockDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
   console.log(`CMI DCA Bot v${pkg.version}`);
 
   const config = loadConfig();
-  const dbMode = config.database.mode;
 
   // Initialize logger based on environment
   setLogger(config.isDev ? new DebugLogger() : new NoOpLogger());
-
-  console.log(`Database mode: ${dbMode}`);
 
   // Initialize encryption service (required for private key protection)
   const encryptionService = new KeyEncryptionService();
   await encryptionService.initialize(config.encryption.masterKey);
 
-  // Initialize database connections (only for sqlite mode)
-  let mainDb: Kysely<MainDatabase> | undefined;
+  // Initialize database connections
+  const mainDb = createMainDatabase(config.database.path);
+  const authDb = createAuthDatabase(config.auth.dbPath);
   let mockDb: Kysely<MockDatabase> | undefined;
-  let authDb: Kysely<AuthDatabase> | undefined;
 
-  if (dbMode === "sqlite") {
-    mainDb = createMainDatabase(config.database.path);
-    authDb = createAuthDatabase(config.auth.dbPath);
-  }
-
-  // Create repositories based on mode
-  const { userRepository, transactionRepository } = createMainRepositories(dbMode, encryptionService, mainDb);
+  // Create repositories
+  const { userRepository, transactionRepository } = createMainRepositories(mainDb, encryptionService);
 
   // Create auth repository
-  const authRepository = dbMode === "sqlite" && authDb
-    ? new SQLiteAuthRepository(authDb)
-    : new InMemoryAuthRepository();
+  const authRepository = new SQLiteAuthRepository(authDb);
 
   // Create invite token repository
-  const inviteTokenRepository = dbMode === "sqlite" && authDb
-    ? new SQLiteInviteTokenRepository(authDb)
-    : new InMemoryInviteTokenRepository();
+  const inviteTokenRepository = new SQLiteInviteTokenRepository(authDb);
 
   // Create authorization helper and initialize owner
   const authHelper = new AuthorizationHelper(authRepository, config.auth.ownerTelegramId);
@@ -190,11 +175,9 @@ async function main(): Promise<void> {
   let portfolioRepository: import("./domain/repositories/PortfolioRepository.js").PortfolioRepository | undefined;
 
   if (config.isDev) {
-    if (dbMode === "sqlite") {
-      mockDb = createMockDatabase(config.database.mockPath);
-    }
+    mockDb = createMockDatabase(config.database.mockPath);
 
-    const mockRepos = createMockRepositories(dbMode, mockDb);
+    const mockRepos = createMockRepositories(mockDb);
     portfolioRepository = mockRepos.portfolioRepository;
 
     // Create delete user data use case with dev-mode repositories

@@ -1,8 +1,7 @@
 /**
- * Repository factory for creating repositories based on database mode
+ * Repository factory for creating SQLite repositories
  */
 import { Kysely } from "kysely";
-import type { DatabaseMode } from "../../infrastructure/shared/config/index.js";
 import type { MainDatabase, MockDatabase } from "../types/database.js";
 
 import { UserRepository } from "../../domain/repositories/UserRepository.js";
@@ -16,12 +15,6 @@ import { SQLiteTransactionRepository } from "../repositories/sqlite/SQLiteTransa
 import { SQLitePortfolioRepository } from "../repositories/sqlite/SQLitePortfolioRepository.js";
 import { SQLitePurchaseRepository } from "../repositories/sqlite/SQLitePurchaseRepository.js";
 import { SQLiteSchedulerRepository } from "../repositories/sqlite/SQLiteSchedulerRepository.js";
-
-import { InMemoryUserRepository } from "../repositories/memory/InMemoryUserRepository.js";
-import { InMemoryTransactionRepository } from "../repositories/memory/InMemoryTransactionRepository.js";
-import { InMemoryPortfolioRepository } from "../repositories/memory/InMemoryPortfolioRepository.js";
-import { InMemoryPurchaseRepository } from "../repositories/memory/InMemoryPurchaseRepository.js";
-import { InMemorySchedulerRepository } from "../repositories/memory/InMemorySchedulerRepository.js";
 
 import { KeyEncryptionService } from "../../infrastructure/internal/crypto/index.js";
 
@@ -37,24 +30,12 @@ export interface MockRepositories {
 }
 
 /**
- * Create main database repositories based on mode
+ * Create main database repositories
  */
 export function createMainRepositories(
-  mode: DatabaseMode,
+  db: Kysely<MainDatabase>,
   encryptionService: KeyEncryptionService,
-  db?: Kysely<MainDatabase>,
 ): MainRepositories {
-  if (mode === "memory") {
-    return {
-      userRepository: new InMemoryUserRepository(encryptionService),
-      transactionRepository: new InMemoryTransactionRepository(),
-    };
-  }
-
-  if (!db) {
-    throw new Error("SQLite mode requires a database instance");
-  }
-
   return {
     userRepository: new SQLiteUserRepository(db, encryptionService),
     transactionRepository: new SQLiteTransactionRepository(db),
@@ -62,24 +43,11 @@ export function createMainRepositories(
 }
 
 /**
- * Create mock database repositories based on mode
+ * Create mock database repositories
  */
 export function createMockRepositories(
-  mode: DatabaseMode,
-  db?: Kysely<MockDatabase>,
+  db: Kysely<MockDatabase>,
 ): MockRepositories {
-  if (mode === "memory") {
-    return {
-      portfolioRepository: new InMemoryPortfolioRepository(),
-      purchaseRepository: new InMemoryPurchaseRepository(),
-      schedulerRepository: new InMemorySchedulerRepository(),
-    };
-  }
-
-  if (!db) {
-    throw new Error("SQLite mode requires a database instance");
-  }
-
   return {
     portfolioRepository: new SQLitePortfolioRepository(db),
     purchaseRepository: new SQLitePurchaseRepository(db),
