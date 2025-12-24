@@ -12,7 +12,7 @@ import type {
   SwapTransaction,
 } from "../../domain/repositories/SwapRepository.js";
 import type { JupiterSwapClient, SwapQuote as ClientSwapQuote } from "../sources/api/JupiterSwapClient.js";
-import { TOKEN_MINTS } from "../sources/api/JupiterPriceClient.js";
+import { TOKEN_MINTS } from "../../infrastructure/shared/config/index.js";
 import type { AssetSymbol } from "../../types/portfolio.js";
 
 export class JupiterSwapRepository implements SwapRepository {

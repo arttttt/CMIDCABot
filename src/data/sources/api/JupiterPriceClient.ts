@@ -8,46 +8,11 @@
 
 import { AssetSymbol } from "../../../types/portfolio.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
+import { TOKEN_MINTS } from "../../../infrastructure/shared/config/index.js";
 
 // Jupiter Price API v3 endpoint (requires API key from https://portal.jup.ag)
 const JUPITER_PRICE_API = "https://api.jup.ag/price/v3";
 
-/**
- * Token mint addresses on Solana mainnet
- *
- * IMPORTANT: SOL vs WSOL clarification
- * ------------------------------------
- * The "SOL" key below stores the WSOL (Wrapped SOL) mint address, also known as NATIVE_MINT.
- * This is intentional because:
- *
- * 1. DEX APIs (Jupiter, Raydium, Orca) require the WSOL mint for swap routing
- * 2. Price APIs (Jupiter Price API) use the WSOL mint to identify SOL
- * 3. Jupiter Swap API automatically handles wrap/unwrap when wrapAndUnwrapSol=true (default)
- *
- * Native SOL (lamports) vs WSOL (SPL token):
- * - Native SOL: Stored in account.balance, used for transaction fees
- * - WSOL: SPL token with this mint, needed for DEX swaps
- *
- * In our code:
- * - SolanaRpcClient.getBalance() returns NATIVE SOL balance (lamports)
- * - TOKEN_MINTS.SOL is used only for Jupiter API calls (prices, quotes, swaps)
- * - Jupiter handles wrap/unwrap automatically — we don't manage WSOL accounts manually
- *
- * See: https://spl.solana.com/token#wrapping-sol
- */
-export const TOKEN_MINTS = {
-  /**
-   * Wrapped SOL (WSOL) mint address - used for DEX/price APIs
-   * This is the NATIVE_MINT from @solana/spl-token
-   */
-  SOL: "So11111111111111111111111111111111111111112",
-  // USDC (Circle)
-  USDC: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-  // cbBTC (Coinbase Wrapped Bitcoin)
-  BTC: "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
-  // Wormhole Wrapped ETH
-  ETH: "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
-} as const;
 
 export interface JupiterPriceData {
   decimals: number;

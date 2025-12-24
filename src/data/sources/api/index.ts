@@ -12,14 +12,14 @@ export type {
 } from "./SolanaRpcClient.js";
 
 // Jupiter clients
-export { JupiterPriceClient, TOKEN_MINTS } from "./JupiterPriceClient.js";
+export { JupiterPriceClient } from "./JupiterPriceClient.js";
 export type {
   JupiterPriceData,
   JupiterPriceResponse,
   AssetPrices,
 } from "./JupiterPriceClient.js";
 
-export { JupiterSwapClient, TOKEN_DECIMALS } from "./JupiterSwapClient.js";
+export { JupiterSwapClient } from "./JupiterSwapClient.js";
 export type {
   JupiterQuoteResponse,
   SwapQuote,
