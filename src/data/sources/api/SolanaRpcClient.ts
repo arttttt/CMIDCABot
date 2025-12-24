@@ -13,7 +13,7 @@ import {
 } from "@solana/kit";
 import * as bip39 from "bip39";
 import { derivePath } from "ed25519-hd-key";
-import { SolanaConfig } from "../../../types/index.js";
+import { SolanaConfig } from "../../../infrastructure/shared/config/index.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 import type { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 import { BatchRpcClient } from "./BatchRpcClient.js";

@@ -7,7 +7,7 @@
 
 import { UserRepository } from "../repositories/UserRepository.js";
 import { SecretStoreRepository } from "../repositories/SecretStoreRepository.js";
-import { DcaWalletConfig } from "../../types/config.js";
+import { DcaWalletConfig } from "../../infrastructure/shared/config/index.js";
 import { ExportKeyResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
