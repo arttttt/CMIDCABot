@@ -3,7 +3,7 @@
  */
 
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
-import { DcaWalletConfig } from "../../types/config.js";
+import { DcaWalletConfig } from "../../infrastructure/shared/config/index.js";
 import { DcaWalletInfo } from "../usecases/types.js";
 
 export class WalletInfoHelper {

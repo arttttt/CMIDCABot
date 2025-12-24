@@ -2,7 +2,7 @@
  * Repository factory for creating repositories based on database mode
  */
 import { Kysely } from "kysely";
-import type { DatabaseMode } from "../../types/config.js";
+import type { DatabaseMode } from "../../infrastructure/shared/config/index.js";
 import type { MainDatabase, MockDatabase } from "../types/database.js";
 
 import { UserRepository } from "../../domain/repositories/UserRepository.js";
