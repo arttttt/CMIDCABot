@@ -6,13 +6,13 @@
 - `src/presentation/telegram/TelegramAdapter.ts` (bot.catch changes)
 
 **Date:** 2025-12-24
-**Status:** 🟢 Approved
+**Status:** 🟡 Approved with comments
 
 ---
 
 ## Summary
 
-Реализация соответствует всем acceptance criteria. Код чистый, архитектурно корректный, без прямых зависимостей от grammy в infrastructure слое (duck typing). Есть одно замечание по слишком широкой проверке HttpErrorLike, но оно не критично для текущего использования.
+Реализация соответствует всем acceptance criteria. Код чистый, без прямых зависимостей от grammy в infrastructure слое (duck typing). Однако есть архитектурное замечание: `TELEGRAM_ERROR_MESSAGES` содержит UI-тексты, но находится в infrastructure вместо presentation. Рекомендуется перенести сообщения в presentation layer.
 
 ---
 
@@ -45,6 +45,16 @@ function isHttpErrorLike(error: unknown): error is HttpErrorLike {
   );
 }
 ```
+
+#### [S2] TELEGRAM_ERROR_MESSAGES нарушает разделение слоёв
+
+**Location:** `src/infrastructure/shared/resilience/TelegramErrors.ts:21-28`
+**Issue:** `TELEGRAM_ERROR_MESSAGES` содержит user-facing текстовые сообщения, что является ответственностью presentation layer. Однако константа находится в infrastructure/shared.
+**Impact:** Нарушение Clean Architecture — UI-тексты смешаны с инфраструктурной логикой. Усложняет локализацию и изменение сообщений.
+**Suggestion:** Разделить классификатор и сообщения:
+1. `TelegramErrorClassifier` остаётся в `infrastructure/shared/resilience/` — только классификация, возвращает `TelegramErrorType`
+2. `TELEGRAM_ERROR_MESSAGES` переносится в `presentation/telegram/ErrorMessages.ts` — маппинг типа на user-friendly сообщение
+3. `TelegramAdapter` импортирует сообщения из presentation и использует классификатор из infrastructure
 
 ---
 
@@ -90,7 +100,7 @@ logger.error("TelegramBot", "Bot error", {
 | Category | Status | Notes |
 |----------|--------|-------|
 | Correctness | ✅ | Все acceptance criteria выполнены |
-| Architecture | ✅ | Duck typing, нет зависимости от grammy в infrastructure |
+| Architecture | ⚠️ | Duck typing ✅, но UI-сообщения в infrastructure [S2] |
 | Security | ✅ | Технические детали скрыты от пользователя |
 | Code Quality | ✅ | Явные типы, static methods, single responsibility |
 | Conventions | ✅ | Trailing commas, комментарии на английском |
@@ -114,6 +124,7 @@ logger.error("TelegramBot", "Bot error", {
 
 ## Action Items
 
+- [ ] [S2] Перенести `TELEGRAM_ERROR_MESSAGES` в `presentation/telegram/ErrorMessages.ts`
 - [ ] [S1] Рассмотреть усиление проверки `isHttpErrorLike` (опционально)
 - [ ] [N1] Опционально: переиспользовать `isRateLimitError` (minor refactor)
 - [ ] [N3] Опционально: добавить `description` в логи для отладки
@@ -122,4 +133,4 @@ logger.error("TelegramBot", "Bot error", {
 
 ## Verdict
 
-**🟢 Approved** — код готов к мержу. Замечания носят рекомендательный характер и могут быть адресованы в последующих итерациях.
+**🟡 Approved with comments** — код функционально готов, но рекомендуется адресовать [S2] (перенос UI-сообщений в presentation) для соблюдения Clean Architecture.
