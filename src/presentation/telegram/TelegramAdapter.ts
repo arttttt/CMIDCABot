@@ -15,6 +15,10 @@ import { TelegramErrorMessages } from "./ErrorMessages.js";
 
 const ERROR_MESSAGE_SEND_FAILED = "Failed to send message. Please try the command again.";
 
+// Callback data validation constants (SEC-03)
+const CALLBACK_MAX_LENGTH = 64;
+const CALLBACK_PATTERN = /^[a-z][a-z0-9_]*(\/[a-z][a-z0-9_]*)*:[a-z][a-z0-9_]*$/;
+
 function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
   if (!response.buttons?.length) return undefined;
 
@@ -249,54 +253,26 @@ export function createTelegramBot(
   bot.on("callback_query:data", async (ctx) => {
     const callbackData = ctx.callbackQuery.data;
 
-    // Handle delete_sensitive callback - replace message with success text
-    if (callbackData === "delete_sensitive") {
-      try {
-        await ctx.editMessageText(
-          "**Private key exported successfully.**\n\n" +
-            "The key has been removed from this chat for security.",
-          { parse_mode: "Markdown" },
-        );
-        await ctx.answerCallbackQuery({ text: "Key removed from chat" });
-        logger.debug("TelegramBot", "Replaced sensitive message with success text", {
-          userId: ctx.from.id,
-        });
-      } catch (error) {
-        await ctx.answerCallbackQuery({ text: "Failed to update message" });
-        logger.debug("TelegramBot", "Failed to replace sensitive message", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
+    // Validate callback data format (SEC-03)
+    if (callbackData.length > CALLBACK_MAX_LENGTH) {
+      logger.warn("TelegramBot", "Invalid callback data: too long", {
+        userId: ctx.from.id,
+        length: callbackData.length,
+      });
+      await ctx.answerCallbackQuery();
       return;
     }
 
-    // Handle mnemonic_saved callback - replace message with confirmation
-    if (callbackData === "mnemonic_saved") {
-      try {
-        await ctx.editMessageText(
-          "**Wallet Created Successfully!**\n\n" +
-            "Your recovery phrase has been hidden for security.\n\n" +
-            "**Remember:**\n" +
-            "- Keep your recovery phrase in a safe place\n" +
-            "- Never share it with anyone\n" +
-            "- You can import it into Phantom, Solflare, or other Solana wallets\n\n" +
-            "Use /wallet to view your wallet details.",
-          { parse_mode: "Markdown" },
-        );
-        await ctx.answerCallbackQuery({ text: "Recovery phrase hidden" });
-        logger.debug("TelegramBot", "Hid mnemonic after user confirmation", {
-          userId: ctx.from.id,
-        });
-      } catch (error) {
-        await ctx.answerCallbackQuery({ text: "Failed to update message" });
-        logger.debug("TelegramBot", "Failed to hide mnemonic", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
+    if (!CALLBACK_PATTERN.test(callbackData)) {
+      logger.warn("TelegramBot", "Invalid callback data: format mismatch", {
+        userId: ctx.from.id,
+        length: callbackData.length,
+      });
+      await ctx.answerCallbackQuery();
       return;
     }
 
-    // Handle regular callbacks via protocol handler
+    // Handle callbacks via protocol handler
     const response = await handler.handleCallback({
       telegramId: ctx.from.id,
       callbackData: callbackData,
