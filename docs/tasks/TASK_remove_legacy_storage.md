@@ -2,33 +2,93 @@
 
 ## Context
 
-В проекте остались артефакты ранней стадии разработки: переключатель `DB_MODE`, 7 InMemory-репозиториев, дублирующих SQLite-версии, и условная логика в фабрике/index.ts. Это мёртвый код, который усложняет понимание проекта.
+В проекте сохранились артефакты ранней стадии разработки:
+- Переключатель `DB_MODE` (sqlite/memory) в конфигурации
+- 7 InMemory-репозиториев, дублирующих SQLite-версии
+- Условная логика создания репозиториев в `RepositoryFactory` и `index.ts`
+
+**Проблема:** Лишний код, cognitive load, путаница при onboarding, мёртвый код не тестируется.
+
+**Решение:** Удалить legacy, оставить только SQLite. Легитимные кэши сохранить и переместить в `cache/`.
+
+## Визуализация изменений
+
+```
+src/data/repositories/
+├── memory/                    → ПЕРЕИМЕНОВАТЬ в cache/
+│   ├── InMemoryUserRepository.ts        ✗ УДАЛИТЬ
+│   ├── InMemoryTransactionRepository.ts ✗ УДАЛИТЬ
+│   ├── InMemoryPortfolioRepository.ts   ✗ УДАЛИТЬ
+│   ├── InMemoryPurchaseRepository.ts    ✗ УДАЛИТЬ
+│   ├── InMemorySchedulerRepository.ts   ✗ УДАЛИТЬ
+│   ├── InMemoryAuthRepository.ts        ✗ УДАЛИТЬ
+│   ├── InMemoryInviteTokenRepository.ts ✗ УДАЛИТЬ
+│   ├── InMemorySecretRepository.ts      ✓ ОСТАВИТЬ
+│   ├── InMemoryImportSessionRepository.ts ✓ ОСТАВИТЬ
+│   ├── CachedBalanceRepository.ts       ✓ ОСТАВИТЬ
+│   └── index.ts                         ✎ ОБНОВИТЬ
+└── sqlite/                    → НЕ ТРОГАТЬ
+```
 
 ## Acceptance Criteria
 
-- [ ] `DB_MODE` удалён из `envSchema.ts` (схема, тип, интерфейс)
-- [ ] `DB_MODE` удалён из `.env.example`
-- [ ] 7 legacy InMemory-репозиториев удалены
-- [ ] `RepositoryFactory.ts` упрощён — только SQLite, параметр `db` обязателен
-- [ ] `index.ts` не содержит ветвлений по `dbMode`
+### Этап 1: Конфигурация
+- [ ] Из `envSchema.ts` удалён `DB_MODE` (строка 32)
+- [ ] Из `envSchema.ts` удалён `DB_MODE` из `FORBIDDEN_IN_PRODUCTION` (строка 10)
+- [ ] Из `envSchema.ts` удалён тип `DatabaseMode` (строка 125)
+- [ ] Из `envSchema.ts` удалён `mode` из интерфейса `DatabaseConfig`
+- [ ] Из `.env.example` удалена строка `DB_MODE=...`
+
+### Этап 2: RepositoryFactory
+- [ ] Убран параметр `mode` из `createMainRepositories()`
+- [ ] Убран параметр `mode` из `createMockRepositories()`
+- [ ] Параметр `db` стал обязательным (не optional)
+- [ ] Удалены импорты 5 legacy InMemory репозиториев
+- [ ] Убраны ветвления `if (mode === "memory")`
+- [ ] Функции возвращают только SQLite репозитории
+
+### Этап 3: index.ts
+- [ ] Удалена переменная `dbMode`
+- [ ] Удалён вывод `Database mode: ${dbMode}`
+- [ ] Удалены условия `if (dbMode === "sqlite")`
+- [ ] Удалены импорты `InMemoryAuthRepository`, `InMemoryInviteTokenRepository`
+- [ ] `mainDb` и `authDb` создаются всегда (не в условии)
+- [ ] Auth/InviteToken репозитории всегда SQLite
+
+### Этап 4: Удаление legacy файлов
+- [ ] Удалён `InMemoryUserRepository.ts`
+- [ ] Удалён `InMemoryTransactionRepository.ts`
+- [ ] Удалён `InMemoryPortfolioRepository.ts`
+- [ ] Удалён `InMemoryPurchaseRepository.ts`
+- [ ] Удалён `InMemorySchedulerRepository.ts`
+- [ ] Удалён `InMemoryAuthRepository.ts`
+- [ ] Удалён `InMemoryInviteTokenRepository.ts`
+
+### Этап 5: Переименование и barrel export
 - [ ] Директория `repositories/memory/` переименована в `repositories/cache/`
-- [ ] Barrel export обновлён (только 3 легитимных файла)
-- [ ] `npm run build` проходит без ошибок
-- [ ] `npm run lint` проходит без ошибок
+- [ ] Обновлены все импорты в проекте (ищи `/memory/`)
+- [ ] `cache/index.ts` экспортирует только 3 файла:
+  - `CachedBalanceRepository`
+  - `InMemorySecretRepository`
+  - `InMemoryImportSessionRepository`
+
+### Этап 6: Проверка
+- [ ] `npm run build` — без ошибок
+- [ ] `npm run lint` — без ошибок
 
 ## Scope
 
-### Изменить (5 файлов)
+### Файлы для изменения
 
-| Файл | Что сделать |
-|------|-------------|
-| `src/infrastructure/shared/config/envSchema.ts` | Удалить `DB_MODE`, `DatabaseMode`, `mode` из `DatabaseConfig` |
-| `src/data/factories/RepositoryFactory.ts` | Убрать `mode`, убрать импорты legacy, `db` обязателен |
-| `src/index.ts` | Убрать `dbMode`, ветвления, импорты legacy репозиториев |
-| `src/data/repositories/memory/index.ts` → `cache/index.ts` | Переименовать, оставить 3 экспорта |
-| `.env.example` | Удалить строку `DB_MODE=...` |
+| Файл | Изменения |
+|------|-----------|
+| `src/infrastructure/shared/config/envSchema.ts` | Удалить DB_MODE, DatabaseMode, mode из DatabaseConfig |
+| `src/data/factories/RepositoryFactory.ts` | Убрать mode, сделать db обязательным, только SQLite |
+| `src/index.ts` | Убрать dbMode, ветвления, legacy импорты |
+| `src/data/repositories/cache/index.ts` | Оставить 3 экспорта |
+| `.env.example` | Удалить DB_MODE |
 
-### Удалить (7 файлов)
+### Файлы для удаления (7 штук)
 
 ```
 src/data/repositories/memory/InMemoryUserRepository.ts
@@ -40,31 +100,36 @@ src/data/repositories/memory/InMemoryAuthRepository.ts
 src/data/repositories/memory/InMemoryInviteTokenRepository.ts
 ```
 
-### Переименовать
+### НЕ трогать
 
 ```
-src/data/repositories/memory/ → src/data/repositories/cache/
-```
-
-### Оставить (3 файла, переедут в cache/)
-
-```
-CachedBalanceRepository.ts
-InMemorySecretRepository.ts
-InMemoryImportSessionRepository.ts
+src/data/sources/memory/SecretCache.ts         # Легитимный кэш
+src/data/sources/memory/ImportSessionCache.ts  # Легитимный кэш
+src/data/sources/memory/index.ts               # Их barrel
 ```
 
 ## Out of Scope
 
+- Переименование `sources/memory/` (там легитимные кэши, название корректно)
 - Миграции данных
 - Добавление тестов
 - Рефакторинг оставшихся кэшей
 
 ## Technical Notes
 
-- Порядок выполнения: конфиг → фабрика → index.ts → удаление файлов → переименование директории → barrel export
-- После переименования `memory/` → `cache/` обновить все импорты в проекте
-- Легитимные кэши (`SecretCache`, `ImportSessionCache` в `sources/memory/`) НЕ трогать
+1. **Порядок выполнения критичен:** конфиг → фабрика → index.ts → удаление → переименование → импорты
+2. **После переименования:** найти все импорты `/memory/` и заменить на `/cache/`
+3. **mockDb:** проверить, создаётся ли он и нужен ли (в брифе упоминается `createMockDatabase`)
+
+## Impact Assessment
+
+| Метрика | До | После |
+|---------|-----|-------|
+| Файлов в memory/ | 11 | 0 |
+| Файлов в cache/ | 0 | 4 |
+| Строк кода | ~400 | ~150 |
+| Конфиг параметров | DB_MODE + пути | только пути |
+| Ветвлений по mode | 4 | 0 |
 
 ## Open Questions
 
@@ -72,5 +137,8 @@ InMemoryImportSessionRepository.ts
 
 ## References
 
-- [Brief](../briefs/BRIEF_remove_legacy_storage.md)
+- [Brief](../briefs/BRIEF_remove_legacy_storage.md) — технический анализ SA
 - `prompts/ARCHITECTURE.md` — архитектура проекта
+- `src/infrastructure/shared/config/envSchema.ts` — конфигурация
+- `src/data/factories/RepositoryFactory.ts` — фабрика
+- `src/index.ts:100-180` — инициализация
