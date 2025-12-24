@@ -7,3 +7,9 @@ export {
   tryWithRetry,
 } from "./Retry.js";
 export type { PollResult, PollOptions } from "./Retry.js";
+
+export {
+  TelegramErrorType,
+  TelegramErrorClassifier,
+  TELEGRAM_ERROR_MESSAGES,
+} from "./TelegramErrors.js";
