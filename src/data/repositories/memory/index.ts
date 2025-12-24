@@ -1,5 +1,5 @@
 /**
- * Cache repositories barrel export
+ * In-memory repositories barrel export
  */
 export * from "./CachedBalanceRepository.js";
 export * from "./InMemorySecretRepository.js";

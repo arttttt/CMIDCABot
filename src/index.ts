@@ -6,7 +6,7 @@ try {
 }
 
 import { createRequire } from "module";
-import { Kysely } from "kysely";
+import type { Kysely } from "kysely";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
@@ -16,7 +16,7 @@ import { createMainDatabase, createMockDatabase, createAuthDatabase } from "./da
 import { createMainRepositories, createMockRepositories } from "./data/factories/RepositoryFactory.js";
 import { SQLiteAuthRepository } from "./data/repositories/sqlite/SQLiteAuthRepository.js";
 import { SQLiteInviteTokenRepository } from "./data/repositories/sqlite/SQLiteInviteTokenRepository.js";
-import { CachedBalanceRepository } from "./data/repositories/cache/CachedBalanceRepository.js";
+import { CachedBalanceRepository } from "./data/repositories/memory/CachedBalanceRepository.js";
 import { SolanaBlockchainRepository } from "./data/repositories/SolanaBlockchainRepository.js";
 import { JupiterPriceRepository } from "./data/repositories/JupiterPriceRepository.js";
 import { JupiterSwapRepository } from "./data/repositories/JupiterSwapRepository.js";
@@ -87,7 +87,7 @@ import {
 import { startWebServer } from "./presentation/web/index.js";
 import { HttpServer } from "./infrastructure/shared/http/index.js";
 import { SecretCache, ImportSessionCache } from "./data/sources/memory/index.js";
-import { InMemorySecretRepository, InMemoryImportSessionRepository } from "./data/repositories/cache/index.js";
+import { InMemorySecretRepository, InMemoryImportSessionRepository } from "./data/repositories/memory/index.js";
 import { CleanupScheduler } from "./infrastructure/shared/scheduling/index.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
 import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
