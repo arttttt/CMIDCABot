@@ -7,7 +7,7 @@
 
 /** Interface for stores that support expiration cleanup */
 export interface CleanableStore {
-  deleteExpired(): number;
+  deleteExpired(): Promise<number>;
 }
 
 const DEFAULT_CLEANUP_INTERVAL_MS = 60 * 1000; // 1 minute
@@ -29,9 +29,7 @@ export class CleanupScheduler {
     }
 
     this.timer = setInterval(() => {
-      for (const store of this.stores) {
-        store.deleteExpired();
-      }
+      void Promise.allSettled(this.stores.map((store) => store.deleteExpired()));
     }, this.intervalMs);
 
     // Don't prevent process exit
