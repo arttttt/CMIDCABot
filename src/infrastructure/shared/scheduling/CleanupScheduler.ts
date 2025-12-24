@@ -5,9 +5,11 @@
  * Separated from stores for Single Responsibility Principle.
  */
 
+import { logger } from "../logging/index.js";
+
 /** Interface for stores that support expiration cleanup */
 export interface CleanableStore {
-  deleteExpired(): number;
+  deleteExpired(): Promise<number>;
 }
 
 const DEFAULT_CLEANUP_INTERVAL_MS = 60 * 1000; // 1 minute
@@ -28,9 +30,17 @@ export class CleanupScheduler {
       return;
     }
 
-    this.timer = setInterval(() => {
-      for (const store of this.stores) {
-        store.deleteExpired();
+    this.timer = setInterval(async () => {
+      const results = await Promise.allSettled(
+        this.stores.map((store) => store.deleteExpired()),
+      );
+
+      for (const result of results) {
+        if (result.status === "rejected") {
+          logger.error("CleanupScheduler", "Store cleanup failed", {
+            error: result.reason,
+          });
+        }
       }
     }, this.intervalMs);
 

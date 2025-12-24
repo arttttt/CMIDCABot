@@ -198,7 +198,7 @@ export class ImportSessionCache {
    *
    * @returns Number of deleted entries
    */
-  deleteExpired(): number {
+  async deleteExpired(): Promise<number> {
     const now = Date.now();
     let deleted = 0;
 
