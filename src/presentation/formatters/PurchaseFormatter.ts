@@ -65,7 +65,7 @@ export class PurchaseFormatter {
         };
 
       case "success": {
-        const confirmStatus = result.confirmed ? "Confirmed" : "Pending";
+        const confirmStatus = result.confirmed ? "Confirmed" : "Confirmation timeout";
         const explorerUrl = `https://solscan.io/tx/${result.signature}`;
 
         return {

@@ -206,7 +206,7 @@ export class ExecuteSwapUseCase {
       yield SwapSteps.completed({
         status: "send_error",
         message: sendResult.error ?? "Transaction failed",
-        signature: sendResult.signature ?? undefined,
+        signature: sendResult.signature || undefined,
       });
       return;
     }
