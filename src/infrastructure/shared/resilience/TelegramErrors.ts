@@ -131,4 +131,15 @@ export class TelegramErrorClassifier {
 
     return TelegramErrorType.Unknown;
   }
+
+  /**
+   * Extract description from GrammyError if available
+   * GrammyError contains description field with details from Telegram API
+   */
+  static getDescription(error: unknown): string | undefined {
+    if (isGrammyErrorLike(error)) {
+      return (error as { description?: string }).description;
+    }
+    return undefined;
+  }
 }
