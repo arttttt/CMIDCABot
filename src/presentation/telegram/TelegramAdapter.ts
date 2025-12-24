@@ -11,6 +11,7 @@ import {
   tryWithRetry,
   TelegramErrorClassifier,
 } from "../../infrastructure/shared/resilience/index.js";
+import { getErrorMessage, shouldNotifyUser } from "./ErrorMessages.js";
 
 const ERROR_MESSAGE_SEND_FAILED = "Failed to send message. Please try the command again.";
 
@@ -316,15 +317,18 @@ export function createTelegramBot(
 
     // Classify the error
     const errorType = TelegramErrorClassifier.classify(error);
-    const userMessage = TelegramErrorClassifier.getMessage(errorType);
+    const userMessage = getErrorMessage(errorType);
 
+    // Log with description if available (GrammyError has description field)
+    const description = (error as { description?: string }).description;
     logger.error("TelegramBot", "Bot error", {
       error: errorMessage,
       errorType,
+      ...(description && { description }),
     });
 
     // Try to notify the user (skip for Forbidden - bot is blocked)
-    if (!TelegramErrorClassifier.shouldNotifyUser(errorType)) {
+    if (!shouldNotifyUser(errorType)) {
       return;
     }
 

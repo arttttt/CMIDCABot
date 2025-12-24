@@ -3,6 +3,8 @@
  * Classifies errors for user-friendly messaging without direct grammy dependency
  */
 
+import { isRateLimitError } from "./Retry.js";
+
 /**
  * Classified error types for Telegram bot errors
  */
@@ -14,18 +16,6 @@ export enum TelegramErrorType {
   BadRequest = "bad_request",
   Unknown = "unknown",
 }
-
-/**
- * User-friendly error messages (no technical details exposed)
- */
-export const TELEGRAM_ERROR_MESSAGES: Record<TelegramErrorType, string> = {
-  [TelegramErrorType.Network]: "Connection issues. Please try again.",
-  [TelegramErrorType.RateLimit]: "Too many requests. Please wait a moment.",
-  [TelegramErrorType.ServerError]: "Service temporarily unavailable. Please try again later.",
-  [TelegramErrorType.Forbidden]: "", // No message - bot is blocked
-  [TelegramErrorType.BadRequest]: "An error occurred. Please try again later.",
-  [TelegramErrorType.Unknown]: "An error occurred. Please try again later.",
-};
 
 /**
  * Network error indicators in error messages
@@ -50,14 +40,6 @@ interface GrammyErrorLike {
 }
 
 /**
- * Duck-typed interface for HttpError-like objects
- * HttpError has: error (original error)
- */
-interface HttpErrorLike {
-  error: unknown;
-}
-
-/**
  * Check if error looks like GrammyError (has error_code property)
  */
 function isGrammyErrorLike(error: unknown): error is GrammyErrorLike {
@@ -70,14 +52,13 @@ function isGrammyErrorLike(error: unknown): error is GrammyErrorLike {
 }
 
 /**
- * Check if error looks like HttpError (has error property but no error_code)
+ * Check if error looks like HttpError from grammY
+ * HttpError extends Error and has name "HttpError"
  */
-function isHttpErrorLike(error: unknown): error is HttpErrorLike {
+function isHttpErrorLike(error: unknown): boolean {
   return (
-    typeof error === "object" &&
-    error !== null &&
-    "error" in error &&
-    !("error_code" in error)
+    error instanceof Error &&
+    error.name === "HttpError"
   );
 }
 
@@ -101,7 +82,7 @@ export class TelegramErrorClassifier {
 
     // Standard Error - check message for patterns
     if (error instanceof Error) {
-      return this.classifyByMessage(error.message);
+      return this.classifyByMessage(error);
     }
 
     return TelegramErrorType.Unknown;
@@ -133,8 +114,8 @@ export class TelegramErrorClassifier {
   /**
    * Classify by error message content
    */
-  private static classifyByMessage(message: string): TelegramErrorType {
-    const lowerMessage = message.toLowerCase();
+  private static classifyByMessage(error: Error): TelegramErrorType {
+    const lowerMessage = error.message.toLowerCase();
 
     // Check for network errors
     for (const pattern of NETWORK_ERROR_PATTERNS) {
@@ -143,26 +124,11 @@ export class TelegramErrorClassifier {
       }
     }
 
-    // Check for rate limit
-    if (lowerMessage.includes("429") || lowerMessage.includes("too many requests")) {
+    // Reuse existing rate limit check for consistency
+    if (isRateLimitError(error)) {
       return TelegramErrorType.RateLimit;
     }
 
     return TelegramErrorType.Unknown;
-  }
-
-  /**
-   * Get user-friendly message for error type
-   */
-  static getMessage(errorType: TelegramErrorType): string {
-    return TELEGRAM_ERROR_MESSAGES[errorType];
-  }
-
-  /**
-   * Check if message should be sent for this error type
-   * (Forbidden means bot is blocked - no point sending)
-   */
-  static shouldNotifyUser(errorType: TelegramErrorType): boolean {
-    return errorType !== TelegramErrorType.Forbidden;
   }
 }
