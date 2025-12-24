@@ -259,7 +259,7 @@ export function createTelegramBot(
         userId: ctx.from.id,
         length: callbackData.length,
       });
-      await ctx.answerCallbackQuery();
+      await ctx.answerCallbackQuery().catch(() => {});
       return;
     }
 
@@ -268,7 +268,7 @@ export function createTelegramBot(
         userId: ctx.from.id,
         length: callbackData.length,
       });
-      await ctx.answerCallbackQuery();
+      await ctx.answerCallbackQuery().catch(() => {});
       return;
     }
 
