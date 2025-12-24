@@ -166,7 +166,7 @@ export class ExecutePurchaseUseCase {
       case "build_error":
         return { type: "build_error", error: swapResult.message };
       case "send_error":
-        return { type: "send_error", error: swapResult.message };
+        return { type: "send_error", error: swapResult.message, signature: swapResult.signature };
       case "rpc_error":
         return { type: "rpc_error", error: swapResult.message };
     }

@@ -198,13 +198,24 @@ export class ExecuteSwapUseCase {
       return;
     }
 
-    if (!sendResult.success || !sendResult.signature) {
+    if (!sendResult.success) {
       logger.error("ExecuteSwap", "Transaction failed", {
         error: sendResult.error,
+        signature: sendResult.signature,
       });
       yield SwapSteps.completed({
         status: "send_error",
         message: sendResult.error ?? "Transaction failed",
+        signature: sendResult.signature || undefined,
+      });
+      return;
+    }
+
+    if (!sendResult.signature) {
+      logger.error("ExecuteSwap", "Transaction failed - no signature");
+      yield SwapSteps.completed({
+        status: "send_error",
+        message: "Transaction failed - no signature returned",
       });
       return;
     }

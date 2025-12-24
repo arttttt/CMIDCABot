@@ -46,10 +46,16 @@ export class PurchaseFormatter {
           text: `Failed to build transaction: ${Markdown.escape(result.error ?? "")}`,
         };
 
-      case "send_error":
-        return {
-          text: `Transaction failed: ${Markdown.escape(result.error ?? "")}`,
-        };
+      case "send_error": {
+        const errorText = `Transaction failed: ${Markdown.escape(result.error ?? "")}`;
+        if (result.signature) {
+          const explorerUrl = `https://solscan.io/tx/${result.signature}`;
+          return {
+            text: `${errorText}\n\n${Markdown.link("View on Solscan", explorerUrl)}`,
+          };
+        }
+        return { text: errorText };
+      }
 
       case "rpc_error":
         return {
@@ -59,7 +65,7 @@ export class PurchaseFormatter {
         };
 
       case "success": {
-        const confirmStatus = result.confirmed ? "Confirmed" : "Pending";
+        const confirmStatus = result.confirmed ? "Confirmed" : "Confirmation timeout";
         const explorerUrl = `https://solscan.io/tx/${result.signature}`;
 
         return {

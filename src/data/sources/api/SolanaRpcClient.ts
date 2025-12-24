@@ -31,6 +31,11 @@ import { toHumanAmountNumber } from "../../../infrastructure/shared/math/index.j
 const SOLANA_DERIVATION_PATH = "m/44'/501'/0'/0'";
 
 /**
+ * Transaction confirmation status after sending
+ */
+type ConfirmationStatus = "confirmed" | "timeout" | "failed";
+
+/**
  * Sanitize error messages to prevent leaking sensitive data (LOW-003).
  * Removes RPC URLs, base64 strings (potential keys/transactions), and other sensitive info.
  */
@@ -732,27 +737,10 @@ export class SolanaRpcClient {
       // 7. Wait for confirmation (poll for status)
       logger.step("Solana", 4, 4, "Waiting for confirmation...");
       const confirmStartTime = Date.now();
-      const confirmed = await this.waitForConfirmation(signature, 30000); // 30 second timeout
+      const confirmationStatus = await this.waitForConfirmation(signature, 30000); // 30 second timeout
       const confirmDuration = Date.now() - confirmStartTime;
 
-      if (confirmed) {
-        logger.tx("Solana", "Transaction CONFIRMED", {
-          signature,
-          confirmationTime: `${confirmDuration}ms`,
-        });
-      } else {
-        logger.warn("Solana", "Transaction confirmation timeout", {
-          signature,
-          timeout: "30s",
-        });
-      }
-
-      return {
-        success: true,
-        signature: signature,
-        error: null,
-        confirmed,
-      };
+      return this.buildConfirmationResult(confirmationStatus, signature, confirmDuration);
     } catch (error) {
       // Sanitize error to prevent leaking sensitive data (LOW-003)
       const sanitizedMessage = sanitizeErrorMessage(error);
@@ -842,27 +830,10 @@ export class SolanaRpcClient {
       // 7. Wait for confirmation (poll for status)
       logger.step("Solana", 4, 4, "Waiting for confirmation...");
       const confirmStartTime = Date.now();
-      const confirmed = await this.waitForConfirmation(signature, 30000);
+      const confirmationStatus = await this.waitForConfirmation(signature, 30000);
       const confirmDuration = Date.now() - confirmStartTime;
 
-      if (confirmed) {
-        logger.tx("Solana", "Transaction CONFIRMED", {
-          signature,
-          confirmationTime: `${confirmDuration}ms`,
-        });
-      } else {
-        logger.warn("Solana", "Transaction confirmation timeout", {
-          signature,
-          timeout: "30s",
-        });
-      }
-
-      return {
-        success: true,
-        signature: signature,
-        error: null,
-        confirmed,
-      };
+      return this.buildConfirmationResult(confirmationStatus, signature, confirmDuration);
     } catch (error) {
       // Sanitize error to prevent leaking sensitive data (LOW-003)
       const sanitizedMessage = sanitizeErrorMessage(error);
@@ -871,6 +842,52 @@ export class SolanaRpcClient {
         success: false,
         signature: null,
         error: sanitizedMessage,
+        confirmed: false,
+      };
+    }
+  }
+
+  /**
+   * Build SendTransactionResult based on confirmation status.
+   * Handles logging and result construction for all confirmation outcomes.
+   */
+  private buildConfirmationResult(
+    confirmationStatus: ConfirmationStatus,
+    signature: string,
+    confirmDuration: number,
+  ): SendTransactionResult {
+    if (confirmationStatus === "confirmed") {
+      logger.tx("Solana", "Transaction CONFIRMED", {
+        signature,
+        confirmationTime: `${confirmDuration}ms`,
+      });
+      return {
+        success: true,
+        signature: signature,
+        error: null,
+        confirmed: true,
+      };
+    } else if (confirmationStatus === "failed") {
+      logger.error("Solana", "Transaction FAILED on-chain", {
+        signature,
+        confirmationTime: `${confirmDuration}ms`,
+      });
+      return {
+        success: false,
+        signature: signature,
+        error: "Transaction failed on-chain",
+        confirmed: false,
+      };
+    } else {
+      // timeout
+      logger.warn("Solana", "Transaction confirmation timeout", {
+        signature,
+        timeout: "30s",
+      });
+      return {
+        success: true,
+        signature: signature,
+        error: null,
         confirmed: false,
       };
     }
@@ -889,10 +906,10 @@ export class SolanaRpcClient {
    *
    * @param signature - Transaction signature to check
    * @param timeoutMs - Maximum time to wait in milliseconds
-   * @returns true if confirmed, false if timed out or failed
+   * @returns "confirmed" if confirmed, "timeout" if timed out, "failed" if transaction failed on-chain
    */
-  private async waitForConfirmation(signature: Signature, timeoutMs: number): Promise<boolean> {
-    const checkStatus = async (): Promise<PollResult<boolean>> => {
+  private async waitForConfirmation(signature: Signature, timeoutMs: number): Promise<ConfirmationStatus> {
+    const checkStatus = async (): Promise<PollResult<ConfirmationStatus>> => {
       const result = await this.rpc.getSignatureStatuses([signature]).send();
 
       const status = result.value[0];
@@ -900,12 +917,12 @@ export class SolanaRpcClient {
       if (status !== null) {
         // Transaction explicitly failed (e.g., insufficient funds, program error)
         if (status.err !== null) {
-          return { status: "failure", reason: "Transaction failed" };
+          return { status: "success", value: "failed" };
         }
 
         // Accept both confirmed and finalized as success
         if (status.confirmationStatus === "confirmed" || status.confirmationStatus === "finalized") {
-          return { status: "success", value: true };
+          return { status: "success", value: "confirmed" };
         }
       }
 
@@ -919,6 +936,11 @@ export class SolanaRpcClient {
       maxDelayMs: 4000,
     });
 
-    return result.status === "success";
+    // If poll timed out, return "timeout"
+    if (result.status !== "success") {
+      return "timeout";
+    }
+
+    return result.value;
   }
 }
