@@ -53,33 +53,6 @@ export interface AssetAllocation {
 
 ---
 
-#### [S2] `domain/helpers/` — нарушение архитектурного правила
-
-**Location:** `src/domain/helpers/AllocationCalculator.ts`
-
-**Issue:** В `ARCHITECTURE.md` указано: "Utils/helpers/common — запрещены. Become dumps."
-
-`AllocationCalculator` содержит бизнес-логику расчёта аллокаций. По архитектуре, бизнес-логика должна быть в Use Cases, но `AllocationCalculator` — не Use Case.
-
-**Варианты решения:**
-
-**A) Переместить в `domain/models/` как Domain Value Object:**
-```
-src/domain/models/AllocationCalculator.ts
-```
-Калькулятор работает с domain types и не имеет зависимостей — это чистая логика.
-
-**B) Сделать методы частью `PortfolioStatus`:**
-```typescript
-export class PortfolioStatus {
-  static calculate(balances: AssetBalances, prices: AssetPrices): PortfolioStatus
-}
-```
-
-**Рекомендация:** Вариант A — перенести в `domain/models/`, переименовать `helpers/` → убрать папку если останется пустой.
-
----
-
 ### 🟢 Consider (nice to have, minor improvements)
 
 #### [N1] Ключ лога `asset` вместо `symbol`
@@ -111,7 +84,7 @@ logger.info("ExecutePurchase", "Selected asset to buy", {
 | Category | Status | Notes |
 |----------|--------|-------|
 | Correctness | ✅ | Логика расчётов сохранена, единый источник истины |
-| Architecture | ⚠️ | `domain/helpers/` нарушает правило anti-patterns |
+| Architecture | ✅ | Зависимости направлены внутрь, слои соблюдены |
 | Security | ✅ | Нет изменений в security-sensitive коде |
 | Code Quality | ⚠️ | Нейминг `AllocationInfo` можно улучшить |
 | Conventions | ✅ | Trailing commas, английские комментарии |
@@ -121,5 +94,3 @@ logger.info("ExecutePurchase", "Selected asset to buy", {
 ## Action Items
 
 - [ ] [S1] Переименовать `AllocationInfo` → `AssetAllocation`
-- [ ] [S2] Переместить `AllocationCalculator` из `helpers/` в `models/`
-- [ ] [S2] Удалить папку `domain/helpers/` если станет пустой (или решить судьбу других helpers)
