@@ -40,7 +40,7 @@ export type SwapResult =
   | { status: "rpc_error"; message: string }
   | { status: "quote_error"; message: string }
   | { status: "build_error"; message: string }
-  | { status: "send_error"; message: string };
+  | { status: "send_error"; message: string; signature?: string };
 
 /**
  * Swap operation steps (including completed)
