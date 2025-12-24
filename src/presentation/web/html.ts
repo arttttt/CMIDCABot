@@ -39,6 +39,13 @@ export const BASE_STYLES = `
     line-height: 1.6;
   }
   .warning li { margin-bottom: 4px; }
+  .secret-box {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
 `;
 
 export class HtmlUtils {

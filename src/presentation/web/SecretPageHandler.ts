@@ -91,17 +91,9 @@ export class SecretPageHandler {
   <title>Recovery Phrase</title>
   <style>
     ${BASE_STYLES}
-    .secret-box {
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 24px;
-      overflow: hidden;
-    }
     .words {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
       gap: 8px;
     }
     .word {
@@ -160,13 +152,6 @@ export class SecretPageHandler {
   <title>Private Key</title>
   <style>
     ${BASE_STYLES}
-    .secret-box {
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 24px;
-    }
     .key {
       font-family: 'SF Mono', Monaco, 'Consolas', monospace;
       font-size: 12px;
