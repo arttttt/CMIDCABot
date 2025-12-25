@@ -8,7 +8,7 @@
  * reducing RPC billing and rate limit consumption by 4x.
  *
  * Cache is invalidated:
- * - After TTL expires (10 seconds by default)
+ * - After TTL expires (60 seconds by default)
  * - Manually after successful transactions
  */
 
@@ -34,11 +34,12 @@ interface CacheEntry {
 }
 
 /**
- * Default cache TTL: 10 seconds
- * Short enough to keep data fresh, long enough to avoid repeated RPC calls
- * during sequential operations (portfolio view → asset selection → balance check)
+ * Default cache TTL: 60 seconds
+ * Long enough to avoid repeated RPC calls during UI operations,
+ * short enough to reflect balance changes after transactions.
+ * Cache is invalidated manually after successful transactions.
  */
-const DEFAULT_CACHE_TTL_MS = 10_000;
+const DEFAULT_CACHE_TTL_MS = 60_000;
 
 export class CachedBalanceRepository implements BalanceRepository {
   private cache = new Map<string, CacheEntry>();

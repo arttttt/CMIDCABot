@@ -231,7 +231,7 @@ async function main(): Promise<void> {
   }
 
   // Create helpers
-  const walletHelper = new WalletInfoHelper(blockchainRepository, config.dcaWallet);
+  const walletHelper = new WalletInfoHelper(blockchainRepository, balanceRepository, config.dcaWallet);
 
   // Create ExecuteSwapUseCase first (used by ExecutePurchaseUseCase)
   const executeSwapUseCase = new ExecuteSwapUseCase(

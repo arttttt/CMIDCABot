@@ -48,6 +48,7 @@ export interface InitUserResult {
 export interface DcaWalletInfo {
   address: string;
   balance: number | null;
+  usdcBalance: number | null;
   isDevWallet: boolean;
 }
 
