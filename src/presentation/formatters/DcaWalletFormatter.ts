@@ -20,9 +20,15 @@ export class DcaWalletFormatter {
     lines.push(`Address: ${Markdown.code(wallet.address)}`);
 
     if (wallet.balance !== null) {
-      lines.push(`Balance: ${wallet.balance.toFixed(4)} SOL`);
+      lines.push(`SOL Balance: ${wallet.balance.toFixed(4)} SOL`);
     } else {
-      lines.push(`Balance: Unable to fetch`);
+      lines.push(`SOL Balance: Unable to fetch`);
+    }
+
+    if (wallet.usdcBalance !== null) {
+      lines.push(`USDC Balance: ${wallet.usdcBalance.toFixed(2)} USDC`);
+    } else {
+      lines.push(`USDC Balance: Unable to fetch`);
     }
 
     if (wallet.isDevWallet) {
