@@ -14,17 +14,16 @@
 
 import { BalanceRepository, WalletBalances } from "../../../domain/repositories/BalanceRepository.js";
 import { SolanaRpcClient } from "../../sources/api/index.js";
-import { TOKEN_MINTS } from "../../sources/api/JupiterPriceClient.js";
-import { TOKEN_DECIMALS } from "../../sources/api/JupiterSwapClient.js";
+import { TOKENS } from "../../../infrastructure/shared/config/index.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 /**
  * Token configurations for batch balance fetching
  */
 const TOKEN_CONFIGS = {
-  btc: { mint: TOKEN_MINTS.BTC, decimals: TOKEN_DECIMALS.BTC },
-  eth: { mint: TOKEN_MINTS.ETH, decimals: TOKEN_DECIMALS.ETH },
-  usdc: { mint: TOKEN_MINTS.USDC, decimals: TOKEN_DECIMALS.USDC },
+  btc: { mint: TOKENS.BTC.mint, decimals: TOKENS.BTC.decimals },
+  eth: { mint: TOKENS.ETH.mint, decimals: TOKENS.ETH.decimals },
+  usdc: { mint: TOKENS.USDC.mint, decimals: TOKENS.USDC.decimals },
 } as const;
 
 /**

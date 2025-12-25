@@ -6,7 +6,7 @@
  * Requires API key from https://portal.jup.ag
  */
 
-import { TOKEN_MINTS } from "./JupiterPriceClient.js";
+import { TOKEN_MINTS, TOKEN_DECIMALS } from "../../../infrastructure/shared/config/index.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 import { toRawAmount, toHumanAmountNumber } from "../../../infrastructure/shared/math/index.js";
 
@@ -24,24 +24,6 @@ function sanitizeErrorMessage(error: unknown): string {
     .replace(/x-api-key[^\s]*/gi, "[API_KEY]")
     .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]"); // Long base64 strings
 }
-
-/**
- * Token decimal places for amount conversion.
- *
- * Solana tokens store amounts as integers in smallest units:
- *   actual_amount = raw_amount / 10^decimals
- *
- * Examples:
- *   1 SOL = 1,000,000,000 lamports (9 decimals)
- *   1 USDC = 1,000,000 units (6 decimals)
- *   1 BTC (cbBTC) = 100,000,000 satoshis (8 decimals)
- */
-export const TOKEN_DECIMALS = {
-  SOL: 9,
-  USDC: 6,
-  BTC: 8,
-  ETH: 8,
-} as const;
 
 export interface JupiterQuoteResponse {
   inputMint: string;
