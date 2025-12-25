@@ -24,16 +24,7 @@ export class WalletInfoHelper {
    */
   async getWalletInfo(privateKeyBase64: string, isDevWallet: boolean): Promise<DcaWalletInfo> {
     const address = await this.blockchainRepository.getAddressFromPrivateKey(privateKeyBase64);
-
-    let balance: number | null = null;
-    let usdcBalance: number | null = null;
-    try {
-      const balances = await this.balanceRepository.getBalances(address);
-      balance = balances.sol;
-      usdcBalance = balances.usdc;
-    } catch {
-      // Balance fetch failed - wallet may be new or network issue
-    }
+    const { balance, usdcBalance } = await this.fetchBalances(address);
 
     return { address, balance, usdcBalance, isDevWallet };
   }
@@ -43,17 +34,23 @@ export class WalletInfoHelper {
    * Used for existing wallets where we don't want to decrypt the key.
    */
   async getWalletInfoByAddress(address: string, isDevWallet: boolean): Promise<DcaWalletInfo> {
-    let balance: number | null = null;
-    let usdcBalance: number | null = null;
-    try {
-      const balances = await this.balanceRepository.getBalances(address);
-      balance = balances.sol;
-      usdcBalance = balances.usdc;
-    } catch {
-      // Balance fetch failed - wallet may be new or network issue
-    }
+    const { balance, usdcBalance } = await this.fetchBalances(address);
 
     return { address, balance, usdcBalance, isDevWallet };
+  }
+
+  /**
+   * Fetch SOL and USDC balances for a wallet address.
+   * Returns null values if fetch fails.
+   */
+  private async fetchBalances(address: string): Promise<{ balance: number | null; usdcBalance: number | null }> {
+    try {
+      const balances = await this.balanceRepository.getBalances(address);
+      return { balance: balances.sol, usdcBalance: balances.usdc };
+    } catch {
+      // Balance fetch failed - wallet may be new or network issue
+      return { balance: null, usdcBalance: null };
+    }
   }
 
   async getDevWalletInfo(): Promise<DcaWalletInfo> {
