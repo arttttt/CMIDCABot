@@ -13,7 +13,6 @@ import { TOKEN_MINTS } from "../../../infrastructure/shared/config/index.js";
 // Jupiter Price API v3 endpoint (requires API key from https://portal.jup.ag)
 const JUPITER_PRICE_API = "https://api.jup.ag/price/v3";
 
-
 export interface JupiterPriceData {
   decimals: number;
   usdPrice: number;

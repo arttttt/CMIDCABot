@@ -48,10 +48,10 @@ export const TOKENS = {
     mint: "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
     decimals: 8,
   },
-} as const;
+} as const satisfies Record<string, TokenConfig>;
 
 /**
- * Token mint addresses (backward-compatible export)
+ * Token mint addresses for direct access
  */
 export const TOKEN_MINTS = {
   SOL: TOKENS.SOL.mint,
@@ -61,7 +61,7 @@ export const TOKEN_MINTS = {
 } as const;
 
 /**
- * Token decimal places (backward-compatible export)
+ * Token decimal places for direct access
  *
  * Solana tokens store amounts as integers in smallest units:
  *   actual_amount = raw_amount / 10^decimals
