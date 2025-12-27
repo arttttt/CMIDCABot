@@ -630,39 +630,51 @@ const core = new GatewayCore([
 
 ### 10. Plugin Example (для понимания структуры)
 
-Пример плагина как класса:
+Плагин состоит из двух классов:
+1. **Plugin** — реализует `GatewayPlugin`, создаёт handler
+2. **Handler** — реализует `GatewayHandler`, содержит логику
 
 ```ts
-import type { GatewayPlugin, GatewayHandler } from "./types.js";
+import type { GatewayPlugin, GatewayHandler, GatewayRequest } from "./types.js";
+import type { GatewayContext } from "./GatewayContext.js";
+import type { ClientResponseStream } from "../types.js";
 import type { AuthorizationHelper } from "../../../domain/helpers/AuthorizationHelper.js";
 
+// Handler — явная реализация GatewayHandler
+class LoadRoleHandler implements GatewayHandler {
+  constructor(
+    private readonly authHelper: AuthorizationHelper,
+    private readonly next: GatewayHandler,
+  ) {}
+
+  async handle(req: GatewayRequest, ctx: GatewayContext): Promise<ClientResponseStream> {
+    if (req.identity.provider === "telegram") {
+      const role = await this.authHelper.getRole(req.identity.telegramId);
+      if (role) {
+        ctx.setRole(role);
+      }
+    }
+    // HTTP identity — другая логика авторизации (будущее)
+
+    return this.next.handle(req, ctx);
+  }
+}
+
+// Plugin — фабрика для handler
 export class LoadRolePlugin implements GatewayPlugin {
   constructor(private readonly authHelper: AuthorizationHelper) {}
 
   apply(next: GatewayHandler): GatewayHandler {
-    return {
-      handle: async (req, ctx) => {
-        // Extract telegramId from identity
-        if (req.identity.provider === "telegram") {
-          const role = await this.authHelper.getRole(req.identity.telegramId);
-          if (role) {
-            ctx.setRole(role);
-          }
-        }
-        // HTTP identity — другая логика авторизации (будущее)
-
-        return next.handle(req, ctx);
-      },
-    };
+    return new LoadRoleHandler(this.authHelper, next);
   }
 }
 ```
 
 **Принципы:**
-- Плагин — класс, реализующий `GatewayPlugin`
-- Зависимости передаются через конструктор
-- `apply()` возвращает объект с методом `handle()`
-- Вызывает `next.handle()` для продолжения цепочки (или short-circuit)
+- Handler — отдельный класс, явно реализует `GatewayHandler`
+- Plugin — фабрика, создаёт handler с зависимостями и `next`
+- `next` передаётся в конструктор handler (immutable)
+- Handler вызывает `this.next.handle()` для продолжения цепочки (или short-circuit)
 
 ---
 
