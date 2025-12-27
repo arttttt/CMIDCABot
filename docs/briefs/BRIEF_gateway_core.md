@@ -68,7 +68,8 @@ Gateway размещается в `presentation/protocol/gateway/` — это or
 | GatewayContext | Класс с приватным state и методами `getRole()` / `setRole()`. Создаётся внутри `Gateway.handle()` |
 | GatewayHandler | Интерфейс с методом `handle()` |
 | GatewayPlugin | Интерфейс с методом `apply()`. Плагины — классы |
-| Core dispatcher | Класс `GatewayCore`, реализует `GatewayHandler` |
+| Core dispatcher | Класс `GatewayCore` — только dispatch на handlers |
+| Request handlers | Отдельные классы: `TelegramMessageHandler`, `TelegramCallbackHandler`, `HttpRequestHandler` |
 | Получение роли в core | `ctx.getRole()`, fallback на `"guest"` |
 | Help | Обычная команда, не плагин |
 | Callbacks | Wrap результат в `final()` |
@@ -88,10 +89,14 @@ src/
     ├── protocol/
     │   ├── types.ts                 # ClientResponse, ClientResponseStream, StreamItem
     │   └── gateway/
-    │       ├── types.ts             # GatewayRequest, GatewayHandler, GatewayPlugin
+    │       ├── types.ts             # GatewayRequest, GatewayHandler, GatewayPlugin, RequestHandler
     │       ├── GatewayContext.ts    # NEW
     │       ├── Gateway.ts           # NEW
-    │       ├── GatewayCore.ts       # NEW
+    │       ├── GatewayCore.ts       # NEW — только dispatch
+    │       ├── handlers/
+    │       │   ├── TelegramMessageHandler.ts   # NEW
+    │       │   ├── TelegramCallbackHandler.ts  # NEW
+    │       │   └── HttpRequestHandler.ts       # NEW (TBD)
     │       ├── stream.ts            # NEW
     │       └── index.ts
     │
@@ -196,6 +201,14 @@ export interface GatewayHandler {
 export interface GatewayPlugin {
   apply(next: GatewayHandler): GatewayHandler;
 }
+
+export interface RequestHandler<K extends GatewayRequest["kind"]> {
+  readonly kind: K;
+  handle(
+    req: Extract<GatewayRequest, { kind: K }>,
+    ctx: GatewayContext,
+  ): Promise<ClientResponseStream>;
+}
 ```
 
 **GatewayRequest** — discriminated union для трёх типов запросов:
@@ -211,6 +224,11 @@ export interface GatewayPlugin {
 - Принимает next handler
 - Возвращает новый handler (wrapper)
 - Может short-circuit, модифицировать request/context, трансформировать stream
+
+**RequestHandler<K>** — интерфейс для обработчиков конкретных типов запросов:
+- Типизирован по `kind`
+- Каждый handler обрабатывает только свой тип запроса
+- GatewayCore диспатчит на соответствующий handler
 
 ---
 
@@ -429,75 +447,82 @@ streamingHandler?: (args: string[], ctx: CommandExecutionContext) => ClientRespo
 
 ---
 
-### 8. GatewayCore
+### 8. Request Handlers
 
-**Файл:** `src/presentation/protocol/gateway/GatewayCore.ts`
+Отдельные handlers для каждого типа запроса.
 
-Dispatcher — ядро обработки запросов. Реализует `GatewayHandler`:
+#### 8.1 TelegramMessageHandler
+
+**Файл:** `src/presentation/protocol/gateway/handlers/TelegramMessageHandler.ts`
 
 ```ts
-import type { CommandRegistry, CommandExecutionContext } from "../../commands/types.js";
-import type { GatewayHandler, GatewayRequest } from "./types.js";
-import type { GatewayContext } from "./GatewayContext.js";
-import type { ClientResponseStream } from "../types.js";
-import { final } from "./stream.js";
-import { hasRequiredRole } from "../../../domain/models/AuthorizedUser.js";
-import { routeCommandStreaming, findCallbackByPath } from "../../commands/router.js";
+import type { RequestHandler, GatewayRequest } from "../types.js";
+import type { GatewayContext } from "../GatewayContext.js";
+import type { CommandRegistry, CommandExecutionContext } from "../../../commands/types.js";
+import type { ClientResponseStream } from "../../types.js";
+import { final } from "../stream.js";
+import { hasRequiredRole } from "../../../../domain/models/AuthorizedUser.js";
+import { routeCommandStreaming } from "../../../commands/router.js";
 
-export class GatewayCore implements GatewayHandler {
+export class TelegramMessageHandler implements RequestHandler<"telegram-message"> {
+  readonly kind = "telegram-message";
+
   constructor(private readonly registry: CommandRegistry) {}
 
-  async handle(req: GatewayRequest, ctx: GatewayContext): Promise<ClientResponseStream> {
-    switch (req.kind) {
-      case "telegram-message":
-        return this.handleTelegramMessage(req, ctx);
-      case "telegram-callback":
-        return this.handleTelegramCallback(req, ctx);
-      case "http-request":
-        return this.handleHttpRequest(req, ctx);
-    }
-  }
-
-  private async handleTelegramMessage(
+  async handle(
     req: Extract<GatewayRequest, { kind: "telegram-message" }>,
     ctx: GatewayContext,
   ): Promise<ClientResponseStream> {
     const text = req.text.trim();
 
-    // Non-command messages
     if (!text.startsWith("/")) {
       return final({ text: "Unknown command. Use /help to see available commands." });
     }
 
-    // Parse command
     const parts = text.split(/\s+/);
-    const commandName = parts[0].slice(1).toLowerCase(); // remove "/"
+    const commandName = parts[0].slice(1).toLowerCase();
     const args = parts.slice(1);
 
-    // Lookup command
     const cmd = this.registry.getCommand(commandName);
     if (!cmd) {
       return final({ text: `Unknown command: ${parts[0]}\nUse /help to see available commands.` });
     }
 
-    // Role-based masking
     const role = ctx.getRole();
     if (cmd.requiredRole && !hasRequiredRole(role, cmd.requiredRole)) {
       return final({ text: `Unknown command: ${parts[0]}\nUse /help to see available commands.` });
     }
 
-    // Build execution context
     const execCtx: CommandExecutionContext = {
       requestId: ctx.requestId,
       identity: req.identity,
       role,
     };
 
-    // Route to handler
     return routeCommandStreaming(cmd, args, execCtx);
   }
+}
+```
 
-  private async handleTelegramCallback(
+#### 8.2 TelegramCallbackHandler
+
+**Файл:** `src/presentation/protocol/gateway/handlers/TelegramCallbackHandler.ts`
+
+```ts
+import type { RequestHandler, GatewayRequest } from "../types.js";
+import type { GatewayContext } from "../GatewayContext.js";
+import type { CommandRegistry, CommandExecutionContext } from "../../../commands/types.js";
+import type { ClientResponseStream } from "../../types.js";
+import { final } from "../stream.js";
+import { hasRequiredRole } from "../../../../domain/models/AuthorizedUser.js";
+import { findCallbackByPath } from "../../../commands/router.js";
+
+export class TelegramCallbackHandler implements RequestHandler<"telegram-callback"> {
+  readonly kind = "telegram-callback";
+
+  constructor(private readonly registry: CommandRegistry) {}
+
+  async handle(
     req: Extract<GatewayRequest, { kind: "telegram-callback" }>,
     ctx: GatewayContext,
   ): Promise<ClientResponseStream> {
@@ -506,25 +531,37 @@ export class GatewayCore implements GatewayHandler {
       return final({ text: "Unknown action." });
     }
 
-    // Role-based masking
     const role = ctx.getRole();
     if (result.requiredRole && !hasRequiredRole(role, result.requiredRole)) {
       return final({ text: "Unknown action." });
     }
 
-    // Build execution context
     const execCtx: CommandExecutionContext = {
       requestId: ctx.requestId,
       identity: req.identity,
       role,
     };
 
-    // Execute callback and wrap in final
     const response = await result.handler(execCtx);
     return final(response);
   }
+}
+```
 
-  private async handleHttpRequest(
+#### 8.3 HttpRequestHandler
+
+**Файл:** `src/presentation/protocol/gateway/handlers/HttpRequestHandler.ts`
+
+```ts
+import type { RequestHandler, GatewayRequest } from "../types.js";
+import type { GatewayContext } from "../GatewayContext.js";
+import type { ClientResponseStream } from "../../types.js";
+import { final } from "../stream.js";
+
+export class HttpRequestHandler implements RequestHandler<"http-request"> {
+  readonly kind = "http-request";
+
+  async handle(
     req: Extract<GatewayRequest, { kind: "http-request" }>,
     ctx: GatewayContext,
   ): Promise<ClientResponseStream> {
@@ -534,17 +571,56 @@ export class GatewayCore implements GatewayHandler {
 }
 ```
 
-**Ответственности GatewayCore:**
-1. Dispatch по `kind` (telegram-message, telegram-callback, http-request)
-2. Parse `/command args...` для telegram-message
-3. Lookup command в registry
-4. Проверка роли (masking) — недоступные команды = "Unknown command"
-5. Формирование `CommandExecutionContext`
-6. Вызов `routeCommandStreaming()` для telegram-message
-7. Вызов callback handler + wrap в `final()` для telegram-callback
-8. TBD для http-request
+---
 
-**Что НЕ делает GatewayCore:**
+### 9. GatewayCore
+
+**Файл:** `src/presentation/protocol/gateway/GatewayCore.ts`
+
+Dispatcher — только маршрутизация на handlers:
+
+```ts
+import type { GatewayHandler, GatewayRequest, RequestHandler } from "./types.js";
+import type { GatewayContext } from "./GatewayContext.js";
+import type { ClientResponseStream } from "../types.js";
+import { final } from "./stream.js";
+
+export class GatewayCore implements GatewayHandler {
+  private readonly handlers: Map<string, RequestHandler<any>>;
+
+  constructor(handlers: RequestHandler<any>[]) {
+    this.handlers = new Map(handlers.map(h => [h.kind, h]));
+  }
+
+  async handle(req: GatewayRequest, ctx: GatewayContext): Promise<ClientResponseStream> {
+    const handler = this.handlers.get(req.kind);
+    if (!handler) {
+      return final({ text: "Unknown request type" });
+    }
+    return handler.handle(req as any, ctx);
+  }
+}
+```
+
+**Пример создания:**
+```ts
+const core = new GatewayCore([
+  new TelegramMessageHandler(registry),
+  new TelegramCallbackHandler(registry),
+  new HttpRequestHandler(),
+]);
+```
+
+**Ответственности GatewayCore:**
+- Только dispatch по `kind` на соответствующий handler
+- Не содержит бизнес-логики
+
+**Что делают handlers:**
+- `TelegramMessageHandler` — parse команды, lookup, masking, routing
+- `TelegramCallbackHandler` — lookup callback, masking, execute
+- `HttpRequestHandler` — TBD
+
+**Что НЕ делает GatewayCore и handlers:**
 - Загрузка роли (делает plugin LoadRolePlugin)
 - Rate limiting (делает plugin RateLimitPlugin)
 - Error handling (делает plugin ErrorBoundaryPlugin)
@@ -552,7 +628,7 @@ export class GatewayCore implements GatewayHandler {
 
 ---
 
-### 9. Plugin Example (для понимания структуры)
+### 10. Plugin Example (для понимания структуры)
 
 Пример плагина как класса:
 
@@ -590,7 +666,7 @@ export class LoadRolePlugin implements GatewayPlugin {
 
 ---
 
-### 10. Exports
+### 11. Exports
 
 **Файл:** `src/presentation/protocol/gateway/index.ts`
 
@@ -613,7 +689,9 @@ export * from "./stream.js";
 - [ ] `GatewayPlugin` — интерфейс с методом `apply()`
 - [ ] `GatewayContext` — класс с `getRole()` / `setRole()`, создаётся внутри Gateway
 - [ ] `Gateway` — применяет plugins через `reduceRight`, создаёт context внутри `handle()`
-- [ ] `GatewayCore` — реализует `GatewayHandler`
+- [ ] `RequestHandler<K>` — интерфейс для типизированных handlers
+- [ ] `TelegramMessageHandler`, `TelegramCallbackHandler`, `HttpRequestHandler` — отдельные handlers
+- [ ] `GatewayCore` — только dispatch, реализует `GatewayHandler`
 - [ ] Stream utilities работают (`mapStream`, `catchStream`, `final`)
 - [ ] `CommandExecutionContext` добавлен в `commands/types.ts`
 - [ ] Все файлы компилируются без ошибок
