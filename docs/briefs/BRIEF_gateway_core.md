@@ -23,13 +23,13 @@
 2. **GatewayCore** — dispatcher (routing + masking), без policy-логики
 3. **GatewayContext** — класс с инкапсулированным state и типизированным доступом
 4. **UserIdentity** — transport-agnostic идентификация (discriminated union)
-5. **Stream utilities** — утилиты для работы с `ResponseStream`
+5. **Stream utilities** — утилиты для работы с `ClientResponseStream`
 
 ## Technical Context
 
 ### Существующие компоненты
 - `src/presentation/protocol/ProtocolHandler.ts` — текущая точка входа (будет заменена)
-- `src/presentation/protocol/types.ts` — `UIResponse`, `UIStreamItem`, `UIResponseStream` (будет переименован)
+- `src/presentation/protocol/types.ts` — `UIResponse`, `UIStreamItem`, `UIResponseStream` (будут переименованы)
 - `src/presentation/commands/router.ts` — routing по дереву команд
 - `src/presentation/commands/types.ts` — `Command`, `CommandHandler`, `CommandRegistry`
 - `src/presentation/telegram/TelegramAdapter.ts` — Telegram integration
@@ -51,7 +51,7 @@ Gateway размещается в `presentation/protocol/gateway/` — это or
 - `GatewayCore` — dispatcher, реализует `GatewayHandler`
 - `CommandExecutionContext` — типизированный контекст для handlers
 - Stream utilities: `mapStream`, `catchStream`, `final`
-- Переименование `UIResponseStream` → `ResponseStream`
+- Переименование: `UIResponse` → `ClientResponse`, `UIResponseStream` → `ClientResponseStream`, `UIStreamItem` → `StreamItem`
 
 ### Исключено (следующие итерации)
 - Реализация плагинов (errorBoundary, loadRole, rateLimit, callbackValidation)
@@ -73,7 +73,7 @@ Gateway размещается в `presentation/protocol/gateway/` — это or
 | Callbacks | Wrap результат в `final()` |
 | Миграция команд | Поэтапная (adapter в router) |
 | Plugin composition | `reduceRight` (Koa-style middleware) |
-| Naming | `UIResponseStream` → `ResponseStream` |
+| Naming | `UIResponse` → `ClientResponse`, `UIResponseStream` → `ClientResponseStream`, `UIStreamItem` → `StreamItem` |
 
 ## File Structure
 
@@ -84,7 +84,7 @@ src/
 │
 └── presentation/
     ├── protocol/
-    │   ├── types.ts                 # ResponseStream (переименован из UIResponseStream)
+    │   ├── types.ts                 # ClientResponse, ClientResponseStream, StreamItem
     │   └── gateway/
     │       ├── types.ts             # GatewayRequest, GatewayHandler, GatewayPlugin
     │       ├── GatewayContext.ts    # NEW
@@ -132,23 +132,28 @@ function getUserId(identity: UserIdentity): string {
 
 ---
 
-### 2. ResponseStream (переименование)
+### 2. Переименование типов
 
 **Файл:** `src/presentation/protocol/types.ts`
 
-Переименование существующего типа:
+Переименование существующих типов:
 
 ```ts
 // Было
+export interface UIResponse { ... }
+export interface UIStreamItem { ... }
 export type UIResponseStream = AsyncGenerator<UIStreamItem, void, undefined>;
 
 // Стало
-export type ResponseStream = AsyncGenerator<StreamItem, void, undefined>;
+export interface ClientResponse { ... }
+export interface StreamItem { ... }
+export type ClientResponseStream = AsyncGenerator<StreamItem, void, undefined>;
 ```
 
-Также переименовать:
+Итого:
+- `UIResponse` → `ClientResponse`
 - `UIStreamItem` → `StreamItem`
-- `UIResponse` — оставить как есть (это структура ответа, не stream)
+- `UIResponseStream` → `ClientResponseStream`
 
 ---
 
@@ -158,7 +163,7 @@ export type ResponseStream = AsyncGenerator<StreamItem, void, undefined>;
 
 ```ts
 import type { UserIdentity } from "../../../domain/models/UserIdentity.js";
-import type { ResponseStream } from "../types.js";
+import type { ClientResponseStream } from "../types.js";
 import type { GatewayContext } from "./GatewayContext.js";
 
 export type Transport = "telegram" | "http";
@@ -179,7 +184,7 @@ export type GatewayRequest =
     };
 
 export interface GatewayHandler {
-  handle(req: GatewayRequest, ctx: GatewayContext): Promise<ResponseStream>;
+  handle(req: GatewayRequest, ctx: GatewayContext): Promise<ClientResponseStream>;
 }
 
 export interface GatewayPlugin {
@@ -253,7 +258,7 @@ export class GatewayContext {
 ```ts
 import type { GatewayHandler, GatewayPlugin, GatewayRequest } from "./types.js";
 import { GatewayContext } from "./GatewayContext.js";
-import type { ResponseStream } from "../types.js";
+import type { ClientResponseStream } from "../types.js";
 
 export class Gateway {
   private readonly handler: GatewayHandler;
@@ -265,7 +270,7 @@ export class Gateway {
     );
   }
 
-  handle(req: GatewayRequest): Promise<ResponseStream> {
+  handle(req: GatewayRequest): Promise<ClientResponseStream> {
     const ctx = new GatewayContext(crypto.randomUUID());
     return this.handler.handle(req, ctx);
   }
@@ -310,16 +315,16 @@ const stream = await gateway.handle(request);
 
 **Файл:** `src/presentation/protocol/gateway/stream.ts`
 
-Утилиты для работы с `ResponseStream`:
+Утилиты для работы с `ClientResponseStream`:
 
 ```ts
-import type { ResponseStream, StreamItem, UIResponse } from "../types.js";
+import type { ClientResponseStream, StreamItem, ClientResponse } from "../types.js";
 
 // Transform each item in stream
 export async function* mapStream(
-  stream: ResponseStream,
+  stream: ClientResponseStream,
   fn: (item: StreamItem) => StreamItem,
-): ResponseStream {
+): ClientResponseStream {
   for await (const item of stream) {
     yield fn(item);
   }
@@ -328,10 +333,10 @@ export async function* mapStream(
 // Wrap stream with error handling
 // Catches both sync errors (stream creation) and async errors (mid-stream)
 export async function* catchStream(
-  factory: () => ResponseStream,
-  onError: (error: unknown) => UIResponse,
-): ResponseStream {
-  let stream: ResponseStream;
+  factory: () => ClientResponseStream,
+  onError: (error: unknown) => ClientResponse,
+): ClientResponseStream {
+  let stream: ClientResponseStream;
   try {
     stream = factory();
   } catch (error) {
@@ -349,8 +354,8 @@ export async function* catchStream(
 }
 
 // Helper: wrap single response as final stream
-export function final(response: UIResponse): ResponseStream {
-  async function* gen(): ResponseStream {
+export function final(response: ClientResponse): ClientResponseStream {
+  async function* gen(): ClientResponseStream {
     yield { response, mode: "final" };
   }
   return gen();
@@ -403,12 +408,12 @@ export interface CommandExecutionContext {
 
 ```ts
 // Было
-handler?: (args: string[], telegramId: number) => Promise<UIResponse>;
-streamingHandler?: (args: string[], telegramId: number) => ResponseStream;
+handler?: (args: string[], telegramId: number) => Promise<ClientResponse>;
+streamingHandler?: (args: string[], telegramId: number) => ClientResponseStream;
 
 // Станет
-handler?: (args: string[], ctx: CommandExecutionContext) => Promise<UIResponse>;
-streamingHandler?: (args: string[], ctx: CommandExecutionContext) => ResponseStream;
+handler?: (args: string[], ctx: CommandExecutionContext) => Promise<ClientResponse>;
+streamingHandler?: (args: string[], ctx: CommandExecutionContext) => ClientResponseStream;
 ```
 
 **Преимущества:**
@@ -429,7 +434,7 @@ Dispatcher — ядро обработки запросов. Реализует 
 import type { CommandRegistry, CommandExecutionContext } from "../../commands/types.js";
 import type { GatewayHandler, GatewayRequest } from "./types.js";
 import type { GatewayContext } from "./GatewayContext.js";
-import type { ResponseStream } from "../types.js";
+import type { ClientResponseStream } from "../types.js";
 import { final } from "./stream.js";
 import { hasRequiredRole } from "../../../domain/models/AuthorizedUser.js";
 import { routeCommandStreaming, findCallbackByPath } from "../../commands/router.js";
@@ -437,7 +442,7 @@ import { routeCommandStreaming, findCallbackByPath } from "../../commands/router
 export class GatewayCore implements GatewayHandler {
   constructor(private readonly registry: CommandRegistry) {}
 
-  async handle(req: GatewayRequest, ctx: GatewayContext): Promise<ResponseStream> {
+  async handle(req: GatewayRequest, ctx: GatewayContext): Promise<ClientResponseStream> {
     if (req.kind === "message") {
       return this.handleMessage(req, ctx);
     }
@@ -447,7 +452,7 @@ export class GatewayCore implements GatewayHandler {
   private async handleMessage(
     req: Extract<GatewayRequest, { kind: "message" }>,
     ctx: GatewayContext,
-  ): Promise<ResponseStream> {
+  ): Promise<ClientResponseStream> {
     const text = req.text.trim();
 
     // Non-command messages
@@ -487,7 +492,7 @@ export class GatewayCore implements GatewayHandler {
   private async handleCallback(
     req: Extract<GatewayRequest, { kind: "callback" }>,
     ctx: GatewayContext,
-  ): Promise<ResponseStream> {
+  ): Promise<ClientResponseStream> {
     const result = findCallbackByPath(this.registry.getCommands(), req.callbackData);
     if (!result) {
       return final({ text: "Unknown action." });
@@ -585,7 +590,7 @@ export * from "./stream.js";
 ## Acceptance Criteria
 
 - [ ] `UserIdentity` — discriminated union с `telegram` / `http` variants
-- [ ] `ResponseStream` — переименован из `UIResponseStream`
+- [ ] `ClientResponse`, `ClientResponseStream`, `StreamItem` — переименованы из UI-типов
 - [ ] `GatewayHandler` — интерфейс с методом `handle()`
 - [ ] `GatewayPlugin` — интерфейс с методом `apply()`
 - [ ] `GatewayContext` — класс с `getRole()` / `setRole()`, создаётся внутри Gateway
