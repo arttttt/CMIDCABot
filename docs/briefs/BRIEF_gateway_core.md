@@ -666,7 +666,106 @@ export class LoadRolePlugin implements GatewayPlugin {
 
 ---
 
-### 11. Exports
+### 11. Execution Flow
+
+Полный цикл выполнения запроса:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ COMPOSITION TIME (Gateway constructor)                                   │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  plugins = [errorBoundary, rateLimit, loadRole]                         │
+│  core = new GatewayCore([msgHandler, cbHandler, httpHandler])           │
+│                                                                         │
+│  reduceRight builds chain inside-out:                                   │
+│                                                                         │
+│    Step 1: loadRole.apply(core)           → handler₁                    │
+│    Step 2: rateLimit.apply(handler₁)      → handler₂                    │
+│    Step 3: errorBoundary.apply(handler₂)  → finalHandler                │
+│                                                                         │
+│  this.handler = finalHandler                                            │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ REQUEST TIME (Gateway.handle)                                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  1. Create context: ctx = new GatewayContext(uuid)                      │
+│                                                                         │
+│  2. Call composed handler:                                              │
+│                                                                         │
+│     Request                                                             │
+│        │                                                                │
+│        ▼                                                                │
+│  ┌─────────────────┐                                                    │
+│  │ ErrorBoundary   │  ← wraps everything in try/catch                   │
+│  └────────┬────────┘                                                    │
+│           │                                                             │
+│           ▼                                                             │
+│  ┌─────────────────┐                                                    │
+│  │ RateLimit       │  ← checks rate, may short-circuit                  │
+│  └────────┬────────┘                                                    │
+│           │                                                             │
+│           ▼                                                             │
+│  ┌─────────────────┐                                                    │
+│  │ LoadRole        │  ← ctx.setRole(role)                               │
+│  └────────┬────────┘                                                    │
+│           │                                                             │
+│           ▼                                                             │
+│  ┌─────────────────┐                                                    │
+│  │ GatewayCore     │  ← dispatch by req.kind                            │
+│  └────────┬────────┘                                                    │
+│           │                                                             │
+│           ├──── kind: "telegram-message"  → TelegramMessageHandler      │
+│           ├──── kind: "telegram-callback" → TelegramCallbackHandler     │
+│           └──── kind: "http-request"      → HttpRequestHandler          │
+│                                                                         │
+│  3. Return ClientResponseStream (flows back through plugins)            │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Ключевые моменты:**
+
+1. **Plugins применяются один раз** — в конструкторе Gateway (composition time)
+2. **Plugins выполняются на каждый запрос** — в порядке массива (errorBoundary → rateLimit → loadRole)
+3. **Dispatch по kind происходит в GatewayCore** — после всех plugins
+4. **Response течёт обратно** — через те же plugins (для трансформации/обработки ошибок)
+
+**Пример для telegram-message:**
+
+```
+Request { kind: "telegram-message", text: "/buy 100" }
+    │
+    ▼
+ErrorBoundary.handle()
+    │ try {
+    ▼
+RateLimit.handle()
+    │ check limit, call next
+    ▼
+LoadRole.handle()
+    │ ctx.setRole("user")
+    ▼
+GatewayCore.handle()
+    │ handlers.get("telegram-message")
+    ▼
+TelegramMessageHandler.handle()
+    │ parse "/buy", find command, check role
+    ▼
+routeCommandStreaming()
+    │
+    ▼ (stream flows back)
+    │
+ErrorBoundary
+    } catch (error) → final({ text: "Error" })
+```
+
+---
+
+### 12. Exports
 
 **Файл:** `src/presentation/protocol/gateway/index.ts`
 
