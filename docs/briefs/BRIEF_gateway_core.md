@@ -64,6 +64,7 @@ Gateway размещается в `presentation/protocol/gateway/` — это or
 | Вопрос | Решение |
 |--------|---------|
 | UserIdentity | Discriminated union: `{ provider: "telegram"; telegramId: number }` / `{ provider: "http"; sessionId: string }` |
+| GatewayRequest | Три kind: `telegram-message`, `telegram-callback`, `http-request` |
 | GatewayContext | Класс с приватным state и методами `getRole()` / `setRole()`. Создаётся внутри `Gateway.handle()` |
 | GatewayHandler | Интерфейс с методом `handle()` |
 | GatewayPlugin | Интерфейс с методом `apply()`. Плагины — классы |
@@ -74,6 +75,7 @@ Gateway размещается в `presentation/protocol/gateway/` — это or
 | Миграция команд | Поэтапная (adapter в router) |
 | Plugin composition | `reduceRight` (Koa-style middleware) |
 | Naming | `UIResponse` → `ClientResponse`, `UIResponseStream` → `ClientResponseStream`, `UIStreamItem` → `StreamItem` |
+| HTTP структура | TBD — требует исследования текущего HttpServer |
 
 ## File Structure
 
@@ -166,21 +168,25 @@ import type { UserIdentity } from "../../../domain/models/UserIdentity.js";
 import type { ClientResponseStream } from "../types.js";
 import type { GatewayContext } from "./GatewayContext.js";
 
-export type Transport = "telegram" | "http";
-
 export type GatewayRequest =
   | {
-      kind: "message";
-      transport: Transport;
-      identity: UserIdentity;
+      kind: "telegram-message";
+      identity: Extract<UserIdentity, { provider: "telegram" }>;
       text: string;
       username?: string;
     }
   | {
-      kind: "callback";
-      transport: Transport;
-      identity: UserIdentity;
+      kind: "telegram-callback";
+      identity: Extract<UserIdentity, { provider: "telegram" }>;
       callbackData: string;
+    }
+  | {
+      kind: "http-request";
+      identity: Extract<UserIdentity, { provider: "http" }>;
+      // TBD: структура будет уточнена после исследования HTTP server
+      path: string;
+      method: string;
+      body?: unknown;
     };
 
 export interface GatewayHandler {
@@ -192,9 +198,10 @@ export interface GatewayPlugin {
 }
 ```
 
-**GatewayRequest** — discriminated union для двух типов запросов:
-- `kind: "message"` — текстовое сообщение (команда)
-- `kind: "callback"` — нажатие inline-кнопки
+**GatewayRequest** — discriminated union для трёх типов запросов:
+- `kind: "telegram-message"` — текстовое сообщение (команда)
+- `kind: "telegram-callback"` — нажатие inline-кнопки
+- `kind: "http-request"` — HTTP запрос (структура TBD)
 
 **GatewayHandler** — интерфейс для обработчика запросов. Реализуется:
 - `GatewayCore` — финальный dispatcher
@@ -394,11 +401,9 @@ class ErrorBoundaryPlugin implements GatewayPlugin {
 ```ts
 import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 import type { UserIdentity } from "../../domain/models/UserIdentity.js";
-import type { Transport } from "../protocol/gateway/types.js";
 
 export interface CommandExecutionContext {
   requestId: string;
-  transport: Transport;
   identity: UserIdentity;
   role: UserRole;
 }
@@ -443,14 +448,18 @@ export class GatewayCore implements GatewayHandler {
   constructor(private readonly registry: CommandRegistry) {}
 
   async handle(req: GatewayRequest, ctx: GatewayContext): Promise<ClientResponseStream> {
-    if (req.kind === "message") {
-      return this.handleMessage(req, ctx);
+    switch (req.kind) {
+      case "telegram-message":
+        return this.handleTelegramMessage(req, ctx);
+      case "telegram-callback":
+        return this.handleTelegramCallback(req, ctx);
+      case "http-request":
+        return this.handleHttpRequest(req, ctx);
     }
-    return this.handleCallback(req, ctx);
   }
 
-  private async handleMessage(
-    req: Extract<GatewayRequest, { kind: "message" }>,
+  private async handleTelegramMessage(
+    req: Extract<GatewayRequest, { kind: "telegram-message" }>,
     ctx: GatewayContext,
   ): Promise<ClientResponseStream> {
     const text = req.text.trim();
@@ -480,7 +489,6 @@ export class GatewayCore implements GatewayHandler {
     // Build execution context
     const execCtx: CommandExecutionContext = {
       requestId: ctx.requestId,
-      transport: req.transport,
       identity: req.identity,
       role,
     };
@@ -489,8 +497,8 @@ export class GatewayCore implements GatewayHandler {
     return routeCommandStreaming(cmd, args, execCtx);
   }
 
-  private async handleCallback(
-    req: Extract<GatewayRequest, { kind: "callback" }>,
+  private async handleTelegramCallback(
+    req: Extract<GatewayRequest, { kind: "telegram-callback" }>,
     ctx: GatewayContext,
   ): Promise<ClientResponseStream> {
     const result = findCallbackByPath(this.registry.getCommands(), req.callbackData);
@@ -507,7 +515,6 @@ export class GatewayCore implements GatewayHandler {
     // Build execution context
     const execCtx: CommandExecutionContext = {
       requestId: ctx.requestId,
-      transport: req.transport,
       identity: req.identity,
       role,
     };
@@ -516,16 +523,26 @@ export class GatewayCore implements GatewayHandler {
     const response = await result.handler(execCtx);
     return final(response);
   }
+
+  private async handleHttpRequest(
+    req: Extract<GatewayRequest, { kind: "http-request" }>,
+    ctx: GatewayContext,
+  ): Promise<ClientResponseStream> {
+    // TBD: реализация после исследования HTTP server
+    return final({ text: "HTTP handler not implemented" });
+  }
 }
 ```
 
 **Ответственности GatewayCore:**
-1. Parse `/command args...`
-2. Lookup command в registry
-3. Проверка роли (masking) — недоступные команды = "Unknown command"
-4. Формирование `CommandExecutionContext`
-5. Вызов `routeCommandStreaming()` для messages
-6. Вызов callback handler + wrap в `final()` для callbacks
+1. Dispatch по `kind` (telegram-message, telegram-callback, http-request)
+2. Parse `/command args...` для telegram-message
+3. Lookup command в registry
+4. Проверка роли (masking) — недоступные команды = "Unknown command"
+5. Формирование `CommandExecutionContext`
+6. Вызов `routeCommandStreaming()` для telegram-message
+7. Вызов callback handler + wrap в `final()` для telegram-callback
+8. TBD для http-request
 
 **Что НЕ делает GatewayCore:**
 - Загрузка роли (делает plugin LoadRolePlugin)
@@ -590,6 +607,7 @@ export * from "./stream.js";
 ## Acceptance Criteria
 
 - [ ] `UserIdentity` — discriminated union с `telegram` / `http` variants
+- [ ] `GatewayRequest` — три kind: `telegram-message`, `telegram-callback`, `http-request`
 - [ ] `ClientResponse`, `ClientResponseStream`, `StreamItem` — переименованы из UI-типов
 - [ ] `GatewayHandler` — интерфейс с методом `handle()`
 - [ ] `GatewayPlugin` — интерфейс с методом `apply()`
@@ -603,13 +621,17 @@ export * from "./stream.js";
 
 ## Open Questions for PM
 
-1. **HTTP sessionId** — какой формат идентификатора для HTTP клиентов? (token, session id, API key?)
-2. **Приоритет следующих итераций:**
+1. **HTTP server исследование** — текущая реализация HttpServer и handlers (SecretPageHandler, ImportPageHandler) требует анализа для определения:
+   - Структура `http-request` в GatewayRequest
+   - Нужна ли авторизация через роли или только token-based?
+   - Как интегрировать с Gateway (или оставить отдельно?)
+2. **HTTP sessionId** — какой формат идентификатора для HTTP клиентов? (token, session id, API key?)
+3. **Приоритет следующих итераций:**
    - Плагины (ErrorBoundaryPlugin, LoadRolePlugin, RateLimitPlugin)?
    - Интеграция с Telegram?
-   - Интеграция с HTTP?
+   - Исследование и интеграция HTTP?
    - Миграция команд?
-3. **Rate limiting** — требования к лимитам? (requests per minute, per user, global?)
+4. **Rate limiting** — требования к лимитам? (requests per minute, per user, global?)
 
 ## References
 
