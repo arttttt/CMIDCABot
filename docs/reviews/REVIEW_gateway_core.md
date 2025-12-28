@@ -14,13 +14,13 @@
 - `src/presentation/commands/types.ts` (CommandExecutionContext)
 
 **Date:** 2025-12-28
-**Status:** 🟡 Approved with comments
+**Status:** 🟢 Approved (all issues fixed)
 
 ---
 
 ## Summary
 
-Реализация Gateway Core выполнена качественно. Архитектура соответствует Clean Architecture, типизация строгая, код читаемый. Есть одно нарушение конвенции проекта (top-level функции вместо класса со статическими методами) и несколько minor improvements.
+Реализация Gateway Core выполнена качественно. Архитектура соответствует Clean Architecture, типизация строгая, код читаемый. Все замечания исправлены.
 
 ---
 
@@ -34,70 +34,24 @@
 
 ### 🟡 Should Fix (important but not blocking)
 
-#### [S1] Stream utilities используют top-level функции вместо класса
+#### [S1] ~~Stream utilities используют top-level функции вместо класса~~ ✅ FIXED
 
-**Location:** `src/presentation/protocol/gateway/stream.ts:12-62`
-**Issue:** Функции `mapStream`, `catchStream`, `final` экспортируются как top-level функции. Это нарушает конвенцию проекта из `ARCHITECTURE.md`:
-> "Utility classes with static methods over loose functions"
-
-**Impact:** Нарушение единообразия кодовой базы. Менее удобный autocomplete (нужно помнить имя каждой функции).
-
-**Suggestion:**
-```typescript
-export class StreamUtils {
-  static async *map(
-    stream: ClientResponseStream,
-    fn: (item: StreamItem) => StreamItem,
-  ): ClientResponseStream {
-    for await (const item of stream) {
-      yield fn(item);
-    }
-  }
-
-  static async *catch(
-    factory: () => ClientResponseStream,
-    onError: (error: unknown) => ClientResponse,
-  ): ClientResponseStream {
-    // ...
-  }
-
-  static final(response: ClientResponse): ClientResponseStream {
-    // ...
-  }
-}
-```
+**Location:** `src/presentation/protocol/gateway/stream.ts`
+**Fix:** Функции обёрнуты в класс `StreamUtils` со статическими методами.
 
 ---
 
 ### 🟢 Consider (nice to have, minor improvements)
 
-#### [N1] Type assertion в GatewayCore
+#### [N1] ~~Type assertion в GatewayCore~~ ✅ FIXED
 
-**Location:** `src/presentation/protocol/gateway/GatewayCore.ts:26`
-**Observation:** Используется `req as never` для обхода ограничений типов при dispatch. Это работает, но `never` — неочевидный выбор.
-**Suggestion:** Рассмотреть использование более явного type assertion или комментарий с объяснением почему `never`:
-```typescript
-// TypeScript cannot infer that req.kind matches handler.kind after Map lookup
-return handler.handle(req as Extract<GatewayRequest, { kind: typeof req.kind }>, ctx);
-```
+**Location:** `src/presentation/protocol/gateway/GatewayCore.ts:28-30`
+**Fix:** Заменено `req as never` на явный `req as Parameters<typeof handler.handle>[0]` с поясняющим комментарием.
 
-#### [N2] Дублирование сообщений об ошибках
+#### [N2] ~~Дублирование сообщений об ошибках~~ ✅ FIXED
 
-**Location:**
-- `src/presentation/protocol/gateway/handlers/TelegramMessageHandler.ts:28,37,43`
-- `src/presentation/protocol/gateway/handlers/TelegramCallbackHandler.ts:27,33`
-
-**Observation:** Одинаковые сообщения повторяются несколько раз:
-- `"Unknown command. Use /help to see available commands."`
-- `"Unknown action."`
-
-**Suggestion:** Вынести в константы для единообразия и упрощения изменений:
-```typescript
-const MESSAGES = {
-  UNKNOWN_COMMAND: "Unknown command. Use /help to see available commands.",
-  UNKNOWN_ACTION: "Unknown action.",
-} as const;
-```
+**Location:** `src/presentation/protocol/gateway/messages.ts`
+**Fix:** Создан `GatewayMessages` с константами. Все handlers используют эти константы.
 
 ---
 
@@ -109,10 +63,12 @@ const MESSAGES = {
 | Architecture | ✅ | Clean Architecture соблюдена, слои разделены |
 | Security | ✅ | Role masking работает, нет утечек |
 | Code Quality | ✅ | Типы явные, SRP соблюден |
-| Conventions | ⚠️ | stream.ts нарушает конвенцию utility classes |
+| Conventions | ✅ | Все конвенции соблюдены |
 
 ---
 
 ## Action Items
 
-- [ ] [S1] Рефакторинг stream.ts: обернуть функции в класс `StreamUtils`
+- [x] [S1] Рефакторинг stream.ts: обернуть функции в класс `StreamUtils`
+- [x] [N1] Улучшить type assertion в GatewayCore
+- [x] [N2] Вынести сообщения в константы

@@ -6,7 +6,8 @@ export { Gateway } from "./Gateway.js";
 export { GatewayContext } from "./GatewayContext.js";
 export { GatewayCore } from "./GatewayCore.js";
 export * from "./types.js";
-export * from "./stream.js";
+export { StreamUtils } from "./stream.js";
+export { GatewayMessages } from "./messages.js";
 
 // Handlers
 export { TelegramMessageHandler } from "./handlers/TelegramMessageHandler.js";
