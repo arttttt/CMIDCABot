@@ -4,11 +4,11 @@
 
 import { PortfolioStatusResult } from "../../domain/usecases/types.js";
 import { TARGET_ALLOCATIONS } from "../../types/portfolio.js";
-import { UIResponse } from "../protocol/types.js";
+import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
 export class PortfolioFormatter {
-  formatStatus(result: PortfolioStatusResult): UIResponse {
+  formatStatus(result: PortfolioStatusResult): ClientResponse {
     switch (result.type) {
       case "unavailable":
         return {
@@ -75,7 +75,7 @@ export class PortfolioFormatter {
     }
   }
 
-  formatUnknownSubcommand(): UIResponse {
+  formatUnknownSubcommand(): ClientResponse {
     return {
       text:
         "Unknown portfolio command.\n\n" +

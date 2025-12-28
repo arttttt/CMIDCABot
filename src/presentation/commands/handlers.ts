@@ -55,7 +55,7 @@ import {
 } from "../formatters/index.js";
 
 // Protocol types
-import { UIStreamItem } from "../protocol/types.js";
+import { StreamItem } from "../protocol/types.js";
 
 // Domain types
 import type { PurchaseResult } from "../../domain/usecases/types.js";
@@ -300,7 +300,7 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
       return deps.purchaseFormatter.format(result);
     },
     // Streaming handler for progress updates
-    streamingHandler: async function* (args, telegramId): AsyncGenerator<UIStreamItem> {
+    streamingHandler: async function* (args, telegramId): AsyncGenerator<StreamItem> {
       if (!deps.executePurchase) {
         yield {
           response: deps.purchaseFormatter.format({ type: "unavailable" }),
@@ -438,7 +438,7 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
       return deps.swapFormatter.format(result);
     },
     // Streaming handler for progress updates
-    streamingHandler: async function* (args, telegramId): AsyncGenerator<UIStreamItem> {
+    streamingHandler: async function* (args, telegramId): AsyncGenerator<StreamItem> {
       const amountStr = args[0];
       if (!amountStr) {
         yield { response: deps.swapFormatter.formatUsage(), mode: "final" };

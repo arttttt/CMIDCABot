@@ -7,10 +7,10 @@ import {
   DcaStopResult,
   DcaStatusResult,
 } from "../../domain/usecases/types.js";
-import { UIResponse } from "../protocol/types.js";
+import { ClientResponse } from "../protocol/types.js";
 
 export class DcaFormatter {
-  formatStart(result: DcaStartResult): UIResponse {
+  formatStart(result: DcaStartResult): ClientResponse {
     switch (result.type) {
       case "started":
         return {
@@ -45,7 +45,7 @@ export class DcaFormatter {
     }
   }
 
-  formatStop(result: DcaStopResult): UIResponse {
+  formatStop(result: DcaStopResult): ClientResponse {
     switch (result.type) {
       case "stopped":
         return {
@@ -72,7 +72,7 @@ export class DcaFormatter {
     }
   }
 
-  formatStatus(result: DcaStatusResult): UIResponse {
+  formatStatus(result: DcaStatusResult): ClientResponse {
     switch (result.type) {
       case "active":
         return {
@@ -110,7 +110,7 @@ export class DcaFormatter {
     }
   }
 
-  formatUnknownSubcommand(): UIResponse {
+  formatUnknownSubcommand(): ClientResponse {
     return {
       text:
         `Unknown DCA command.\n\n` +

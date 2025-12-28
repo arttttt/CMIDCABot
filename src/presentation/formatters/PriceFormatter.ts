@@ -3,11 +3,11 @@
  */
 
 import { GetPricesResult } from "../../domain/usecases/GetPricesUseCase.js";
-import { UIResponse } from "../protocol/types.js";
+import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
 export class PriceFormatter {
-  format(result: GetPricesResult): UIResponse {
+  format(result: GetPricesResult): ClientResponse {
     if (result.status === "unavailable") {
       return { text: "❌ Prices are not available (dev mode only)" };
     }

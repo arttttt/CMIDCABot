@@ -3,10 +3,10 @@
  */
 
 import { BalanceResult } from "../../domain/usecases/types.js";
-import { UIResponse } from "../protocol/types.js";
+import { ClientResponse } from "../protocol/types.js";
 
 export class BalanceFormatter {
-  format(result: BalanceResult): UIResponse {
+  format(result: BalanceResult): ClientResponse {
     switch (result.type) {
       case "no_wallet":
         return {

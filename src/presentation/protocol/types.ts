@@ -1,12 +1,12 @@
 /**
- * Presentation protocol types - unified UI contract
+ * Presentation protocol types - unified client response contract
  * This is internal to the presentation layer
  */
 
 /**
- * UI Button for inline keyboards
+ * Button for inline keyboards
  */
-export interface UIButton {
+export interface ClientButton {
   text: string;
   /** Callback data for button press (mutually exclusive with url) */
   callbackData?: string;
@@ -15,11 +15,11 @@ export interface UIButton {
 }
 
 /**
- * Unified UI response format
+ * Unified client response format
  */
-export interface UIResponse {
+export interface ClientResponse {
   text: string;
-  buttons?: UIButton[][];
+  buttons?: ClientButton[][];
   /** If true, the adapter should delete the user's original message (for sensitive data like private keys) */
   deleteUserMessage?: boolean;
 }
@@ -27,8 +27,8 @@ export interface UIResponse {
 /**
  * Streaming response item with display mode
  */
-export interface UIStreamItem {
-  response: UIResponse;
+export interface StreamItem {
+  response: ClientResponse;
   /**
    * How to display this response:
    * - 'edit': Update the existing message (for status updates)
@@ -39,9 +39,9 @@ export interface UIStreamItem {
 }
 
 /**
- * Streaming response - AsyncGenerator yielding UI updates
+ * Streaming response - AsyncGenerator yielding client updates
  */
-export type UIResponseStream = AsyncGenerator<UIStreamItem, void, undefined>;
+export type ClientResponseStream = AsyncGenerator<StreamItem, void, undefined>;
 
 /**
  * Message context from adapter

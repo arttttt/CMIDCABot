@@ -10,11 +10,11 @@ import { HelpFormatter } from "../formatters/index.js";
 import { CommandRegistry, Command } from "../commands/types.js";
 import { routeCommand, routeCommandStreaming, findCallbackByPath } from "../commands/router.js";
 import {
-  UIResponse,
+  ClientResponse,
   UIMessageContext,
   UICallbackContext,
   UICommand,
-  UIResponseStream,
+  ClientResponseStream,
 } from "./types.js";
 import { AuthorizationHelper } from "../../domain/helpers/AuthorizationHelper.js";
 import { hasRequiredRole, type UserRole } from "../../domain/models/AuthorizedUser.js";
@@ -47,7 +47,7 @@ export class ProtocolHandler {
   /**
    * Handle incoming message (non-streaming)
    */
-  async handleMessage(ctx: UIMessageContext): Promise<UIResponse> {
+  async handleMessage(ctx: UIMessageContext): Promise<ClientResponse> {
     const text = ctx.text.trim();
 
     if (text.startsWith("/")) {
@@ -64,7 +64,7 @@ export class ProtocolHandler {
    * Handle incoming message with streaming support
    * Returns a generator that yields progress updates and final result
    */
-  async *handleMessageStreaming(ctx: UIMessageContext): UIResponseStream {
+  async *handleMessageStreaming(ctx: UIMessageContext): ClientResponseStream {
     const text = ctx.text.trim();
 
     if (text.startsWith("/")) {
@@ -85,7 +85,7 @@ export class ProtocolHandler {
     command: string,
     args: string[],
     telegramId: number,
-  ): Promise<UIResponse> {
+  ): Promise<ClientResponse> {
     const modeInfo = this.registry.getModeInfo();
 
     // Get user role, default to 'guest' for unauthorized users
@@ -123,7 +123,7 @@ export class ProtocolHandler {
     command: string,
     args: string[],
     telegramId: number,
-  ): UIResponseStream {
+  ): ClientResponseStream {
     const modeInfo = this.registry.getModeInfo();
 
     // Get user role, default to 'guest' for unauthorized users
@@ -185,7 +185,7 @@ export class ProtocolHandler {
   /**
    * Handle callback query (button press)
    */
-  async handleCallback(ctx: UICallbackContext): Promise<UIResponse> {
+  async handleCallback(ctx: UICallbackContext): Promise<ClientResponse> {
     const result = findCallbackByPath(this.registry.getCommands(), ctx.callbackData);
     if (!result) {
       return { text: "Unknown action." };

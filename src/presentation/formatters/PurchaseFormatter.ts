@@ -3,11 +3,11 @@
  */
 
 import { PurchaseResult } from "../../domain/usecases/types.js";
-import { UIResponse } from "../protocol/types.js";
+import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
 export class PurchaseFormatter {
-  format(result: PurchaseResult): UIResponse {
+  format(result: PurchaseResult): ClientResponse {
     switch (result.type) {
       case "unavailable":
         return {
@@ -87,7 +87,7 @@ export class PurchaseFormatter {
     }
   }
 
-  formatUsage(): UIResponse {
+  formatUsage(): ClientResponse {
     return {
       text:
         "Usage: /portfolio buy {amount}\n\n" +
