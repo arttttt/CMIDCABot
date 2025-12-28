@@ -14,7 +14,8 @@ Gateway Core реализован, но для интеграции с TelegramA
 2. **LoadRolePlugin** — загружает роль в context через use case
 3. **ErrorBoundaryPlugin** — оборачивает ошибки через `StreamUtils.catch`
 4. **RoleGuard** — композиция для проверки доступа в handlers
-5. **Deprecation plan** для `AuthorizationHelper.getRole()`
+5. **ClientResponse class** — рефакторинг interface → class для явного создания
+6. **Deprecation plan** для `AuthorizationHelper.getRole()`
 
 ## Technical Context
 
@@ -38,6 +39,7 @@ Gateway Core реализован, но для интеграции с TelegramA
 - `LoadRolePlugin` — плагин
 - `ErrorBoundaryPlugin` — плагин
 - `RoleGuard` — utility class для проверки доступа
+- `ClientResponse` — рефакторинг interface → class
 - Deprecation аннотации для `AuthorizationHelper.getRole()`
 
 ### Исключено
@@ -57,6 +59,7 @@ src/
 │
 └── presentation/
     └── protocol/
+        ├── types.ts                     # UPDATE - ClientResponse interface → class
         └── gateway/
             ├── plugins/
             │   ├── LoadRolePlugin.ts    # NEW
@@ -288,7 +291,69 @@ if (!RoleGuard.canAccess(ctx, result.requiredRole)) {
 
 ---
 
-### 5. Plugin Exports
+### 5. ClientResponse Class
+
+**Файл:** `src/presentation/protocol/types.ts`
+
+Рефакторинг `ClientResponse` из interface в class для явного создания:
+
+```ts
+/**
+ * Button for inline keyboards
+ */
+export interface ClientButton {
+  text: string;
+  callbackData?: string;
+  url?: string;
+}
+
+/**
+ * Unified client response format
+ */
+export class ClientResponse {
+  constructor(
+    public readonly text: string,
+    public readonly buttons?: ClientButton[][],
+    public readonly deleteUserMessage?: boolean,
+  ) {}
+}
+```
+
+**Использование:**
+```ts
+// Before (object literal)
+return { text: "An error occurred. Please try again later." };
+
+// After (explicit class instantiation)
+return new ClientResponse("An error occurred. Please try again later.");
+
+// With buttons
+return new ClientResponse(
+  "Choose an option:",
+  [[{ text: "OK", callbackData: "ok" }]],
+);
+
+// With deleteUserMessage
+return new ClientResponse(
+  "Private key exported",
+  undefined,
+  true,
+);
+```
+
+**Преимущества:**
+- Явное создание — видно что создаётся response
+- Консистентно с другими языками (Kotlin, Java)
+- `instanceof` проверки работают
+- Иммутабельность через `readonly`
+
+**Обратная совместимость:**
+- Существующий код с литералами `{ text: "..." }` нужно обновить
+- Все места создания `ClientResponse` требуют миграции на `new ClientResponse(...)`
+
+---
+
+### 6. Plugin Exports
 
 **Файл:** `src/presentation/protocol/gateway/plugins/index.ts`
 
@@ -308,7 +373,7 @@ export * from "./plugins/index.js";
 
 ---
 
-### 5. Deprecation AuthorizationHelper.getRole()
+### 7. Deprecation AuthorizationHelper.getRole()
 
 **Файл:** `src/domain/helpers/AuthorizationHelper.ts`
 
@@ -373,6 +438,9 @@ Response ← ErrorBoundary ← LoadRole ← GatewayCore ← Handlers
 - [ ] `RoleGuard.canAccess()` возвращает boolean
 - [ ] `TelegramMessageHandler` использует `RoleGuard.canAccess()`
 - [ ] `TelegramCallbackHandler` использует `RoleGuard.canAccess()`
+- [ ] `ClientResponse` — class вместо interface
+- [ ] `ClientResponse` — конструктор с `text`, `buttons?`, `deleteUserMessage?`
+- [ ] Все места создания `ClientResponse` мигрированы на `new ClientResponse(...)`
 - [ ] Плагины экспортируются из `gateway/plugins/index.ts`
 - [ ] `RoleGuard` экспортируется из `gateway/index.ts`
 - [ ] `AuthorizationHelper.getRole()` помечен как `@deprecated`
