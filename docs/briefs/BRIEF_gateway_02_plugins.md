@@ -13,7 +13,8 @@ Gateway Core реализован, но для интеграции с TelegramA
 1. **GetUserRoleUseCase** — новый use case для получения роли по `UserIdentity`
 2. **LoadRolePlugin** — загружает роль в context через use case
 3. **ErrorBoundaryPlugin** — оборачивает ошибки через `StreamUtils.catch`
-4. **Deprecation plan** для `AuthorizationHelper.getRole()`
+4. **RoleGuard** — композиция для проверки доступа в handlers
+5. **Deprecation plan** для `AuthorizationHelper.getRole()`
 
 ## Technical Context
 
@@ -36,6 +37,7 @@ Gateway Core реализован, но для интеграции с TelegramA
 - `GetUserRoleUseCase` — use case в domain
 - `LoadRolePlugin` — плагин
 - `ErrorBoundaryPlugin` — плагин
+- `RoleGuard` — utility class для проверки доступа
 - Deprecation аннотации для `AuthorizationHelper.getRole()`
 
 ### Исключено
@@ -60,7 +62,11 @@ src/
             │   ├── LoadRolePlugin.ts    # NEW
             │   ├── ErrorBoundaryPlugin.ts # NEW
             │   └── index.ts             # NEW
-            └── index.ts                 # + export plugins
+            ├── RoleGuard.ts             # NEW
+            ├── handlers/
+            │   ├── TelegramMessageHandler.ts  # UPDATE - use RoleGuard
+            │   └── TelegramCallbackHandler.ts # UPDATE - use RoleGuard
+            └── index.ts                 # + export plugins, RoleGuard
 ```
 
 ---
@@ -220,7 +226,69 @@ export class ErrorBoundaryPlugin implements GatewayPlugin {
 
 ---
 
-### 4. Plugin Exports
+### 4. RoleGuard
+
+**Файл:** `src/presentation/protocol/gateway/RoleGuard.ts`
+
+Utility class для проверки доступа — убирает дублирование в handlers:
+
+```ts
+import type { GatewayContext } from "./GatewayContext.js";
+import type { UserRole } from "../../../domain/models/AuthorizedUser.js";
+import { hasRequiredRole } from "../../../domain/models/AuthorizedUser.js";
+
+export class RoleGuard {
+  /**
+   * Check if user has access to resource with required role.
+   *
+   * @param ctx - Gateway context with user role
+   * @param requiredRole - Required role for the resource (undefined = no restriction)
+   * @returns true if access is granted, false if denied
+   */
+  static canAccess(ctx: GatewayContext, requiredRole: UserRole | undefined): boolean {
+    return !requiredRole || hasRequiredRole(ctx.getRole(), requiredRole);
+  }
+}
+```
+
+**Использование в TelegramMessageHandler:**
+```ts
+// Before
+const role = ctx.getRole();
+if (cmd.requiredRole && !hasRequiredRole(role, cmd.requiredRole)) {
+  return StreamUtils.final({ text: GatewayMessages.UNKNOWN_COMMAND });
+}
+
+// After
+if (!RoleGuard.canAccess(ctx, cmd.requiredRole)) {
+  return StreamUtils.final({ text: GatewayMessages.UNKNOWN_COMMAND });
+}
+```
+
+**Использование в TelegramCallbackHandler:**
+```ts
+// Before
+const role = ctx.getRole();
+if (result.requiredRole && !hasRequiredRole(role, result.requiredRole)) {
+  return StreamUtils.final({ text: GatewayMessages.UNKNOWN_ACTION });
+}
+
+// After
+if (!RoleGuard.canAccess(ctx, result.requiredRole)) {
+  return StreamUtils.final({ text: GatewayMessages.UNKNOWN_ACTION });
+}
+```
+
+**Преимущества:**
+- Единая точка проверки доступа
+- Guard только проверяет, handler решает что делать с результатом
+- Чистое разделение ответственностей
+- Легко тестировать (pure function)
+- Статические методы — нет необходимости создавать instance
+
+---
+
+### 5. Plugin Exports
 
 **Файл:** `src/presentation/protocol/gateway/plugins/index.ts`
 
@@ -302,7 +370,11 @@ Response ← ErrorBoundary ← LoadRole ← GatewayCore ← Handlers
 - [ ] `ErrorBoundaryPlugin` использует `StreamUtils.catch`
 - [ ] `ErrorBoundaryPlugin` логирует ошибки с `requestId`
 - [ ] `ErrorBoundaryPlugin` возвращает user-friendly сообщение
+- [ ] `RoleGuard.canAccess()` возвращает boolean
+- [ ] `TelegramMessageHandler` использует `RoleGuard.canAccess()`
+- [ ] `TelegramCallbackHandler` использует `RoleGuard.canAccess()`
 - [ ] Плагины экспортируются из `gateway/plugins/index.ts`
+- [ ] `RoleGuard` экспортируется из `gateway/index.ts`
 - [ ] `AuthorizationHelper.getRole()` помечен как `@deprecated`
 - [ ] Все файлы компилируются без ошибок
 - [ ] Нет интеграции с TelegramAdapter (отдельная задача)
@@ -319,4 +391,4 @@ Response ← ErrorBoundary ← LoadRole ← GatewayCore ← Handlers
 - `src/domain/helpers/AuthorizationHelper.ts` — текущая логика
 - `src/domain/repositories/AuthRepository.ts` — репозиторий
 - `src/domain/models/UserIdentity.ts` — identity type
-- `docs/briefs/BRIEF_gateway_core.md` — предыдущий бриф
+- `docs/briefs/BRIEF_gateway_01_core.md` — предыдущий бриф
