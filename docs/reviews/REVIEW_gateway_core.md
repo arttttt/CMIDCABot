@@ -99,15 +99,6 @@ const MESSAGES = {
 } as const;
 ```
 
-#### [N3] Отсутствует обработка @username suffix в командах
-
-**Location:** `src/presentation/protocol/gateway/handlers/TelegramMessageHandler.ts:32`
-**Observation:** Telegram позволяет писать команды как `/help@botname`. Текущий парсинг не удаляет `@botname` suffix.
-**Suggestion:** Добавить очистку:
-```typescript
-const commandName = parts[0].slice(1).split("@")[0].toLowerCase();
-```
-
 ---
 
 ## Checklist Results
@@ -125,4 +116,3 @@ const commandName = parts[0].slice(1).split("@")[0].toLowerCase();
 ## Action Items
 
 - [ ] [S1] Рефакторинг stream.ts: обернуть функции в класс `StreamUtils`
-- [ ] [N3] Добавить обработку @username suffix в TelegramMessageHandler (опционально)
