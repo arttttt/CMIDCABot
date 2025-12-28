@@ -3,11 +3,11 @@
  */
 
 import { SwapResult } from "../../domain/models/SwapStep.js";
-import { UIResponse } from "../protocol/types.js";
+import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
 export class SwapFormatter {
-  format(result: SwapResult): UIResponse {
+  format(result: SwapResult): ClientResponse {
     if (result.status === "unavailable") {
       return { text: `Swap unavailable (requires ${Markdown.code("JUPITER_API_KEY")})` };
     }
@@ -75,7 +75,7 @@ export class SwapFormatter {
     return { text: lines.join("\n") };
   }
 
-  formatUsage(): UIResponse {
+  formatUsage(): ClientResponse {
     return {
       text: [
         "*Swap Execute*",
@@ -94,7 +94,7 @@ export class SwapFormatter {
     };
   }
 
-  formatUnifiedUsage(): UIResponse {
+  formatUnifiedUsage(): ClientResponse {
     return {
       text: [
         "*Swap Command*",

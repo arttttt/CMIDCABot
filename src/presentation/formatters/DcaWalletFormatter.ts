@@ -10,7 +10,7 @@ import {
   ExportKeyResult,
   DcaWalletInfo,
 } from "../../domain/usecases/types.js";
-import { UIResponse } from "../protocol/types.js";
+import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
 export class DcaWalletFormatter {
@@ -38,7 +38,7 @@ export class DcaWalletFormatter {
     return lines.join("\n");
   }
 
-  formatShowWallet(result: ShowWalletResult): UIResponse {
+  formatShowWallet(result: ShowWalletResult): ClientResponse {
     switch (result.type) {
       case "success":
       case "dev_mode":
@@ -63,7 +63,7 @@ export class DcaWalletFormatter {
     }
   }
 
-  formatCreateWallet(result: CreateWalletResult, seedTtlMinutes?: number): UIResponse {
+  formatCreateWallet(result: CreateWalletResult, seedTtlMinutes?: number): ClientResponse {
     switch (result.type) {
       case "created": {
         if (result.seedUrl) {
@@ -113,7 +113,7 @@ export class DcaWalletFormatter {
     }
   }
 
-  formatDeleteWallet(result: DeleteWalletResult): UIResponse {
+  formatDeleteWallet(result: DeleteWalletResult): ClientResponse {
     switch (result.type) {
       case "deleted":
         return {
@@ -139,7 +139,7 @@ export class DcaWalletFormatter {
     }
   }
 
-  formatExportKey(result: ExportKeyResult, keyTtlMinutes?: number): UIResponse {
+  formatExportKey(result: ExportKeyResult, keyTtlMinutes?: number): ClientResponse {
     const ttl = keyTtlMinutes ?? 5;
 
     switch (result.type) {
@@ -179,7 +179,7 @@ export class DcaWalletFormatter {
     }
   }
 
-  formatImportWallet(result: ImportWalletResult): UIResponse {
+  formatImportWallet(result: ImportWalletResult): ClientResponse {
     switch (result.type) {
       case "imported":
         return {
@@ -222,7 +222,7 @@ export class DcaWalletFormatter {
     }
   }
 
-  formatImportLink(url: string, ttlMinutes: number): UIResponse {
+  formatImportLink(url: string, ttlMinutes: number): ClientResponse {
     return {
       text:
         `**Import Wallet**\n\n` +
@@ -235,7 +235,7 @@ export class DcaWalletFormatter {
     };
   }
 
-  formatImportUsage(): UIResponse {
+  formatImportUsage(): ClientResponse {
     return {
       text:
         `**Import Wallet**\n\n` +
@@ -250,7 +250,7 @@ export class DcaWalletFormatter {
     };
   }
 
-  formatUnknownSubcommand(): UIResponse {
+  formatUnknownSubcommand(): ClientResponse {
     return {
       text:
         `Unknown wallet command.\n\n` +

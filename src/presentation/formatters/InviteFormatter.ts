@@ -4,7 +4,7 @@
 import { ROLE_LABELS } from "../../domain/models/AuthorizedUser.js";
 import { GenerateInviteResult } from "../../domain/usecases/GenerateInviteUseCase.js";
 import { ActivateInviteResult } from "../../domain/usecases/ActivateInviteUseCase.js";
-import { UIResponse } from "../protocol/types.js";
+import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
 export class InviteFormatter {
@@ -13,7 +13,7 @@ export class InviteFormatter {
   /**
    * Format invite generation result
    */
-  formatGenerateResult(result: GenerateInviteResult): UIResponse {
+  formatGenerateResult(result: GenerateInviteResult): ClientResponse {
     switch (result.type) {
       case "success": {
         // Build link and escape special Markdown characters
@@ -36,7 +36,7 @@ export class InviteFormatter {
   /**
    * Format invite activation result
    */
-  formatActivateResult(result: ActivateInviteResult): UIResponse {
+  formatActivateResult(result: ActivateInviteResult): ClientResponse {
     switch (result.type) {
       case "success": {
         const roleLabel = Markdown.escape(ROLE_LABELS[result.role]);
@@ -58,7 +58,7 @@ export class InviteFormatter {
   /**
    * Format invite usage message
    */
-  formatUsage(): UIResponse {
+  formatUsage(): ClientResponse {
     return {
       text: `Usage: /admin invite [role]
 

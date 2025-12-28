@@ -5,7 +5,7 @@
 
 import { Bot, BotError, Context, InlineKeyboard } from "grammy";
 import { ProtocolHandler } from "../protocol/index.js";
-import { UIResponse, UIStreamItem } from "../protocol/types.js";
+import { ClientResponse, StreamItem } from "../protocol/types.js";
 import { logger, LogSanitizer } from "../../infrastructure/shared/logging/index.js";
 import {
   tryWithRetry,
@@ -19,7 +19,7 @@ const ERROR_MESSAGE_SEND_FAILED = "Failed to send message. Please try the comman
 const CALLBACK_MAX_LENGTH = 64;
 const CALLBACK_PATTERN = /^[a-z][a-z0-9_]*(\/[a-z][a-z0-9_]*)*:[a-z][a-z0-9_]*$/;
 
-function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
+function toInlineKeyboard(response: ClientResponse): InlineKeyboard | undefined {
   if (!response.buttons?.length) return undefined;
 
   const keyboard = new InlineKeyboard();
@@ -48,7 +48,7 @@ function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
  */
 async function handleStreamingResponse(
   ctx: Context,
-  stream: AsyncGenerator<UIStreamItem, void, undefined>,
+  stream: AsyncGenerator<StreamItem, void, undefined>,
 ): Promise<void> {
   let statusMessageId: number | undefined;
   let isFirstItem = true;

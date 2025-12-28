@@ -11,3 +11,4 @@ export * from "./InviteToken.js";
 export * from "./SwapStep.js";
 export * from "./PurchaseStep.js";
 export * from "./PortfolioTypes.js";
+export * from "./UserIdentity.js";

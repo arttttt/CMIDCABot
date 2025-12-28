@@ -12,14 +12,14 @@
 
 import type { SwapStep, PurchaseStep, QuoteInfo } from "../../domain/models/index.js";
 import type { AssetAllocation } from "../../domain/models/PortfolioTypes.js";
-import type { UIResponse } from "../protocol/types.js";
+import type { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
 /**
  * Formatted progress with display mode
  */
 export interface FormattedProgress {
-  response: UIResponse;
+  response: ClientResponse;
   mode: "edit" | "new";
 }
 
@@ -122,7 +122,7 @@ export class ProgressFormatter {
   /**
    * Format quote received with trade details
    */
-  private formatQuoteReceived(quote: QuoteInfo): UIResponse {
+  private formatQuoteReceived(quote: QuoteInfo): ClientResponse {
     const pricePerUnit = quote.inputAmount / quote.outputAmount;
     const slippagePercent = quote.slippageBps / 100;
     const routeStr = quote.route.join(" → ");
@@ -145,7 +145,7 @@ export class ProgressFormatter {
   /**
    * Format asset selection with allocation details
    */
-  private formatAssetSelected(selection: AssetAllocation): UIResponse {
+  private formatAssetSelected(selection: AssetAllocation): ClientResponse {
     const currentPct = (selection.currentAllocation * 100).toFixed(1);
     const targetPct = (selection.targetAllocation * 100).toFixed(1);
     const deviationPct = (selection.deviation * 100).toFixed(1);

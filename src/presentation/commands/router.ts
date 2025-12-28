@@ -4,7 +4,7 @@
 
 import { Command, CallbackHandler, CallbackLookupResult } from "./types.js";
 import type { UserRole } from "../../domain/models/AuthorizedUser.js";
-import { UIResponse, UIResponseStream } from "../protocol/types.js";
+import { ClientResponse, ClientResponseStream } from "../protocol/types.js";
 
 /**
  * Result of finding a routed command
@@ -42,13 +42,13 @@ export function findTargetCommand(cmd: Command, args: string[]): RoutedCommand {
  * @param cmd - Command to execute
  * @param args - Remaining arguments
  * @param telegramId - User's telegram ID
- * @returns UIResponse from the matched handler
+ * @returns ClientResponse from the matched handler
  */
 export async function routeCommand(
   cmd: Command,
   args: string[],
   telegramId: number,
-): Promise<UIResponse> {
+): Promise<ClientResponse> {
   const { command, args: finalArgs } = findTargetCommand(cmd, args);
 
   // Execute this command's handler
@@ -69,13 +69,13 @@ export async function routeCommand(
  * @param cmd - Command to execute
  * @param args - Remaining arguments
  * @param telegramId - User's telegram ID
- * @returns UIResponseStream for progress and final result
+ * @returns ClientResponseStream for progress and final result
  */
 export async function* routeCommandStreaming(
   cmd: Command,
   args: string[],
   telegramId: number,
-): UIResponseStream {
+): ClientResponseStream {
   const { command, args: finalArgs } = findTargetCommand(cmd, args);
 
   // Prefer streaming handler if available

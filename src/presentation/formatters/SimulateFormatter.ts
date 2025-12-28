@@ -3,11 +3,11 @@
  */
 
 import { SimulateSwapResult } from "../../domain/usecases/SimulateSwapUseCase.js";
-import { UIResponse } from "../protocol/types.js";
+import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
 export class SimulateFormatter {
-  format(result: SimulateSwapResult): UIResponse {
+  format(result: SimulateSwapResult): ClientResponse {
     if (result.status === "unavailable") {
       return { text: `Simulation unavailable (requires ${Markdown.code("JUPITER_API_KEY")})` };
     }
@@ -94,7 +94,7 @@ export class SimulateFormatter {
     return { text: lines.join("\n") };
   }
 
-  formatUsage(): UIResponse {
+  formatUsage(): ClientResponse {
     return {
       text: [
         "*Swap Simulate*",

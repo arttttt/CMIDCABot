@@ -3,11 +3,11 @@
  */
 
 import { GetQuoteResult } from "../../domain/usecases/GetQuoteUseCase.js";
-import { UIResponse } from "../protocol/types.js";
+import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
 export class QuoteFormatter {
-  format(result: GetQuoteResult): UIResponse {
+  format(result: GetQuoteResult): ClientResponse {
     if (result.status === "unavailable") {
       return { text: `❌ Quote service is not available (requires ${Markdown.code("JUPITER_API_KEY")})` };
     }
@@ -51,7 +51,7 @@ export class QuoteFormatter {
     return { text: lines.join("\n") };
   }
 
-  formatUsage(): UIResponse {
+  formatUsage(): ClientResponse {
     return {
       text: [
         "*Swap Quote*",

@@ -3,7 +3,7 @@
  */
 import { AuthorizedUser, ROLE_LABELS, UserRole } from "../../domain/models/AuthorizedUser.js";
 import { AdminOperationResult } from "../../domain/usecases/types.js";
-import { UIResponse } from "../protocol/types.js";
+import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
 // Re-export for backwards compatibility
@@ -13,7 +13,7 @@ export class AdminFormatter {
   /**
    * Format add user usage message
    */
-  formatAddUsage(): UIResponse {
+  formatAddUsage(): ClientResponse {
     return {
       text: `Usage: /admin add <user> [role]
 
@@ -32,7 +32,7 @@ Examples:
   /**
    * Format remove user usage message
    */
-  formatRemoveUsage(): UIResponse {
+  formatRemoveUsage(): ClientResponse {
     return {
       text: `Usage: /admin remove <user>
 
@@ -48,7 +48,7 @@ Examples:
   /**
    * Format role change usage message
    */
-  formatRoleUsage(): UIResponse {
+  formatRoleUsage(): ClientResponse {
     return {
       text: `Usage: /admin role <user> <role>
 
@@ -65,7 +65,7 @@ Examples:
   /**
    * Format operation result
    */
-  formatResult(result: AdminOperationResult): UIResponse {
+  formatResult(result: AdminOperationResult): ClientResponse {
     if (result.success) {
       return { text: Markdown.escape(result.message ?? "") };
     }
@@ -75,7 +75,7 @@ Examples:
   /**
    * Format user list
    */
-  formatUserList(users: AuthorizedUser[]): UIResponse {
+  formatUserList(users: AuthorizedUser[]): ClientResponse {
     if (users.length === 0) {
       return { text: "No authorized users." };
     }
@@ -97,7 +97,7 @@ Examples:
   /**
    * Format admin help
    */
-  formatHelp(showInvite = false): UIResponse {
+  formatHelp(showInvite = false): ClientResponse {
     const lines = [
       "Admin Commands:",
       "",
@@ -125,28 +125,28 @@ Examples:
   /**
    * Format version info
    */
-  formatVersion(version: string): UIResponse {
+  formatVersion(version: string): ClientResponse {
     return { text: `CMI DCA Bot v${version}` };
   }
 
   /**
    * Format permission denied message
    */
-  formatPermissionDenied(): UIResponse {
+  formatPermissionDenied(): ClientResponse {
     return { text: "Permission denied. Admin privileges required." };
   }
 
   /**
    * Format invalid role message
    */
-  formatInvalidRole(role: string): UIResponse {
+  formatInvalidRole(role: string): ClientResponse {
     return { text: `Invalid role: ${Markdown.escape(role)}\nValid roles: user, admin` };
   }
 
   /**
    * Format user resolve error message
    */
-  formatResolveError(identifier: string, error?: string): UIResponse {
+  formatResolveError(identifier: string, error?: string): ClientResponse {
     if (error) {
       return { text: `Error: ${Markdown.escape(error)}` };
     }

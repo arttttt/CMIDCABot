@@ -7,11 +7,11 @@
 
 import type { Api } from "grammy";
 import type { MessageSender } from "./MessageSender.js";
-import type { UIResponse } from "../protocol/types.js";
+import type { ClientResponse } from "../protocol/types.js";
 import { InlineKeyboard } from "grammy";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
-function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
+function toInlineKeyboard(response: ClientResponse): InlineKeyboard | undefined {
   if (!response.buttons?.length) return undefined;
 
   const keyboard = new InlineKeyboard();
@@ -31,7 +31,7 @@ function toInlineKeyboard(response: UIResponse): InlineKeyboard | undefined {
 export class TelegramMessageSender implements MessageSender {
   constructor(private readonly api: Api) {}
 
-  async send(telegramId: number, response: UIResponse): Promise<void> {
+  async send(telegramId: number, response: ClientResponse): Promise<void> {
     try {
       const keyboard = toInlineKeyboard(response);
 

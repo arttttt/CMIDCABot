@@ -7,8 +7,21 @@
  * - Routing is done by traversing the command tree
  */
 
-import { UIResponse, UIResponseStream } from "../protocol/types.js";
+import { ClientResponse, ClientResponseStream } from "../protocol/types.js";
 import type { UserRole } from "../../domain/models/AuthorizedUser.js";
+import type { UserIdentity } from "../../domain/models/UserIdentity.js";
+
+/**
+ * Command execution context
+ *
+ * Typed context passed to command handlers (future migration).
+ * Replaces raw telegramId parameter.
+ */
+export interface CommandExecutionContext {
+  requestId: string;
+  identity: UserIdentity;
+  role: UserRole;
+}
 
 /**
  * Command definition - metadata for help/registration
@@ -23,17 +36,17 @@ export interface CommandDefinition {
 /**
  * Command handler function signature
  */
-export type CommandHandler = (args: string[], telegramId: number) => Promise<UIResponse>;
+export type CommandHandler = (args: string[], telegramId: number) => Promise<ClientResponse>;
 
 /**
  * Streaming command handler - returns AsyncGenerator for progress updates
  */
-export type StreamingCommandHandler = (args: string[], telegramId: number) => UIResponseStream;
+export type StreamingCommandHandler = (args: string[], telegramId: number) => ClientResponseStream;
 
 /**
  * Callback handler function signature
  */
-export type CallbackHandler = (telegramId: number) => Promise<UIResponse>;
+export type CallbackHandler = (telegramId: number) => Promise<ClientResponse>;
 
 /**
  * Result of callback lookup - includes handler and required role
@@ -66,7 +79,7 @@ export interface Command {
   /**
    * Streaming handler for operations that report progress.
    * If present, takes precedence over handler.
-   * Yields UIStreamItems for progress updates and final result.
+   * Yields StreamItems for progress updates and final result.
    */
   streamingHandler?: StreamingCommandHandler;
   subcommands?: Map<string, Command>;
