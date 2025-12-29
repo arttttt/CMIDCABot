@@ -8,7 +8,7 @@
 import type { RequestHandler, GatewayRequest } from "../types.js";
 import type { GatewayContext } from "../GatewayContext.js";
 import type { CommandRegistry } from "../../../commands/types.js";
-import type { ClientResponseStream } from "../../types.js";
+import { ClientResponse, type ClientResponseStream } from "../../types.js";
 import { StreamUtils } from "../stream.js";
 import { GatewayMessages } from "../messages.js";
 import { RoleGuard } from "../RoleGuard.js";
@@ -26,7 +26,7 @@ export class TelegramMessageHandler implements RequestHandler<"telegram-message"
     const text = req.text.trim();
 
     if (!text.startsWith("/")) {
-      return StreamUtils.final({ text: GatewayMessages.UNKNOWN_COMMAND });
+      return StreamUtils.final(new ClientResponse(GatewayMessages.UNKNOWN_COMMAND));
     }
 
     const parts = text.split(/\s+/);
@@ -35,12 +35,12 @@ export class TelegramMessageHandler implements RequestHandler<"telegram-message"
 
     const cmd = this.registry.getCommand(commandName);
     if (!cmd) {
-      return StreamUtils.final({ text: GatewayMessages.UNKNOWN_COMMAND });
+      return StreamUtils.final(new ClientResponse(GatewayMessages.UNKNOWN_COMMAND));
     }
 
     if (!RoleGuard.canAccess(ctx.getRole(), cmd.requiredRole)) {
       // Mask command - return same message as unknown command
-      return StreamUtils.final({ text: GatewayMessages.UNKNOWN_COMMAND });
+      return StreamUtils.final(new ClientResponse(GatewayMessages.UNKNOWN_COMMAND));
     }
 
     const telegramId = req.identity.telegramId;
