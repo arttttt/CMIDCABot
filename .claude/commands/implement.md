@@ -1,37 +1,37 @@
 ---
-description: "Реализовать задачу по спецификации"
+description: Implement task from specification
 argument-hint: "<task_name> | <file_path>"
 allowed-tools: Read, Write, Glob, Grep, Bash
 ---
 
-Используй subagent `developer`.
+Use subagent `developer`.
 
-## Задача
+## Task
 
-Реализовать функциональность по спецификации.
+Implement functionality from specification.
 
-## Алгоритм
+## Algorithm
 
-1. **Проверь аргументы:**
-   - Если `$ARGUMENTS` пустой:
-     - Покажи список файлов в `docs/tasks/`
-     - Спроси: "Какую задачу реализовать?"
-   - Если указан путь к файлу: используй его
-   - Если указано имя: найди `docs/tasks/TASK_<name>.md`
+1. **Check arguments:**
+   - If `$ARGUMENTS` is empty:
+     - List files in `docs/tasks/`
+     - Ask user which task to implement
+   - If file path provided: use it
+   - If name provided: find `docs/tasks/TASK_<name>.md`
 
-2. **Прочитай спецификацию**
+2. **Read specification**
 
-3. **Составь план:**
+3. **Create plan:**
    - Affected layers
    - Files to create/modify
-   - Approach (шаги)
+   - Approach (steps)
 
-4. **🚨 СТОП — выведи план и жди подтверждения**
+4. **🚨 STOP — output plan and wait for confirmation**
 
-5. **После подтверждения:** реализуй код
+5. **After confirmation:** implement code
 
-## Важно
+## Important
 
-- **НИКОГДА** не пиши код без подтверждения плана
-- Код должен быть полным, без плейсхолдеров
-- После реализации — отметь выполненные критерии
+- **NEVER** write code without plan confirmation
+- Code must be complete, no placeholders
+- After implementation — mark completed criteria

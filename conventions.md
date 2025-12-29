@@ -1,23 +1,23 @@
 # Project Conventions
 
-> Правила и соглашения проекта. Обязательны для всех участников (людей и AI).
+> Project rules and conventions. Mandatory for all participants (humans and AI).
 
 ## Code Style
 
 ### Formatting
-- Trailing commas — всегда
-- Explicit types — избегать `any`
-- async/await — без callback hell
-- Comments — на английском
+- Trailing commas — always
+- Explicit types — avoid `any`
+- async/await — no callback hell
+- Comments — in English
 
 ### Structure
 - Small modules — single responsibility
-- Utility functions — класс со static методами (не top-level exports)
+- Utility functions — class with static methods (not top-level exports)
 
 ### Naming
 
-| Тип | Паттерн | Пример |
-|-----|---------|--------|
+| Type | Pattern | Example |
+|------|---------|---------|
 | API client | `*Client` | `JupiterPriceClient` |
 | In-memory storage | `*Cache` | `SecretCache` |
 | Database adapter | `*DataSource` | `AuthDataSource` |
@@ -26,9 +26,9 @@
 
 ## Architecture
 
-См. `ARCHITECTURE.md` для полного описания слоёв и правил.
+See `ARCHITECTURE.md` for full description of layers and rules.
 
-**Ключевой принцип:** Clean Architecture — зависимости направлены только внутрь.
+**Key principle:** Clean Architecture — dependencies point inward only.
 
 ```
 presentation → domain ← data
@@ -38,29 +38,29 @@ presentation → domain ← data
 
 ## Security
 
-- **Secrets** — никогда в коде, только через environment variables
-- **Private keys** — только зашифрованные (AES-256-GCM)
-- **Logging** — никаких sensitive data в логах
-- **Input validation** — на границе presentation layer
+- **Secrets** — never in code, only via environment variables
+- **Private keys** — encrypted only (AES-256-GCM)
+- **Logging** — no sensitive data in logs
+- **Input validation** — at presentation layer boundary
 
 ## Environment
 
-- Держать `.env.example` актуальным при добавлении переменных
-- Solana: только devnet (mainnet запрещён)
+- Keep `.env.example` up-to-date when adding variables
+- Solana: devnet only (mainnet prohibited)
 
 ## Git Conventions
 
-- Commits — осмысленные сообщения на английском
-- Branches — feature/, fix/, refactor/ префиксы
-- PR — обязательный review перед merge
+- Commits — meaningful messages in English
+- Branches — feature/, fix/, refactor/ prefixes
+- PR — mandatory review before merge
 
 ## Documentation
 
-| Документ | Назначение |
-|----------|------------|
-| `ARCHITECTURE.md` | Структура слоёв, правила зависимостей |
-| `conventions.md` | Код стайл, правила проекта |
-| `CLAUDE.md` | Инструкции для AI-ассистента |
-| `docs/briefs/` | Technical briefs от Analyst |
-| `docs/tasks/` | Спецификации задач от PM |
-| `docs/reviews/` | Результаты code review |
+| Document | Purpose |
+|----------|---------|
+| `ARCHITECTURE.md` | Layer structure, dependency rules |
+| `conventions.md` | Code style, project rules |
+| `CLAUDE.md` | Instructions for AI assistant |
+| `docs/briefs/` | Technical briefs from Analyst |
+| `docs/tasks/` | Task specifications from PM |
+| `docs/reviews/` | Code review results |

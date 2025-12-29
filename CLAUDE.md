@@ -43,8 +43,8 @@ Developer with Android/Kotlin background, less familiar with TS/JS.
 
 ## Project Rules
 
-Все правила проекта — в `conventions.md` и `ARCHITECTURE.md`.
-Claude обязан следовать этим документам.
+All project rules are in `conventions.md` and `ARCHITECTURE.md`.
+Claude must follow these documents.
 
 ## Scope & Boundaries
 
@@ -114,28 +114,28 @@ Correctness over completeness. A compact, accurate patch beats a broad, speculat
 
 ## Commands
 
-Slash-команды для работы с проектом:
+Slash commands for project workflow:
 
-| Команда | Назначение | Выход |
-|---------|------------|-------|
-| `/brief <name>` | Technical brief для PM | `docs/briefs/BRIEF_*.md` |
-| `/consult` | Техническая консультация | ответ в чат |
-| `/spec <name>` | Спецификация задачи | `docs/tasks/TASK_*.md` |
-| `/implement <name>` | Реализация по спеку | код |
+| Command | Purpose | Output |
+|---------|---------|--------|
+| `/brief <name>` | Technical brief for PM | `docs/briefs/BRIEF_*.md` |
+| `/consult` | Technical consultation | chat response |
+| `/spec <name>` | Task specification | `docs/tasks/TASK_*.md` |
+| `/implement <name>` | Implementation from spec | code |
 | `/review <path>` | Code review | `docs/reviews/REVIEW_*.md` |
-| `/status [name]` | Статус артефактов | ответ в чат |
+| `/status [name]` | Artifact status | chat response |
 
-Аргумент опционален — если не указан, команда спросит интерактивно.
+Argument is optional — if not provided, command will ask interactively.
 
 ## Agents
 
-Агенты в `.claude/agents/`:
-- `analyst` — технический анализ, briefs
-- `pm` — спецификации задач
-- `developer` — реализация
+Agents in `.claude/agents/`:
+- `analyst` — technical analysis, briefs
+- `pm` — task specifications
+- `developer` — implementation
 - `reviewer` — code review
 
-Агенты вызываются автоматически через команды.
+Agents are invoked automatically via commands.
 
 ## Useful Links
 

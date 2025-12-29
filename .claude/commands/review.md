@@ -1,33 +1,33 @@
 ---
-description: "Code review файлов или компонента"
+description: Code review of files or component
 argument-hint: "<file_path> | <component_name>"
 allowed-tools: Read, Glob, Grep, Write
 ---
 
-Используй subagent `reviewer`.
+Use subagent `reviewer`.
 
-## Задача
+## Task
 
-Провести code review и создать отчёт.
+Conduct code review and create report.
 
-## Алгоритм
+## Algorithm
 
-1. **Проверь аргументы:**
-   - Если `$ARGUMENTS` пустой:
-     - Спроси: "Что ревьюить? Укажи путь к файлу или название компонента"
-   - Иначе: используй как scope ревью
+1. **Check arguments:**
+   - If `$ARGUMENTS` is empty:
+     - Ask user what to review (file path or component name)
+   - Otherwise: use as review scope
 
-2. **Прочитай `ARCHITECTURE.md`** — обязательно перед ревью
+2. **Read `ARCHITECTURE.md`** — mandatory before review
 
-3. **Проанализируй код:**
+3. **Analyze code:**
    - Correctness
    - Architecture compliance
    - Security
    - Code quality
 
-4. **Создай файл:** `docs/reviews/REVIEW_<name>.md`
+4. **Create file:** `docs/reviews/REVIEW_<name>.md`
 
-## Формат имени файла
+## File naming
 
-- По компоненту: `REVIEW_portfolio_handler.md`
-- По фиче: `REVIEW_dca_scheduling.md`
+- By component: `REVIEW_portfolio_handler.md`
+- By feature: `REVIEW_dca_scheduling.md`

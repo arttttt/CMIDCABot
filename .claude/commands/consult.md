@@ -1,32 +1,32 @@
 ---
-description: "Техническая консультация (ответ в чат)"
-argument-hint: "[вопрос]"
+description: Technical consultation (response in chat)
+argument-hint: "[question]"
 allowed-tools: Read, Glob, Grep
 ---
 
-Используй subagent `analyst`.
+Use subagent `analyst`.
 
-## Задача
+## Task
 
-Ответить на технический вопрос или помочь разобраться в коде.
+Answer technical question or help understand code.
 
-## Алгоритм
+## Algorithm
 
-1. **Проверь аргументы:**
-   - Если `$ARGUMENTS` пустой: спроси "Какой у тебя вопрос?"
-   - Иначе: используй как вопрос
+1. **Check arguments:**
+   - If `$ARGUMENTS` is empty: ask user for their question
+   - Otherwise: use as the question
 
-2. **Проанализируй:**
-   - Изучи релевантные части кодовой базы
-   - Найди существующие паттерны
-   - Определи варианты решения
+2. **Analyze:**
+   - Study relevant parts of codebase
+   - Find existing patterns
+   - Identify solution options
 
-3. **Ответь в чат:**
-   - Краткий ответ для простых вопросов
-   - Структурированный ответ с опциями для сложных
-   - Код только для иллюстрации
+3. **Respond in chat:**
+   - Brief answer for simple questions
+   - Structured answer with options for complex ones
+   - Code only for illustration
 
-## Важно
+## Important
 
-- **НЕ создавай файлы** — это консультация, не brief
-- Для создания brief используй команду `/brief`
+- **DO NOT create files** — this is consultation, not brief
+- To create brief use `/brief` command
