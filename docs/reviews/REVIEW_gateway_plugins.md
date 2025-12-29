@@ -102,18 +102,11 @@ getRole(): UserRole {
 
 ---
 
-#### [N3] HTTP identity возвращает "guest" без логирования
+#### ~~[N3] HTTP identity возвращает "guest" без логирования~~ — BY DESIGN
 
 **Location:** `src/domain/usecases/GetUserRoleUseCase.ts:29-31`
 
-**Observation:** HTTP identity молча fallback на `"guest"`. Когда HTTP будет реализован, легко забыть об этом месте.
-
-**Suggestion:** Добавить TODO или warning log:
-```typescript
-// HTTP identity — future implementation
-logger.warn("GetUserRole", "HTTP identity not implemented, returning guest");
-return "guest";
-```
+**Note:** Gateway пока не поддерживает HTTP полноценно. Fallback на `"guest"` — ожидаемое поведение. Будет доработано при реализации HTTP-адаптера.
 
 ---
 
@@ -134,4 +127,4 @@ return "guest";
 - [x] ~~[S1] Дублирование ROLE_LEVELS~~ — by design (миграция на RoleGuard)
 - [ ] [S2] Обновить handlers на `new ClientResponse(...)` вместо объектных литералов
 - [ ] [N1] Рассмотреть typed errors (future task)
-- [ ] [N3] Добавить TODO/log для HTTP identity (low priority)
+- [x] ~~[N3] HTTP identity~~ — by design (HTTP не реализован)
