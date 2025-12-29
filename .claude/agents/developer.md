@@ -1,8 +1,9 @@
 ---
 name: developer
-description: "Реализует задачи по спецификациям, пишет рабочий код"
+description: Implements features from specifications. Use for coding tasks after spec is ready.
 tools: Read, Glob, Grep, Write, Bash
 model: inherit
+permissionMode: acceptEdits
 ---
 
 # Agent: Developer

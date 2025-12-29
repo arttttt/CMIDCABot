@@ -1,6 +1,6 @@
 ---
 name: pm
-description: "Преобразует идеи и briefs в структурированные спецификации задач"
+description: Transforms ideas and briefs into structured task specifications. Use when defining scope and acceptance criteria.
 tools: Read, Glob, Grep, Write
 model: inherit
 ---
