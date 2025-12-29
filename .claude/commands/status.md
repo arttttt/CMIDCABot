@@ -1,50 +1,50 @@
 ---
-description: "Проверить статус задачи (briefs, specs, reviews)"
+description: Check task status (briefs, specs, reviews)
 argument-hint: "[name]"
 allowed-tools: Read, Glob, Grep
 ---
 
-## Задача
+## Task
 
-Показать какие артефакты существуют по задаче.
+Show which artifacts exist for a task.
 
-## Алгоритм
+## Algorithm
 
-1. **Проверь аргументы:**
-   - Если `$ARGUMENTS` пустой:
-     - Покажи общую статистику по `docs/`
-   - Иначе: ищи артефакты по имени `<name>`
+1. **Check arguments:**
+   - If `$ARGUMENTS` is empty:
+     - Show overall statistics for `docs/`
+   - Otherwise: search artifacts by name `<name>`
 
-2. **Найди артефакты:**
+2. **Find artifacts:**
    - `docs/briefs/BRIEF_*<name>*.md`
    - `docs/tasks/TASK_*<name>*.md`
    - `docs/reviews/REVIEW_*<name>*.md`
 
-3. **Выведи статус:**
+3. **Output status:**
 
 ```
 ## Status: <name>
 
-| Артефакт | Статус | Файл |
+| Artifact | Status | File |
 |----------|--------|------|
 | Brief    | ✅/❌  | path |
 | Spec     | ✅/❌  | path |
 | Review   | ✅/❌  | path |
 
-### Следующий шаг
-[Что нужно сделать дальше]
+### Next step
+[What needs to be done next]
 ```
 
-## Без аргументов — общая статистика
+## Without arguments — overall statistics
 
 ```
 ## Project Status
 
-**Briefs:** X файлов
-**Tasks:** Y файлов
-**Reviews:** Z файлов
+**Briefs:** X files
+**Tasks:** Y files
+**Reviews:** Z files
 
-### Недавние
+### Recent
 - BRIEF_xxx.md (date)
 - TASK_yyy.md (date)
 ```

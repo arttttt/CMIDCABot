@@ -1,34 +1,34 @@
 ---
-description: "Создать спецификацию задачи (TASK)"
+description: Create task specification (TASK)
 argument-hint: "<name> [description]"
 allowed-tools: Read, Write, Glob, Grep
 ---
 
-Используй subagent `pm`.
+Use subagent `pm`.
 
-## Задача
+## Task
 
-Создать спецификацию задачи для Developer.
+Create task specification for Developer.
 
-## Алгоритм
+## Algorithm
 
-1. **Проверь аргументы:**
-   - Если `$ARGUMENTS` пустой:
-     - Спроси: "Укажи название задачи и что нужно сделать"
-     - Дождись ответа
-   - Иначе: используй первое слово как `<name>`, остальное как описание
+1. **Check arguments:**
+   - If `$ARGUMENTS` is empty:
+     - Ask user for task name and what needs to be done
+     - Wait for response
+   - Otherwise: use first word as `<name>`, rest as description
 
-2. **Найди контекст:**
-   - Проверь `docs/briefs/` на связанные briefs
-   - Изучи существующий код если нужно
+2. **Find context:**
+   - Check `docs/briefs/` for related briefs
+   - Study existing code if needed
 
-3. **Создай файл:** `docs/tasks/TASK_<name>.md`
-   - Context — зачем это нужно
-   - Acceptance Criteria — чеклист с `- [ ]`
-   - Scope / Out of Scope — границы
-   - Technical Notes — подсказки
-   - Open Questions — нерешённые вопросы
+3. **Create file:** `docs/tasks/TASK_<name>.md`
+   - Context — why this is needed
+   - Acceptance Criteria — checklist with `- [ ]`
+   - Scope / Out of Scope — boundaries
+   - Technical Notes — hints
+   - Open Questions — unresolved questions
 
-## Формат имени файла
+## File naming
 
-- Используй snake_case: `TASK_portfolio_display.md`
+- Use snake_case: `TASK_portfolio_display.md`

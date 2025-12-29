@@ -1,35 +1,35 @@
 ---
-description: "Подготовить technical brief для PM"
+description: Prepare technical brief for PM
 argument-hint: "<name> [description]"
 allowed-tools: Read, Write, Glob, Grep
 ---
 
-Используй subagent `analyst`.
+Use subagent `analyst`.
 
-## Задача
+## Task
 
-Подготовить technical brief для передачи PM.
+Prepare technical brief to hand off to PM.
 
-## Алгоритм
+## Algorithm
 
-1. **Проверь аргументы:**
-   - Если `$ARGUMENTS` пустой или содержит только пробелы:
-     - Спроси: "Укажи название brief и краткое описание задачи"
-     - Дождись ответа
-   - Иначе: используй первое слово как `<name>`, остальное как описание
+1. **Check arguments:**
+   - If `$ARGUMENTS` is empty or whitespace only:
+     - Ask user for brief name and short description
+     - Wait for response
+   - Otherwise: use first word as `<name>`, rest as description
 
-2. **Исследуй контекст:**
-   - Найди связанные файлы в кодовой базе
-   - Определи технические ограничения
-   - Выяви зависимости
+2. **Research context:**
+   - Find related files in codebase
+   - Identify technical constraints
+   - Discover dependencies
 
-3. **Предложи структуру brief** — покажи пользователю план
+3. **Propose brief structure** — show user the plan
 
-4. **Дождись подтверждения** ("да", "ok", "yes")
+4. **Wait for confirmation** ("да", "ok", "yes")
 
-5. **Создай файл:** `docs/briefs/BRIEF_<name>.md`
+5. **Create file:** `docs/briefs/BRIEF_<name>.md`
 
-## Формат имени файла
+## File naming
 
-- Используй snake_case: `BRIEF_jupiter_retry.md`
-- Без пробелов и спецсимволов
+- Use snake_case: `BRIEF_jupiter_retry.md`
+- No spaces or special characters
