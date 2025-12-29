@@ -38,7 +38,7 @@ export class TelegramMessageHandler implements RequestHandler<"telegram-message"
       return StreamUtils.final({ text: GatewayMessages.UNKNOWN_COMMAND });
     }
 
-    if (!RoleGuard.canAccess(ctx, cmd.requiredRole)) {
+    if (!RoleGuard.canAccess(ctx.getRole(), cmd.requiredRole)) {
       // Mask command - return same message as unknown command
       return StreamUtils.final({ text: GatewayMessages.UNKNOWN_COMMAND });
     }

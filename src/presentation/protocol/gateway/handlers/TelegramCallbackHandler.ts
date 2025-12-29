@@ -28,7 +28,7 @@ export class TelegramCallbackHandler implements RequestHandler<"telegram-callbac
       return StreamUtils.final({ text: GatewayMessages.UNKNOWN_ACTION });
     }
 
-    if (!RoleGuard.canAccess(ctx, result.requiredRole)) {
+    if (!RoleGuard.canAccess(ctx.getRole(), result.requiredRole)) {
       // Mask callback - return same message as unknown
       return StreamUtils.final({ text: GatewayMessages.UNKNOWN_ACTION });
     }

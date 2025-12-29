@@ -233,52 +233,37 @@ export class ErrorBoundaryPlugin implements GatewayPlugin {
 
 **Файл:** `src/presentation/protocol/gateway/RoleGuard.ts`
 
-Utility class для проверки доступа — убирает дублирование в handlers:
+Utility class для проверки доступа — инкапсулирует логику иерархии ролей:
 
 ```ts
-import type { GatewayContext } from "./GatewayContext.js";
 import type { UserRole } from "../../../domain/models/AuthorizedUser.js";
-import { hasRequiredRole } from "../../../domain/models/AuthorizedUser.js";
+
+const ROLE_LEVELS: Record<UserRole, number> = {
+  owner: 3,
+  admin: 2,
+  user: 1,
+  guest: 0,
+};
 
 export class RoleGuard {
   /**
    * Check if user has access to resource with required role.
    *
-   * @param ctx - Gateway context with user role
+   * @param role - User's current role
    * @param requiredRole - Required role for the resource (undefined = no restriction)
    * @returns true if access is granted, false if denied
    */
-  static canAccess(ctx: GatewayContext, requiredRole: UserRole | undefined): boolean {
-    return !requiredRole || hasRequiredRole(ctx.getRole(), requiredRole);
+  static canAccess(role: UserRole, requiredRole: UserRole | undefined): boolean {
+    if (!requiredRole) return true;
+    return ROLE_LEVELS[role] >= ROLE_LEVELS[requiredRole];
   }
 }
 ```
 
-**Использование в TelegramMessageHandler:**
+**Использование в handlers:**
 ```ts
-// Before
-const role = ctx.getRole();
-if (cmd.requiredRole && !hasRequiredRole(role, cmd.requiredRole)) {
+if (!RoleGuard.canAccess(ctx.getRole(), cmd.requiredRole)) {
   return StreamUtils.final({ text: GatewayMessages.UNKNOWN_COMMAND });
-}
-
-// After
-if (!RoleGuard.canAccess(ctx, cmd.requiredRole)) {
-  return StreamUtils.final({ text: GatewayMessages.UNKNOWN_COMMAND });
-}
-```
-
-**Использование в TelegramCallbackHandler:**
-```ts
-// Before
-const role = ctx.getRole();
-if (result.requiredRole && !hasRequiredRole(role, result.requiredRole)) {
-  return StreamUtils.final({ text: GatewayMessages.UNKNOWN_ACTION });
-}
-
-// After
-if (!RoleGuard.canAccess(ctx, result.requiredRole)) {
-  return StreamUtils.final({ text: GatewayMessages.UNKNOWN_ACTION });
 }
 ```
 
