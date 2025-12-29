@@ -11,7 +11,7 @@ Show which artifacts exist for a task.
 ## Algorithm
 
 1. **Check arguments:**
-   - If `$ARGUMENTS` is empty:
+   - If `$ARGUMENTS` is empty or whitespace only:
      - Show overall statistics for `docs/`
    - Otherwise: search artifacts by name `<name>`
 

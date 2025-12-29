@@ -75,3 +75,4 @@ Always create file: `docs/tasks/TASK_<name>.md`
 4. **Stay lean** — don't over-specify implementation
 5. **One task = one focus** — split large requests
 6. **Always create file** — never just output to chat
+7. **Create output directory** (`docs/tasks/`) if it doesn't exist

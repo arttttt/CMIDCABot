@@ -13,7 +13,7 @@ Answer technical question or help understand code.
 ## Algorithm
 
 1. **Check arguments:**
-   - If `$ARGUMENTS` is empty: ask user for their question
+   - If `$ARGUMENTS` is empty or whitespace only: ask user for their question
    - Otherwise: use as the question
 
 2. **Analyze:**

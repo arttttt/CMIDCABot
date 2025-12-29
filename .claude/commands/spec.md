@@ -13,7 +13,7 @@ Create task specification for Developer.
 ## Algorithm
 
 1. **Check arguments:**
-   - If `$ARGUMENTS` is empty:
+   - If `$ARGUMENTS` is empty or whitespace only:
      - Ask user for task name and what needs to be done
      - Wait for response
    - Otherwise: use first word as `<name>`, rest as description
@@ -28,6 +28,14 @@ Create task specification for Developer.
    - Scope / Out of Scope — boundaries
    - Technical Notes — hints
    - Open Questions — unresolved questions
+
+## Name sanitization
+
+If user input contains invalid characters:
+- Replace spaces with `_`
+- Remove special characters except `-` and `_`
+- Convert to lowercase
+- Example: "My Cool Feature!" → `my_cool_feature`
 
 ## File naming
 
