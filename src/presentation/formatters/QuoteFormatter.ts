@@ -9,19 +9,19 @@ import { Markdown } from "./markdown.js";
 export class QuoteFormatter {
   format(result: GetQuoteResult): ClientResponse {
     if (result.status === "unavailable") {
-      return { text: `❌ Quote service is not available (requires ${Markdown.code("JUPITER_API_KEY")})` };
+      return new ClientResponse(`❌ Quote service is not available (requires ${Markdown.code("JUPITER_API_KEY")})`);
     }
 
     if (result.status === "invalid_amount") {
-      return { text: `❌ Invalid amount: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`❌ Invalid amount: ${Markdown.escape(result.message ?? "")}`);
     }
 
     if (result.status === "invalid_asset") {
-      return { text: `❌ Invalid asset: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`❌ Invalid asset: ${Markdown.escape(result.message ?? "")}`);
     }
 
     if (result.status === "error") {
-      return { text: `❌ Failed to get quote: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`❌ Failed to get quote: ${Markdown.escape(result.message ?? "")}`);
     }
 
     const { quote } = result;
@@ -48,12 +48,12 @@ export class QuoteFormatter {
       `_Quote valid for ~30 seconds_`,
     ];
 
-    return { text: lines.join("\n") };
+    return new ClientResponse(lines.join("\n"));
   }
 
   formatUsage(): ClientResponse {
-    return {
-      text: [
+    return new ClientResponse(
+      [
         "*Swap Quote*",
         "",
         "Get a swap quote without executing the trade.",
@@ -69,7 +69,7 @@ export class QuoteFormatter {
         "",
         "_This is a read-only operation, no funds are moved._",
       ].join("\n"),
-    };
+    );
   }
 
   private formatAmount(amount: number): string {

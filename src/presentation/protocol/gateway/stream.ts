@@ -51,6 +51,36 @@ export class StreamUtils {
   }
 
   /**
+   * Wrap stream with error handling (async factory version)
+   *
+   * Like catch(), but accepts an async factory that returns Promise<ClientResponseStream>.
+   * Use this when wrapping handler chains where each handler returns Promise.
+   *
+   * @param factory - Async function that creates the stream
+   * @param onError - Error handler that returns a response
+   */
+  static async *catchAsync(
+    factory: () => Promise<ClientResponseStream>,
+    onError: (error: unknown) => ClientResponse,
+  ): ClientResponseStream {
+    let stream: ClientResponseStream;
+    try {
+      stream = await factory();
+    } catch (error) {
+      yield { response: onError(error), mode: "final" };
+      return;
+    }
+
+    try {
+      for await (const item of stream) {
+        yield item;
+      }
+    } catch (error) {
+      yield { response: onError(error), mode: "final" };
+    }
+  }
+
+  /**
    * Wrap single response as final stream
    *
    * Convenience helper for returning simple responses.

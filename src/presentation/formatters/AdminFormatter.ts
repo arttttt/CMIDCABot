@@ -31,24 +31,21 @@ Examples:
    * Format remove user usage message
    */
   formatRemoveUsage(): ClientResponse {
-    return {
-      text: `Usage: /admin remove <user>
+    return new ClientResponse(`Usage: /admin remove <user>
 
 Arguments:
   user - Username (@username) or Telegram ID (required)
 
 Examples:
   /admin remove @username
-  /admin remove 123456789`,
-    };
+  /admin remove 123456789`);
   }
 
   /**
    * Format role change usage message
    */
   formatRoleUsage(): ClientResponse {
-    return {
-      text: `Usage: /admin role <user> <role>
+    return new ClientResponse(`Usage: /admin role <user> <role>
 
 Arguments:
   user - Username (@username) or Telegram ID (required)
@@ -56,8 +53,7 @@ Arguments:
 
 Examples:
   /admin role @username admin
-  /admin role 123456789 admin`,
-    };
+  /admin role 123456789 admin`);
   }
 
   /**
@@ -65,9 +61,9 @@ Examples:
    */
   formatResult(result: AdminOperationResult): ClientResponse {
     if (result.success) {
-      return { text: Markdown.escape(result.message ?? "") };
+      return new ClientResponse(Markdown.escape(result.message ?? ""));
     }
-    return { text: `Error: ${Markdown.escape(result.error ?? "")}` };
+    return new ClientResponse(`Error: ${Markdown.escape(result.error ?? "")}`);
   }
 
   /**
@@ -75,7 +71,7 @@ Examples:
    */
   formatUserList(users: AuthorizedUser[]): ClientResponse {
     if (users.length === 0) {
-      return { text: "No authorized users." };
+      return new ClientResponse("No authorized users.");
     }
 
     const lines = ["Authorized Users:", ""];
@@ -89,7 +85,7 @@ Examples:
     lines.push("");
     lines.push(`Total: ${users.length} user(s)`);
 
-    return { text: lines.join("\n") };
+    return new ClientResponse(lines.join("\n"));
   }
 
   /**
@@ -117,28 +113,28 @@ Examples:
       "Note: Owner cannot be modified.",
     );
 
-    return { text: lines.join("\n") };
+    return new ClientResponse(lines.join("\n"));
   }
 
   /**
    * Format version info
    */
   formatVersion(version: string): ClientResponse {
-    return { text: `CMI DCA Bot v${version}` };
+    return new ClientResponse(`CMI DCA Bot v${version}`);
   }
 
   /**
    * Format permission denied message
    */
   formatPermissionDenied(): ClientResponse {
-    return { text: "Permission denied. Admin privileges required." };
+    return new ClientResponse("Permission denied. Admin privileges required.");
   }
 
   /**
    * Format invalid role message
    */
   formatInvalidRole(role: string): ClientResponse {
-    return { text: `Invalid role: ${Markdown.escape(role)}\nValid roles: user, admin` };
+    return new ClientResponse(`Invalid role: ${Markdown.escape(role)}\nValid roles: user, admin`);
   }
 
   /**
@@ -146,9 +142,9 @@ Examples:
    */
   formatResolveError(identifier: string, error?: string): ClientResponse {
     if (error) {
-      return { text: `Error: ${Markdown.escape(error)}` };
+      return new ClientResponse(`Error: ${Markdown.escape(error)}`);
     }
-    return { text: `Could not resolve user: ${Markdown.escape(identifier)}` };
+    return new ClientResponse(`Could not resolve user: ${Markdown.escape(identifier)}`);
   }
 }
 

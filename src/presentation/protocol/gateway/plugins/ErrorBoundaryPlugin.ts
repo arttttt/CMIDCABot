@@ -18,7 +18,7 @@ class ErrorBoundaryHandler implements GatewayHandler {
 
   handle(req: GatewayRequest, ctx: GatewayContext): Promise<ClientResponseStream> {
     return Promise.resolve(
-      StreamUtils.catch(
+      StreamUtils.catchAsync(
         () => this.next.handle(req, ctx),
         (error) => this.handleError(error, ctx),
       ),

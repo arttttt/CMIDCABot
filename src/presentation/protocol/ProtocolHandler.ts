@@ -57,7 +57,7 @@ export class ProtocolHandler {
       return this.handleCommand(command, args, ctx.telegramId);
     }
 
-    return { text: "Unknown command. Use /help to see available commands." };
+    return new ClientResponse("Unknown command. Use /help to see available commands.");
   }
 
   /**
@@ -76,7 +76,7 @@ export class ProtocolHandler {
     }
 
     yield {
-      response: { text: "Unknown command. Use /help to see available commands." },
+      response: new ClientResponse("Unknown command. Use /help to see available commands."),
       mode: "final",
     };
   }
@@ -94,9 +94,7 @@ export class ProtocolHandler {
     // /help - show commands available to user based on role
     if (command === "/help") {
       const availableCommands = this.filterCommandsByRole(this.registry.getCommands(), userRole);
-      return {
-        text: this.helpFormatter.formatHelp(availableCommands, modeInfo),
-      };
+      return new ClientResponse(this.helpFormatter.formatHelp(availableCommands, modeInfo));
     }
 
     // Extract command name (remove leading /)
@@ -105,14 +103,14 @@ export class ProtocolHandler {
     // Look up command in registry
     const cmd = this.registry.getCommand(commandName);
     if (!cmd) {
-      return { text: `Unknown command: ${command}\nUse /help to see available commands.` };
+      return new ClientResponse(`Unknown command: ${command}\nUse /help to see available commands.`);
     }
 
     // Check if user has required role for this command
     const requiredRole = cmd.requiredRole;
     if (requiredRole && !hasRequiredRole(userRole, requiredRole)) {
       // Return "unknown command" to hide restricted commands
-      return { text: `Unknown command: ${command}\nUse /help to see available commands.` };
+      return new ClientResponse(`Unknown command: ${command}\nUse /help to see available commands.`);
     }
 
     // Route through command tree
@@ -133,7 +131,7 @@ export class ProtocolHandler {
     if (command === "/help") {
       const availableCommands = this.filterCommandsByRole(this.registry.getCommands(), userRole);
       yield {
-        response: { text: this.helpFormatter.formatHelp(availableCommands, modeInfo) },
+        response: new ClientResponse(this.helpFormatter.formatHelp(availableCommands, modeInfo)),
         mode: "final",
       };
       return;
@@ -146,7 +144,7 @@ export class ProtocolHandler {
     const cmd = this.registry.getCommand(commandName);
     if (!cmd) {
       yield {
-        response: { text: `Unknown command: ${command}\nUse /help to see available commands.` },
+        response: new ClientResponse(`Unknown command: ${command}\nUse /help to see available commands.`),
         mode: "final",
       };
       return;
@@ -157,7 +155,7 @@ export class ProtocolHandler {
     if (requiredRole && !hasRequiredRole(userRole, requiredRole)) {
       // Return "unknown command" to hide restricted commands
       yield {
-        response: { text: `Unknown command: ${command}\nUse /help to see available commands.` },
+        response: new ClientResponse(`Unknown command: ${command}\nUse /help to see available commands.`),
         mode: "final",
       };
       return;
@@ -188,14 +186,14 @@ export class ProtocolHandler {
   async handleCallback(ctx: UICallbackContext): Promise<ClientResponse> {
     const result = findCallbackByPath(this.registry.getCommands(), ctx.callbackData);
     if (!result) {
-      return { text: "Unknown action." };
+      return new ClientResponse("Unknown action.");
     }
 
     // Check role requirement
     if (result.requiredRole) {
       const userRole: UserRole = (await this.authHelper.getRole(ctx.telegramId)) ?? "guest";
       if (!hasRequiredRole(userRole, result.requiredRole)) {
-        return { text: "Unknown action." };
+        return new ClientResponse("Unknown action.");
       }
     }
 

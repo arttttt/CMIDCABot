@@ -9,39 +9,37 @@ import { Markdown } from "./markdown.js";
 export class SimulateFormatter {
   format(result: SimulateSwapResult): ClientResponse {
     if (result.status === "unavailable") {
-      return { text: `Simulation unavailable (requires ${Markdown.code("JUPITER_API_KEY")})` };
+      return new ClientResponse(`Simulation unavailable (requires ${Markdown.code("JUPITER_API_KEY")})`);
     }
 
     if (result.status === "no_wallet") {
-      return {
-        text: `No wallet found. Create one with ${Markdown.code("/wallet create")}`,
-      };
+      return new ClientResponse(`No wallet found. Create one with ${Markdown.code("/wallet create")}`);
     }
 
     if (result.status === "insufficient_balance") {
-      return {
-        text: `Insufficient USDC balance.\nRequired: ${result.required} USDC\nAvailable: ${result.available} USDC`,
-      };
+      return new ClientResponse(
+        `Insufficient USDC balance.\nRequired: ${result.required} USDC\nAvailable: ${result.available} USDC`,
+      );
     }
 
     if (result.status === "invalid_amount") {
-      return { text: `Invalid amount: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`Invalid amount: ${Markdown.escape(result.message ?? "")}`);
     }
 
     if (result.status === "invalid_asset") {
-      return { text: `Invalid asset: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`Invalid asset: ${Markdown.escape(result.message ?? "")}`);
     }
 
     if (result.status === "quote_error") {
-      return { text: `Failed to get quote: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`Failed to get quote: ${Markdown.escape(result.message ?? "")}`);
     }
 
     if (result.status === "build_error") {
-      return { text: `Failed to build transaction: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`Failed to build transaction: ${Markdown.escape(result.message ?? "")}`);
     }
 
     if (result.status === "simulation_error") {
-      return { text: `Simulation failed: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`Simulation failed: ${Markdown.escape(result.message ?? "")}`);
     }
 
     const { quote, simulation } = result;
@@ -91,12 +89,12 @@ export class SimulateFormatter {
       lines.push("_Transaction ready for execution_");
     }
 
-    return { text: lines.join("\n") };
+    return new ClientResponse(lines.join("\n"));
   }
 
   formatUsage(): ClientResponse {
-    return {
-      text: [
+    return new ClientResponse(
+      [
         "*Swap Simulate*",
         "",
         "Simulate a swap transaction without executing it.",
@@ -113,7 +111,7 @@ export class SimulateFormatter {
         "",
         "_No funds are moved. This tests if the swap would succeed._",
       ].join("\n"),
-    };
+    );
   }
 
   private formatAmount(amount: number): string {
