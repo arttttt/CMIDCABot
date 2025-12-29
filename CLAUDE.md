@@ -122,15 +122,30 @@ Next step (single actionable line)
 
 Correctness over completeness. A compact, accurate patch beats a broad, speculative answer.
 
-## Roles
+## Commands
 
-Available roles in `prompts/`:
-- `ROLE_SA.md` — answers technical questions, prepare briefs
-- `ROLE_PM.md` — converts ideas into specs
-- `ROLE_DEV.md` — implements features
-- `ROLE_CR.md` — reviews code
+Slash-команды для работы с проектом:
 
-Activate with: `[SA]`, `[PM]`, `[DEV]`, or `[CR]` prefix in message.
+| Команда | Назначение | Выход |
+|---------|------------|-------|
+| `/brief <name>` | Technical brief для PM | `docs/briefs/BRIEF_*.md` |
+| `/consult` | Техническая консультация | ответ в чат |
+| `/spec <name>` | Спецификация задачи | `docs/tasks/TASK_*.md` |
+| `/implement <name>` | Реализация по спеку | код |
+| `/review <path>` | Code review | `docs/reviews/REVIEW_*.md` |
+| `/status [name]` | Статус артефактов | ответ в чат |
+
+Аргумент опционален — если не указан, команда спросит интерактивно.
+
+## Agents
+
+Агенты в `.claude/agents/`:
+- `analyst` — технический анализ, briefs
+- `pm` — спецификации задач
+- `developer` — реализация
+- `reviewer` — code review
+
+Агенты вызываются автоматически через команды.
 
 ## Useful Links
 
