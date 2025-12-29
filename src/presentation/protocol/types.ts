@@ -17,11 +17,12 @@ export interface ClientButton {
 /**
  * Unified client response format
  */
-export interface ClientResponse {
-  text: string;
-  buttons?: ClientButton[][];
-  /** If true, the adapter should delete the user's original message (for sensitive data like private keys) */
-  deleteUserMessage?: boolean;
+export class ClientResponse {
+  constructor(
+    public readonly text: string,
+    public readonly buttons?: ClientButton[][],
+    public readonly deleteUserMessage?: boolean,
+  ) {}
 }
 
 /**

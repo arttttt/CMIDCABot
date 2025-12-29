@@ -14,8 +14,7 @@ export class AdminFormatter {
    * Format add user usage message
    */
   formatAddUsage(): ClientResponse {
-    return {
-      text: `Usage: /admin add <user> [role]
+    return new ClientResponse(`Usage: /admin add <user> [role]
 
 Arguments:
   user - Username (@username) or Telegram ID (required)
@@ -25,8 +24,7 @@ Examples:
   /admin add @username
   /admin add @username admin
   /admin add 123456789
-  /admin add 123456789 admin`,
-    };
+  /admin add 123456789 admin`);
   }
 
   /**

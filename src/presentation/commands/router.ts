@@ -57,7 +57,7 @@ export async function routeCommand(
   }
 
   // No handler - return unknown subcommand message
-  return { text: `Unknown subcommand. Use /help for available commands.` };
+  return new ClientResponse(`Unknown subcommand. Use /help for available commands.`);
 }
 
 /**
@@ -93,7 +93,7 @@ export async function* routeCommandStreaming(
 
   // No handler - return unknown subcommand message
   yield {
-    response: { text: `Unknown subcommand. Use /help for available commands.` },
+    response: new ClientResponse(`Unknown subcommand. Use /help for available commands.`),
     mode: "final",
   };
 }

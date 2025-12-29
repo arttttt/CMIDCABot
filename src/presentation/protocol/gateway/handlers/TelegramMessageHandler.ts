@@ -11,7 +11,7 @@ import type { CommandRegistry } from "../../../commands/types.js";
 import type { ClientResponseStream } from "../../types.js";
 import { StreamUtils } from "../stream.js";
 import { GatewayMessages } from "../messages.js";
-import { hasRequiredRole } from "../../../../domain/models/AuthorizedUser.js";
+import { RoleGuard } from "../RoleGuard.js";
 import { routeCommandStreaming } from "../../../commands/router.js";
 
 export class TelegramMessageHandler implements RequestHandler<"telegram-message"> {
@@ -38,8 +38,7 @@ export class TelegramMessageHandler implements RequestHandler<"telegram-message"
       return StreamUtils.final({ text: GatewayMessages.UNKNOWN_COMMAND });
     }
 
-    const role = ctx.getRole();
-    if (cmd.requiredRole && !hasRequiredRole(role, cmd.requiredRole)) {
+    if (!RoleGuard.canAccess(ctx, cmd.requiredRole)) {
       // Mask command - return same message as unknown command
       return StreamUtils.final({ text: GatewayMessages.UNKNOWN_COMMAND });
     }

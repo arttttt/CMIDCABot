@@ -51,6 +51,7 @@ export { AddAuthorizedUserUseCase, type AddAuthorizedUserResult } from "./AddAut
 export { RemoveAuthorizedUserUseCase, type RemoveAuthorizedUserResult } from "./RemoveAuthorizedUserUseCase.js";
 export { UpdateUserRoleUseCase, type UpdateUserRoleResult } from "./UpdateUserRoleUseCase.js";
 export { GetAllAuthorizedUsersUseCase, type GetAllAuthorizedUsersResult } from "./GetAllAuthorizedUsersUseCase.js";
+export { GetUserRoleUseCase } from "./GetUserRoleUseCase.js";
 
 // Mock Purchase (dev-only)
 export { ExecuteMockPurchaseUseCase, type MockPurchaseResult } from "./ExecuteMockPurchaseUseCase.js";
