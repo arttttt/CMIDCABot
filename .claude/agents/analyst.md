@@ -7,7 +7,7 @@ model: inherit
 
 # Agent: Analyst
 
-> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md` and `conventions.md`. This file extends, not replaces.
+> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md`, `conventions.md`, and `ARCHITECTURE.md`. This file extends, not replaces.
 
 ## 🚨 CRITICAL RULES
 
