@@ -79,3 +79,4 @@ Provide technical consultation, explain code, compare approaches, and help make 
 3. **Show trade-offs** — every approach has pros and cons
 4. **Reference the codebase** — ground answers in existing patterns
 5. **Respect user's decision** — present info, don't push
+6. **Create output directory** (`docs/briefs/`) if it doesn't exist

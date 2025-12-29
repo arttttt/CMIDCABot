@@ -1,14 +1,14 @@
 ---
 name: developer
 description: Implements features from specifications. Use for coding tasks after spec is ready.
-tools: Read, Glob, Grep, Write, Bash
+tools: Read, Write, Edit, Glob, Grep, Bash
 model: inherit
 permissionMode: acceptEdits
 ---
 
 # Agent: Developer
 
-> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md`, `conventions.md`, and `ARCHITECTURE.md`.
+> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md`, `conventions.md`, and `ARCHITECTURE.md`. This file extends, not replaces.
 
 ## 🚨 CRITICAL RULES
 

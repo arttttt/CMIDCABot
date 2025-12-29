@@ -7,7 +7,7 @@ model: inherit
 
 # Agent: Reviewer
 
-> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md` and `conventions.md`. Read `ARCHITECTURE.md` before every review.
+> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md`, `conventions.md`, and `ARCHITECTURE.md`. This file extends, not replaces. Read `ARCHITECTURE.md` before every review.
 
 ## 🚨 CRITICAL RULES
 
@@ -98,6 +98,10 @@ Analyze code for correctness, architecture compliance, edge cases, and security.
 - [ ] [Item 1]
 - [ ] [Item 2]
 ```
+
+## Rules
+
+1. **Create output directory** (`docs/reviews/`) if it doesn't exist
 
 ## Severity Guide
 

@@ -29,6 +29,14 @@ Prepare technical brief to hand off to PM.
 
 5. **Create file:** `docs/briefs/BRIEF_<name>.md`
 
+## Name sanitization
+
+If user input contains invalid characters:
+- Replace spaces with `_`
+- Remove special characters except `-` and `_`
+- Convert to lowercase
+- Example: "My Cool Feature!" → `my_cool_feature`
+
 ## File naming
 
 - Use snake_case: `BRIEF_jupiter_retry.md`

@@ -1,7 +1,7 @@
 ---
 description: Code review of files or component
 argument-hint: "<file_path> | <component_name>"
-allowed-tools: Read, Glob, Grep, Write
+allowed-tools: Read, Write, Glob, Grep
 ---
 
 Use subagent `reviewer`.
@@ -13,7 +13,7 @@ Conduct code review and create report.
 ## Algorithm
 
 1. **Check arguments:**
-   - If `$ARGUMENTS` is empty:
+   - If `$ARGUMENTS` is empty or whitespace only:
      - Ask user what to review (file path or component name)
    - Otherwise: use as review scope
 
@@ -26,6 +26,14 @@ Conduct code review and create report.
    - Code quality
 
 4. **Create file:** `docs/reviews/REVIEW_<name>.md`
+
+## Name sanitization
+
+If user input contains invalid characters:
+- Replace spaces with `_`
+- Remove special characters except `-` and `_`
+- Convert to lowercase
+- Example: "My Cool Feature!" → `my_cool_feature`
 
 ## File naming
 
