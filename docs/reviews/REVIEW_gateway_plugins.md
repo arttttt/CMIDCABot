@@ -32,45 +32,13 @@
 
 ### 🟡 Should Fix (important but not blocking)
 
-#### [S1] Дублирование ROLE_LEVELS между AuthorizedUser и RoleGuard
+#### ~~[S1] Дублирование ROLE_LEVELS между AuthorizedUser и RoleGuard~~ — BY DESIGN
 
 **Location:**
 - `src/domain/models/AuthorizedUser.ts:61-66`
 - `src/presentation/protocol/gateway/RoleGuard.ts:12-17`
 
-**Issue:** Иерархия ролей определена в двух местах:
-```typescript
-// AuthorizedUser.ts
-const ROLE_LEVELS: Record<UserRole, number> = {
-  owner: 3, admin: 2, user: 1, guest: 0,
-};
-export function hasRequiredRole(userRole: UserRole, requiredRole: UserRole): boolean {...}
-
-// RoleGuard.ts
-private static readonly ROLE_LEVELS: Record<UserRole, number> = {
-  owner: 3, admin: 2, user: 1, guest: 0,
-};
-```
-
-**Impact:** При изменении иерархии ролей нужно обновлять оба места. Нарушение DRY.
-
-**Suggestion:** Варианты решения:
-1. `RoleGuard` использует `hasRequiredRole` из `AuthorizedUser` (domain остаётся source of truth)
-2. `RoleGuard` импортирует `ROLE_LEVELS` из `AuthorizedUser` (но они private)
-3. Оставить как есть, но добавить комментарий-ссылку между файлами
-
-Рекомендуется вариант 1:
-```typescript
-// RoleGuard.ts
-import { hasRequiredRole } from "../../../domain/models/AuthorizedUser.js";
-
-export class RoleGuard {
-  static canAccess(role: UserRole, requiredRole: UserRole | undefined): boolean {
-    if (!requiredRole) return true;
-    return hasRequiredRole(role, requiredRole);
-  }
-}
-```
+**Note:** Дублирование сделано намеренно. `RoleGuard` — новый механизм, `hasRequiredRole` в `AuthorizedUser` будет удалён при полной миграции на Gateway. Не требует действий.
 
 ---
 
@@ -154,7 +122,7 @@ return "guest";
 | Category | Status | Notes |
 |----------|--------|-------|
 | Correctness | ✅ | Логика корректная, edge cases обработаны |
-| Architecture | ⚠️ | Дублирование ROLE_LEVELS между layers |
+| Architecture | ✅ | Дублирование ROLE_LEVELS — by design (миграция) |
 | Security | ✅ | Role-based access control, mask unknown commands |
 | Code Quality | ⚠️ | Inconsistent ClientResponse usage |
 | Conventions | ✅ | Trailing commas, English comments, static methods |
@@ -163,7 +131,7 @@ return "guest";
 
 ## Action Items
 
-- [ ] [S1] Устранить дублирование ROLE_LEVELS — использовать `hasRequiredRole` из domain
+- [x] ~~[S1] Дублирование ROLE_LEVELS~~ — by design (миграция на RoleGuard)
 - [ ] [S2] Обновить handlers на `new ClientResponse(...)` вместо объектных литералов
 - [ ] [N1] Рассмотреть typed errors (future task)
 - [ ] [N3] Добавить TODO/log для HTTP identity (low priority)
