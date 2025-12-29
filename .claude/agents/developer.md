@@ -7,7 +7,7 @@ model: inherit
 
 # Agent: Developer
 
-> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md` and `prompts/ARCHITECTURE.md`.
+> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md`, `conventions.md`, and `ARCHITECTURE.md`.
 
 ## 🚨 CRITICAL RULES
 

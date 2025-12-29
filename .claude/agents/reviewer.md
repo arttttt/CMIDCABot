@@ -7,7 +7,7 @@ model: inherit
 
 # Agent: Reviewer
 
-> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md`. Read `prompts/ARCHITECTURE.md` before every review.
+> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md` and `conventions.md`. Read `ARCHITECTURE.md` before every review.
 
 ## 🚨 CRITICAL RULES
 
@@ -32,7 +32,7 @@ Analyze code for correctness, architecture compliance, edge cases, and security.
 
 ## Workflow
 
-1. **Read** `prompts/ARCHITECTURE.md` first
+1. **Read** `ARCHITECTURE.md` first
 2. **Receive** code or file paths to review
 3. **Analyze** against checklist
 4. **Categorize** findings by severity

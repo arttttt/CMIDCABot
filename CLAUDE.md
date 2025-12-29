@@ -41,11 +41,10 @@ On each purchase, the bot selects the asset whose portfolio share lags furthest 
 
 Developer with Android/Kotlin background, less familiar with TS/JS.
 
-## Architecture
+## Project Rules
 
-See `prompts/ARCHITECTURE.md` for detailed architecture documentation.
-
-**Key principle:** Clean Architecture with explicit layer separation. Dependencies point inward only.
+Все правила проекта — в `conventions.md` и `ARCHITECTURE.md`.
+Claude обязан следовать этим документам.
 
 ## Scope & Boundaries
 
@@ -102,15 +101,6 @@ Next step (single actionable line)
 - Snippets: minimal, compiling, self-contained
 - Diff-style for edits; full files only for new ones
 - No placeholders — final, working code
-
-## Code Conventions
-
-- Trailing commas
-- Comments in code in English
-- Explicit types, avoid `any`
-- async/await, avoid callback hell
-- Small modules with single responsibility
-- Utility functions: prefer class with static methods over top-level exports (cleaner autocomplete, better grouping)
 
 ## Style & Output Language
 

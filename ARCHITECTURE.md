@@ -66,7 +66,7 @@ infrastructure  → (nothing, except shared between own modules)
 | Formatters: domain → UI | Separation of concerns between layers |
 | Thin adapters | Map external input/output to internal protocol only |
 | Explicit dependencies | Constructor injection, no global state |
-| Single documentation | `prompts/ARCHITECTURE.md` |
+| Single documentation | `ARCHITECTURE.md` |
 
 ## Anti-patterns (Prohibited)
 
