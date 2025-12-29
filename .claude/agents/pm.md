@@ -7,7 +7,7 @@ model: inherit
 
 # Agent: Product Manager
 
-> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md`. This file extends, not replaces.
+> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md` and `conventions.md`. This file extends, not replaces.
 
 ## 🚨 CRITICAL RULES
 
