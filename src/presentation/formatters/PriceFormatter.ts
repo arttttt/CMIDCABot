@@ -9,11 +9,11 @@ import { Markdown } from "./markdown.js";
 export class PriceFormatter {
   format(result: GetPricesResult): ClientResponse {
     if (result.status === "unavailable") {
-      return { text: "❌ Prices are not available (dev mode only)" };
+      return new ClientResponse("❌ Prices are not available (dev mode only)");
     }
 
     if (result.status === "error") {
-      return { text: `❌ Failed to fetch prices: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`❌ Failed to fetch prices: ${Markdown.escape(result.message ?? "")}`);
     }
 
     const { prices, source, fetchedAt } = result;
@@ -30,7 +30,7 @@ export class PriceFormatter {
       `Updated: ${timeStr}`,
     ];
 
-    return { text: lines.join("\n") };
+    return new ClientResponse(lines.join("\n"));
   }
 
   private formatPrice(price: number): string {

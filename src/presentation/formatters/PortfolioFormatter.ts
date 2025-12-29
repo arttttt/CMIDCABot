@@ -11,32 +11,28 @@ export class PortfolioFormatter {
   formatStatus(result: PortfolioStatusResult): ClientResponse {
     switch (result.type) {
       case "unavailable":
-        return {
-          text: `Portfolio tracking is not available. ${Markdown.code("JUPITER_API_KEY")} is required.`,
-        };
+        return new ClientResponse(
+          `Portfolio tracking is not available. ${Markdown.code("JUPITER_API_KEY")} is required.`,
+        );
 
       case "error":
-        return {
-          text: "Failed to fetch portfolio. Please try again later.",
-        };
+        return new ClientResponse("Failed to fetch portfolio. Please try again later.");
 
       case "not_found":
-        return {
-          text:
-            "No wallet connected.\n\n" +
+        return new ClientResponse(
+          "No wallet connected.\n\n" +
             "Use /wallet create to create a wallet first.",
-        };
+        );
 
       case "empty":
-        return {
-          text:
-            "Your portfolio is empty.\n\n" +
+        return new ClientResponse(
+          "Your portfolio is empty.\n\n" +
             "Target allocations:\n" +
             `• BTC: ${(TARGET_ALLOCATIONS.BTC * 100).toFixed(0)}%\n` +
             `• ETH: ${(TARGET_ALLOCATIONS.ETH * 100).toFixed(0)}%\n` +
             `• SOL: ${(TARGET_ALLOCATIONS.SOL * 100).toFixed(0)}%\n\n` +
             "Use /portfolio buy {amount} to start building your portfolio.",
-        };
+        );
 
       case "success": {
         const status = result.status!;
@@ -67,22 +63,21 @@ export class PortfolioFormatter {
           text += `Portfolio is balanced`;
         }
 
-        return { text };
+        return new ClientResponse(text);
       }
 
       default:
-        return { text: "Unable to retrieve portfolio status." };
+        return new ClientResponse("Unable to retrieve portfolio status.");
     }
   }
 
   formatUnknownSubcommand(): ClientResponse {
-    return {
-      text:
-        "Unknown portfolio command.\n\n" +
+    return new ClientResponse(
+      "Unknown portfolio command.\n\n" +
         "Available commands:\n" +
         "/portfolio - Show portfolio status\n" +
         "/portfolio buy {amount} - Buy asset (USDC)",
-    };
+    );
   }
 
   private formatBalance(balance: number, symbol: string): string {

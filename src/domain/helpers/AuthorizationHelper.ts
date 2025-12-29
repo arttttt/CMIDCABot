@@ -63,6 +63,7 @@ export class AuthorizationHelper {
 
   /**
    * Get user's role
+   * @deprecated Use GetUserRoleUseCase instead. This method will be removed in future versions.
    */
   async getRole(telegramId: number): Promise<UserRole | undefined> {
     if (telegramId === this.ownerTelegramId) return "owner";

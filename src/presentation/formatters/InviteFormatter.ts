@@ -22,14 +22,12 @@ export class InviteFormatter {
         const roleLabel = Markdown.escape(ROLE_LABELS[result.role]);
         const expiresIn = this.formatExpiresIn(result.expiresAt);
 
-        return {
-          text: `Invite link created:\n${link}\n\nRole: ${roleLabel}\nExpires: ${expiresIn}`,
-        };
+        return new ClientResponse(`Invite link created:\n${link}\n\nRole: ${roleLabel}\nExpires: ${expiresIn}`);
       }
       case "not_authorized":
-        return { text: "Error: You are not authorized to create invites." };
+        return new ClientResponse("Error: You are not authorized to create invites.");
       case "cannot_create_role":
-        return { text: `Error: You cannot create invites for role '${Markdown.escape(result.role ?? "")}'.` };
+        return new ClientResponse(`Error: You cannot create invites for role '${Markdown.escape(result.role ?? "")}'.`);
     }
   }
 
@@ -40,18 +38,16 @@ export class InviteFormatter {
     switch (result.type) {
       case "success": {
         const roleLabel = Markdown.escape(ROLE_LABELS[result.role]);
-        return {
-          text: `Welcome! You have been authorized as '${roleLabel}'.\nUse /help to see available commands.`,
-        };
+        return new ClientResponse(`Welcome! You have been authorized as '${roleLabel}'.\nUse /help to see available commands.`);
       }
       case "invalid_token":
-        return { text: "Invalid invite link." };
+        return new ClientResponse("Invalid invite link.");
       case "token_expired":
-        return { text: "This invite link has expired." };
+        return new ClientResponse("This invite link has expired.");
       case "token_already_used":
-        return { text: "This invite link has already been used." };
+        return new ClientResponse("This invite link has already been used.");
       case "already_authorized":
-        return { text: "You are already authorized. Use /help to see available commands." };
+        return new ClientResponse("You are already authorized. Use /help to see available commands.");
     }
   }
 
@@ -59,8 +55,8 @@ export class InviteFormatter {
    * Format invite usage message
    */
   formatUsage(): ClientResponse {
-    return {
-      text: `Usage: /admin invite [role]
+    return new ClientResponse(
+      `Usage: /admin invite [role]
 
 Arguments:
   role - User role: user, admin (default: user)
@@ -71,7 +67,7 @@ Examples:
   /admin invite admin
 
 Note: Admins can only create invites for 'user' role.`,
-    };
+    );
   }
 
   /**

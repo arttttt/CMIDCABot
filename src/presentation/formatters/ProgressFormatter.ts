@@ -12,7 +12,7 @@
 
 import type { SwapStep, PurchaseStep, QuoteInfo } from "../../domain/models/index.js";
 import type { AssetAllocation } from "../../domain/models/PortfolioTypes.js";
-import type { ClientResponse } from "../protocol/types.js";
+import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
 /**
@@ -45,14 +45,14 @@ export class ProgressFormatter {
       case "checking_balance":
         // Static status message - no escape needed
         return {
-          response: { text: "Checking USDC balance..." },
+          response: new ClientResponse("Checking USDC balance..."),
           mode: "edit",
         };
 
       case "getting_quote":
         // Static status message - no escape needed
         return {
-          response: { text: "Getting quote from Jupiter..." },
+          response: new ClientResponse("Getting quote from Jupiter..."),
           mode: "edit",
         };
 
@@ -65,14 +65,14 @@ export class ProgressFormatter {
       case "building_transaction":
         // Static status message - no escape needed
         return {
-          response: { text: "Building transaction..." },
+          response: new ClientResponse("Building transaction..."),
           mode: "edit",
         };
 
       case "sending_transaction":
         // Static status message - no escape needed
         return {
-          response: { text: "Signing and sending transaction..." },
+          response: new ClientResponse("Signing and sending transaction..."),
           mode: "edit",
         };
 
@@ -93,14 +93,14 @@ export class ProgressFormatter {
       case "checking_balance":
         // Static status message - no escape needed
         return {
-          response: { text: "Checking USDC balance..." },
+          response: new ClientResponse("Checking USDC balance..."),
           mode: "edit",
         };
 
       case "selecting_asset":
         // Static status message - no escape needed
         return {
-          response: { text: "Analyzing portfolio allocation..." },
+          response: new ClientResponse("Analyzing portfolio allocation..."),
           mode: "edit",
         };
 
@@ -139,7 +139,7 @@ export class ProgressFormatter {
       `Route: ${Markdown.escape(routeStr)}`,
     ];
 
-    return { text: lines.join("\n") };
+    return new ClientResponse(lines.join("\n"));
   }
 
   /**
@@ -160,7 +160,7 @@ export class ProgressFormatter {
       `${Markdown.escape(selection.symbol)} is the most underweight asset.`,
     ];
 
-    return { text: lines.join("\n") };
+    return new ClientResponse(lines.join("\n"));
   }
 
   private formatAmount(amount: number): string {

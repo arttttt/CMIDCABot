@@ -9,47 +9,44 @@ import { Markdown } from "./markdown.js";
 export class SwapFormatter {
   format(result: SwapResult): ClientResponse {
     if (result.status === "unavailable") {
-      return { text: `Swap unavailable (requires ${Markdown.code("JUPITER_API_KEY")})` };
+      return new ClientResponse(`Swap unavailable (requires ${Markdown.code("JUPITER_API_KEY")})`);
     }
 
     if (result.status === "no_wallet") {
-      return {
-        text: `No wallet found. Create one with ${Markdown.code("/wallet create")}`,
-      };
+      return new ClientResponse(`No wallet found. Create one with ${Markdown.code("/wallet create")}`);
     }
 
     if (result.status === "insufficient_balance") {
-      return {
-        text: `Insufficient USDC balance.\nRequired: ${result.required} USDC\nAvailable: ${result.available} USDC`,
-      };
+      return new ClientResponse(
+        `Insufficient USDC balance.\nRequired: ${result.required} USDC\nAvailable: ${result.available} USDC`,
+      );
     }
 
     if (result.status === "invalid_amount") {
-      return { text: `Invalid amount: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`Invalid amount: ${Markdown.escape(result.message ?? "")}`);
     }
 
     if (result.status === "invalid_asset") {
-      return { text: `Invalid asset: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`Invalid asset: ${Markdown.escape(result.message ?? "")}`);
     }
 
     if (result.status === "quote_error") {
-      return { text: `Failed to get quote: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`Failed to get quote: ${Markdown.escape(result.message ?? "")}`);
     }
 
     if (result.status === "build_error") {
-      return { text: `Failed to build transaction: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`Failed to build transaction: ${Markdown.escape(result.message ?? "")}`);
     }
 
     if (result.status === "send_error") {
-      return { text: `Transaction failed: ${Markdown.escape(result.message ?? "")}` };
+      return new ClientResponse(`Transaction failed: ${Markdown.escape(result.message ?? "")}`);
     }
 
     if (result.status === "rpc_error") {
-      return {
-        text:
-          "Failed to check balance. The Solana network may be busy.\n\n" +
+      return new ClientResponse(
+        "Failed to check balance. The Solana network may be busy.\n\n" +
           "Please try again in a few seconds.",
-      };
+      );
     }
 
     const { quote, signature, confirmed } = result;
@@ -72,12 +69,12 @@ export class SwapFormatter {
       Markdown.link("View on Solscan", `https://solscan.io/tx/${signature}`),
     ];
 
-    return { text: lines.join("\n") };
+    return new ClientResponse(lines.join("\n"));
   }
 
   formatUsage(): ClientResponse {
-    return {
-      text: [
+    return new ClientResponse(
+      [
         "*Swap Execute*",
         "",
         "Execute a real swap on Solana mainnet.",
@@ -91,12 +88,12 @@ export class SwapFormatter {
         "*WARNING:* This executes a REAL transaction!",
         "Use `/swap simulate` first to test.",
       ].join("\n"),
-    };
+    );
   }
 
   formatUnifiedUsage(): ClientResponse {
-    return {
-      text: [
+    return new ClientResponse(
+      [
         "*Swap Command*",
         "",
         "Manage swaps on Solana mainnet via Jupiter.",
@@ -119,7 +116,7 @@ export class SwapFormatter {
         "  `/swap simulate 5 ETH` - simulate 5 USDC → ETH",
         "  `/swap execute 1 BTC` - execute 1 USDC → BTC",
       ].join("\n"),
-    };
+    );
   }
 
   private formatAmount(amount: number): string {
