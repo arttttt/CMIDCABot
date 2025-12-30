@@ -1,7 +1,7 @@
 ---
 description: Prepare technical brief for PM
 argument-hint: "<name> [description]"
-allowed-tools: Read, Write, Glob, Grep, mcp__github-official__create_issue, mcp__github-official__update_issue, mcp__github-projects-local__list_projects, mcp__github-projects-local__add_issue_to_project, mcp__github-projects-local__get_project_fields
+allowed-tools: Read, Write, Glob, Grep
 ---
 
 Use subagent `analyst`.
@@ -29,30 +29,12 @@ Prepare technical brief to hand off to PM.
 
 5. **Create file:** `docs/briefs/BRIEF_<name>.md`
 
-6. **Create GitHub Issue:**
-   - Title: `[Brief] <name>` — название из brief
-   - Body: краткое описание + ссылка на BRIEF файл
-   - Labels: `stage:brief` + type label если известен (`type:feature`, `type:bug`, etc.)
-   - If MCP unavailable: show warning, continue without GitHub
+6. **Report result:**
+   ```
+   ✅ Created: docs/briefs/BRIEF_<name>.md
 
-7. **Add to Project:**
-   - Find project "CMI DCA Bot" using `list_projects`
-   - Get project fields to find "Status" field and "Backlog" option
-   - Add issue to project in "Backlog" column
-   - If fails: show warning, continue
-
-8. **Update BRIEF file:**
-   - Add at the beginning: `<!-- GitHub Issue: #<number> -->`
-   - Report success: "Created Issue #<number>, added to Backlog"
-
-## GitHub Integration
-
-```
-Repository: arttttt/CMIDCABot
-Project: CMI DCA Bot
-Column: Backlog
-Labels: stage:brief
-```
+   Next: run `/publish <name>` to create GitHub Issue
+   ```
 
 ## Name sanitization
 
