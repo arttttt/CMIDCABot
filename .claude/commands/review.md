@@ -1,7 +1,7 @@
 ---
 description: Code review of files or component
 argument-hint: "<file_path> | <component_name>"
-allowed-tools: Read, Write, Glob, Grep
+allowed-tools: Read, Write, Glob, Grep, mcp__github-official__update_issue, mcp__github-official__get_issue, mcp__github-official__add_issue_comment, mcp__github-projects-local__list_projects, mcp__github-projects-local__get_project_items, mcp__github-projects-local__move_item_to_column, mcp__github-projects-local__get_project_fields
 ---
 
 Use subagent `reviewer`.
@@ -17,15 +17,40 @@ Conduct code review and create report.
      - Ask user what to review (file path or component name)
    - Otherwise: use as review scope
 
-2. **Read `ARCHITECTURE.md`** — mandatory before review
+2. **Find related TASK file:**
+   - Search `docs/tasks/TASK_*<name>*.md`
+   - **Extract Issue number** from TASK file (`<!-- GitHub Issue: #123 -->`)
 
-3. **Analyze code:**
+3. **Read `ARCHITECTURE.md`** — mandatory before review
+
+4. **Analyze code:**
    - Correctness
    - Architecture compliance
    - Security
    - Code quality
 
-4. **Create file:** `docs/reviews/REVIEW_<name>.md`
+5. **Create file:** `docs/reviews/REVIEW_<name>.md`
+   - Add at the beginning: `<!-- GitHub Issue: #<number> -->` (if found)
+
+6. **Update GitHub Issue:**
+   - If Issue number found:
+     - Update labels: remove `stage:impl`, add `stage:review`
+     - Move to "Review" column in project
+     - Add comment with link to REVIEW file and summary
+   - If MCP unavailable: show warning, continue
+
+7. **Report result:**
+   - Summary of findings
+   - "Issue #<number> moved to Review"
+
+## GitHub Integration
+
+```
+Repository: arttttt/CMIDCABot
+Project: CMI DCA Bot
+Column: Review
+Labels: stage:review (removes stage:impl)
+```
 
 ## Name sanitization
 
