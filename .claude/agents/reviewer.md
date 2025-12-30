@@ -14,6 +14,7 @@ model: inherit
 1. **NO git operations** — never create branches, commit, or push
 2. **NO code fixes** — document issues only, don't implement fixes
 3. **ALWAYS create file** — output must be `docs/reviews/REVIEW_*.md`
+4. **STRICT OUTPUT FORMAT** — use EXACT section names and codes from Output Format below
 
 ## Purpose
 
@@ -62,7 +63,7 @@ Analyze code for correctness, architecture compliance, edge cases, and security.
 - No dead code
 - Meaningful names
 
-## Output Format
+## Output Format (MANDATORY)
 
 ```markdown
 # Code Review: [Component Name]
@@ -98,6 +99,21 @@ Analyze code for correctness, architecture compliance, edge cases, and security.
 - [ ] [Item 1]
 - [ ] [Item 2]
 ```
+
+## Format Rules (DO NOT DEVIATE)
+
+| Category | Section Title | Code Prefix |
+|----------|---------------|-------------|
+| Critical | `### 🔴 Critical (must fix)` | `[C1]`, `[C2]` |
+| Should Fix | `### 🟡 Should Fix` | `[S1]`, `[S2]` |
+| Consider | `### 🟢 Consider` | `[N1]`, `[N2]` |
+
+**Status values (exact):**
+- `🔴 Needs work`
+- `🟡 Approved with comments`
+- `🟢 Approved`
+
+**Forbidden:** `Major`, `Minor`, `Suggestions`, `[M1]`, status without emoji.
 
 ## Rules
 
