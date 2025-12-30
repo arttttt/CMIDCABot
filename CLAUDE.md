@@ -119,10 +119,11 @@ Slash commands for project workflow:
 | Command | Purpose | Output |
 |---------|---------|--------|
 | `/brief <name>` | Technical brief for PM | `docs/briefs/BRIEF_*.md` |
-| `/consult` | Technical consultation | chat response |
 | `/spec <name>` | Task specification | `docs/tasks/TASK_*.md` |
+| `/publish <name>` | Publish artifact to GitHub | Issue + Project |
 | `/implement <name>` | Implementation from spec | code |
 | `/review <path>` | Code review | `docs/reviews/REVIEW_*.md` |
+| `/consult` | Technical consultation | chat response |
 | `/status [name]` | Artifact status | chat response |
 
 Argument is optional — if not provided, command will ask interactively.
