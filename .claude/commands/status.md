@@ -1,12 +1,12 @@
 ---
 description: Check task status (briefs, specs, reviews)
 argument-hint: "[name]"
-allowed-tools: Read, Glob, Grep
+allowed-tools: Read, Glob, Grep, mcp__github-official__get_issue, mcp__github-projects-local__list_projects, mcp__github-projects-local__get_project_items, mcp__github-projects-local__get_project_fields
 ---
 
 ## Task
 
-Show which artifacts exist for a task.
+Show which artifacts exist for a task and their GitHub status.
 
 ## Algorithm
 
@@ -20,19 +20,32 @@ Show which artifacts exist for a task.
    - `docs/tasks/TASK_*<name>*.md`
    - `docs/reviews/REVIEW_*<name>*.md`
 
-3. **Output status:**
+3. **Extract GitHub Issue numbers:**
+   - Parse `<!-- GitHub Issue: #123 -->` from each file
+   - Collect unique Issue numbers
+
+4. **Fetch GitHub data (if Issue found):**
+   - Get Issue details: state, labels
+   - Get Project status: which column
+   - If MCP unavailable: show "GitHub: недоступен"
+
+5. **Output status:**
 
 ```
 ## Status: <name>
 
-| Artifact | Status | File |
-|----------|--------|------|
-| Brief    | ✅/❌  | path |
-| Spec     | ✅/❌  | path |
-| Review   | ✅/❌  | path |
+| Artifact | Status | File | GitHub |
+|----------|--------|------|--------|
+| Brief    | ✅/❌  | path | #123   |
+| Spec     | ✅/❌  | path | #123   |
+| Review   | ✅/❌  | path | #123   |
+
+**GitHub Issue:** #123 (open/closed)
+**Project Column:** In Progress
+**Labels:** stage:impl, type:feature, priority:high
 
 ### Next step
-[What needs to be done next]
+[What needs to be done next based on current stage]
 ```
 
 ## Without arguments — overall statistics
@@ -44,7 +57,33 @@ Show which artifacts exist for a task.
 **Tasks:** Y files
 **Reviews:** Z files
 
+### GitHub Project Summary
+| Column      | Count |
+|-------------|-------|
+| Backlog     | N     |
+| Todo        | N     |
+| In Progress | N     |
+| Review      | N     |
+| Done        | N     |
+
 ### Recent
-- BRIEF_xxx.md (date)
-- TASK_yyy.md (date)
+- BRIEF_xxx.md (date) → #123
+- TASK_yyy.md (date) → #124
+```
+
+## GitHub Integration
+
+```
+Repository: arttttt/CMIDCABot
+Project: CMI DCA Bot
+```
+
+## Stage Flow Reference
+
+```
+stage:brief  → Backlog     → /brief created
+stage:spec   → Todo        → /spec created
+stage:impl   → In Progress → /implement started
+stage:review → Review      → /review created
+(closed)     → Done        → PR merged
 ```
