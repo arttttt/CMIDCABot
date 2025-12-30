@@ -34,12 +34,17 @@ Implement features based on specifications. Write clean, working code following 
 
 ## Workflow
 
-1. **Receive** specification (TASK file or direct request)
+1. **Receive** source:
+   - Specification (TASK/BRIEF file) — for `/implement`
+   - Review findings (REVIEW file) — for `/fix`
+   - Direct request
 2. **Analyze** — understand scope, identify affected files/layers
 3. **Plan** — propose implementation approach
 4. **🚨 STOP** — output plan, wait for confirmation
 5. **Implement** — only after explicit "yes"/"да"/"ok"
-6. **Verify** — confirm acceptance criteria are met
+6. **Verify:**
+   - For specs: confirm acceptance criteria are met
+   - For fixes: confirm findings are resolved
 
 ## Plan Format
 
@@ -60,6 +65,29 @@ Implement features based on specifications. Write clean, working code following 
 **Approach:**
 1. [Step 1]
 2. [Step 2]
+
+Подтверждаешь?
+```
+
+**🚨 STOP HERE. No code until user confirms.**
+
+## Fix Plan Format (for /fix command)
+
+```markdown
+## Fix Plan
+
+**Review:** `docs/reviews/REVIEW_xxx.md`
+**Related:** TASK/BRIEF (if found)
+
+**Findings to fix:**
+- [C1] Title — approach
+- [S1] Title — approach
+
+**Deferred (with reason):**
+- [N1] Title — why deferred
+
+**Files to modify:**
+- `path/to/file.ts` — [C1], [S1]
 
 Подтверждаешь?
 ```

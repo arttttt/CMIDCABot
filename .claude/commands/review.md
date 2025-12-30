@@ -69,3 +69,12 @@ If user input contains invalid characters:
 
 - By component: `REVIEW_portfolio_handler.md`
 - By feature: `REVIEW_dca_scheduling.md`
+
+## Versioning
+
+For re-reviews after `/fix`:
+- First review: `REVIEW_<name>.md`
+- After fix: `REVIEW_<name>_v2.md`
+- Subsequent: `REVIEW_<name>_v3.md`
+
+Detect existing versions and increment automatically.
