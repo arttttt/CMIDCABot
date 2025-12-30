@@ -9,9 +9,9 @@ Gateway и все его компоненты реализованы, но не�
 
 ## Proposed Solution
 
-Создать `GatewayFactory` — фабричную функцию для сборки Gateway с зависимостями.
+Создать `GatewayFactory` — класс со статическим методом `create()` для сборки Gateway.
 
-**Паттерн:** Следует существующим фабрикам в проекте (`RepositoryFactory`, `TransportFactory`).
+**Паттерн:** Согласно conventions.md — "Utility functions — class with static methods (not top-level exports)".
 
 ## Technical Context
 
@@ -26,7 +26,7 @@ Gateway и все его компоненты реализованы, но не�
 ### Зависимости для сборки Gateway
 
 ```
-GatewayFactory
+GatewayFactory.create()
 ├── GetUserRoleUseCase (для LoadRolePlugin)
 │   ├── AuthRepository
 │   └── ownerTelegramId
@@ -34,22 +34,12 @@ GatewayFactory
 └── → Gateway (output)
 ```
 
-### Существующий паттерн фабрик
-
-```typescript
-// RepositoryFactory.ts
-export function createMainRepositories(
-  db: Kysely<MainDatabase>,
-  encryptionService: KeyEncryptionService,
-): MainRepositories { ... }
-```
-
 ## Scope
 
 ### Included
 
 - `GatewayFactoryDeps` интерфейс — входные зависимости
-- `createGateway()` функция — сборка Gateway
+- `GatewayFactory` класс со статическим методом `create()`
 - Export из `gateway/index.ts`
 
 ### Excluded
@@ -62,7 +52,7 @@ export function createMainRepositories(
 
 | Вопрос | Решение | Обоснование |
 |--------|---------|-------------|
-| Функция или класс? | Функция `createGateway()` | Паттерн проекта (RepositoryFactory, TransportFactory) |
+| Функция или класс? | Класс `GatewayFactory` со static методом | conventions.md: "class with static methods" |
 | Где размещать? | `src/presentation/protocol/gateway/GatewayFactory.ts` | Рядом с Gateway |
 | GetUserRoleUseCase | Создаётся внутри фабрики | Инкапсуляция, меньше параметров |
 | Порядок плагинов | ErrorBoundary → LoadRole → Core | ErrorBoundary outermost для catch всех ошибок |
@@ -87,7 +77,7 @@ export interface GatewayFactoryDeps {
 }
 ```
 
-### 2. createGateway Function
+### 2. GatewayFactory Class
 
 **Файл:** `src/presentation/protocol/gateway/GatewayFactory.ts`
 
@@ -102,39 +92,40 @@ import { LoadRolePlugin } from "./plugins/LoadRolePlugin.js";
 import { GetUserRoleUseCase } from "../../../domain/usecases/GetUserRoleUseCase.js";
 
 /**
- * Create configured Gateway instance
- *
- * Assembles Gateway with:
- * - Plugins: ErrorBoundary (outermost), LoadRole
- * - Handlers: TelegramMessage, TelegramCallback, Http
- *
- * Plugin chain order (execution):
- * Request → ErrorBoundary → LoadRole → GatewayCore → Handlers
+ * Factory for creating configured Gateway instances
  */
-export function createGateway(deps: GatewayFactoryDeps): Gateway {
-  // Create use case for role resolution
-  const getUserRole = new GetUserRoleUseCase(
-    deps.authRepository,
-    deps.ownerTelegramId,
-  );
+export class GatewayFactory {
+  /**
+   * Create configured Gateway instance
+   *
+   * Assembles Gateway with:
+   * - Plugins: ErrorBoundary (outermost), LoadRole
+   * - Handlers: TelegramMessage, TelegramCallback, Http
+   *
+   * Plugin chain order (execution):
+   * Request → ErrorBoundary → LoadRole → GatewayCore → Handlers
+   */
+  static create(deps: GatewayFactoryDeps): Gateway {
+    const getUserRole = new GetUserRoleUseCase(
+      deps.authRepository,
+      deps.ownerTelegramId,
+    );
 
-  // Create request handlers
-  const handlers = [
-    new TelegramMessageHandler(deps.commandRegistry),
-    new TelegramCallbackHandler(deps.commandRegistry),
-    new HttpRequestHandler(),
-  ];
+    const handlers = [
+      new TelegramMessageHandler(deps.commandRegistry),
+      new TelegramCallbackHandler(deps.commandRegistry),
+      new HttpRequestHandler(),
+    ];
 
-  // Create core dispatcher
-  const core = new GatewayCore(handlers);
+    const core = new GatewayCore(handlers);
 
-  // Create plugins (order: first = outermost)
-  const plugins = [
-    new ErrorBoundaryPlugin(),
-    new LoadRolePlugin(getUserRole),
-  ];
+    const plugins = [
+      new ErrorBoundaryPlugin(),
+      new LoadRolePlugin(getUserRole),
+    ];
 
-  return new Gateway(core, plugins);
+    return new Gateway(core, plugins);
+  }
 }
 ```
 
@@ -146,7 +137,7 @@ export function createGateway(deps: GatewayFactoryDeps): Gateway {
 
 ```typescript
 // Factory
-export { createGateway, type GatewayFactoryDeps } from "./GatewayFactory.js";
+export { GatewayFactory, type GatewayFactoryDeps } from "./GatewayFactory.js";
 ```
 
 ---
@@ -179,23 +170,21 @@ src/presentation/protocol/gateway/
 ## Acceptance Criteria
 
 - [ ] `GatewayFactoryDeps` интерфейс создан
-- [ ] `createGateway()` функция создана
-- [ ] Функция создаёт `GetUserRoleUseCase` внутри
-- [ ] Функция создаёт handlers: TelegramMessage, TelegramCallback, Http
-- [ ] Функция создаёт plugins в правильном порядке: ErrorBoundary, LoadRole
-- [ ] Функция возвращает собранный `Gateway`
+- [ ] `GatewayFactory` класс создан со статическим методом `create()`
+- [ ] Метод создаёт `GetUserRoleUseCase` внутри
+- [ ] Метод создаёт handlers: TelegramMessage, TelegramCallback, Http
+- [ ] Метод создаёт plugins в правильном порядке: ErrorBoundary, LoadRole
+- [ ] Метод возвращает собранный `Gateway`
 - [ ] Export добавлен в `gateway/index.ts`
 - [ ] Все файлы компилируются без ошибок
 
 ## Open Questions for PM
 
 1. **Дополнительные плагины** — нужно ли предусмотреть расширение (массив дополнительных плагинов в deps)?
-2. **Логирование** — добавить лог при создании Gateway?
 
 ## References
 
 - `src/presentation/protocol/gateway/` — Gateway модуль
-- `src/data/factories/RepositoryFactory.ts` — паттерн фабрики
-- `src/presentation/telegram/transport/TransportFactory.ts` — паттерн фабрики
 - `docs/briefs/BRIEF_gateway_01_core.md` — Gateway Core
 - `docs/briefs/BRIEF_gateway_02_plugins.md` — Plugins
+- `conventions.md` — правила проекта
