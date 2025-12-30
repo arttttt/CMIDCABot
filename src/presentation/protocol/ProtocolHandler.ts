@@ -4,6 +4,9 @@
  * This is the unified entry point for all UI interactions.
  * Uses CommandRegistry to get available commands and routes them.
  * Includes authorization checks for all commands.
+ *
+ * @deprecated Use Gateway instead. Will be removed in future version.
+ * @see Gateway
  */
 
 import { HelpFormatter } from "../formatters/index.js";

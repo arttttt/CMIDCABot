@@ -54,8 +54,10 @@ import {
   ExecuteMockPurchaseUseCase,
   ExecuteBatchDcaUseCase,
   AuthorizationHelper,
+  GetUserRoleUseCase,
 } from "./domain/usecases/index.js";
 import type { ImportSessionRepository } from "./domain/repositories/index.js";
+import { GatewayFactory } from "./presentation/protocol/gateway/index.js";
 import { ProtocolHandler } from "./presentation/protocol/index.js";
 import {
   DevCommandRegistry,
@@ -124,6 +126,9 @@ async function main(): Promise<void> {
   const authHelper = new AuthorizationHelper(authRepository, config.auth.ownerTelegramId);
   const initializeAuth = new InitializeAuthorizationUseCase(authRepository, config.auth.ownerTelegramId);
   await initializeAuth.execute();
+
+  // Create GetUserRoleUseCase for Gateway
+  const getUserRole = new GetUserRoleUseCase(authRepository, config.auth.ownerTelegramId);
 
   // Create user resolver (will be connected to bot API later)
   const userResolver = new TelegramUserResolver();
@@ -402,10 +407,13 @@ async function main(): Promise<void> {
       registry = new ProdCommandRegistry(deps);
     }
 
-    // Create protocol handler
-    const handler = new ProtocolHandler(registry, authHelper);
+    // Create gateway
+    const gateway = GatewayFactory.create({
+      getUserRole,
+      commandRegistry: registry,
+    });
 
-    return { registry, handler };
+    return { registry, gateway };
   }
 
   // Cleanup function
@@ -429,8 +437,9 @@ async function main(): Promise<void> {
       process.exit(1);
     }
 
-    // Create handler without botUsername (invite links won't work in web mode)
-    const { handler } = createRegistryAndHandler(importSessionStore);
+    // Create registry and legacy handler for web mode (Gateway integration pending)
+    const { registry } = createRegistryAndHandler(importSessionStore);
+    const webHandler = new ProtocolHandler(registry, authHelper);
 
     console.log("Starting DCA Bot in WEB MODE...");
     console.log("─".repeat(50));
@@ -439,7 +448,7 @@ async function main(): Promise<void> {
     console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
     console.log("─".repeat(50));
 
-    await startWebServer(config.web.port ?? 3000, handler);
+    await startWebServer(config.web.port ?? 3000, webHandler);
 
     console.log("Press Ctrl+C to stop.\n");
 
@@ -504,15 +513,15 @@ async function main(): Promise<void> {
     httpServer.start();
   }
 
-  // Create handler with importSessionStore and botUsername
-  const { registry, handler } = createRegistryAndHandler(importSessionStore, botInfo.username);
+  // Create gateway with importSessionStore and botUsername
+  const { registry, gateway } = createRegistryAndHandler(importSessionStore, botInfo.username);
 
   const modeInfo = registry.getModeInfo();
   const modeLabel = modeInfo?.label ?? "Production";
-  console.log(`Command mode: ${modeLabel} (${handler.getAvailableCommands().length} commands available)`);
+  console.log(`Command mode: ${modeLabel}`);
 
-  // Create the bot with the handler
-  const bot = createTelegramBot(config.telegram.botToken, handler, config.isDev);
+  // Create the bot with the gateway
+  const bot = createTelegramBot(config.telegram.botToken, gateway, config.isDev);
 
   // Connect user resolver to bot API for username resolution
   userResolver.setApi(bot.api);

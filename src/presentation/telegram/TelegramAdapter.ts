@@ -4,7 +4,8 @@
  */
 
 import { Bot, BotError, Context, InlineKeyboard } from "grammy";
-import { ProtocolHandler } from "../protocol/index.js";
+import type { Gateway } from "../protocol/gateway/Gateway.js";
+import type { GatewayRequest } from "../protocol/gateway/types.js";
 import { ClientResponse, StreamItem } from "../protocol/types.js";
 import { logger, LogSanitizer } from "../../infrastructure/shared/logging/index.js";
 import {
@@ -18,6 +19,29 @@ const ERROR_MESSAGE_SEND_FAILED = "Failed to send message. Please try the comman
 // Callback data validation constants (SEC-03)
 const CALLBACK_MAX_LENGTH = 64;
 const CALLBACK_PATTERN = /^[a-z][a-z0-9_]*(\/[a-z][a-z0-9_]*)*:[a-z][a-z0-9_]*$/;
+
+function buildTelegramMessageRequest(ctx: Context): GatewayRequest {
+  return {
+    kind: "telegram-message",
+    identity: {
+      provider: "telegram",
+      telegramId: ctx.from!.id,
+    },
+    text: ctx.message!.text!,
+    username: ctx.from!.username,
+  };
+}
+
+function buildTelegramCallbackRequest(ctx: Context): GatewayRequest {
+  return {
+    kind: "telegram-callback",
+    identity: {
+      provider: "telegram",
+      telegramId: ctx.from!.id,
+    },
+    callbackData: ctx.callbackQuery!.data!,
+  };
+}
 
 function toInlineKeyboard(response: ClientResponse): InlineKeyboard | undefined {
   if (!response.buttons?.length) return undefined;
@@ -208,7 +232,7 @@ async function handleStreamingResponse(
 
 export function createTelegramBot(
   botToken: string,
-  handler: ProtocolHandler,
+  gateway: Gateway,
   isDev: boolean,
 ): Bot<Context> {
   const bot = new Bot<Context>(botToken);
@@ -234,22 +258,14 @@ export function createTelegramBot(
     });
   }
 
-  // Handle text messages: Context -> Protocol -> Streaming Response
+  // Handle text messages: Context -> Gateway -> Streaming Response
   bot.on("message:text", async (ctx) => {
-    const messageContext = {
-      userId: String(ctx.from.id),
-      telegramId: ctx.from.id,
-      username: ctx.from.username,
-      text: ctx.message.text,
-    };
-
-    // Use streaming handler for all commands
-    // deleteUserMessage is handled inside handleStreamingResponse (immediate deletion)
-    const stream = handler.handleMessageStreaming(messageContext);
+    const request = buildTelegramMessageRequest(ctx);
+    const stream = await gateway.handle(request);
     await handleStreamingResponse(ctx, stream);
   });
 
-  // Handle callback queries: Context -> Protocol -> Edit message
+  // Handle callback queries: Context -> Gateway -> Edit message
   bot.on("callback_query:data", async (ctx) => {
     const callbackData = ctx.callbackQuery.data;
 
@@ -272,18 +288,26 @@ export function createTelegramBot(
       return;
     }
 
-    // Handle callbacks via protocol handler
-    const response = await handler.handleCallback({
-      telegramId: ctx.from.id,
-      callbackData: callbackData,
-    });
+    // Handle callbacks via gateway
+    const request = buildTelegramCallbackRequest(ctx);
+    const stream = await gateway.handle(request);
 
-    const keyboard = toInlineKeyboard(response);
-    await ctx.answerCallbackQuery();
-    await ctx.editMessageText(response.text, {
-      parse_mode: "Markdown",
-      reply_markup: keyboard,
-    });
+    // Callback returns single final response - extract it
+    let response: ClientResponse | undefined;
+    for await (const item of stream) {
+      response = item.response;
+    }
+
+    if (response) {
+      const keyboard = toInlineKeyboard(response);
+      await ctx.answerCallbackQuery();
+      await ctx.editMessageText(response.text, {
+        parse_mode: "Markdown",
+        reply_markup: keyboard,
+      });
+    } else {
+      await ctx.answerCallbackQuery();
+    }
   });
 
   // Error handling with user notification
