@@ -17,9 +17,11 @@ Conduct code review and create report.
      - Ask user what to review (file path or component name)
    - Otherwise: use as review scope
 
-2. **Find related TASK file:**
-   - Search `docs/tasks/TASK_*<name>*.md`
-   - **Extract Issue number** from TASK file (`<!-- GitHub Issue: #123 -->`)
+2. **Find related source file (priority order):**
+   - First: `docs/tasks/TASK_*<name>*.md` — full specification
+   - Fallback: `docs/briefs/BRIEF_*<name>*.md` — technical brief
+   - **Extract Issue number** from found file (`<!-- GitHub Issue: #123 -->`)
+   - Note source type (TASK/BRIEF) for review context
 
 3. **Read `ARCHITECTURE.md`** — mandatory before review
 
@@ -28,6 +30,8 @@ Conduct code review and create report.
    - Architecture compliance
    - Security
    - Code quality
+   - **If source is BRIEF:** note that AC may be implicit, focus on technical requirements from brief
+   - **If no source found:** review against ARCHITECTURE.md only, warn about missing requirements
 
 5. **Create file:** `docs/reviews/REVIEW_<name>.md`
    - Add at the beginning: `<!-- GitHub Issue: #<number> -->` (if found)
@@ -41,7 +45,8 @@ Conduct code review and create report.
 
 7. **Report result:**
    - Summary of findings
-   - "Issue #<number> moved to Review"
+   - Source type used: TASK / BRIEF / none
+   - "Issue #<number> moved to Review" (if Issue found)
 
 ## GitHub Integration
 
