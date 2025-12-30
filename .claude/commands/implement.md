@@ -29,6 +29,7 @@ Implement functionality from specification or brief.
    - Note source type: TASK or BRIEF
 
 4. **Create plan:**
+   - Branch name (`feature/` for TASK/BRIEF, `fix/` for bug fixes)
    - Affected layers
    - Files to create/modify
    - Approach (steps)
@@ -36,18 +37,45 @@ Implement functionality from specification or brief.
 
 5. **🚨 STOP — output plan and wait for confirmation** ("да", "ok", "yes")
 
-6. **Update GitHub Issue (before coding):**
+6. **Create branch** (after confirmation, before any code):
+   ```bash
+   git checkout -b <type>/<short-description>
+   ```
+   Branch types: `feature/` (from TASK/BRIEF), `fix/` (bug fixes), `refactor/`
+
+7. **Update GitHub Issue (before coding):**
    - If Issue number found:
      - Update labels: remove `stage:spec` or `stage:brief`, add `stage:impl`
      - Move to "In Progress" column in project
      - Add comment: "Implementation started"
    - If MCP unavailable: show warning, continue
 
-7. **After confirmation:** implement code
+8. **Implement with granular commits:**
+   - Write code for one logical change
+   - Commit with conventional message: `<type>(<scope>): <description>`
+   - Repeat until done
 
-8. **After implementation:**
-   - If TASK exists: mark completed criteria
-   - Remind: `При коммите используй "Closes #<number>" для автоматического закрытия issue`
+9. **After implementation:**
+   - If TASK exists: mark completed criteria in file
+
+10. **Push branch to remote:**
+    ```bash
+    git push -u origin <branch-name>
+    ```
+
+11. **Report completion:**
+    ```
+    ✅ Implementation complete
+
+    **Branch:** `<branch-name>`
+    **Commits:**
+    - `<hash>` <message>
+    - `<hash>` <message>
+
+    **Pushed to remote.**
+
+    Next: create PR with `Closes #<number>` in description.
+    ```
 
 ## Source Priority
 
@@ -68,10 +96,31 @@ Column: In Progress
 Labels: stage:impl (removes stage:spec or stage:brief)
 ```
 
+## Plan Format
+
+```markdown
+## Implementation Plan
+
+**Branch:** `feature/short-description`
+**Source:** `docs/tasks/TASK_xxx.md` (Issue #123)
+
+**Affected layers:**
+- [layer]: [changes]
+
+**Files to create/modify:**
+- `path/to/file.ts` — [purpose]
+
+**Approach:**
+1. [Step 1]
+2. [Step 2]
+
+Подтверждаешь?
+```
+
 ## Important
 
 - **NEVER** write code without plan confirmation
 - Code must be complete, no placeholders
 - After implementation — mark completed criteria (if TASK exists)
-- Use `Closes #<number>` in commit message for auto-close
+- Use `Closes #<number>` in PR description for auto-close
 - When implementing from BRIEF: be more careful, AC less explicit
