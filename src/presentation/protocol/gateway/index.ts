@@ -17,3 +17,6 @@ export { HttpRequestHandler } from "./handlers/HttpRequestHandler.js";
 
 // Plugins
 export * from "./plugins/index.js";
+
+// Factory
+export { GatewayFactory, type GatewayFactoryDeps } from "./GatewayFactory.js";
