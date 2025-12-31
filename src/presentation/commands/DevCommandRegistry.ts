@@ -15,6 +15,7 @@ import {
   createAdminCommand,
   createStartCommand,
   createVersionCommand,
+  createHelpCommand,
   WalletCommandDeps,
   DcaCommandDeps,
   PortfolioCommandDeps,
@@ -23,6 +24,7 @@ import {
   AdminCommandDeps,
   StartCommandDeps,
   VersionCommandDeps,
+  HelpCommandDeps,
 } from "./handlers.js";
 import { prefixCallbacks } from "./router.js";
 
@@ -38,6 +40,7 @@ export interface DevCommandRegistryDeps {
   swap: SwapCommandDeps;
   admin: AdminCommandDeps;
   version: VersionCommandDeps;
+  help: Omit<HelpCommandDeps, "getRegistry">;
 }
 
 /**
@@ -55,6 +58,12 @@ export class DevCommandRegistry implements CommandRegistry {
   private commands: Map<string, Command>;
 
   constructor(deps: DevCommandRegistryDeps) {
+    // Create help command with lazy registry reference to break circular dependency
+    const helpCommand = createHelpCommand({
+      ...deps.help,
+      getRegistry: () => this,
+    });
+
     this.commands = new Map([
       ["start", createStartCommand(deps.start)],
       ["wallet", createWalletCommand(deps.wallet)],
@@ -64,6 +73,7 @@ export class DevCommandRegistry implements CommandRegistry {
       ["swap", createSwapCommand(deps.swap)],
       ["admin", createAdminCommand(deps.admin)],
       ["version", createVersionCommand(deps.version)],
+      ["help", helpCommand],
     ]);
     prefixCallbacks(this.commands);
   }
