@@ -37,33 +37,32 @@ Implement functionality from specification or brief.
 
 5. **🚨 STOP — output plan and wait for confirmation** ("да", "ok", "yes")
 
-6. **Create branch** (after confirmation, before any code):
-   ```bash
-   git checkout -b <type>/<short-description>
-   ```
-   Branch types: `feature/` (from TASK/BRIEF), `fix/` (bug fixes), `refactor/`
-
-7. **Update GitHub Issue (before coding):**
-   - If Issue number found:
-     - Update labels: remove `stage:spec` or `stage:brief`, add `stage:impl`
+6. **Start work** (after confirmation, before any code):
+   - Update GitHub Issue (if Issue number found):
+     - Remove `stage:spec` or `stage:brief` label
+     - Add `stage:impl` label
      - Move to "In Progress" column in project
-     - Add comment: "Implementation started"
-   - If MCP unavailable: show warning, continue
+     - If MCP unavailable: show warning, continue
+   - Create branch:
+     ```bash
+     git checkout -b <type>/<short-description>
+     ```
+     Branch types: `feature/` (from TASK/BRIEF), `fix/` (bug fixes), `refactor/`
 
-8. **Implement with granular commits:**
+7. **Implement with granular commits:**
    - Write code for one logical change
    - Commit with conventional message: `<type>(<scope>): <description>`
    - Repeat until done
 
-9. **After implementation:**
+8. **After implementation:**
    - If TASK exists: mark completed criteria in file
 
-10. **Push branch to remote:**
+9. **Push branch to remote:**
     ```bash
     git push -u origin <branch-name>
     ```
 
-11. **Report completion:**
+10. **Report completion:**
     ```
     ✅ Implementation complete
 
