@@ -18,7 +18,7 @@ import {
   StartCommandDeps,
   PortfolioCommandDeps,
   VersionCommandDeps,
-  HelpCommandDeps,
+  HelpCommandExternalDeps,
 } from "./handlers.js";
 import { prefixCallbacks } from "./router.js";
 
@@ -31,7 +31,7 @@ export interface ProdCommandRegistryDeps {
   portfolio: PortfolioCommandDeps;
   admin: AdminCommandDeps;
   version: VersionCommandDeps;
-  help: Omit<HelpCommandDeps, "getRegistry">;
+  help: HelpCommandExternalDeps;
 }
 
 /**

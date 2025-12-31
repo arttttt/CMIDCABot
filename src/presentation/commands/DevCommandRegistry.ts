@@ -24,7 +24,7 @@ import {
   AdminCommandDeps,
   StartCommandDeps,
   VersionCommandDeps,
-  HelpCommandDeps,
+  HelpCommandExternalDeps,
 } from "./handlers.js";
 import { prefixCallbacks } from "./router.js";
 
@@ -40,7 +40,7 @@ export interface DevCommandRegistryDeps {
   swap: SwapCommandDeps;
   admin: AdminCommandDeps;
   version: VersionCommandDeps;
-  help: Omit<HelpCommandDeps, "getRegistry">;
+  help: HelpCommandExternalDeps;
 }
 
 /**

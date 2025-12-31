@@ -43,6 +43,7 @@ export {
   type StartCommandDeps,
   type VersionCommandDeps,
   type HelpCommandDeps,
+  type HelpCommandExternalDeps,
 } from "./handlers.js";
 
 // Registries

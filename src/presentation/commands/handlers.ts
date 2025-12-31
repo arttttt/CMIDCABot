@@ -152,9 +152,16 @@ export interface VersionCommandDeps {
   formatter: AdminFormatter;
 }
 
-export interface HelpCommandDeps {
+/**
+ * External dependencies for help command (passed from DI container)
+ * getRegistry is added by registry itself to break circular dependency
+ */
+export interface HelpCommandExternalDeps {
   helpFormatter: HelpFormatter;
   getUserRole: GetUserRoleUseCase;
+}
+
+export interface HelpCommandDeps extends HelpCommandExternalDeps {
   getRegistry: () => CommandRegistry;
 }
 
