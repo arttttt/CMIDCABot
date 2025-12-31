@@ -27,22 +27,24 @@ Publish an artifact (TASK or BRIEF) to GitHub by creating an Issue and adding it
    - If found: report "Already published as Issue #<number>" and exit
 
 4. **Extract metadata from file:**
-   - Parse title/name from first heading
-   - Extract brief description (first paragraph or TL;DR section)
-   - Determine type label if present in file metadata
+   - Parse title from first `#` heading (this becomes Issue title, no prefixes)
+   - Read full content of the artifact file
+   - Determine artifact type (TASK or BRIEF) for label selection
 
 5. **Create GitHub Issue:**
-   - For TASK file:
-     - Title: `[Task] <name>`
-     - Labels: `stage:spec`
-   - For BRIEF file:
-     - Title: `[Brief] <name>`
-     - Labels: `stage:brief`
-   - Body format:
+   - **Language:** All Issue content MUST be in English
+     - If artifact content is in Russian — translate to English
+     - Translation should preserve technical meaning, not be literal
+   - **Title:** Extract from first `#` heading in artifact file (no `[Task]` or `[Brief]` prefixes)
+   - **Labels:**
+     - For TASK file: `stage:spec`
+     - For BRIEF file: `stage:brief`
+   - **Body format:**
      ```
-     <brief description from file>
+     <full artifact content, translated to English if needed>
 
-     📄 **Artifact:** `<filepath>`
+     ---
+     _Source: `<filepath>` (local, not yet in main)_
      ```
    - If MCP unavailable: show error and exit
 
