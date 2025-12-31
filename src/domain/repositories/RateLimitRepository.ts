@@ -24,14 +24,7 @@ export interface RateLimitRepository {
    *
    * @param key - Rate limit key (e.g., "tg:123456")
    * @param nowMs - Current timestamp in milliseconds
-   * @param windowMs - Window size in milliseconds
-   * @param maxRequests - Maximum requests allowed in window
    * @returns Check result with allowed flag and current count
    */
-  checkAndRecord(
-    key: string,
-    nowMs: number,
-    windowMs: number,
-    maxRequests: number,
-  ): RateLimitCheckResult;
+  checkAndRecord(key: string, nowMs: number): Promise<RateLimitCheckResult>;
 }

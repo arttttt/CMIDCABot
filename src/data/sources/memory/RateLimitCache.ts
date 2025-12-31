@@ -16,17 +16,21 @@ export const DEFAULT_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 export interface RateLimitCacheConfig {
   /** Interval for periodic cleanup in ms (default: 5 minutes) */
   cleanupIntervalMs?: number;
-  /** Window size in ms - used for cleanup to determine stale entries */
+  /** Window size in ms */
   windowMs: number;
+  /** Maximum requests allowed in window */
+  maxRequests: number;
 }
 
 export class RateLimitCache {
   private readonly requests = new Map<string, number[]>();
   private readonly cleanupInterval: NodeJS.Timeout;
   private readonly windowMs: number;
+  private readonly maxRequests: number;
 
   constructor(config: RateLimitCacheConfig) {
     this.windowMs = config.windowMs;
+    this.maxRequests = config.maxRequests;
     const cleanupIntervalMs = config.cleanupIntervalMs ?? DEFAULT_CLEANUP_INTERVAL_MS;
 
     this.cleanupInterval = setInterval(() => {
@@ -44,25 +48,18 @@ export class RateLimitCache {
    *
    * @param key - Rate limit key
    * @param nowMs - Current timestamp
-   * @param windowMs - Window size in ms
-   * @param maxRequests - Maximum allowed requests
    * @returns Object with allowed flag and current count
    */
-  checkAndRecord(
-    key: string,
-    nowMs: number,
-    windowMs: number,
-    maxRequests: number,
-  ): { allowed: boolean; count: number } {
-    const windowStart = nowMs - windowMs;
+  checkAndRecord(key: string, nowMs: number): { allowed: boolean; count: number } {
+    const windowStart = nowMs - this.windowMs;
 
     // Get existing timestamps and filter expired ones (lazy cleanup)
     const timestamps = this.requests.get(key) ?? [];
-    const validTimestamps = timestamps.filter((t) => t > windowStart);
+    const validTimestamps = timestamps.filter((t) => t >= windowStart);
 
     const count = validTimestamps.length;
 
-    if (count >= maxRequests) {
+    if (count >= this.maxRequests) {
       // Over limit - update with cleaned timestamps but don't add new one
       this.requests.set(key, validTimestamps);
       return { allowed: false, count };
@@ -87,7 +84,7 @@ export class RateLimitCache {
 
     for (const [key, timestamps] of this.requests) {
       // Filter to valid timestamps
-      const validTimestamps = timestamps.filter((t) => t > windowStart);
+      const validTimestamps = timestamps.filter((t) => t >= windowStart);
 
       if (validTimestamps.length === 0) {
         // No valid timestamps - remove entry entirely

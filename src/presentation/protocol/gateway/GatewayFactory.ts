@@ -15,7 +15,7 @@ import { TelegramCallbackHandler } from "./handlers/TelegramCallbackHandler.js";
 import { HttpRequestHandler } from "./handlers/HttpRequestHandler.js";
 import { ErrorBoundaryPlugin } from "./plugins/ErrorBoundaryPlugin.js";
 import { LoadRolePlugin } from "./plugins/LoadRolePlugin.js";
-import { RateLimitPlugin, type RateLimitConfig } from "./plugins/RateLimitPlugin.js";
+import { RateLimitPlugin } from "./plugins/RateLimitPlugin.js";
 
 /**
  * Dependencies for creating Gateway
@@ -24,7 +24,7 @@ export interface GatewayFactoryDeps {
   getUserRole: GetUserRoleUseCase;
   commandRegistry: CommandRegistry;
   rateLimitRepository: RateLimitRepository;
-  rateLimitConfig: RateLimitConfig;
+  ownerTelegramId: number;
 }
 
 /**
@@ -50,9 +50,10 @@ export class GatewayFactory {
 
     const core = new GatewayCore(handlers);
 
+    // Note: RateLimit before LoadRole to reject spam without DB access
     const plugins = [
       new ErrorBoundaryPlugin(),
-      new RateLimitPlugin(deps.rateLimitRepository, deps.rateLimitConfig),
+      new RateLimitPlugin(deps.rateLimitRepository, deps.ownerTelegramId),
       new LoadRolePlugin(deps.getUserRole),
     ];
 

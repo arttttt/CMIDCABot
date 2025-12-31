@@ -13,12 +13,7 @@ import type { RateLimitCache } from "../../sources/memory/RateLimitCache.js";
 export class InMemoryRateLimitRepository implements RateLimitRepository {
   constructor(private readonly cache: RateLimitCache) {}
 
-  checkAndRecord(
-    key: string,
-    nowMs: number,
-    windowMs: number,
-    maxRequests: number,
-  ): RateLimitCheckResult {
-    return this.cache.checkAndRecord(key, nowMs, windowMs, maxRequests);
+  async checkAndRecord(key: string, nowMs: number): Promise<RateLimitCheckResult> {
+    return this.cache.checkAndRecord(key, nowMs);
   }
 }

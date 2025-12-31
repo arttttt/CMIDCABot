@@ -156,6 +156,7 @@ async function main(): Promise<void> {
   // Initialize RateLimitCache for rate limiting
   const rateLimitCache = new RateLimitCache({
     windowMs: config.rateLimit.windowMs,
+    maxRequests: config.rateLimit.maxRequests,
   });
   const rateLimitRepository = new InMemoryRateLimitRepository(rateLimitCache);
 
@@ -427,11 +428,7 @@ async function main(): Promise<void> {
       getUserRole,
       commandRegistry: registry,
       rateLimitRepository,
-      rateLimitConfig: {
-        windowMs: config.rateLimit.windowMs,
-        maxRequests: config.rateLimit.maxRequests,
-        ownerTelegramId: config.auth.ownerTelegramId,
-      },
+      ownerTelegramId: config.auth.ownerTelegramId,
     });
 
     return { registry, gateway };

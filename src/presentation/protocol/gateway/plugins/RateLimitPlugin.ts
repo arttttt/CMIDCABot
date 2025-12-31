@@ -20,30 +20,23 @@ import { StreamUtils } from "../stream.js";
 import { logger } from "../../../../infrastructure/shared/logging/index.js";
 
 /**
- * Configuration for RateLimitPlugin
- */
-export interface RateLimitConfig {
-  /** Window size in milliseconds */
-  windowMs: number;
-  /** Maximum requests allowed per window */
-  maxRequests: number;
-  /** Owner telegram ID (whitelisted, bypasses rate limit) */
-  ownerTelegramId: number;
-}
-
-/**
  * Get rate limit key from user identity
+ * @throws Error if HTTP identity has empty sessionId
  */
 function getRateLimitKey(identity: UserIdentity): string {
-  return identity.provider === "telegram"
-    ? `tg:${identity.telegramId}`
-    : `http:${identity.sessionId}`;
+  if (identity.provider === "telegram") {
+    return `tg:${identity.telegramId}`;
+  }
+  if (!identity.sessionId) {
+    throw new Error("HTTP identity must have non-empty sessionId for rate limiting");
+  }
+  return `http:${identity.sessionId}`;
 }
 
 class RateLimitHandler implements GatewayHandler {
   constructor(
     private readonly repository: RateLimitRepository,
-    private readonly config: RateLimitConfig,
+    private readonly ownerTelegramId: number,
     private readonly next: GatewayHandler,
   ) {}
 
@@ -54,19 +47,13 @@ class RateLimitHandler implements GatewayHandler {
     }
 
     const key = getRateLimitKey(req.identity);
-    const result = this.repository.checkAndRecord(
-      key,
-      ctx.nowMs,
-      this.config.windowMs,
-      this.config.maxRequests,
-    );
+    const result = await this.repository.checkAndRecord(key, ctx.nowMs);
 
     if (!result.allowed) {
       logger.warn("Gateway", "Rate limit exceeded", {
         requestId: ctx.requestId,
         key,
         count: result.count,
-        limit: this.config.maxRequests,
       });
 
       return StreamUtils.final(
@@ -80,7 +67,7 @@ class RateLimitHandler implements GatewayHandler {
   private isOwner(identity: UserIdentity): boolean {
     return (
       identity.provider === "telegram" &&
-      identity.telegramId === this.config.ownerTelegramId
+      identity.telegramId === this.ownerTelegramId
     );
   }
 }
@@ -88,10 +75,10 @@ class RateLimitHandler implements GatewayHandler {
 export class RateLimitPlugin implements GatewayPlugin {
   constructor(
     private readonly repository: RateLimitRepository,
-    private readonly config: RateLimitConfig,
+    private readonly ownerTelegramId: number,
   ) {}
 
   apply(next: GatewayHandler): GatewayHandler {
-    return new RateLimitHandler(this.repository, this.config, next);
+    return new RateLimitHandler(this.repository, this.ownerTelegramId, next);
   }
 }
