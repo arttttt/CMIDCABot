@@ -1,7 +1,7 @@
 ---
 description: Publish artifact to GitHub (create Issue, add to Project)
 argument-hint: "<artifact_name>"
-allowed-tools: Read, Edit, Glob, mcp__github-official__create_issue, mcp__github-official__get_issue, mcp__github-projects-local__list_projects, mcp__github-projects-local__get_project_fields, mcp__github-projects-local__add_issue_to_project, mcp__github-projects-local__update_project_item_field
+allowed-tools: Read, Edit, Glob, mcp__github-official__create_issue, mcp__github-official__get_issue, mcp__github-official__add_issue_comment, mcp__github-official__update_issue, mcp__github-projects-local__list_projects, mcp__github-projects-local__get_project_fields, mcp__github-projects-local__add_issue_to_project, mcp__github-projects-local__update_project_item_field
 ---
 
 ## Task
@@ -21,47 +21,76 @@ Publish an artifact (TASK or BRIEF) to GitHub by creating an Issue and adding it
    - If not found: `docs/briefs/BRIEF_<name>.md`
    - If neither exists: report error and exit
 
-3. **Check if already published:**
+3. **Check for linked Issue (TASK only):**
+   - If artifact is TASK:
+     - Check for corresponding BRIEF: `docs/briefs/BRIEF_<name>.md`
+     - If BRIEF exists and has `<!-- GitHub Issue: #<number> -->`:
+       - Extract `<number>` — this is the linked Issue
+       - Go to step 5b (publish TASK to existing Issue)
+   - Otherwise: continue to step 4
+
+4. **Check if already published:**
    - Read the artifact file
    - Look for `<!-- GitHub Issue: #<number> -->`
    - If found: report "Already published as Issue #<number>" and exit
 
-4. **Extract metadata from file:**
-   - Parse title from first `#` heading (this becomes Issue title, no prefixes)
+5. **Extract metadata from file:**
+   - Parse title from first `#` heading (this becomes Issue title)
    - Read full content of the artifact file
    - Determine artifact type (TASK or BRIEF) for label selection
+   - **Extract summary:**
+     1. Skip HTML comment `<!-- GitHub Issue: #xxx -->` if present
+     2. Skip first heading (`# Title`)
+     3. Take first paragraph (text until empty line) as summary
+     4. Translate to English if needed
+     5. Limit to ~200 chars, add "..." if truncated
 
-5. **Create GitHub Issue:**
+6. **Create new GitHub Issue** (skip if publishing TASK to existing Issue):
    - **Language:** All Issue content MUST be in English
-     - If artifact content is in Russian — translate to English
-     - Translation should preserve technical meaning, not be literal
-   - **Title:** Extract from first `#` heading in artifact file (no `[Task]` or `[Brief]` prefixes)
+   - **Title:** From first `#` heading (no `[Task]` or `[Brief]` prefixes)
    - **Labels:**
      - For TASK file: `stage:spec`
      - For BRIEF file: `stage:brief`
    - **Body format:**
      ```
+     <summary>
+
+     ---
+     _Artifacts attached as comments below_
+     _Source: `<filepath>` (local, not yet in main)_
+     ```
+
+7. **Update existing Issue** (only when publishing TASK to Issue from BRIEF):
+   - Do NOT modify Issue body
+   - Update label: remove `stage:brief`, add `stage:spec`
+
+8. **Add artifact content as comment:**
+   - **Comment format:**
+     ```
+     ## Brief | Specification
+
      <full artifact content, translated to English if needed>
 
      ---
-     _Source: `<filepath>` (local, not yet in main)_
+     _Source: `<filepath>`_
      ```
-   - If MCP unavailable: show error and exit
+   - Use `## Brief` for BRIEF artifacts
+   - Use `## Specification` for TASK artifacts
 
-6. **Add to Project:**
+9. **Add to Project:**
    - Find project "CMI DCA Bot" using `list_projects`
    - Get project fields to find "Status" field ID and option IDs
-   - Add issue to project
+   - Add issue to project (skip if already in project)
    - Set Status field:
      - For TASK → "Todo"
      - For BRIEF → "Backlog"
    - If fails: show warning, continue (Issue is still created)
 
-7. **Update artifact file:**
-   - Prepend `<!-- GitHub Issue: #<number> -->` as first line
-   - Keep all existing content
+10. **Update artifact file:**
+    - Prepend `<!-- GitHub Issue: #<number> -->` as first line
+    - Keep all existing content
 
-8. **Report result:**
+11. **Report result:**
    ```
    ✅ Published: <filename>
    - Issue: #<number>
