@@ -14,3 +14,4 @@ export * from "./PriceRepository.js";
 export * from "./SwapRepository.js";
 export * from "./SecretStoreRepository.js";
 export * from "./ImportSessionRepository.js";
+export * from "./RateLimitRepository.js";
