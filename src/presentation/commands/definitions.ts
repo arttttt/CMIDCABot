@@ -52,6 +52,11 @@ export const Definitions = {
     name: "version",
     description: "Show bot version",
   },
+
+  help: {
+    name: "help",
+    description: "Show available commands",
+  },
 } as const satisfies Record<string, CommandDefinition>;
 
 /**
