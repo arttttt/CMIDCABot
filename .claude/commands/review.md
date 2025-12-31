@@ -1,7 +1,7 @@
 ---
 description: Code review of files or component
 argument-hint: "<file_path> | <component_name>"
-allowed-tools: Read, Write, Glob, Grep, mcp__github-official__update_issue, mcp__github-official__get_issue, mcp__github-official__add_issue_comment, mcp__github-projects-local__list_projects, mcp__github-projects-local__get_project_items, mcp__github-projects-local__move_item_to_column, mcp__github-projects-local__get_project_fields
+allowed-tools: Read, Write, Glob, Grep, mcp__github-official__update_issue, mcp__github-official__get_issue, mcp__github-projects-local__list_projects, mcp__github-projects-local__get_project_items, mcp__github-projects-local__move_item_to_column, mcp__github-projects-local__get_project_fields
 ---
 
 Use subagent `reviewer`.
@@ -40,7 +40,6 @@ Conduct code review and create report.
    - If Issue number found:
      - Update labels: remove `stage:impl`, add `stage:review`
      - Move to "Review" column in project
-     - Add comment with link to REVIEW file and summary
    - If MCP unavailable: show warning, continue
 
 7. **Report result:**
