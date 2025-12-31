@@ -5,7 +5,11 @@
  * Commands can have handlers, subcommands, and callbacks.
  */
 
-import { Command } from "./types.js";
+import { Command, CommandRegistry } from "./types.js";
+import type { UserRole } from "../../domain/models/AuthorizedUser.js";
+import { RoleGuard } from "../protocol/gateway/RoleGuard.js";
+import { GetUserRoleUseCase } from "../../domain/usecases/index.js";
+import { HelpFormatter } from "../formatters/index.js";
 import { Definitions } from "./definitions.js";
 
 // Use cases
@@ -146,6 +150,19 @@ export interface StartCommandDeps {
 export interface VersionCommandDeps {
   version: string;
   formatter: AdminFormatter;
+}
+
+/**
+ * External dependencies for help command (passed from DI container)
+ * getRegistry is added by registry itself to break circular dependency
+ */
+export interface HelpCommandExternalDeps {
+  helpFormatter: HelpFormatter;
+  getUserRole: GetUserRoleUseCase;
+}
+
+export interface HelpCommandDeps extends HelpCommandExternalDeps {
+  getRegistry: () => CommandRegistry;
 }
 
 // ============================================================
@@ -677,6 +694,44 @@ export function createVersionCommand(deps: VersionCommandDeps): Command {
     requiredRole: "admin",
     handler: async () => {
       return deps.formatter.formatVersion(deps.version);
+    },
+  };
+}
+
+// ============================================================
+// Help command factory
+// ============================================================
+
+/**
+ * Filter commands by user role.
+ * Returns only commands the user has access to.
+ */
+function filterCommandsByRole(
+  commands: Map<string, Command>,
+  role: UserRole,
+): Map<string, Command> {
+  const filtered = new Map<string, Command>();
+  for (const [name, cmd] of commands) {
+    if (RoleGuard.canAccess(role, cmd.requiredRole)) {
+      filtered.set(name, cmd);
+    }
+  }
+  return filtered;
+}
+
+export function createHelpCommand(deps: HelpCommandDeps): Command {
+  return {
+    definition: Definitions.help,
+    requiredRole: "guest",
+    handler: async (_args, telegramId) => {
+      const role = await deps.getUserRole.execute({
+        provider: "telegram",
+        telegramId,
+      });
+      const allCommands = deps.getRegistry().getCommands();
+      const filtered = filterCommandsByRole(allCommands, role);
+      const modeInfo = deps.getRegistry().getModeInfo();
+      return { text: deps.helpFormatter.formatHelp(filtered, modeInfo) };
     },
   };
 }
