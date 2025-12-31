@@ -78,6 +78,7 @@ import {
   AdminFormatter,
   InviteFormatter,
   ProgressFormatter,
+  HelpFormatter,
 } from "./presentation/formatters/index.js";
 import {
   createTelegramBot,
@@ -304,6 +305,7 @@ async function main(): Promise<void> {
   const swapFormatter = new SwapFormatter();
   const adminFormatter = new AdminFormatter();
   const progressFormatter = new ProgressFormatter();
+  const helpFormatter = new HelpFormatter();
 
   // Helper function to build registry and handler
   function createRegistryAndHandler(withImportSession: ImportSessionRepository, botUsername?: string) {
@@ -335,6 +337,13 @@ async function main(): Promise<void> {
     const versionDeps = {
       version: pkg.version,
       formatter: adminFormatter,
+    };
+
+    // Help command deps (shared between dev and prod)
+    // Note: getRegistry is added in registry constructor to break circular dependency
+    const helpDeps = {
+      helpFormatter,
+      getUserRole,
     };
 
     // Build command registry based on mode
@@ -380,6 +389,7 @@ async function main(): Promise<void> {
         },
         admin: adminDeps,
         version: versionDeps,
+        help: helpDeps,
       };
       registry = new DevCommandRegistry(deps);
     } else {
@@ -403,6 +413,7 @@ async function main(): Promise<void> {
         },
         admin: adminDeps,
         version: versionDeps,
+        help: helpDeps,
       };
       registry = new ProdCommandRegistry(deps);
     }
