@@ -21,6 +21,7 @@ import {
 } from "./types.js";
 import { AuthorizationHelper } from "../../domain/helpers/AuthorizationHelper.js";
 import { hasRequiredRole, type UserRole } from "../../domain/models/AuthorizedUser.js";
+import { CommandExecutionContext } from "../commands/CommandExecutionContext.js";
 
 export class ProtocolHandler {
   private helpFormatter: HelpFormatter;
@@ -117,7 +118,12 @@ export class ProtocolHandler {
     }
 
     // Route through command tree
-    return routeCommand(cmd, args, telegramId);
+    const execCtx = new CommandExecutionContext(
+      `legacy-${Date.now()}`,
+      { provider: "telegram", telegramId },
+      userRole,
+    );
+    return routeCommand(cmd, args, execCtx);
   }
 
   private async *handleCommandStreaming(
@@ -165,7 +171,12 @@ export class ProtocolHandler {
     }
 
     // Route through command tree with streaming
-    yield* routeCommandStreaming(cmd, args, telegramId);
+    const execCtx = new CommandExecutionContext(
+      `legacy-${Date.now()}`,
+      { provider: "telegram", telegramId },
+      userRole,
+    );
+    yield* routeCommandStreaming(cmd, args, execCtx);
   }
 
   /**
@@ -193,14 +204,19 @@ export class ProtocolHandler {
     }
 
     // Check role requirement
+    const userRole: UserRole = (await this.authHelper.getRole(ctx.telegramId)) ?? "guest";
     if (result.requiredRole) {
-      const userRole: UserRole = (await this.authHelper.getRole(ctx.telegramId)) ?? "guest";
       if (!hasRequiredRole(userRole, result.requiredRole)) {
         return new ClientResponse("Unknown action.");
       }
     }
 
-    return result.handler(ctx.telegramId);
+    const execCtx = new CommandExecutionContext(
+      `legacy-${Date.now()}`,
+      { provider: "telegram", telegramId: ctx.telegramId },
+      userRole,
+    );
+    return result.handler(execCtx);
   }
 
 }

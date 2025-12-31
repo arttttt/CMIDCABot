@@ -2,7 +2,7 @@
  * Command router - recursive command execution and callback routing
  */
 
-import { Command, CallbackHandler, CallbackLookupResult } from "./types.js";
+import { Command, CallbackHandler, CallbackLookupResult, CommandExecutionContext } from "./types.js";
 import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 import { ClientResponse, ClientResponseStream } from "../protocol/types.js";
 
@@ -41,19 +41,19 @@ export function findTargetCommand(cmd: Command, args: string[]): RoutedCommand {
  *
  * @param cmd - Command to execute
  * @param args - Remaining arguments
- * @param telegramId - User's telegram ID
+ * @param ctx - Command execution context
  * @returns ClientResponse from the matched handler
  */
 export async function routeCommand(
   cmd: Command,
   args: string[],
-  telegramId: number,
+  ctx: CommandExecutionContext,
 ): Promise<ClientResponse> {
   const { command, args: finalArgs } = findTargetCommand(cmd, args);
 
   // Execute this command's handler
   if (command.handler) {
-    return command.handler(finalArgs, telegramId);
+    return command.handler(finalArgs, ctx);
   }
 
   // No handler - return unknown subcommand message
@@ -68,25 +68,25 @@ export async function routeCommand(
  *
  * @param cmd - Command to execute
  * @param args - Remaining arguments
- * @param telegramId - User's telegram ID
+ * @param ctx - Command execution context
  * @returns ClientResponseStream for progress and final result
  */
 export async function* routeCommandStreaming(
   cmd: Command,
   args: string[],
-  telegramId: number,
+  ctx: CommandExecutionContext,
 ): ClientResponseStream {
   const { command, args: finalArgs } = findTargetCommand(cmd, args);
 
   // Prefer streaming handler if available
   if (command.streamingHandler) {
-    yield* command.streamingHandler(finalArgs, telegramId);
+    yield* command.streamingHandler(finalArgs, ctx);
     return;
   }
 
   // Fall back to regular handler
   if (command.handler) {
-    const response = await command.handler(finalArgs, telegramId);
+    const response = await command.handler(finalArgs, ctx);
     yield { response, mode: "final" };
     return;
   }

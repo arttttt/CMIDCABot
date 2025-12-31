@@ -315,7 +315,6 @@ async function main(): Promise<void> {
     // Start command deps (shared between dev and prod)
     const startDeps = {
       initUser,
-      authHelper,
       activateInvite: inviteFormatter ? activateInvite : undefined,
       inviteFormatter,
     };
@@ -343,7 +342,6 @@ async function main(): Promise<void> {
     // Note: getRegistry is added in registry constructor to break circular dependency
     const helpDeps = {
       helpFormatter,
-      getUserRole,
     };
 
     // Build command registry based on mode

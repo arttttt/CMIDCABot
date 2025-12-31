@@ -9,19 +9,9 @@
 
 import { ClientResponse, ClientResponseStream } from "../protocol/types.js";
 import type { UserRole } from "../../domain/models/AuthorizedUser.js";
-import type { UserIdentity } from "../../domain/models/UserIdentity.js";
+import type { CommandExecutionContext } from "./CommandExecutionContext.js";
 
-/**
- * Command execution context
- *
- * Typed context passed to command handlers (future migration).
- * Replaces raw telegramId parameter.
- */
-export interface CommandExecutionContext {
-  requestId: string;
-  identity: UserIdentity;
-  role: UserRole;
-}
+export type { CommandExecutionContext };
 
 /**
  * Command definition - metadata for help/registration
@@ -36,17 +26,23 @@ export interface CommandDefinition {
 /**
  * Command handler function signature
  */
-export type CommandHandler = (args: string[], telegramId: number) => Promise<ClientResponse>;
+export type CommandHandler = (
+  args: string[],
+  ctx: CommandExecutionContext,
+) => Promise<ClientResponse>;
 
 /**
  * Streaming command handler - returns AsyncGenerator for progress updates
  */
-export type StreamingCommandHandler = (args: string[], telegramId: number) => ClientResponseStream;
+export type StreamingCommandHandler = (
+  args: string[],
+  ctx: CommandExecutionContext,
+) => ClientResponseStream;
 
 /**
  * Callback handler function signature
  */
-export type CallbackHandler = (telegramId: number) => Promise<ClientResponse>;
+export type CallbackHandler = (ctx: CommandExecutionContext) => Promise<ClientResponse>;
 
 /**
  * Result of callback lookup - includes handler and required role
