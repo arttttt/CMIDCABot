@@ -22,21 +22,31 @@ Create task specification for Developer.
    - Check `docs/briefs/` for related briefs
    - Study existing code if needed
 
-3. **Inherit GitHub Issue from BRIEF (if exists):**
+3. **🚨 Clarify ALL ambiguities:**
+   - List ALL unclear points as numbered questions
+   - Ask user, wait for answers
+   - Repeat if new questions arise from answers
+   - Do NOT proceed until EVERY question is resolved
+
+4. **Confirm scope:**
+   - Summarize understanding back to user (2-3 sentences)
+   - Wait for user confirmation ("да", "ok", "yes")
+
+5. **Inherit GitHub Issue from BRIEF (if exists):**
    - Look for `docs/briefs/BRIEF_<name>.md`
    - If found, parse first line for `<!-- GitHub Issue: #xxx -->`
    - Store Issue number for use in created file
 
-4. **Create file:** `docs/tasks/TASK_<name>.md`
+6. **Create file:** `docs/tasks/TASK_<name>.md`
    - **If Issue inherited from BRIEF:** prepend `<!-- GitHub Issue: #xxx -->` as first line
    - Content sections:
      - Context — why this is needed
      - Acceptance Criteria — checklist with `- [ ]`
      - Scope / Out of Scope — boundaries
-     - Technical Notes — hints
-     - Open Questions — unresolved questions
+     - Technical Notes — hints (optional)
+   - **NO "Open Questions" section**
 
-5. **Report result:**
+7. **Report result:**
    ```
    ✅ Created: docs/tasks/TASK_<name>.md
 
