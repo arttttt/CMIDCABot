@@ -13,6 +13,7 @@ import { StreamUtils } from "../stream.js";
 import { GatewayMessages } from "../messages.js";
 import { RoleGuard } from "../RoleGuard.js";
 import { findCallbackByPath } from "../../../commands/router.js";
+import { CommandExecutionContext } from "../../../commands/CommandExecutionContext.js";
 
 export class TelegramCallbackHandler implements RequestHandler<"telegram-callback"> {
   readonly kind = "telegram-callback";
@@ -33,8 +34,8 @@ export class TelegramCallbackHandler implements RequestHandler<"telegram-callbac
       return StreamUtils.final(new ClientResponse(GatewayMessages.UNKNOWN_ACTION));
     }
 
-    const telegramId = req.identity.telegramId;
-    const response = await result.handler(telegramId);
+    const execCtx = new CommandExecutionContext(ctx.requestId, req.identity, ctx.getRole());
+    const response = await result.handler(execCtx);
     return StreamUtils.final(response);
   }
 }

@@ -8,7 +8,6 @@
 import { Command, CommandRegistry } from "./types.js";
 import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 import { RoleGuard } from "../protocol/gateway/RoleGuard.js";
-import { GetUserRoleUseCase } from "../../domain/usecases/index.js";
 import { HelpFormatter } from "../formatters/index.js";
 import { Definitions } from "./definitions.js";
 
@@ -35,7 +34,6 @@ import {
   AddAuthorizedUserUseCase,
   GetAllAuthorizedUsersUseCase,
   UpdateUserRoleUseCase,
-  AuthorizationHelper,
 } from "../../domain/usecases/index.js";
 
 // Services
@@ -142,7 +140,6 @@ export interface AdminCommandDeps {
 
 export interface StartCommandDeps {
   initUser: InitUserUseCase;
-  authHelper: AuthorizationHelper;
   activateInvite?: ActivateInviteUseCase;
   inviteFormatter?: InviteFormatter;
 }
@@ -158,7 +155,6 @@ export interface VersionCommandDeps {
  */
 export interface HelpCommandExternalDeps {
   helpFormatter: HelpFormatter;
-  getUserRole: GetUserRoleUseCase;
 }
 
 export interface HelpCommandDeps extends HelpCommandExternalDeps {
@@ -172,8 +168,8 @@ export interface HelpCommandDeps extends HelpCommandExternalDeps {
 function createWalletCreateCommand(deps: WalletCommandDeps): Command {
   return {
     definition: { name: "create", description: "Create new wallet" },
-    handler: async (_args, telegramId) => {
-      const result = await deps.createWallet.execute(telegramId);
+    handler: async (_args, ctx) => {
+      const result = await deps.createWallet.execute(ctx.telegramId);
       return deps.formatter.formatCreateWallet(result);
     },
   };
@@ -182,8 +178,8 @@ function createWalletCreateCommand(deps: WalletCommandDeps): Command {
 function createWalletImportCommand(deps: WalletCommandDeps): Command {
   return {
     definition: { name: "import", description: "Import wallet via secure web form" },
-    handler: async (_args, telegramId) => {
-      const url = deps.importSessionStore.store(telegramId);
+    handler: async (_args, ctx) => {
+      const url = deps.importSessionStore.store(ctx.telegramId);
       const ttlMinutes = deps.importSessionStore.getTtlMinutes();
       return deps.formatter.formatImportLink(url, ttlMinutes);
     },
@@ -193,8 +189,8 @@ function createWalletImportCommand(deps: WalletCommandDeps): Command {
 function createWalletExportCommand(deps: WalletCommandDeps): Command {
   return {
     definition: { name: "export", description: "Export private key" },
-    handler: async (_args, telegramId) => {
-      const result = await deps.exportWalletKey.execute(telegramId);
+    handler: async (_args, ctx) => {
+      const result = await deps.exportWalletKey.execute(ctx.telegramId);
       return deps.formatter.formatExportKey(result);
     },
   };
@@ -203,8 +199,8 @@ function createWalletExportCommand(deps: WalletCommandDeps): Command {
 function createWalletDeleteCommand(deps: WalletCommandDeps): Command {
   return {
     definition: { name: "delete", description: "Delete wallet" },
-    handler: async (_args, telegramId) => {
-      const result = await deps.deleteWallet.execute(telegramId);
+    handler: async (_args, ctx) => {
+      const result = await deps.deleteWallet.execute(ctx.telegramId);
       return deps.formatter.formatDeleteWallet(result);
     },
   };
@@ -218,8 +214,8 @@ export function createWalletCommand(deps: WalletCommandDeps): Command {
   return {
     definition: Definitions.wallet,
     requiredRole: "user",
-    handler: async (_args, telegramId) => {
-      const result = await deps.showWallet.execute(telegramId);
+    handler: async (_args, ctx) => {
+      const result = await deps.showWallet.execute(ctx.telegramId);
       return deps.formatter.formatShowWallet(result);
     },
     subcommands: new Map([
@@ -238,8 +234,8 @@ export function createWalletCommand(deps: WalletCommandDeps): Command {
 function createDcaStartCommand(deps: DcaCommandDeps): Command {
   return {
     definition: { name: "start", description: "Start automatic purchases" },
-    handler: async (_args, telegramId) => {
-      const result = await deps.startDca.execute(telegramId);
+    handler: async (_args, ctx) => {
+      const result = await deps.startDca.execute(ctx.telegramId);
       return deps.formatter.formatStart(result);
     },
   };
@@ -248,8 +244,8 @@ function createDcaStartCommand(deps: DcaCommandDeps): Command {
 function createDcaStopCommand(deps: DcaCommandDeps): Command {
   return {
     definition: { name: "stop", description: "Stop automatic purchases" },
-    handler: async (_args, telegramId) => {
-      const result = await deps.stopDca.execute(telegramId);
+    handler: async (_args, ctx) => {
+      const result = await deps.stopDca.execute(ctx.telegramId);
       return deps.formatter.formatStop(result);
     },
   };
@@ -263,8 +259,8 @@ export function createDcaCommand(deps: DcaCommandDeps): Command {
   return {
     definition: Definitions.dca,
     requiredRole: "user",
-    handler: async (_args, telegramId) => {
-      const result = await deps.getDcaStatus.execute(telegramId);
+    handler: async (_args, ctx) => {
+      const result = await deps.getDcaStatus.execute(ctx.telegramId);
       return deps.formatter.formatStatus(result);
     },
     subcommands: new Map([
@@ -281,11 +277,11 @@ export function createDcaCommand(deps: DcaCommandDeps): Command {
 function createPortfolioStatusCommand(deps: PortfolioCommandDeps): Command {
   return {
     definition: { name: "status", description: "Show portfolio status" },
-    handler: async (_args, telegramId) => {
+    handler: async (_args, ctx) => {
       if (!deps.getPortfolioStatus) {
         return deps.portfolioFormatter.formatStatus({ type: "unavailable" });
       }
-      const result = await deps.getPortfolioStatus.execute(telegramId);
+      const result = await deps.getPortfolioStatus.execute(ctx.telegramId);
       return deps.portfolioFormatter.formatStatus(result);
     },
   };
@@ -295,7 +291,7 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
   return {
     definition: { name: "buy", description: "Buy asset for USDC amount", usage: "<amount>" },
     // Fallback handler for non-streaming contexts
-    handler: async (args, telegramId) => {
+    handler: async (args, ctx) => {
       if (!deps.executePurchase) {
         return deps.purchaseFormatter.format({ type: "unavailable" });
       }
@@ -309,7 +305,7 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
       }
       // Collect result from streaming execute
       let result: PurchaseResult = { type: "unavailable" };
-      for await (const step of deps.executePurchase.execute(telegramId, amount)) {
+      for await (const step of deps.executePurchase.execute(ctx.telegramId, amount)) {
         if (step.step === "completed") {
           result = step.result;
         }
@@ -317,7 +313,7 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
       return deps.purchaseFormatter.format(result);
     },
     // Streaming handler for progress updates
-    streamingHandler: async function* (args, telegramId): AsyncGenerator<StreamItem> {
+    streamingHandler: async function* (args, ctx): AsyncGenerator<StreamItem> {
       if (!deps.executePurchase) {
         yield {
           response: deps.purchaseFormatter.format({ type: "unavailable" }),
@@ -337,7 +333,7 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
       }
 
       // Stream progress from use case
-      for await (const step of deps.executePurchase.execute(telegramId, amount)) {
+      for await (const step of deps.executePurchase.execute(ctx.telegramId, amount)) {
         if (step.step === "completed") {
           yield {
             response: deps.purchaseFormatter.format(step.result),
@@ -360,11 +356,11 @@ export function createPortfolioCommand(deps: PortfolioCommandDeps): Command {
   return {
     definition: Definitions.portfolio,
     requiredRole: "user",
-    handler: async (_args, telegramId) => {
+    handler: async (_args, ctx) => {
       if (!deps.getPortfolioStatus) {
         return deps.portfolioFormatter.formatStatus({ type: "unavailable" });
       }
-      const result = await deps.getPortfolioStatus.execute(telegramId);
+      const result = await deps.getPortfolioStatus.execute(ctx.telegramId);
       return deps.portfolioFormatter.formatStatus(result);
     },
     subcommands: new Map([
@@ -382,7 +378,7 @@ export function createPricesCommand(deps: PricesCommandDeps): Command {
   return {
     definition: Definitions.prices,
     requiredRole: "user",
-    handler: async () => {
+    handler: async (_args, _ctx) => {
       const result = await deps.getPrices.execute();
       return deps.formatter.format(result);
     },
@@ -396,7 +392,7 @@ export function createPricesCommand(deps: PricesCommandDeps): Command {
 function createSwapQuoteCommand(deps: SwapCommandDeps): Command {
   return {
     definition: { name: "quote", description: "Get quote for swap", usage: "<amount> [asset]" },
-    handler: async (args) => {
+    handler: async (args, _ctx) => {
       const amountStr = args[0];
       if (!amountStr) {
         return deps.quoteFormatter.formatUsage();
@@ -415,7 +411,7 @@ function createSwapQuoteCommand(deps: SwapCommandDeps): Command {
 function createSwapSimulateCommand(deps: SwapCommandDeps): Command {
   return {
     definition: { name: "simulate", description: "Simulate swap without executing", usage: "<amount> [asset]" },
-    handler: async (args, telegramId) => {
+    handler: async (args, ctx) => {
       const amountStr = args[0];
       if (!amountStr) {
         return deps.simulateFormatter.formatUsage();
@@ -425,7 +421,7 @@ function createSwapSimulateCommand(deps: SwapCommandDeps): Command {
         return deps.simulateFormatter.formatUsage();
       }
       const asset = args[1] || "SOL";
-      const result = await deps.simulateSwap.execute(telegramId, amount, asset);
+      const result = await deps.simulateSwap.execute(ctx.telegramId, amount, asset);
       return deps.simulateFormatter.format(result);
     },
   };
@@ -435,7 +431,7 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
   return {
     definition: { name: "execute", description: "Execute real swap", usage: "<amount> [asset]" },
     // Fallback handler for non-streaming contexts
-    handler: async (args, telegramId) => {
+    handler: async (args, ctx) => {
       const amountStr = args[0];
       if (!amountStr) {
         return deps.swapFormatter.formatUsage();
@@ -447,7 +443,7 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
       const asset = args[1] || "SOL";
       // Collect result from streaming execute
       let result: SwapResult = { status: "unavailable" };
-      for await (const step of deps.executeSwap.execute(telegramId, amount, asset)) {
+      for await (const step of deps.executeSwap.execute(ctx.telegramId, amount, asset)) {
         if (step.step === "completed") {
           result = step.result;
         }
@@ -455,7 +451,7 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
       return deps.swapFormatter.format(result);
     },
     // Streaming handler for progress updates
-    streamingHandler: async function* (args, telegramId): AsyncGenerator<StreamItem> {
+    streamingHandler: async function* (args, ctx): AsyncGenerator<StreamItem> {
       const amountStr = args[0];
       if (!amountStr) {
         yield { response: deps.swapFormatter.formatUsage(), mode: "final" };
@@ -469,7 +465,7 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
       const asset = args[1] || "SOL";
 
       // Stream progress from use case
-      for await (const step of deps.executeSwap.execute(telegramId, amount, asset)) {
+      for await (const step of deps.executeSwap.execute(ctx.telegramId, amount, asset)) {
         if (step.step === "completed") {
           yield {
             response: deps.swapFormatter.format(step.result),
@@ -492,7 +488,7 @@ export function createSwapCommand(deps: SwapCommandDeps): Command {
   return {
     definition: Definitions.swap,
     requiredRole: "user",
-    handler: async () => {
+    handler: async (_args, _ctx) => {
       return deps.swapFormatter.formatUnifiedUsage();
     },
     subcommands: new Map([
@@ -510,7 +506,7 @@ export function createSwapCommand(deps: SwapCommandDeps): Command {
 function createAdminAddCommand(deps: AdminCommandDeps): Command {
   return {
     definition: { name: "add", description: "Add authorized user", usage: "<user_id> [role]" },
-    handler: async (args, telegramId) => {
+    handler: async (args, ctx) => {
       const idStr = args[0];
       if (!idStr) {
         return deps.formatter.formatAddUsage();
@@ -528,7 +524,7 @@ function createAdminAddCommand(deps: AdminCommandDeps): Command {
         return deps.formatter.formatInvalidRole(roleStr);
       }
 
-      const result = await deps.addAuthorizedUser.execute(telegramId, targetId, role);
+      const result = await deps.addAuthorizedUser.execute(ctx.telegramId, targetId, role);
       return deps.formatter.formatResult(result);
     },
   };
@@ -537,7 +533,7 @@ function createAdminAddCommand(deps: AdminCommandDeps): Command {
 function createAdminRemoveCommand(deps: AdminCommandDeps): Command {
   return {
     definition: { name: "remove", description: "Remove authorized user", usage: "<user_id>" },
-    handler: async (args, telegramId) => {
+    handler: async (args, ctx) => {
       const idStr = args[0];
       if (!idStr) {
         return deps.formatter.formatRemoveUsage();
@@ -549,7 +545,7 @@ function createAdminRemoveCommand(deps: AdminCommandDeps): Command {
       }
       const targetId = resolveResult.telegramId;
 
-      const result = await deps.deleteUserData.execute(telegramId, targetId);
+      const result = await deps.deleteUserData.execute(ctx.telegramId, targetId);
       return deps.formatter.formatResult(result);
     },
   };
@@ -558,7 +554,7 @@ function createAdminRemoveCommand(deps: AdminCommandDeps): Command {
 function createAdminListCommand(deps: AdminCommandDeps): Command {
   return {
     definition: { name: "list", description: "List all authorized users" },
-    handler: async () => {
+    handler: async (_args, _ctx) => {
       const result = await deps.getAllAuthorizedUsers.execute();
       return deps.formatter.formatUserList(result.users);
     },
@@ -568,7 +564,7 @@ function createAdminListCommand(deps: AdminCommandDeps): Command {
 function createAdminRoleCommand(deps: AdminCommandDeps): Command {
   return {
     definition: { name: "role", description: "Change user role", usage: "<user_id> <role>" },
-    handler: async (args, telegramId) => {
+    handler: async (args, ctx) => {
       const idStr = args[0];
       const roleStr = args[1];
 
@@ -587,7 +583,7 @@ function createAdminRoleCommand(deps: AdminCommandDeps): Command {
         return deps.formatter.formatInvalidRole(roleStr);
       }
 
-      const result = await deps.updateUserRole.execute(telegramId, targetId, role);
+      const result = await deps.updateUserRole.execute(ctx.telegramId, targetId, role);
       return deps.formatter.formatResult(result);
     },
   };
@@ -603,14 +599,14 @@ function createAdminInviteCommand(deps: AdminCommandDeps): Command | undefined {
 
   return {
     definition: { name: "invite", description: "Create invite link", usage: "[role]" },
-    handler: async (args, telegramId) => {
+    handler: async (args, ctx) => {
       const roleStr = args[0] || "user";
       const role = parseRole(roleStr);
       if (!role) {
         return inviteFormatter.formatUsage();
       }
 
-      const result = await generateInvite.execute(telegramId, role);
+      const result = await generateInvite.execute(ctx.telegramId, role);
       return inviteFormatter.formatGenerateResult(result);
     },
   };
@@ -637,7 +633,7 @@ export function createAdminCommand(deps: AdminCommandDeps): Command {
   return {
     definition: Definitions.admin,
     requiredRole: "admin",
-    handler: async () => {
+    handler: async (_args, _ctx) => {
       return deps.formatter.formatHelp(!!inviteCmd);
     },
     subcommands,
@@ -652,24 +648,23 @@ export function createStartCommand(deps: StartCommandDeps): Command {
   return {
     definition: Definitions.start,
     requiredRole: "guest",
-    handler: async (args, telegramId) => {
+    handler: async (args, ctx) => {
       const param = args[0];
 
       // Check for invite token parameter (inv_<token>)
       if (param?.startsWith("inv_") && deps.activateInvite && deps.inviteFormatter) {
         const token = param.slice(4); // Remove "inv_" prefix
-        const result = await deps.activateInvite.execute(token, telegramId);
+        const result = await deps.activateInvite.execute(token, ctx.telegramId);
         return deps.inviteFormatter.formatActivateResult(result);
       }
 
-      // Check if user is authorized
-      const role = await deps.authHelper.getRole(telegramId);
-      if (!role) {
+      // Check if user is authorized (role comes from ctx, loaded by LoadRolePlugin)
+      if (ctx.role === "guest") {
         return { text: "You need an invite link to use this bot." };
       }
 
       // Initialize user (for authorized users)
-      await deps.initUser.execute(telegramId);
+      await deps.initUser.execute(ctx.telegramId);
 
       let text = "**CMI DCA Bot**\n\n";
       text += "Target allocations:\n";
@@ -692,7 +687,7 @@ export function createVersionCommand(deps: VersionCommandDeps): Command {
   return {
     definition: Definitions.version,
     requiredRole: "admin",
-    handler: async () => {
+    handler: async (_args, _ctx) => {
       return deps.formatter.formatVersion(deps.version);
     },
   };
@@ -723,13 +718,9 @@ export function createHelpCommand(deps: HelpCommandDeps): Command {
   return {
     definition: Definitions.help,
     requiredRole: "guest",
-    handler: async (_args, telegramId) => {
-      const role = await deps.getUserRole.execute({
-        provider: "telegram",
-        telegramId,
-      });
+    handler: async (_args, ctx) => {
       const allCommands = deps.getRegistry().getCommands();
-      const filtered = filterCommandsByRole(allCommands, role);
+      const filtered = filterCommandsByRole(allCommands, ctx.role);
       const modeInfo = deps.getRegistry().getModeInfo();
       return { text: deps.helpFormatter.formatHelp(filtered, modeInfo) };
     },

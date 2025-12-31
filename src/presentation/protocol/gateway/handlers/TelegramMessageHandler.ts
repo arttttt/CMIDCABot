@@ -13,6 +13,7 @@ import { StreamUtils } from "../stream.js";
 import { GatewayMessages } from "../messages.js";
 import { RoleGuard } from "../RoleGuard.js";
 import { routeCommandStreaming } from "../../../commands/router.js";
+import { CommandExecutionContext } from "../../../commands/CommandExecutionContext.js";
 
 export class TelegramMessageHandler implements RequestHandler<"telegram-message"> {
   readonly kind = "telegram-message";
@@ -43,7 +44,7 @@ export class TelegramMessageHandler implements RequestHandler<"telegram-message"
       return StreamUtils.final(new ClientResponse(GatewayMessages.UNKNOWN_COMMAND));
     }
 
-    const telegramId = req.identity.telegramId;
-    return routeCommandStreaming(cmd, args, telegramId);
+    const execCtx = new CommandExecutionContext(ctx.requestId, req.identity, ctx.getRole());
+    return routeCommandStreaming(cmd, args, execCtx);
   }
 }
