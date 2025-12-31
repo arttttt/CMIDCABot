@@ -6,6 +6,7 @@
  */
 
 import type { GetUserRoleUseCase } from "../../../domain/usecases/GetUserRoleUseCase.js";
+import type { RateLimitRepository } from "../../../domain/repositories/RateLimitRepository.js";
 import type { CommandRegistry } from "../../commands/types.js";
 import { Gateway } from "./Gateway.js";
 import { GatewayCore } from "./GatewayCore.js";
@@ -14,6 +15,7 @@ import { TelegramCallbackHandler } from "./handlers/TelegramCallbackHandler.js";
 import { HttpRequestHandler } from "./handlers/HttpRequestHandler.js";
 import { ErrorBoundaryPlugin } from "./plugins/ErrorBoundaryPlugin.js";
 import { LoadRolePlugin } from "./plugins/LoadRolePlugin.js";
+import { RateLimitPlugin, type RateLimitConfig } from "./plugins/RateLimitPlugin.js";
 
 /**
  * Dependencies for creating Gateway
@@ -21,6 +23,8 @@ import { LoadRolePlugin } from "./plugins/LoadRolePlugin.js";
 export interface GatewayFactoryDeps {
   getUserRole: GetUserRoleUseCase;
   commandRegistry: CommandRegistry;
+  rateLimitRepository: RateLimitRepository;
+  rateLimitConfig: RateLimitConfig;
 }
 
 /**
@@ -31,11 +35,11 @@ export class GatewayFactory {
    * Create configured Gateway instance
    *
    * Assembles Gateway with:
-   * - Plugins: ErrorBoundary (outermost), LoadRole
+   * - Plugins: ErrorBoundary (outermost), RateLimit, LoadRole
    * - Handlers: TelegramMessage, TelegramCallback, Http
    *
    * Plugin chain order (execution):
-   * Request → ErrorBoundary → LoadRole → GatewayCore → Handlers
+   * Request → ErrorBoundary → RateLimit → LoadRole → GatewayCore → Handlers
    */
   static create(deps: GatewayFactoryDeps): Gateway {
     const handlers = [
@@ -48,6 +52,7 @@ export class GatewayFactory {
 
     const plugins = [
       new ErrorBoundaryPlugin(),
+      new RateLimitPlugin(deps.rateLimitRepository, deps.rateLimitConfig),
       new LoadRolePlugin(deps.getUserRole),
     ];
 

@@ -57,6 +57,10 @@ const envSchema = z
     ).default(false),
     WEB_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
 
+    // Rate limiting
+    RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
+    RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(30),
+
     // Development only
     DEV_WALLET_PRIVATE_KEY: z.string().optional(),
   })
@@ -175,6 +179,11 @@ export interface PriceConfig {
   jupiterApiKey?: string;
 }
 
+export interface RateLimitConfig {
+  windowMs: number;
+  maxRequests: number;
+}
+
 export interface Config {
   telegram: TelegramConfig;
   solana: SolanaConfig;
@@ -186,6 +195,7 @@ export interface Config {
   auth: AuthConfig;
   http: HttpConfig;
   transport: TransportConfig;
+  rateLimit: RateLimitConfig;
   web?: WebConfig;
   isDev: boolean;
 }
@@ -232,6 +242,10 @@ function envToConfig(env: ValidatedEnv): Config {
       mode: env.BOT_TRANSPORT,
       webhookUrl: env.WEBHOOK_URL,
       webhookSecret: env.WEBHOOK_SECRET,
+    },
+    rateLimit: {
+      windowMs: env.RATE_LIMIT_WINDOW_MS,
+      maxRequests: env.RATE_LIMIT_MAX_REQUESTS,
     },
     web: env.WEB_ENABLED
       ? {

@@ -28,7 +28,7 @@ export interface RateLimitConfig {
   /** Maximum requests allowed per window */
   maxRequests: number;
   /** Owner telegram ID (whitelisted, bypasses rate limit) */
-  ownerTelegramId: string;
+  ownerTelegramId: number;
 }
 
 /**

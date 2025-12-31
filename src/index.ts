@@ -89,8 +89,8 @@ import {
 } from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
 import { HttpServer } from "./infrastructure/shared/http/index.js";
-import { SecretCache, ImportSessionCache } from "./data/sources/memory/index.js";
-import { InMemorySecretRepository, InMemoryImportSessionRepository } from "./data/repositories/memory/index.js";
+import { SecretCache, ImportSessionCache, RateLimitCache } from "./data/sources/memory/index.js";
+import { InMemorySecretRepository, InMemoryImportSessionRepository, InMemoryRateLimitRepository } from "./data/repositories/memory/index.js";
 import { CleanupScheduler } from "./infrastructure/shared/scheduling/index.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
 import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
@@ -152,6 +152,12 @@ async function main(): Promise<void> {
     publicUrl: config.http.publicUrl,
   });
   const importSessionStore = new InMemoryImportSessionRepository(importSessionCache);
+
+  // Initialize RateLimitCache for rate limiting
+  const rateLimitCache = new RateLimitCache({
+    windowMs: config.rateLimit.windowMs,
+  });
+  const rateLimitRepository = new InMemoryRateLimitRepository(rateLimitCache);
 
   // Start cleanup scheduler for expired secrets and import sessions
   const cleanupScheduler = new CleanupScheduler([secretCache, importSessionCache]);
@@ -420,6 +426,12 @@ async function main(): Promise<void> {
     const gateway = GatewayFactory.create({
       getUserRole,
       commandRegistry: registry,
+      rateLimitRepository,
+      rateLimitConfig: {
+        windowMs: config.rateLimit.windowMs,
+        maxRequests: config.rateLimit.maxRequests,
+        ownerTelegramId: config.auth.ownerTelegramId,
+      },
     });
 
     return { registry, gateway };
