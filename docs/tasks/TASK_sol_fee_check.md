@@ -9,17 +9,17 @@ The validation pattern already exists in `ExecuteBatchDcaUseCase` (lines 48-57) 
 
 ## Acceptance Criteria
 
-- [ ] Create `src/domain/constants.ts` with `MIN_SOL_FOR_FEES = 0.01`
-- [ ] Rename `insufficient_balance` → `insufficient_usdc_balance` in `SwapResult` (`src/domain/models/SwapStep.ts`)
-- [ ] Rename `insufficient_balance` → `insufficient_usdc_balance` in `PurchaseResult` (`src/domain/usecases/types.ts`)
-- [ ] Add `insufficient_sol_balance` status to `SwapResult`
-- [ ] Add `insufficient_sol_balance` status to `PurchaseResult`
-- [ ] Update all usages of `insufficient_balance` → `insufficient_usdc_balance` in use cases and formatters
-- [ ] Add SOL balance check in `ExecuteSwapUseCase` after USDC validation, before quote
-- [ ] Add SOL balance check in `ExecutePurchaseUseCase` after USDC validation, before quote
-- [ ] Update error message for `insufficient_usdc_balance`: "Insufficient USDC balance"
-- [ ] Add error message for `insufficient_sol_balance`: "Insufficient SOL for transaction fees"
-- [ ] Build passes without errors
+- [x] Create `src/domain/constants.ts` with `MIN_SOL_FOR_FEES = 0.01`
+- [x] Rename `insufficient_balance` → `insufficient_usdc_balance` in `SwapResult` (`src/domain/models/SwapStep.ts`)
+- [x] Rename `insufficient_balance` → `insufficient_usdc_balance` in `PurchaseResult` (`src/domain/usecases/types.ts`)
+- [x] Add `insufficient_sol_balance` status to `SwapResult`
+- [x] Add `insufficient_sol_balance` status to `PurchaseResult`
+- [x] Update all usages of `insufficient_balance` → `insufficient_usdc_balance` in use cases and formatters
+- [x] Add SOL balance check in `ExecuteSwapUseCase` after USDC validation, before quote
+- [x] Add SOL balance check in `ExecutePurchaseUseCase` after USDC validation, before quote
+- [x] Update error message for `insufficient_usdc_balance`: "Insufficient USDC balance"
+- [x] Add error message for `insufficient_sol_balance`: "Insufficient SOL for transaction fees"
+- [x] Build passes without errors
 - [ ] Manual test: swap with USDC < amount shows "Insufficient USDC balance"
 - [ ] Manual test: swap with SOL < 0.01 shows "Insufficient SOL for transaction fees"
 
