@@ -13,6 +13,7 @@
  */
 
 import { BalanceRepository, WalletBalances } from "../../../domain/repositories/BalanceRepository.js";
+import type { WalletAddress } from "../../../domain/models/id/index.js";
 import { SolanaRpcClient } from "../../sources/api/index.js";
 import { TOKENS } from "../../../infrastructure/shared/config/index.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
@@ -60,18 +61,19 @@ export class CachedBalanceRepository implements BalanceRepository {
    * reducing RPC calls from 4 to 1. Falls back to individual requests
    * if batch is not supported by the RPC provider.
    */
-  async getBalances(walletAddress: string): Promise<WalletBalances> {
-    const cached = this.cache.get(walletAddress);
+  async getBalances(walletAddress: WalletAddress): Promise<WalletBalances> {
+    const addrStr = walletAddress.value;
+    const cached = this.cache.get(addrStr);
 
     if (cached && this.isCacheValid(cached)) {
       logger.debug("BalanceCache", "Cache hit", {
-        wallet: walletAddress.slice(0, 8),
+        wallet: addrStr.slice(0, 8),
       });
       return cached.balances;
     }
 
     logger.debug("BalanceCache", "Cache miss, fetching balances", {
-      wallet: walletAddress.slice(0, 8),
+      wallet: addrStr.slice(0, 8),
     });
 
     let sol: number;
@@ -82,7 +84,7 @@ export class CachedBalanceRepository implements BalanceRepository {
     try {
       // Try batch RPC first (4x more efficient)
       const result = await this.solanaRpcClient.getAllBalancesBatch(
-        walletAddress,
+        addrStr,
         TOKEN_CONFIGS,
       );
       sol = result.sol;
@@ -96,7 +98,7 @@ export class CachedBalanceRepository implements BalanceRepository {
         error: errorMessage,
       });
 
-      ({ sol, btc, eth, usdc } = await this.fetchBalancesIndividually(walletAddress));
+      ({ sol, btc, eth, usdc } = await this.fetchBalancesIndividually(addrStr));
     }
 
     const balances: WalletBalances = {
@@ -108,10 +110,10 @@ export class CachedBalanceRepository implements BalanceRepository {
     };
 
     // Store in cache
-    this.cache.set(walletAddress, { balances });
+    this.cache.set(addrStr, { balances });
 
     logger.debug("BalanceCache", "Balances cached", {
-      wallet: walletAddress.slice(0, 8),
+      wallet: addrStr.slice(0, 8),
       sol,
       btc,
       eth,
@@ -124,7 +126,7 @@ export class CachedBalanceRepository implements BalanceRepository {
   /**
    * Get SOL balance for a wallet (from cache if valid)
    */
-  async getSolBalance(walletAddress: string): Promise<number> {
+  async getSolBalance(walletAddress: WalletAddress): Promise<number> {
     const balances = await this.getBalances(walletAddress);
     return balances.sol;
   }
@@ -132,7 +134,7 @@ export class CachedBalanceRepository implements BalanceRepository {
   /**
    * Get USDC balance for a wallet (from cache if valid)
    */
-  async getUsdcBalance(walletAddress: string): Promise<number> {
+  async getUsdcBalance(walletAddress: WalletAddress): Promise<number> {
     const balances = await this.getBalances(walletAddress);
     return balances.usdc;
   }
@@ -141,11 +143,12 @@ export class CachedBalanceRepository implements BalanceRepository {
    * Invalidate cache for a specific wallet address.
    * Should be called after successful transaction.
    */
-  invalidate(walletAddress: string): void {
-    const deleted = this.cache.delete(walletAddress);
+  invalidate(walletAddress: WalletAddress): void {
+    const addrStr = walletAddress.value;
+    const deleted = this.cache.delete(addrStr);
     if (deleted) {
       logger.debug("BalanceCache", "Cache invalidated", {
-        wallet: walletAddress.slice(0, 8),
+        wallet: addrStr.slice(0, 8),
       });
     }
   }
@@ -159,9 +162,9 @@ export class CachedBalanceRepository implements BalanceRepository {
   ): Promise<{ sol: number; btc: number; eth: number; usdc: number }> {
     const [sol, btc, eth, usdc] = await Promise.all([
       this.solanaRpcClient.getBalance(walletAddress),
-      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.btc.mint, TOKEN_CONFIGS.btc.decimals),
-      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.eth.mint, TOKEN_CONFIGS.eth.decimals),
-      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.usdc.mint, TOKEN_CONFIGS.usdc.decimals),
+      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.btc.mint.value, TOKEN_CONFIGS.btc.decimals),
+      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.eth.mint.value, TOKEN_CONFIGS.eth.decimals),
+      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.usdc.mint.value, TOKEN_CONFIGS.usdc.decimals),
     ]);
 
     return { sol, btc, eth, usdc };

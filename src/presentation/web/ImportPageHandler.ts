@@ -132,10 +132,10 @@ export class ImportPageHandler {
         case "imported":
           logger.info("ImportPageHandler", "Wallet imported successfully", {
             telegramId,
-            address: result.wallet!.address.slice(0, 8) + "...",
+            address: result.wallet!.address.value.slice(0, 8) + "...",
           });
-          this.sendSuccessPage(res, result.wallet!.address);
-          await this.notifyUser(telegramId, true, undefined, result.wallet!.address);
+          this.sendSuccessPage(res, result.wallet!.address.value);
+          await this.notifyUser(telegramId, true, undefined, result.wallet!.address.value);
           break;
 
         case "already_exists":

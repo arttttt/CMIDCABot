@@ -5,7 +5,7 @@ import { Kysely, sql, Selectable } from "kysely";
 import { InviteTokenRepository } from "../../../domain/repositories/InviteTokenRepository.js";
 import { InviteToken } from "../../../domain/models/InviteToken.js";
 import { UserRole } from "../../../domain/models/AuthorizedUser.js";
-import { telegramId, type TelegramId } from "../../../domain/models/id/index.js";
+import { TelegramId } from "../../../domain/models/id/index.js";
 import type { AuthDatabase, InviteTokensTable } from "../../types/authDatabase.js";
 
 type InviteTokenRow = Selectable<InviteTokensTable>;
@@ -20,10 +20,10 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository {
     return {
       token: row.token,
       role: row.role as UserRole,
-      createdBy: telegramId(row.created_by),
+      createdBy: new TelegramId(row.created_by),
       createdAt: new Date(row.created_at),
       expiresAt: new Date(row.expires_at),
-      usedBy: row.used_by ? telegramId(row.used_by) : null,
+      usedBy: row.used_by ? new TelegramId(row.used_by) : null,
       usedAt: row.used_at ? new Date(row.used_at) : null,
     };
   }
@@ -34,7 +34,7 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository {
       .values({
         token,
         role,
-        created_by: createdBy as number,
+        created_by: createdBy.value,
         expires_at: expiresAt.toISOString(),
       })
       .execute();
@@ -55,7 +55,7 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository {
     const result = await this.db
       .updateTable("invite_tokens")
       .set({
-        used_by: usedBy as number,
+        used_by: usedBy.value,
         used_at: sql`CURRENT_TIMESTAMP`,
       })
       .where("token", "=", token)
@@ -79,7 +79,7 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository {
     const rows = await this.db
       .selectFrom("invite_tokens")
       .selectAll()
-      .where("created_by", "=", createdBy as number)
+      .where("created_by", "=", createdBy.value)
       .orderBy("created_at", "desc")
       .execute();
 

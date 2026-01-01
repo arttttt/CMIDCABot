@@ -10,7 +10,7 @@ import type { Kysely } from "kysely";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
-import { telegramId } from "./domain/models/id/index.js";
+import { TelegramId } from "./domain/models/id/index.js";
 import { loadConfig } from "./infrastructure/shared/config/index.js";
 import { setLogger, DebugLogger, NoOpLogger } from "./infrastructure/shared/logging/index.js";
 import { createMainDatabase, createMockDatabase, createAuthDatabase } from "./data/sources/database/index.js";
@@ -125,7 +125,7 @@ async function main(): Promise<void> {
   const inviteTokenRepository = new SQLiteInviteTokenRepository(authDb);
 
   // Create authorization helper and initialize owner
-  const ownerTelegramId = telegramId(config.auth.ownerTelegramId);
+  const ownerTelegramId = new TelegramId(config.auth.ownerTelegramId);
   const authHelper = new AuthorizationHelper(authRepository, config.auth.ownerTelegramId);
   const initializeAuth = new InitializeAuthorizationUseCase(authRepository, ownerTelegramId);
   await initializeAuth.execute();

@@ -4,7 +4,7 @@
  */
 
 import { Bot, BotError, Context, InlineKeyboard } from "grammy";
-import { telegramId } from "../../domain/models/id/index.js";
+import { TelegramId } from "../../domain/models/id/index.js";
 import type { Gateway } from "../protocol/gateway/Gateway.js";
 import type { GatewayRequest } from "../protocol/gateway/types.js";
 import { ClientResponse, StreamItem } from "../protocol/types.js";
@@ -26,7 +26,7 @@ function buildTelegramMessageRequest(ctx: Context): GatewayRequest {
     kind: "telegram-message",
     identity: {
       provider: "telegram",
-      telegramId: telegramId(ctx.from!.id),
+      telegramId: new TelegramId(ctx.from!.id),
     },
     text: ctx.message!.text!,
     username: ctx.from!.username,
@@ -38,7 +38,7 @@ function buildTelegramCallbackRequest(ctx: Context): GatewayRequest {
     kind: "telegram-callback",
     identity: {
       provider: "telegram",
-      telegramId: telegramId(ctx.from!.id),
+      telegramId: new TelegramId(ctx.from!.id),
     },
     callbackData: ctx.callbackQuery!.data!,
   };

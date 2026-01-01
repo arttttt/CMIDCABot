@@ -3,7 +3,7 @@
  */
 
 import { Api } from "grammy";
-import { telegramId, type TelegramId } from "../../domain/models/id/index.js";
+import { TelegramId } from "../../domain/models/id/index.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
 /**
@@ -47,7 +47,7 @@ export function parseNumericId(identifier: string): TelegramId | undefined {
   if (isNaN(id) || id <= 0) {
     return undefined;
   }
-  return telegramId(id);
+  return new TelegramId(id);
 }
 
 /**
@@ -96,7 +96,7 @@ export class TelegramUserResolver implements UserResolver {
         return error(`@${username} is not a user (it's a ${chat.type})`);
       }
 
-      const tgId = telegramId(chat.id);
+      const tgId = new TelegramId(chat.id);
       logger.debug("UserResolver", "Resolved username", { username, telegramId: tgId });
       return success(tgId);
     } catch (e) {

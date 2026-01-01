@@ -25,12 +25,12 @@ import { logger } from "../../../../infrastructure/shared/logging/index.js";
  */
 function getRateLimitKey(identity: UserIdentity): string {
   if (identity.provider === "telegram") {
-    return `tg:${identity.telegramId}`;
+    return `tg:${identity.telegramId.value}`;
   }
   if (!identity.sessionId) {
     throw new Error("HTTP identity must have non-empty sessionId for rate limiting");
   }
-  return `http:${identity.sessionId}`;
+  return `http:${identity.sessionId.value}`;
 }
 
 class RateLimitHandler implements GatewayHandler {
@@ -67,7 +67,7 @@ class RateLimitHandler implements GatewayHandler {
   private isOwner(identity: UserIdentity): boolean {
     return (
       identity.provider === "telegram" &&
-      identity.telegramId === this.ownerTelegramId
+      identity.telegramId.value === this.ownerTelegramId
     );
   }
 }

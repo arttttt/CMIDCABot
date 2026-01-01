@@ -4,7 +4,7 @@
 import { Kysely, sql, Selectable } from "kysely";
 import { PortfolioRepository } from "../../../domain/repositories/PortfolioRepository.js";
 import { PortfolioBalances } from "../../../domain/models/Portfolio.js";
-import { telegramId, type TelegramId } from "../../../domain/models/id/index.js";
+import { TelegramId } from "../../../domain/models/id/index.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
 import type { MockDatabase, PortfolioTable } from "../../types/database.js";
 
@@ -15,7 +15,7 @@ export class SQLitePortfolioRepository implements PortfolioRepository {
 
   private rowToModel(row: PortfolioRow): PortfolioBalances {
     return {
-      telegramId: telegramId(row.telegram_id),
+      telegramId: new TelegramId(row.telegram_id),
       btcBalance: row.btc_balance,
       ethBalance: row.eth_balance,
       solBalance: row.sol_balance,
@@ -26,7 +26,7 @@ export class SQLitePortfolioRepository implements PortfolioRepository {
     const row = await this.db
       .selectFrom("portfolio")
       .selectAll()
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .executeTakeFirst();
 
     if (!row) return undefined;
@@ -37,14 +37,14 @@ export class SQLitePortfolioRepository implements PortfolioRepository {
   async create(id: TelegramId): Promise<void> {
     await this.db
       .insertInto("portfolio")
-      .values({ telegram_id: id as number })
+      .values({ telegram_id: id.value })
       .onConflict((oc) => oc.column("telegram_id").doNothing())
       .execute();
   }
 
   async updateBalance(id: TelegramId, asset: AssetSymbol, amountToAdd: number): Promise<void> {
     const column = `${asset.toLowerCase()}_balance` as "btc_balance" | "eth_balance" | "sol_balance";
-    const idNum = id as number;
+    const idNum = id.value;
 
     // Use raw SQL for the increment operation
     await sql`
@@ -64,14 +64,14 @@ export class SQLitePortfolioRepository implements PortfolioRepository {
         sol_balance: 0,
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .execute();
   }
 
   async deleteByUserId(id: TelegramId): Promise<void> {
     await this.db
       .deleteFrom("portfolio")
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .execute();
   }
 }

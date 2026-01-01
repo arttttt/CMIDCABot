@@ -24,7 +24,7 @@ export class ExportWalletKeyUseCase {
 
     if (this.config.devPrivateKey) {
       logger.debug("ExportWalletKey", "Dev mode - exporting shared wallet key");
-      const keyUrl = await this.secretStore.store(this.config.devPrivateKey, telegramId);
+      const keyUrl = await this.secretStore.store(this.config.devPrivateKey, telegramId.value);
       return {
         type: "dev_mode",
         keyUrl,
@@ -41,7 +41,7 @@ export class ExportWalletKeyUseCase {
     }
 
     // Store in SecretStore and return one-time URL
-    const keyUrl = await this.secretStore.store(decryptedKey, telegramId);
+    const keyUrl = await this.secretStore.store(decryptedKey, telegramId.value);
 
     logger.info("ExportWalletKey", "Wallet key export URL generated", { telegramId });
     return {

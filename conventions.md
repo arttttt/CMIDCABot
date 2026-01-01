@@ -13,7 +13,6 @@
 ### Structure
 - Small modules — single responsibility
 - Utility functions — class with static methods (not top-level exports)
-  - **Exception:** branded type constructors (e.g., `telegramId()`) — top-level functions allowed
 
 ### Naming
 
@@ -27,12 +26,12 @@
 
 ### Branded Types
 
-Primitives (`number`, `string`) are forbidden for ID-like fields. Use branded types instead.
+Primitives (`number`, `string`) are forbidden for ID-like fields. Use class-based branded types instead.
 
 **Rules:**
-- All ID-like fields must use branded types
-- Use constructors at boundaries (presentation layer, DB read)
-- Cast to primitives only at external API boundaries
+- All ID-like fields must use branded types (classes with `readonly value`)
+- Use `new Type(value)` at boundaries (presentation layer, DB read)
+- Use `.value` to extract primitive at external API boundaries
 
 ## Architecture
 

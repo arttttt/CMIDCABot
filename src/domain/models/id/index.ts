@@ -1,6 +1,6 @@
-export { TelegramId, telegramId } from "./TelegramId.js";
-export { WalletAddress, walletAddress } from "./WalletAddress.js";
-export { TxSignature, txSignature } from "./TxSignature.js";
-export { RequestId, requestId } from "./RequestId.js";
-export { SessionId, sessionId } from "./SessionId.js";
-export { TokenMint, tokenMint } from "./TokenMint.js";
+export { TelegramId } from "./TelegramId.js";
+export { WalletAddress } from "./WalletAddress.js";
+export { TxSignature } from "./TxSignature.js";
+export { RequestId } from "./RequestId.js";
+export { SessionId } from "./SessionId.js";
+export { TokenMint } from "./TokenMint.js";

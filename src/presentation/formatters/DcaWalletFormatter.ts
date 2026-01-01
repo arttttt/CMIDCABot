@@ -17,7 +17,7 @@ export class DcaWalletFormatter {
   private formatWalletInfo(wallet: DcaWalletInfo): string {
     const lines: string[] = [];
 
-    lines.push(`Address: ${Markdown.code(wallet.address)}`);
+    lines.push(`Address: ${Markdown.code(wallet.address.value)}`);
 
     if (wallet.balance !== null) {
       lines.push(`SOL Balance: ${wallet.balance.toFixed(4)} SOL`);

@@ -5,7 +5,7 @@
  * Provides Dependency Inversion for domain layer.
  */
 
-import { tokenMint, type TokenMint, type WalletAddress } from "../../domain/models/id/index.js";
+import { TokenMint, type WalletAddress } from "../../domain/models/id/index.js";
 import type {
   SwapRepository,
   SwapQuoteParams,
@@ -22,8 +22,8 @@ export class JupiterSwapRepository implements SwapRepository {
   async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
     // Cast branded types to strings for client
     const clientParams = {
-      inputMint: params.inputMint as string,
-      outputMint: params.outputMint as string,
+      inputMint: params.inputMint.value,
+      outputMint: params.outputMint.value,
       amount: params.amount,
       slippageBps: params.slippageBps,
     };
@@ -36,7 +36,7 @@ export class JupiterSwapRepository implements SwapRepository {
     outputMint: TokenMint,
     slippageBps?: number,
   ): Promise<SwapQuote> {
-    const quote = await this.client.getQuoteUsdcToToken(amountUsdc, outputMint as string, slippageBps);
+    const quote = await this.client.getQuoteUsdcToToken(amountUsdc, outputMint.value, slippageBps);
     return this.mapQuote(quote);
   }
 
@@ -58,12 +58,12 @@ export class JupiterSwapRepository implements SwapRepository {
     // Cast back to client quote type (rawQuoteResponse contains the original data)
     const clientQuote = {
       ...quote,
-      inputMint: quote.inputMint as string,
-      outputMint: quote.outputMint as string,
+      inputMint: quote.inputMint.value,
+      outputMint: quote.outputMint.value,
       rawQuoteResponse: quote.rawQuoteResponse,
     } as ClientSwapQuote;
 
-    return this.client.buildSwapTransaction(clientQuote, userPublicKey as string);
+    return this.client.buildSwapTransaction(clientQuote, userPublicKey.value);
   }
 
   /**
@@ -72,11 +72,11 @@ export class JupiterSwapRepository implements SwapRepository {
    */
   private mapQuote(quote: ClientSwapQuote): SwapQuote {
     return {
-      inputMint: tokenMint(quote.inputMint),
+      inputMint: new TokenMint(quote.inputMint),
       inputSymbol: quote.inputSymbol,
       inputAmount: quote.inputAmount,
       inputAmountRaw: quote.inputAmountRaw,
-      outputMint: tokenMint(quote.outputMint),
+      outputMint: new TokenMint(quote.outputMint),
       outputSymbol: quote.outputSymbol,
       outputAmount: quote.outputAmount,
       outputAmountRaw: quote.outputAmountRaw,

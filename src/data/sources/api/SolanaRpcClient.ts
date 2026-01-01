@@ -46,7 +46,7 @@ function sanitizeErrorMessage(error: unknown): string {
     .replace(/https?:\/\/[^\s]+/g, "[RPC_URL]"); // RPC URLs
 }
 
-import { walletAddress, txSignature, type WalletAddress, type TxSignature, type TokenMint } from "../../../domain/models/id/index.js";
+import { WalletAddress, TxSignature, type TokenMint } from "../../../domain/models/id/index.js";
 
 /**
  * Generated keypair with extractable private key
@@ -380,7 +380,7 @@ export class SolanaRpcClient {
     return 0;
   }
 
-  isValidAddress(addr: string): addr is WalletAddress {
+  isValidAddress(addr: string): boolean {
     try {
       address(addr);
       return true;
@@ -417,7 +417,7 @@ export class SolanaRpcClient {
     );
 
     return {
-      address: walletAddress(signer.address),
+      address: new WalletAddress(signer.address),
       privateKeyBase64: Buffer.from(privateKeyBytes).toString("base64"),
     };
   }
@@ -448,7 +448,7 @@ export class SolanaRpcClient {
     );
 
     return {
-      address: walletAddress(signer.address),
+      address: new WalletAddress(signer.address),
       privateKeyBase64: Buffer.from(privateKeyBytes).toString("base64"),
       mnemonic,
     };
@@ -479,7 +479,7 @@ export class SolanaRpcClient {
     );
 
     return {
-      address: walletAddress(signer.address),
+      address: new WalletAddress(signer.address),
       privateKeyBase64: Buffer.from(privateKeyBytes).toString("base64"),
     };
   }
@@ -508,7 +508,7 @@ export class SolanaRpcClient {
       const keypair = await this.deriveKeypairFromMnemonic(normalizedMnemonic);
 
       // Verify the derived address is valid
-      if (!this.isValidAddress(keypair.address)) {
+      if (!this.isValidAddress(keypair.address.value)) {
         return { valid: false, error: "Derived address is not a valid Solana address" };
       }
 
@@ -544,7 +544,7 @@ export class SolanaRpcClient {
    */
   async getAddressFromPrivateKey(privateKeyBase64: string): Promise<WalletAddress> {
     const signer = await this.createSignerFromPrivateKey(privateKeyBase64);
-    return walletAddress(signer.address);
+    return new WalletAddress(signer.address);
   }
 
   /**
@@ -587,7 +587,7 @@ export class SolanaRpcClient {
       const derivedAddr = await this.getAddressFromPrivateKey(normalizedKey);
 
       // Verify the address is valid Solana format (base58, 32-44 chars)
-      if (!this.isValidAddress(derivedAddr)) {
+      if (!this.isValidAddress(derivedAddr.value)) {
         return { valid: false, error: "Derived address is not a valid Solana address" };
       }
 
@@ -858,7 +858,7 @@ export class SolanaRpcClient {
     sig: string,
     confirmDuration: number,
   ): SendTransactionResult {
-    const brandedSig = txSignature(sig);
+    const brandedSig = new TxSignature(sig);
     if (confirmationStatus === "confirmed") {
       logger.tx("Solana", "Transaction CONFIRMED", {
         signature: sig,

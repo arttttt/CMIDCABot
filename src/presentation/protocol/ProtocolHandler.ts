@@ -19,7 +19,7 @@ import {
   UICommand,
   ClientResponseStream,
 } from "./types.js";
-import { telegramId } from "../../domain/models/id/index.js";
+import { TelegramId } from "../../domain/models/id/index.js";
 import { AuthorizationHelper } from "../../domain/helpers/AuthorizationHelper.js";
 import { hasRequiredRole, type UserRole } from "../../domain/models/AuthorizedUser.js";
 import { CommandExecutionContext } from "../commands/CommandExecutionContext.js";
@@ -92,7 +92,7 @@ export class ProtocolHandler {
     rawTelegramId: number,
   ): Promise<ClientResponse> {
     const modeInfo = this.registry.getModeInfo();
-    const tgId = telegramId(rawTelegramId);
+    const tgId = new TelegramId(rawTelegramId);
 
     // Get user role, default to 'guest' for unauthorized users
     const userRole: UserRole = (await this.authHelper.getRole(tgId)) ?? "guest";
@@ -134,7 +134,7 @@ export class ProtocolHandler {
     rawTelegramId: number,
   ): ClientResponseStream {
     const modeInfo = this.registry.getModeInfo();
-    const tgId = telegramId(rawTelegramId);
+    const tgId = new TelegramId(rawTelegramId);
 
     // Get user role, default to 'guest' for unauthorized users
     const userRole: UserRole = (await this.authHelper.getRole(tgId)) ?? "guest";
@@ -206,7 +206,7 @@ export class ProtocolHandler {
       return new ClientResponse("Unknown action.");
     }
 
-    const tgId = telegramId(ctx.telegramId);
+    const tgId = new TelegramId(ctx.telegramId);
 
     // Check role requirement
     const userRole: UserRole = (await this.authHelper.getRole(tgId)) ?? "guest";

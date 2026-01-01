@@ -130,7 +130,7 @@ export interface BlockchainRepository {
   /**
    * Check if address is valid (raw string, not yet branded)
    */
-  isValidAddress(walletAddress: string): walletAddress is WalletAddress;
+  isValidAddress(walletAddress: string): boolean;
 
   // === Transaction Operations ===
 

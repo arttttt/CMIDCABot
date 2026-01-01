@@ -25,7 +25,7 @@ export class SolanaBlockchainRepository implements BlockchainRepository {
   // === Wallet Operations ===
 
   async getBalance(addr: WalletAddress): Promise<number> {
-    return this.client.getBalance(addr as string);
+    return this.client.getBalance(addr.value);
   }
 
   async getAddressFromPrivateKey(privateKeyBase64: string): Promise<WalletAddress> {
@@ -52,7 +52,7 @@ export class SolanaBlockchainRepository implements BlockchainRepository {
     return this.client.validatePrivateKey(privateKeyBase64);
   }
 
-  isValidAddress(addr: string): addr is WalletAddress {
+  isValidAddress(addr: string): boolean {
     return this.client.isValidAddress(addr);
   }
 
@@ -86,11 +86,11 @@ export class SolanaBlockchainRepository implements BlockchainRepository {
     mint: TokenMint,
     decimals?: number,
   ): Promise<number> {
-    return this.client.getTokenBalance(addr as string, mint as string, decimals);
+    return this.client.getTokenBalance(addr.value, mint.value, decimals);
   }
 
   async getUsdcBalance(addr: WalletAddress): Promise<number> {
-    return this.client.getUsdcBalance(addr as string);
+    return this.client.getUsdcBalance(addr.value);
   }
 
   async getAllBalancesBatch(
@@ -107,6 +107,6 @@ export class SolanaBlockchainRepository implements BlockchainRepository {
       eth: { mint: tokens.eth.mint, decimals: tokens.eth.decimals },
       usdc: { mint: tokens.usdc.mint, decimals: tokens.usdc.decimals },
     };
-    return this.client.getAllBalancesBatch(addr as string, clientTokens);
+    return this.client.getAllBalancesBatch(addr.value, clientTokens);
   }
 }

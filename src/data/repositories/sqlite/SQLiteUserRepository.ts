@@ -8,7 +8,7 @@
 import { Kysely, sql, Selectable } from "kysely";
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
 import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../../../domain/models/User.js";
-import { telegramId, walletAddress, type TelegramId, type WalletAddress } from "../../../domain/models/id/index.js";
+import { TelegramId, WalletAddress } from "../../../domain/models/id/index.js";
 import type { MainDatabase, UsersTable } from "../../types/database.js";
 import { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 
@@ -26,8 +26,8 @@ export class SQLiteUserRepository implements UserRepository {
    */
   private rowToModel(row: UserRow): User {
     return {
-      telegramId: telegramId(row.telegram_id),
-      walletAddress: row.wallet_address ? walletAddress(row.wallet_address) : null,
+      telegramId: new TelegramId(row.telegram_id),
+      walletAddress: row.wallet_address ? new WalletAddress(row.wallet_address) : null,
       privateKey: row.private_key, // Encrypted
       isDcaActive: row.is_dca_active === 1,
       createdAt: new Date(row.created_at),
@@ -50,7 +50,7 @@ export class SQLiteUserRepository implements UserRepository {
     const row = await this.db
       .selectFrom("users")
       .selectAll()
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .executeTakeFirst();
 
     if (!row) return undefined;
@@ -61,7 +61,7 @@ export class SQLiteUserRepository implements UserRepository {
   async create(id: TelegramId): Promise<void> {
     await this.db
       .insertInto("users")
-      .values({ telegram_id: id as number })
+      .values({ telegram_id: id.value })
       .onConflict((oc) => oc.column("telegram_id").doNothing())
       .execute();
   }
@@ -70,10 +70,10 @@ export class SQLiteUserRepository implements UserRepository {
     await this.db
       .updateTable("users")
       .set({
-        wallet_address: address as string,
+        wallet_address: address.value,
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .execute();
   }
 
@@ -86,8 +86,8 @@ export class SQLiteUserRepository implements UserRepository {
       .execute();
 
     return rows.map((row) => ({
-      telegramId: telegramId(row.telegram_id),
-      walletAddress: walletAddress(row.wallet_address!),
+      telegramId: new TelegramId(row.telegram_id),
+      walletAddress: new WalletAddress(row.wallet_address!),
     }));
   }
 
@@ -101,7 +101,7 @@ export class SQLiteUserRepository implements UserRepository {
         private_key: encryptedKey,
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .execute();
   }
 
@@ -112,7 +112,7 @@ export class SQLiteUserRepository implements UserRepository {
         private_key: null,
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .execute();
   }
 
@@ -120,7 +120,7 @@ export class SQLiteUserRepository implements UserRepository {
     const row = await this.db
       .selectFrom("users")
       .select("private_key")
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .executeTakeFirst();
 
     if (!row?.private_key) {
@@ -142,7 +142,7 @@ export class SQLiteUserRepository implements UserRepository {
       .execute();
 
     return rows.map((row) => ({
-      telegramId: telegramId(row.telegram_id),
+      telegramId: new TelegramId(row.telegram_id),
       privateKey: row.private_key!, // Encrypted
     }));
   }
@@ -154,7 +154,7 @@ export class SQLiteUserRepository implements UserRepository {
         is_dca_active: active ? 1 : 0,
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .execute();
   }
 
@@ -168,8 +168,8 @@ export class SQLiteUserRepository implements UserRepository {
       .execute();
 
     return rows.map((row) => ({
-      telegramId: telegramId(row.telegram_id),
-      walletAddress: walletAddress(row.wallet_address!),
+      telegramId: new TelegramId(row.telegram_id),
+      walletAddress: new WalletAddress(row.wallet_address!),
     }));
   }
 
@@ -189,7 +189,7 @@ export class SQLiteUserRepository implements UserRepository {
   async delete(id: TelegramId): Promise<void> {
     await this.db
       .deleteFrom("users")
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .execute();
   }
 }

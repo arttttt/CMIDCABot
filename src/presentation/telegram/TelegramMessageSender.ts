@@ -37,7 +37,7 @@ export class TelegramMessageSender implements MessageSender {
       const keyboard = toInlineKeyboard(response);
 
       // Cast to number for grammY API
-      await this.api.sendMessage(tgId as number, response.text, {
+      await this.api.sendMessage(tgId.value, response.text, {
         parse_mode: "Markdown",
         reply_markup: keyboard,
       });

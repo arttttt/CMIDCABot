@@ -4,7 +4,7 @@
 import { Kysely, sql, Selectable } from "kysely";
 import { AuthRepository } from "../../../domain/repositories/AuthRepository.js";
 import { AuthorizedUser, UserRole } from "../../../domain/models/AuthorizedUser.js";
-import { telegramId, type TelegramId } from "../../../domain/models/id/index.js";
+import { TelegramId } from "../../../domain/models/id/index.js";
 import type { AuthDatabase, AuthorizedUsersTable } from "../../types/authDatabase.js";
 
 type AuthUserRow = Selectable<AuthorizedUsersTable>;
@@ -17,9 +17,9 @@ export class SQLiteAuthRepository implements AuthRepository {
    */
   private rowToModel(row: AuthUserRow): AuthorizedUser {
     return {
-      telegramId: telegramId(row.telegram_id),
+      telegramId: new TelegramId(row.telegram_id),
       role: row.role as UserRole,
-      addedBy: row.added_by ? telegramId(row.added_by) : null,
+      addedBy: row.added_by ? new TelegramId(row.added_by) : null,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -29,7 +29,7 @@ export class SQLiteAuthRepository implements AuthRepository {
     const row = await this.db
       .selectFrom("authorized_users")
       .selectAll()
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .executeTakeFirst();
 
     if (!row) return undefined;
@@ -61,9 +61,9 @@ export class SQLiteAuthRepository implements AuthRepository {
     await this.db
       .insertInto("authorized_users")
       .values({
-        telegram_id: id as number,
+        telegram_id: id.value,
         role,
-        added_by: addedBy as number | null,
+        added_by: addedBy?.value ?? null,
       })
       .onConflict((oc) => oc.column("telegram_id").doNothing())
       .execute();
@@ -72,7 +72,7 @@ export class SQLiteAuthRepository implements AuthRepository {
   async remove(id: TelegramId): Promise<boolean> {
     const result = await this.db
       .deleteFrom("authorized_users")
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .executeTakeFirst();
 
     return result.numDeletedRows > 0;
@@ -85,7 +85,7 @@ export class SQLiteAuthRepository implements AuthRepository {
         role: newRole,
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .executeTakeFirst();
 
     return result.numUpdatedRows > 0;
@@ -95,7 +95,7 @@ export class SQLiteAuthRepository implements AuthRepository {
     const row = await this.db
       .selectFrom("authorized_users")
       .select("telegram_id")
-      .where("telegram_id", "=", id as number)
+      .where("telegram_id", "=", id.value)
       .executeTakeFirst();
 
     return row !== undefined;
