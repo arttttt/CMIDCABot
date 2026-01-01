@@ -51,11 +51,16 @@ export class CreateWalletUseCase {
     logger.debug("CreateWallet", "Generating new keypair with mnemonic");
     const keypair = await this.blockchainRepository.generateKeypairFromMnemonic();
 
+    // Cache seedUrl to avoid duplicate storage on retry
+    let seedUrl: string | undefined;
+
     // Retry only I/O operations (secret store + database)
-    const seedUrl = await withRetry(
+    await withRetry(
       async () => {
-        // 1. Store seed phrase first - if this fails, DB is untouched
-        const url = await this.secretStore.store(keypair.mnemonic, telegramId);
+        // 1. Store seed phrase only on first attempt
+        if (!seedUrl) {
+          seedUrl = await this.secretStore.store(keypair.mnemonic, telegramId);
+        }
 
         // 2. Write to database (private key + address)
         await this.userRepository.setWalletData(
@@ -63,8 +68,6 @@ export class CreateWalletUseCase {
           keypair.privateKeyBase64,
           keypair.address,
         );
-
-        return url;
       },
       MAX_RETRIES,
       BASE_DELAY_MS,
@@ -78,6 +81,6 @@ export class CreateWalletUseCase {
 
     const wallet = await this.walletHelper.getWalletInfo(keypair.privateKeyBase64, false);
 
-    return { type: "created", wallet, seedUrl };
+    return { type: "created", wallet, seedUrl: seedUrl! };
   }
 }
