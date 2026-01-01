@@ -22,7 +22,6 @@ export interface UserRepository {
 
   /**
    * Atomically set wallet private key and address.
-   * Both values are written in a single transaction.
    */
   setWalletData(
     telegramId: TelegramId,

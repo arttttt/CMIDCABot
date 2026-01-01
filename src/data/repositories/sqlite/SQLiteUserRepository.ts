@@ -9,6 +9,7 @@ import { Kysely, sql, Selectable } from "kysely";
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
 import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../../../domain/models/User.js";
 import { TelegramId, WalletAddress } from "../../../domain/models/id/index.js";
+import { UserNotFoundError } from "../../../domain/errors/index.js";
 import type { MainDatabase, UsersTable } from "../../types/database.js";
 import { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 
@@ -95,7 +96,7 @@ export class SQLiteUserRepository implements UserRepository {
       .executeTakeFirst();
 
     if (result.numUpdatedRows === BigInt(0)) {
-      throw new Error(`User not found: ${id.value}`);
+      throw new UserNotFoundError(id.value);
     }
   }
 
