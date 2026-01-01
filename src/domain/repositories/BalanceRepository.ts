@@ -4,7 +4,7 @@
  * Provides access to wallet balances (SOL, BTC, ETH, USDC).
  * Implementation may include caching for performance optimization.
  */
-import type { WalletAddress } from "../models/id/index.js";
+import type { WalletAddress } from "../../types/id/index.js";
 
 /**
  * All asset balances for a wallet

@@ -3,7 +3,7 @@
  * Allows users to import an existing Solana wallet via private key
  */
 
-import type { TelegramId, WalletAddress } from "../models/id/index.js";
+import type { TelegramId, WalletAddress } from "../../types/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";

@@ -1,7 +1,7 @@
 /**
  * User authorization domain model
  */
-import type { TelegramId } from "./id/index.js";
+import type { TelegramId } from "../../types/id/index.js";
 
 /**
  * User roles in the system

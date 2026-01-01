@@ -12,7 +12,7 @@
  */
 
 import { randomBytes } from "node:crypto";
-import { type TelegramId } from "../../../domain/models/id/index.js";
+import { type TelegramId } from "../../../types/id/index.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 /** Default TTL: 10 minutes for import sessions */

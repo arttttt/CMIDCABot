@@ -5,7 +5,7 @@
  * Returns "guest" for unknown users (never undefined).
  */
 
-import type { TelegramId } from "../models/id/index.js";
+import type { TelegramId } from "../../types/id/index.js";
 import type { AuthRepository } from "../repositories/AuthRepository.js";
 import type { UserIdentity } from "../models/UserIdentity.js";
 import type { UserRole } from "../models/AuthorizedUser.js";

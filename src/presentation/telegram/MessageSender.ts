@@ -5,7 +5,7 @@
  * (e.g., HTTP handlers) back to Telegram users.
  */
 
-import type { TelegramId } from "../../domain/models/id/index.js";
+import type { TelegramId } from "../../types/id/index.js";
 import type { ClientResponse } from "../protocol/types.js";
 
 export interface MessageSender {

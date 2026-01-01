@@ -3,7 +3,7 @@
  * Single source of truth for all token-related constants
  */
 
-import { tokenMint, type TokenMint } from "../../../domain/models/id/index.js";
+import { tokenMint, type TokenMint } from "../../../types/id/index.js";
 
 export interface TokenConfig {
   mint: TokenMint;

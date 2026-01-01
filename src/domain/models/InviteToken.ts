@@ -2,7 +2,7 @@
  * Invite token domain model for one-time authorization links
  */
 import { UserRole } from "./AuthorizedUser.js";
-import type { TelegramId } from "./id/index.js";
+import type { TelegramId } from "../../types/id/index.js";
 
 /**
  * Invite token - represents a one-time authorization link

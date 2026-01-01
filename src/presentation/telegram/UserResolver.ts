@@ -3,7 +3,7 @@
  */
 
 import { Api } from "grammy";
-import { telegramId, type TelegramId } from "../../domain/models/id/index.js";
+import { telegramId, type TelegramId } from "../../types/id/index.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
 /**

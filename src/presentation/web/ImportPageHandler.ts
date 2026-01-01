@@ -11,7 +11,7 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { TelegramId } from "../../domain/models/id/index.js";
+import type { TelegramId } from "../../types/id/index.js";
 import type { ImportSessionRepository } from "../../domain/repositories/index.js";
 import type { ImportWalletUseCase } from "../../domain/usecases/ImportWalletUseCase.js";
 import type { MessageSender } from "../telegram/MessageSender.js";

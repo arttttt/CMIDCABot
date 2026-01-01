@@ -5,7 +5,7 @@
  * Provides Dependency Inversion for domain layer.
  */
 
-import { tokenMint, type TokenMint, type WalletAddress } from "../../domain/models/id/index.js";
+import { tokenMint, type TokenMint, type WalletAddress } from "../../types/id/index.js";
 import type {
   SwapRepository,
   SwapQuoteParams,

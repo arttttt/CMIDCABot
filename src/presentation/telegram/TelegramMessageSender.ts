@@ -6,7 +6,7 @@
  */
 
 import type { Api } from "grammy";
-import type { TelegramId } from "../../domain/models/id/index.js";
+import type { TelegramId } from "../../types/id/index.js";
 import type { MessageSender } from "./MessageSender.js";
 import type { ClientResponse } from "../protocol/types.js";
 import { InlineKeyboard } from "grammy";

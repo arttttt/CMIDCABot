@@ -8,7 +8,7 @@
  */
 
 import type { SwapQuote } from "../repositories/SwapRepository.js";
-import type { TxSignature } from "./id/index.js";
+import type { TxSignature } from "../../types/id/index.js";
 
 /**
  * Quote information for display

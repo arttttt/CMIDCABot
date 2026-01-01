@@ -2,7 +2,7 @@
  * Delete wallet use case
  */
 
-import type { TelegramId } from "../models/id/index.js";
+import type { TelegramId } from "../../types/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
 import { DeleteWalletResult } from "./types.js";

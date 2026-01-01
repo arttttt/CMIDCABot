@@ -9,7 +9,7 @@
  * - Purchase history (dev mode only)
  */
 
-import type { TelegramId } from "../models/id/index.js";
+import type { TelegramId } from "../../types/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { TransactionRepository } from "../repositories/TransactionRepository.js";
 import { PortfolioRepository } from "../repositories/PortfolioRepository.js";

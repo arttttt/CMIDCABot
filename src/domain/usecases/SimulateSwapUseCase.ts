@@ -9,7 +9,7 @@
  * 4. Return simulation result (success/error, compute units, logs)
  */
 
-import type { TelegramId, WalletAddress } from "../models/id/index.js";
+import type { TelegramId, WalletAddress } from "../../types/id/index.js";
 import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
 import { BlockchainRepository, SimulationResult } from "../repositories/BlockchainRepository.js";
 import { UserRepository } from "../repositories/UserRepository.js";

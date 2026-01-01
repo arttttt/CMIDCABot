@@ -5,7 +5,7 @@
  * All mutations (add/remove/update) are handled by dedicated use cases.
  */
 
-import { telegramId, type TelegramId } from "../models/id/index.js";
+import { telegramId, type TelegramId } from "../../types/id/index.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { AuthorizedUser, UserRole, isAdminRole } from "../models/AuthorizedUser.js";
 

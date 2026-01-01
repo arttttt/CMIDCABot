@@ -46,7 +46,7 @@ function sanitizeErrorMessage(error: unknown): string {
     .replace(/https?:\/\/[^\s]+/g, "[RPC_URL]"); // RPC URLs
 }
 
-import { walletAddress, txSignature, type WalletAddress, type TxSignature, type TokenMint } from "../../../domain/models/id/index.js";
+import { walletAddress, txSignature, type WalletAddress, type TxSignature, type TokenMint } from "../../../types/id/index.js";
 
 /**
  * Generated keypair with extractable private key

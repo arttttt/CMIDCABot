@@ -4,7 +4,7 @@
 import { Kysely, sql, Selectable } from "kysely";
 import { AuthRepository } from "../../../domain/repositories/AuthRepository.js";
 import { AuthorizedUser, UserRole } from "../../../domain/models/AuthorizedUser.js";
-import { telegramId, type TelegramId } from "../../../domain/models/id/index.js";
+import { telegramId, type TelegramId } from "../../../types/id/index.js";
 import type { AuthDatabase, AuthorizedUsersTable } from "../../types/authDatabase.js";
 
 type AuthUserRow = Selectable<AuthorizedUsersTable>;

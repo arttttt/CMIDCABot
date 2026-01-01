@@ -5,7 +5,7 @@ import { Kysely, sql, Selectable } from "kysely";
 import { InviteTokenRepository } from "../../../domain/repositories/InviteTokenRepository.js";
 import { InviteToken } from "../../../domain/models/InviteToken.js";
 import { UserRole } from "../../../domain/models/AuthorizedUser.js";
-import { telegramId, type TelegramId } from "../../../domain/models/id/index.js";
+import { telegramId, type TelegramId } from "../../../types/id/index.js";
 import type { AuthDatabase, InviteTokensTable } from "../../types/authDatabase.js";
 
 type InviteTokenRow = Selectable<InviteTokensTable>;

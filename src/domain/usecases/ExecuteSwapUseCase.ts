@@ -12,7 +12,7 @@
  * Streams progress via execute() AsyncGenerator.
  */
 
-import type { TelegramId, WalletAddress } from "../models/id/index.js";
+import type { TelegramId, WalletAddress } from "../../types/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { TransactionRepository } from "../repositories/TransactionRepository.js";
 import { BalanceRepository } from "../repositories/BalanceRepository.js";

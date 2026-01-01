@@ -1,7 +1,7 @@
 /**
  * Portfolio repository interface (for mock/development mode)
  */
-import type { TelegramId } from "../models/id/index.js";
+import type { TelegramId } from "../../types/id/index.js";
 import { PortfolioBalances } from "../models/Portfolio.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 

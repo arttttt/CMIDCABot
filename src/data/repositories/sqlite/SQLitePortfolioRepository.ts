@@ -4,7 +4,7 @@
 import { Kysely, sql, Selectable } from "kysely";
 import { PortfolioRepository } from "../../../domain/repositories/PortfolioRepository.js";
 import { PortfolioBalances } from "../../../domain/models/Portfolio.js";
-import { telegramId, type TelegramId } from "../../../domain/models/id/index.js";
+import { telegramId, type TelegramId } from "../../../types/id/index.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
 import type { MockDatabase, PortfolioTable } from "../../types/database.js";
 

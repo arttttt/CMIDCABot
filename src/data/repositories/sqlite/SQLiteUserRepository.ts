@@ -8,7 +8,7 @@
 import { Kysely, sql, Selectable } from "kysely";
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
 import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../../../domain/models/User.js";
-import { telegramId, walletAddress, type TelegramId, type WalletAddress } from "../../../domain/models/id/index.js";
+import { telegramId, walletAddress, type TelegramId, type WalletAddress } from "../../../types/id/index.js";
 import type { MainDatabase, UsersTable } from "../../types/database.js";
 import { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 

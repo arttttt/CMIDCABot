@@ -5,7 +5,7 @@
  * Provides Dependency Inversion for domain layer.
  */
 
-import type { TokenMint, WalletAddress } from "../../domain/models/id/index.js";
+import type { TokenMint, WalletAddress } from "../../types/id/index.js";
 import type {
   BlockchainRepository,
   GeneratedKeypair,

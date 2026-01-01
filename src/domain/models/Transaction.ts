@@ -2,7 +2,7 @@
  * Transaction domain model
  */
 import { AssetSymbol } from "../../types/portfolio.js";
-import type { TelegramId, TxSignature } from "./id/index.js";
+import type { TelegramId, TxSignature } from "../../types/id/index.js";
 
 export interface Transaction {
   id: number;

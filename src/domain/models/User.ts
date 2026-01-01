@@ -1,7 +1,7 @@
 /**
  * User domain model
  */
-import type { TelegramId, WalletAddress } from "./id/index.js";
+import type { TelegramId, WalletAddress } from "../../types/id/index.js";
 
 export interface User {
   telegramId: TelegramId;
