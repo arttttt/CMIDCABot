@@ -38,7 +38,7 @@ export class DcaWalletFormatter {
     return lines.join("\n");
   }
 
-  formatShowWallet(result: GetWalletInfoResult): ClientResponse {
+  formatGetWalletInfo(result: GetWalletInfoResult): ClientResponse {
     switch (result.type) {
       case "success":
       case "dev_mode":

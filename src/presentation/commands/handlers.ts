@@ -216,7 +216,7 @@ export function createWalletCommand(deps: WalletCommandDeps): Command {
     requiredRole: "user",
     handler: async (_args, ctx) => {
       const result = await deps.getWalletInfo.execute(ctx.telegramId);
-      return deps.formatter.formatShowWallet(result);
+      return deps.formatter.formatGetWalletInfo(result);
     },
     subcommands: new Map([
       ["create", createWalletCreateCommand(deps)],
