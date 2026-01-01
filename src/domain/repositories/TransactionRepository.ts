@@ -1,6 +1,7 @@
 /**
  * Transaction repository interface
  */
+import type { TelegramId } from "../models/id/index.js";
 import { Transaction, CreateTransactionData } from "../models/Transaction.js";
 
 export interface TransactionRepository {
@@ -12,7 +13,7 @@ export interface TransactionRepository {
   /**
    * Get all transactions for a user
    */
-  getByUserId(telegramId: number): Promise<Transaction[]>;
+  getByUserId(telegramId: TelegramId): Promise<Transaction[]>;
 
   /**
    * Create a new transaction
@@ -22,5 +23,5 @@ export interface TransactionRepository {
   /**
    * Delete all transactions for a user
    */
-  deleteByUserId(telegramId: number): Promise<void>;
+  deleteByUserId(telegramId: TelegramId): Promise<void>;
 }

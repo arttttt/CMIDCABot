@@ -9,9 +9,11 @@
  * - CSRF protection via form sessions
  */
 
+import type { TelegramId } from "../models/id/index.js";
+
 export interface FormSession {
   csrfToken: string;
-  telegramId: number;
+  telegramId: TelegramId;
 }
 
 export interface ImportSessionRepository {
@@ -21,7 +23,7 @@ export interface ImportSessionRepository {
    * @param telegramId - User ID for the import operation
    * @returns URL to access the import form
    */
-  store(telegramId: number): string;
+  store(telegramId: TelegramId): string;
 
   /**
    * Get TTL in minutes (for user display)
@@ -44,5 +46,5 @@ export interface ImportSessionRepository {
    * @param csrfToken - The CSRF token from the form
    * @returns telegramId or null if invalid/expired
    */
-  consumeForm(csrfToken: string): number | null;
+  consumeForm(csrfToken: string): TelegramId | null;
 }

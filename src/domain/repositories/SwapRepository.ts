@@ -6,13 +6,14 @@
  */
 
 import type { AssetSymbol } from "../../types/portfolio.js";
+import type { TokenMint, WalletAddress } from "../models/id/index.js";
 
 /**
  * Quote parameters for swap
  */
 export interface SwapQuoteParams {
-  inputMint: string;
-  outputMint: string;
+  inputMint: TokenMint;
+  outputMint: TokenMint;
   amount: string; // Amount in smallest units
   slippageBps?: number;
 }
@@ -21,11 +22,11 @@ export interface SwapQuoteParams {
  * Swap quote result
  */
 export interface SwapQuote {
-  inputMint: string;
+  inputMint: TokenMint;
   inputSymbol: string;
   inputAmount: number;
   inputAmountRaw: string;
-  outputMint: string;
+  outputMint: TokenMint;
   outputSymbol: string;
   outputAmount: number;
   outputAmountRaw: string;
@@ -66,7 +67,7 @@ export interface SwapRepository {
    */
   getQuoteUsdcToToken(
     amountUsdc: number,
-    outputMint: string,
+    outputMint: TokenMint,
     slippageBps?: number,
   ): Promise<SwapQuote>;
 
@@ -95,6 +96,6 @@ export interface SwapRepository {
    */
   buildSwapTransaction(
     quote: SwapQuote,
-    userPublicKey: string,
+    userPublicKey: WalletAddress,
   ): Promise<SwapTransaction>;
 }

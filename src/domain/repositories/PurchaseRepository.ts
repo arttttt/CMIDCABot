@@ -1,13 +1,14 @@
 /**
  * Purchase repository interface
  */
+import type { TelegramId } from "../models/id/index.js";
 import { Purchase, CreatePurchaseData } from "../models/Purchase.js";
 
 export interface PurchaseRepository {
   /**
    * Get all purchases for a user
    */
-  getByUserId(telegramId: number): Promise<Purchase[]>;
+  getByUserId(telegramId: TelegramId): Promise<Purchase[]>;
 
   /**
    * Create a new purchase
@@ -17,5 +18,5 @@ export interface PurchaseRepository {
   /**
    * Delete all purchases for a user
    */
-  deleteByUserId(telegramId: number): Promise<void>;
+  deleteByUserId(telegramId: TelegramId): Promise<void>;
 }

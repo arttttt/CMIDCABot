@@ -10,12 +10,13 @@
  * - Token operations (token balances)
  */
 
+import type { TokenMint, TxSignature, WalletAddress } from "../models/id/index.js";
 
 /**
  * Generated keypair with extractable private key
  */
 export interface GeneratedKeypair {
-  address: string;
+  address: WalletAddress;
   privateKeyBase64: string;
 }
 
@@ -31,7 +32,7 @@ export interface GeneratedKeypairWithMnemonic extends GeneratedKeypair {
  */
 export interface ValidateMnemonicResult {
   valid: boolean;
-  address?: string;
+  address?: WalletAddress;
   normalizedKey?: string;
   error?: string;
 }
@@ -41,7 +42,7 @@ export interface ValidateMnemonicResult {
  */
 export interface ValidatePrivateKeyResult {
   valid: boolean;
-  address?: string;
+  address?: WalletAddress;
   normalizedKey?: string;
   error?: string;
 }
@@ -51,7 +52,7 @@ export interface ValidatePrivateKeyResult {
  */
 export interface SendTransactionResult {
   success: boolean;
-  signature: string | null;
+  signature: TxSignature | null;
   error: string | null;
   confirmed: boolean;
 }
@@ -70,7 +71,7 @@ export interface SimulationResult {
  * Token configuration for batch balance fetching
  */
 export interface TokenConfig {
-  mint: string;
+  mint: TokenMint;
   decimals: number;
 }
 
@@ -94,12 +95,12 @@ export interface BlockchainRepository {
   /**
    * Get native token balance (e.g., SOL balance in lamports converted to decimal)
    */
-  getBalance(walletAddress: string): Promise<number>;
+  getBalance(walletAddress: WalletAddress): Promise<number>;
 
   /**
    * Get address from a base64-encoded private key
    */
-  getAddressFromPrivateKey(privateKeyBase64: string): Promise<string>;
+  getAddressFromPrivateKey(privateKeyBase64: string): Promise<WalletAddress>;
 
   /**
    * Generate a new keypair
@@ -127,9 +128,9 @@ export interface BlockchainRepository {
   validatePrivateKey(privateKeyBase64: string): Promise<ValidatePrivateKeyResult>;
 
   /**
-   * Check if address is valid
+   * Check if address is valid (raw string, not yet branded)
    */
-  isValidAddress(walletAddress: string): boolean;
+  isValidAddress(walletAddress: string): walletAddress is WalletAddress;
 
   // === Transaction Operations ===
 
@@ -160,21 +161,21 @@ export interface BlockchainRepository {
    * Get SPL token balance for a wallet
    */
   getTokenBalance(
-    walletAddress: string,
-    tokenMint: string,
+    walletAddress: WalletAddress,
+    tokenMint: TokenMint,
     decimals?: number,
   ): Promise<number>;
 
   /**
    * Get USDC balance for a wallet
    */
-  getUsdcBalance(walletAddress: string): Promise<number>;
+  getUsdcBalance(walletAddress: WalletAddress): Promise<number>;
 
   /**
    * Get all portfolio balances in a single batch request
    */
   getAllBalancesBatch(
-    walletAddress: string,
+    walletAddress: WalletAddress,
     tokens: {
       btc: TokenConfig;
       eth: TokenConfig;
