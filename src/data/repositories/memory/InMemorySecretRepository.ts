@@ -4,13 +4,14 @@
  * Wraps SecretCache data source and implements SecretStoreRepository interface.
  */
 
+import type { TelegramId } from "../../../domain/models/id/index.js";
 import { SecretStoreRepository } from "../../../domain/repositories/SecretStoreRepository.js";
 import { SecretCache } from "../../sources/memory/SecretCache.js";
 
 export class InMemorySecretRepository implements SecretStoreRepository {
   constructor(private readonly cache: SecretCache) {}
 
-  async store(payload: string, telegramId: number): Promise<string> {
+  async store(payload: string, telegramId: TelegramId): Promise<string> {
     return this.cache.store(payload, telegramId);
   }
 

@@ -10,7 +10,11 @@ const WALLET_ADDRESS_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 export class WalletAddress {
   constructor(readonly value: string) {
     if (!WALLET_ADDRESS_PATTERN.test(value)) {
-      throw new Error(`Invalid wallet address: ${value}`);
+      throw new Error(`Invalid WalletAddress: ${value}`);
     }
+  }
+
+  equals(other: WalletAddress): boolean {
+    return this.value === other.value;
   }
 }

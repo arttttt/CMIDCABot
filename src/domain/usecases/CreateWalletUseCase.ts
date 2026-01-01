@@ -51,7 +51,7 @@ export class CreateWalletUseCase {
     const wallet = await this.walletHelper.getWalletInfo(keypair.privateKeyBase64, false);
 
     // Store seed phrase securely and return one-time URL
-    const seedUrl = await this.secretStore.store(keypair.mnemonic, telegramId.value);
+    const seedUrl = await this.secretStore.store(keypair.mnemonic, telegramId);
     return { type: "created", wallet, seedUrl };
   }
 }

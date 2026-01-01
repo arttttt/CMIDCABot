@@ -10,7 +10,11 @@ const TOKEN_MINT_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 export class TokenMint {
   constructor(readonly value: string) {
     if (!TOKEN_MINT_PATTERN.test(value)) {
-      throw new Error(`Invalid token mint: ${value}`);
+      throw new Error(`Invalid TokenMint: ${value}`);
     }
+  }
+
+  equals(other: TokenMint): boolean {
+    return this.value === other.value;
   }
 }

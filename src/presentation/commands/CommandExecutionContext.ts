@@ -5,13 +5,13 @@
  * Provides requestId, identity, role, and convenience telegramId getter.
  */
 
-import type { TelegramId } from "../../domain/models/id/index.js";
+import type { TelegramId, RequestId } from "../../domain/models/id/index.js";
 import type { UserIdentity } from "../../domain/models/UserIdentity.js";
 import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 
 export class CommandExecutionContext {
   constructor(
-    readonly requestId: string,
+    readonly requestId: RequestId,
     readonly identity: UserIdentity,
     readonly role: UserRole,
   ) {}

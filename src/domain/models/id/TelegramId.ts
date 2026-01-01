@@ -4,7 +4,11 @@
 export class TelegramId {
   constructor(readonly value: number) {
     if (!Number.isInteger(value) || value <= 0) {
-      throw new Error(`Invalid Telegram ID: ${value}`);
+      throw new Error(`Invalid TelegramId: ${value}`);
     }
+  }
+
+  equals(other: TelegramId): boolean {
+    return this.value === other.value;
   }
 }

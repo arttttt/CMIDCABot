@@ -35,7 +35,7 @@ export class AuthorizationHelper {
    */
   async checkAuthorization(id: TelegramId): Promise<AuthCheckResult> {
     // Owner is always authorized
-    if (id === this.ownerTelegramIdBranded) {
+    if (id.equals(this.ownerTelegramIdBranded)) {
       const user = await this.authRepository.getById(id);
       return { authorized: true, user: user ?? this.createOwnerUser() };
     }
@@ -52,7 +52,7 @@ export class AuthorizationHelper {
    * Check if a user is authorized (simple boolean check)
    */
   async isAuthorized(id: TelegramId): Promise<boolean> {
-    if (id === this.ownerTelegramIdBranded) return true;
+    if (id.equals(this.ownerTelegramIdBranded)) return true;
     return this.authRepository.isAuthorized(id);
   }
 
@@ -60,7 +60,7 @@ export class AuthorizationHelper {
    * Check if a user has admin privileges
    */
   async isAdmin(id: TelegramId): Promise<boolean> {
-    if (id === this.ownerTelegramIdBranded) return true;
+    if (id.equals(this.ownerTelegramIdBranded)) return true;
 
     const user = await this.authRepository.getById(id);
     return user !== undefined && isAdminRole(user.role);
@@ -71,7 +71,7 @@ export class AuthorizationHelper {
    * @deprecated Use GetUserRoleUseCase instead. This method will be removed in future versions.
    */
   async getRole(id: TelegramId): Promise<UserRole | undefined> {
-    if (id === this.ownerTelegramIdBranded) return "owner";
+    if (id.equals(this.ownerTelegramIdBranded)) return "owner";
 
     const user = await this.authRepository.getById(id);
     return user?.role;

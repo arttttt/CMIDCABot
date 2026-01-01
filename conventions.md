@@ -32,6 +32,7 @@ Primitives (`number`, `string`) are forbidden for ID-like fields. Use class-base
 - All ID-like fields must use branded types (classes with `readonly value`)
 - Use `new Type(value)` at boundaries (presentation layer, DB read)
 - Use `.value` to extract primitive at external API boundaries
+- Use `.equals()` method for comparison (not `===`)
 
 ## Architecture
 

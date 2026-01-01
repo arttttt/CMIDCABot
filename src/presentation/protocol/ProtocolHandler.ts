@@ -19,7 +19,7 @@ import {
   UICommand,
   ClientResponseStream,
 } from "./types.js";
-import { TelegramId } from "../../domain/models/id/index.js";
+import { TelegramId, RequestId } from "../../domain/models/id/index.js";
 import { AuthorizationHelper } from "../../domain/helpers/AuthorizationHelper.js";
 import { hasRequiredRole, type UserRole } from "../../domain/models/AuthorizedUser.js";
 import { CommandExecutionContext } from "../commands/CommandExecutionContext.js";
@@ -121,7 +121,7 @@ export class ProtocolHandler {
 
     // Route through command tree
     const execCtx = new CommandExecutionContext(
-      `legacy-${Date.now()}`,
+      new RequestId(crypto.randomUUID()),
       { provider: "telegram", telegramId: tgId },
       userRole,
     );
@@ -175,7 +175,7 @@ export class ProtocolHandler {
 
     // Route through command tree with streaming
     const execCtx = new CommandExecutionContext(
-      `legacy-${Date.now()}`,
+      new RequestId(crypto.randomUUID()),
       { provider: "telegram", telegramId: tgId },
       userRole,
     );
@@ -217,7 +217,7 @@ export class ProtocolHandler {
     }
 
     const execCtx = new CommandExecutionContext(
-      `legacy-${Date.now()}`,
+      new RequestId(crypto.randomUUID()),
       { provider: "telegram", telegramId: tgId },
       userRole,
     );

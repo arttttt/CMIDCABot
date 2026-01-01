@@ -10,7 +10,11 @@ const TX_SIGNATURE_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{87,88}$/;
 export class TxSignature {
   constructor(readonly value: string) {
     if (!TX_SIGNATURE_PATTERN.test(value)) {
-      throw new Error(`Invalid transaction signature: ${value}`);
+      throw new Error(`Invalid TxSignature: ${value}`);
     }
+  }
+
+  equals(other: TxSignature): boolean {
+    return this.value === other.value;
   }
 }
