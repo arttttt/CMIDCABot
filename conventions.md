@@ -24,6 +24,25 @@
 | Repository interface | `*Repository` | `UserRepository` |
 | Use Case | `*UseCase` | `ExecutePurchaseUseCase` |
 
+### Branded Types
+
+Use branded types from `src/domain/models/id/` for type-safe identifiers:
+
+| Type | Purpose | Example |
+|------|---------|---------|
+| `TelegramId` | Telegram user ID | `telegramId(123456789)` |
+| `WalletAddress` | Solana wallet address | `walletAddress("ABC...")` |
+| `TxSignature` | Transaction signature | `txSignature("xyz...")` |
+| `TokenMint` | SPL token mint address | `tokenMint("EPjFW...")` |
+| `RequestId` | Request tracing UUID | `requestId("uuid...")` |
+| `SessionId` | HTTP session ID | `sessionId("sess...")` |
+
+**Rules:**
+- Import types and constructors from `domain/models/id/`
+- Use constructors at boundaries (presentation layer, DB read)
+- Cast with `as number/string` only at external API boundaries (grammY, Kysely)
+- Never pass raw `number`/`string` where branded type is expected
+
 ## Architecture
 
 See `ARCHITECTURE.md` for full description of layers and rules.
