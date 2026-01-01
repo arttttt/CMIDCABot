@@ -21,6 +21,16 @@ export interface UserRepository {
   setWalletAddress(telegramId: TelegramId, walletAddress: WalletAddress): Promise<void>;
 
   /**
+   * Atomically set wallet private key and address.
+   * Both values are written in a single transaction.
+   */
+  setWalletData(
+    telegramId: TelegramId,
+    privateKey: string,
+    walletAddress: WalletAddress,
+  ): Promise<void>;
+
+  /**
    * Get all users that have a wallet address set
    */
   getAllWithWallet(): Promise<UserWithWallet[]>;
