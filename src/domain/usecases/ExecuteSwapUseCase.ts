@@ -128,7 +128,7 @@ export class ExecuteSwapUseCase {
         available: usdcBalance,
       });
       yield SwapSteps.completed({
-        status: "insufficient_balance",
+        status: "insufficient_usdc_balance",
         required: amountUsdc,
         available: usdcBalance,
       });

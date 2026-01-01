@@ -26,7 +26,7 @@ export type SimulateSwapResult =
   | { status: "no_wallet" }
   | { status: "invalid_amount"; message: string }
   | { status: "invalid_asset"; message: string }
-  | { status: "insufficient_balance"; required: number; available: number }
+  | { status: "insufficient_usdc_balance"; required: number; available: number }
   | { status: "quote_error"; message: string }
   | { status: "build_error"; message: string }
   | { status: "simulation_error"; message: string };
@@ -111,7 +111,7 @@ export class SimulateSwapUseCase {
         available: usdcBalance,
       });
       return {
-        status: "insufficient_balance",
+        status: "insufficient_usdc_balance",
         required: amountUsdc,
         available: usdcBalance,
       };

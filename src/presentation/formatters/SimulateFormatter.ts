@@ -16,7 +16,7 @@ export class SimulateFormatter {
       return new ClientResponse(`No wallet found. Create one with ${Markdown.code("/wallet create")}`);
     }
 
-    if (result.status === "insufficient_balance") {
+    if (result.status === "insufficient_usdc_balance") {
       return new ClientResponse(
         `Insufficient USDC balance.\nRequired: ${result.required} USDC\nAvailable: ${result.available} USDC`,
       );

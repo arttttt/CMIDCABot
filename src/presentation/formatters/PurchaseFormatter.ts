@@ -27,7 +27,7 @@ export class PurchaseFormatter {
             "Use /wallet create to create a new wallet first.",
         );
 
-      case "insufficient_balance":
+      case "insufficient_usdc_balance":
         return new ClientResponse(
           `Insufficient USDC balance.\n\n` +
             `Required: ${result.requiredBalance} USDC\n` +
