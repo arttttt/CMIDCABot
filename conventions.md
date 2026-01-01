@@ -27,22 +27,12 @@
 
 ### Branded Types
 
-**Primitives (`number`, `string`) are forbidden for ID-like fields.** Use branded types from `src/domain/models/id/`:
-
-| Type | Purpose | Example |
-|------|---------|---------|
-| `TelegramId` | Telegram user ID | `telegramId(123456789)` |
-| `WalletAddress` | Solana wallet address | `walletAddress("ABC...")` |
-| `TxSignature` | Transaction signature | `txSignature("xyz...")` |
-| `TokenMint` | SPL token mint address | `tokenMint("EPjFW...")` |
-| `RequestId` | Request tracing UUID | `requestId("uuid...")` |
-| `SessionId` | HTTP session ID | `sessionId("sess...")` |
+Primitives (`number`, `string`) are forbidden for ID-like fields. Use branded types instead.
 
 **Rules:**
-- All new ID-like fields must use branded types
-- Import from `domain/models/id/` (or `domain/models/` which re-exports them)
+- All ID-like fields must use branded types
 - Use constructors at boundaries (presentation layer, DB read)
-- Cast with `as number/string` only at external API boundaries (grammY, Kysely)
+- Cast to primitives only at external API boundaries
 
 ## Architecture
 
