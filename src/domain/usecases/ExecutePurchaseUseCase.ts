@@ -188,6 +188,8 @@ export class ExecutePurchaseUseCase {
           requiredBalance: swapResult.required,
           availableBalance: swapResult.available,
         };
+      case "insufficient_sol_balance":
+        return { type: "insufficient_sol_balance" };
       case "quote_error":
         return { type: "quote_error", error: swapResult.message };
       case "build_error":

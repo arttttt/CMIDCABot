@@ -27,6 +27,7 @@ export type SimulateSwapResult =
   | { status: "invalid_amount"; message: string }
   | { status: "invalid_asset"; message: string }
   | { status: "insufficient_usdc_balance"; required: number; available: number }
+  | { status: "insufficient_sol_balance" }
   | { status: "quote_error"; message: string }
   | { status: "build_error"; message: string }
   | { status: "simulation_error"; message: string };
