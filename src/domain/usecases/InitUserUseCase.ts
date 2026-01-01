@@ -2,6 +2,7 @@
  * Init user use case
  */
 
+import type { TelegramId } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { PortfolioRepository } from "../repositories/PortfolioRepository.js";
 import { InitUserResult } from "./types.js";
@@ -12,7 +13,7 @@ export class InitUserUseCase {
     private portfolioRepository?: PortfolioRepository,
   ) {}
 
-  async execute(telegramId: number): Promise<InitUserResult> {
+  async execute(telegramId: TelegramId): Promise<InitUserResult> {
     await this.userRepository.create(telegramId);
     // Create portfolio in dev mode if repository available
     await this.portfolioRepository?.create(telegramId);

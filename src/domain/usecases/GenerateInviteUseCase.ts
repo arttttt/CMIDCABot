@@ -2,6 +2,7 @@
  * Use case for generating invite tokens
  */
 import { randomBytes } from "crypto";
+import type { TelegramId } from "../models/id/index.js";
 import { InviteTokenRepository } from "../repositories/InviteTokenRepository.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { UserRole, canManageRole } from "../models/AuthorizedUser.js";
@@ -18,7 +19,7 @@ export class GenerateInviteUseCase {
     private authRepository: AuthRepository,
   ) {}
 
-  async execute(creatorTelegramId: number, role: UserRole = "user"): Promise<GenerateInviteResult> {
+  async execute(creatorTelegramId: TelegramId, role: UserRole = "user"): Promise<GenerateInviteResult> {
     // Get creator's info
     const creator = await this.authRepository.getById(creatorTelegramId);
     if (!creator) {

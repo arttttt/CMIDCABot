@@ -5,6 +5,7 @@
  * All mutations (add/remove/update) are handled by dedicated use cases.
  */
 
+import { telegramId, type TelegramId } from "../models/id/index.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { AuthorizedUser, UserRole, isAdminRole } from "../models/AuthorizedUser.js";
 
@@ -20,22 +21,26 @@ export interface AuthCheckResult {
  * Authorization helper - permission checks for use cases
  */
 export class AuthorizationHelper {
+  private ownerTelegramIdBranded: TelegramId;
+
   constructor(
     private authRepository: AuthRepository,
-    private ownerTelegramId: number,
-  ) {}
+    ownerTelegramIdRaw: number,
+  ) {
+    this.ownerTelegramIdBranded = telegramId(ownerTelegramIdRaw);
+  }
 
   /**
    * Check if a user is authorized to use the bot
    */
-  async checkAuthorization(telegramId: number): Promise<AuthCheckResult> {
+  async checkAuthorization(id: TelegramId): Promise<AuthCheckResult> {
     // Owner is always authorized
-    if (telegramId === this.ownerTelegramId) {
-      const user = await this.authRepository.getById(telegramId);
+    if (id === this.ownerTelegramIdBranded) {
+      const user = await this.authRepository.getById(id);
       return { authorized: true, user: user ?? this.createOwnerUser() };
     }
 
-    const user = await this.authRepository.getById(telegramId);
+    const user = await this.authRepository.getById(id);
     if (user) {
       return { authorized: true, user };
     }
@@ -46,18 +51,18 @@ export class AuthorizationHelper {
   /**
    * Check if a user is authorized (simple boolean check)
    */
-  async isAuthorized(telegramId: number): Promise<boolean> {
-    if (telegramId === this.ownerTelegramId) return true;
-    return this.authRepository.isAuthorized(telegramId);
+  async isAuthorized(id: TelegramId): Promise<boolean> {
+    if (id === this.ownerTelegramIdBranded) return true;
+    return this.authRepository.isAuthorized(id);
   }
 
   /**
    * Check if a user has admin privileges
    */
-  async isAdmin(telegramId: number): Promise<boolean> {
-    if (telegramId === this.ownerTelegramId) return true;
+  async isAdmin(id: TelegramId): Promise<boolean> {
+    if (id === this.ownerTelegramIdBranded) return true;
 
-    const user = await this.authRepository.getById(telegramId);
+    const user = await this.authRepository.getById(id);
     return user !== undefined && isAdminRole(user.role);
   }
 
@@ -65,18 +70,18 @@ export class AuthorizationHelper {
    * Get user's role
    * @deprecated Use GetUserRoleUseCase instead. This method will be removed in future versions.
    */
-  async getRole(telegramId: number): Promise<UserRole | undefined> {
-    if (telegramId === this.ownerTelegramId) return "owner";
+  async getRole(id: TelegramId): Promise<UserRole | undefined> {
+    if (id === this.ownerTelegramIdBranded) return "owner";
 
-    const user = await this.authRepository.getById(telegramId);
+    const user = await this.authRepository.getById(id);
     return user?.role;
   }
 
   /**
    * Get owner telegram ID
    */
-  getOwnerTelegramId(): number {
-    return this.ownerTelegramId;
+  getOwnerTelegramId(): TelegramId {
+    return this.ownerTelegramIdBranded;
   }
 
   /**
@@ -84,7 +89,7 @@ export class AuthorizationHelper {
    */
   private createOwnerUser(): AuthorizedUser {
     return {
-      telegramId: this.ownerTelegramId,
+      telegramId: this.ownerTelegramIdBranded,
       role: "owner",
       addedBy: null,
       createdAt: new Date(),

@@ -2,6 +2,7 @@
  * Delete wallet use case
  */
 
+import type { TelegramId } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
 import { DeleteWalletResult } from "./types.js";
@@ -13,7 +14,7 @@ export class DeleteWalletUseCase {
     private walletHelper: WalletInfoHelper,
   ) {}
 
-  async execute(telegramId: number): Promise<DeleteWalletResult> {
+  async execute(telegramId: TelegramId): Promise<DeleteWalletResult> {
     logger.info("DeleteWallet", "Deleting wallet", { telegramId });
 
     if (this.walletHelper.isDevMode()) {

@@ -2,6 +2,7 @@
  * Get portfolio status use case - reads real wallet balances
  */
 
+import type { TelegramId, WalletAddress } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BalanceRepository } from "../repositories/BalanceRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
@@ -20,28 +21,28 @@ export class GetPortfolioStatusUseCase {
     private devPrivateKey?: string,
   ) {}
 
-  async execute(telegramId: number): Promise<PortfolioStatusResult> {
+  async execute(telegramId: TelegramId): Promise<PortfolioStatusResult> {
     logger.info("GetPortfolioStatus", "Fetching portfolio status", { telegramId });
 
     // Get user's wallet
-    let walletAddress: string | undefined;
+    let walletAddr: WalletAddress | undefined;
 
     if (this.devPrivateKey) {
       // In dev mode, use dev wallet
-      walletAddress = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
+      walletAddr = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
     } else {
       const user = await this.userRepository.getById(telegramId);
-      walletAddress = user?.walletAddress ?? undefined;
+      walletAddr = user?.walletAddress ?? undefined;
     }
 
-    if (!walletAddress) {
+    if (!walletAddr) {
       return { type: "not_found" };
     }
 
     try {
       // Fetch balances (cached) and prices in parallel
       const [balances, prices] = await Promise.all([
-        this.balanceRepository.getBalances(walletAddress),
+        this.balanceRepository.getBalances(walletAddr),
         this.priceRepository.getPricesRecord(),
       ]);
 

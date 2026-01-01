@@ -4,11 +4,12 @@
  */
 
 import { AssetSymbol } from "../../types/portfolio.js";
+import type { TxSignature, WalletAddress } from "../models/id/index.js";
 import { PortfolioStatus } from "../models/PortfolioTypes.js";
 
 // Wallet info (used by balance)
 export interface WalletInfo {
-  address: string;
+  address: WalletAddress;
   balance: number | null; // null if fetch failed
 }
 
@@ -25,7 +26,7 @@ export interface PurchaseResult {
   amountAsset?: number;
   amountUsdc?: number;
   priceUsd?: number;
-  signature?: string;
+  signature?: TxSignature;
   confirmed?: boolean;
   requiredBalance?: number;
   availableBalance?: number;
@@ -46,7 +47,7 @@ export interface InitUserResult {
 
 // DCA Wallet types
 export interface DcaWalletInfo {
-  address: string;
+  address: WalletAddress;
   balance: number | null;
   usdcBalance: number | null;
   isDevWallet: boolean;

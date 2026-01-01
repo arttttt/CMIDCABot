@@ -4,13 +4,14 @@
  * This use case should be called during application startup.
  */
 
+import type { TelegramId } from "../models/id/index.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export class InitializeAuthorizationUseCase {
   constructor(
     private authRepository: AuthRepository,
-    private ownerTelegramId: number,
+    private ownerTelegramId: TelegramId,
   ) {}
 
   async execute(): Promise<void> {

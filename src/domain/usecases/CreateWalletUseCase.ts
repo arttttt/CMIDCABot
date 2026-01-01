@@ -2,6 +2,7 @@
  * Create wallet use case
  */
 
+import type { TelegramId } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { SecretStoreRepository } from "../repositories/SecretStoreRepository.js";
@@ -17,7 +18,7 @@ export class CreateWalletUseCase {
     private secretStore: SecretStoreRepository,
   ) {}
 
-  async execute(telegramId: number): Promise<CreateWalletResult> {
+  async execute(telegramId: TelegramId): Promise<CreateWalletResult> {
     logger.info("CreateWallet", "Creating wallet", { telegramId });
 
     await this.userRepository.create(telegramId);

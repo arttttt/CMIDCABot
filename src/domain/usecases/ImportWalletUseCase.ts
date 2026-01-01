@@ -3,6 +3,7 @@
  * Allows users to import an existing Solana wallet via private key
  */
 
+import type { TelegramId, WalletAddress } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
@@ -16,7 +17,7 @@ export class ImportWalletUseCase {
     private walletHelper: WalletInfoHelper,
   ) {}
 
-  async execute(telegramId: number, privateKeyBase64: string): Promise<ImportWalletResult> {
+  async execute(telegramId: TelegramId, privateKeyBase64: string): Promise<ImportWalletResult> {
     logger.info("ImportWallet", "Importing wallet", { telegramId });
 
     // Ensure user exists
@@ -43,7 +44,7 @@ export class ImportWalletUseCase {
     const isMnemonic = words.length >= 12 && words.length <= 24;
 
     let normalizedKey: string;
-    let walletAddress: string;
+    let walletAddr: WalletAddress;
 
     if (isMnemonic) {
       // Validate as BIP39 mnemonic
@@ -57,7 +58,7 @@ export class ImportWalletUseCase {
         return { type: "invalid_key", error: mnemonicValidation.error };
       }
       normalizedKey = mnemonicValidation.normalizedKey!;
-      walletAddress = mnemonicValidation.address!;
+      walletAddr = mnemonicValidation.address!;
     } else {
       // Validate as base64 private key
       const validation = await this.blockchainRepository.validatePrivateKey(privateKeyBase64);
@@ -69,16 +70,16 @@ export class ImportWalletUseCase {
         return { type: "invalid_key", error: validation.error };
       }
       normalizedKey = validation.normalizedKey!;
-      walletAddress = validation.address!;
+      walletAddr = validation.address!;
     }
 
     // Store the wallet
     await this.userRepository.setPrivateKey(telegramId, normalizedKey);
-    await this.userRepository.setWalletAddress(telegramId, walletAddress);
+    await this.userRepository.setWalletAddress(telegramId, walletAddr);
 
     logger.info("ImportWallet", "Wallet imported", {
       telegramId,
-      address: walletAddress,
+      address: walletAddr,
     });
 
     const wallet = await this.walletHelper.getWalletInfo(normalizedKey, false);
