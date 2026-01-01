@@ -1,7 +1,7 @@
 ---
 description: Implement task from specification
 argument-hint: "<task_name> | <file_path>"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__github-official__update_issue, mcp__github-official__get_issue, mcp__github-official__add_issue_comment, mcp__github-projects-local__list_projects, mcp__github-projects-local__get_project_items, mcp__github-projects-local__move_item_to_column, mcp__github-projects-local__get_project_fields
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
 Use subagent `developer`.
@@ -37,32 +37,29 @@ Implement functionality from specification or brief.
 
 5. **🚨 STOP — output plan and wait for confirmation** ("да", "ok", "yes")
 
-6. **Start work** (after confirmation, before any code):
-   - Update GitHub Issue (if Issue number found):
-     - Remove `stage:spec` or `stage:brief` label
-     - Add `stage:impl` label
+6. **Update GitHub Issue** (main context, before delegating to subagent):
+   - If Issue number found, use MCP tools:
+     - Update labels: remove label, add `stage:impl`
      - Move to "In Progress" column in project
-     - If MCP unavailable: show warning, continue
+   - This is done by main context, NOT by subagent
+
+7. **Delegate to subagent** for implementation:
    - Create branch:
      ```bash
      git checkout -b <type>/<short-description>
      ```
      Branch types: `feature/` (from TASK/BRIEF), `fix/` (bug fixes), `refactor/`
-
-7. **Implement with granular commits:**
-   - Write code for one logical change
-   - Commit with conventional message: `<type>(<scope>): <description>`
-   - Repeat until done
-
-8. **After implementation:**
+   - Implement with granular commits:
+     - Write code for one logical change
+     - Commit with conventional message: `<type>(<scope>): <description>`
+     - Repeat until done
    - If TASK exists: mark completed criteria in file
+   - Push branch to remote:
+     ```bash
+     git push -u origin <branch-name>
+     ```
 
-9. **Push branch to remote:**
-    ```bash
-    git push -u origin <branch-name>
-    ```
-
-10. **Report completion:**
+8. **Report completion:**
     ```
     ✅ Implementation complete
 
@@ -92,8 +89,10 @@ TASK file exists?
 Repository: arttttt/CMIDCABot
 Project: CMI DCA Bot
 Column: In Progress
-Labels: stage:impl (removes stage:spec or stage:brief)
+Labels: stage:impl (removes previous stage label)
 ```
+
+**Note:** GitHub operations (labels, project column) are performed by main context via MCP before delegating to subagent.
 
 ## Plan Format
 
