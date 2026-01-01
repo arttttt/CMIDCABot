@@ -138,6 +138,39 @@ Agents in `.claude/agents/`:
 
 Agents are invoked automatically via commands.
 
+## Subagent Delegation Rules
+
+**CRITICAL:** Commands below MUST be delegated to specialized subagents via Task tool.
+Do NOT execute these commands in main context.
+
+| Command | Subagent | Action |
+|---------|----------|--------|
+| `/brief` | `analyst` | MUST delegate via Task |
+| `/consult` | `analyst` | MUST delegate via Task |
+| `/spec` | `pm` | MUST delegate via Task |
+| `/implement` | `developer` | MUST delegate via Task |
+| `/fix` | `developer` | MUST delegate via Task |
+| `/review` | `reviewer` | MUST delegate via Task |
+
+### Why Delegate?
+
+1. **Specialized prompts** — each subagent has domain-specific instructions
+2. **Clean context** — main conversation stays focused on high-level flow
+3. **Better results** — subagents are fine-tuned for their specific tasks
+4. **Isolation** — subagent failures don't pollute main context
+
+### How to Delegate
+
+When user invokes a command (e.g., `/brief feature_x`):
+
+1. Identify the appropriate subagent from the table above
+2. Invoke subagent via Task tool with:
+   - Task description matching the command
+   - Full user arguments passed through
+   - Reference to relevant files if any
+3. Wait for subagent to complete
+4. Report result to user
+
 ## Useful Links
 
 - [grammY](https://grammy.dev/)
