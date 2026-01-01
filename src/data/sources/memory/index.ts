@@ -7,3 +7,6 @@ export {
   DEFAULT_IMPORT_SESSION_TTL_MS,
 } from "./ImportSessionCache.js";
 export type { ImportSessionStoreConfig } from "./ImportSessionCache.js";
+
+export { RateLimitCache, DEFAULT_CLEANUP_INTERVAL_MS } from "./RateLimitCache.js";
+export type { RateLimitCacheConfig } from "./RateLimitCache.js";

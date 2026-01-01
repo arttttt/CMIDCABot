@@ -17,4 +17,5 @@ export {
   type AuthConfig,
   type PriceConfig,
   type PriceSource,
+  type RateLimitConfig,
 } from "./envSchema.js";
