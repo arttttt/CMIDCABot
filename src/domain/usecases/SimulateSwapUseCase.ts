@@ -120,7 +120,7 @@ export class SimulateSwapUseCase {
     }
 
     // Check SOL balance for transaction fees
-    const solBalance = await this.blockchainRepository.getSolBalance(walletAddr);
+    const solBalance = await this.blockchainRepository.getBalance(walletAddr);
     if (solBalance < MIN_SOL_FOR_FEES) {
       logger.warn("SimulateSwap", "Insufficient SOL for fees", {
         required: MIN_SOL_FOR_FEES,
