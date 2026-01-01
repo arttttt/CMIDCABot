@@ -9,6 +9,7 @@ import { Kysely, sql, Selectable } from "kysely";
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
 import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../../../domain/models/User.js";
 import { TelegramId, WalletAddress } from "../../../domain/models/id/index.js";
+import { UserNotFoundError } from "../../../domain/errors/index.js";
 import type { MainDatabase, UsersTable } from "../../types/database.js";
 import { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 
@@ -75,6 +76,28 @@ export class SQLiteUserRepository implements UserRepository {
       })
       .where("telegram_id", "=", id.value)
       .execute();
+  }
+
+  async setWalletData(
+    id: TelegramId,
+    privateKey: string,
+    address: WalletAddress,
+  ): Promise<void> {
+    const encryptedKey = await this.encryptPrivateKey(privateKey);
+
+    const result = await this.db
+      .updateTable("users")
+      .set({
+        private_key: encryptedKey,
+        wallet_address: address.value,
+        updated_at: sql`CURRENT_TIMESTAMP`,
+      })
+      .where("telegram_id", "=", id.value)
+      .executeTakeFirst();
+
+    if (result.numUpdatedRows === BigInt(0)) {
+      throw new UserNotFoundError(id.value);
+    }
   }
 
   async getAllWithWallet(): Promise<UserWithWallet[]> {

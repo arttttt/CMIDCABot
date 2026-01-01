@@ -9,6 +9,10 @@ import { SecretStoreRepository } from "../repositories/SecretStoreRepository.js"
 import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
 import { CreateWalletResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
+import { withRetry } from "../../infrastructure/shared/resilience/index.js";
+
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
 
 export class CreateWalletUseCase {
   constructor(
@@ -38,10 +42,37 @@ export class CreateWalletUseCase {
       return { type: "already_exists", wallet };
     }
 
+    return this.createWalletWithRetry(telegramId);
+  }
+
+  private async createWalletWithRetry(telegramId: TelegramId): Promise<CreateWalletResult> {
+    // Generate keypair ONCE before retry loop - keypair generation is deterministic
+    // and should not be repeated on I/O failures
     logger.debug("CreateWallet", "Generating new keypair with mnemonic");
     const keypair = await this.blockchainRepository.generateKeypairFromMnemonic();
-    await this.userRepository.setPrivateKey(telegramId, keypair.privateKeyBase64);
-    await this.userRepository.setWalletAddress(telegramId, keypair.address);
+
+    // Cache seedUrl to avoid duplicate storage on retry
+    let seedUrl: string | undefined;
+
+    // Retry only I/O operations (secret store + database)
+    await withRetry(
+      async () => {
+        // 1. Store seed phrase only on first attempt
+        if (!seedUrl) {
+          seedUrl = await this.secretStore.store(keypair.mnemonic, telegramId);
+        }
+
+        // 2. Write to database (private key + address)
+        await this.userRepository.setWalletData(
+          telegramId,
+          keypair.privateKeyBase64,
+          keypair.address,
+        );
+      },
+      MAX_RETRIES,
+      BASE_DELAY_MS,
+      () => true, // Retry all errors
+    );
 
     logger.info("CreateWallet", "Wallet created", {
       telegramId,
@@ -50,8 +81,6 @@ export class CreateWalletUseCase {
 
     const wallet = await this.walletHelper.getWalletInfo(keypair.privateKeyBase64, false);
 
-    // Store seed phrase securely and return one-time URL
-    const seedUrl = await this.secretStore.store(keypair.mnemonic, telegramId);
-    return { type: "created", wallet, seedUrl };
+    return { type: "created", wallet, seedUrl: seedUrl! };
   }
 }
