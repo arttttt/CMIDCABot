@@ -3,8 +3,10 @@
  * Single source of truth for all token-related constants
  */
 
+import { tokenMint, type TokenMint } from "../../../domain/models/id/index.js";
+
 export interface TokenConfig {
-  mint: string;
+  mint: TokenMint;
   decimals: number;
 }
 
@@ -33,19 +35,19 @@ export interface TokenConfig {
  */
 export const TOKENS = {
   SOL: {
-    mint: "So11111111111111111111111111111111111111112",
+    mint: tokenMint("So11111111111111111111111111111111111111112"),
     decimals: 9,
   },
   USDC: {
-    mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    mint: tokenMint("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
     decimals: 6,
   },
   BTC: {
-    mint: "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
+    mint: tokenMint("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij"),
     decimals: 8,
   },
   ETH: {
-    mint: "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+    mint: tokenMint("7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs"),
     decimals: 8,
   },
 } as const satisfies Record<string, TokenConfig>;
