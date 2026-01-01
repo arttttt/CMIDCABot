@@ -14,7 +14,7 @@ import { Definitions } from "./definitions.js";
 // Use cases
 import {
   InitUserUseCase,
-  ShowWalletUseCase,
+  GetWalletInfoUseCase,
   CreateWalletUseCase,
   ImportWalletUseCase,
   DeleteWalletUseCase,
@@ -87,7 +87,7 @@ function parseAmount(amountStr: string): number | null {
 // ============================================================
 
 export interface WalletCommandDeps {
-  showWallet: ShowWalletUseCase;
+  getWalletInfo: GetWalletInfoUseCase;
   createWallet: CreateWalletUseCase;
   importWallet: ImportWalletUseCase;
   deleteWallet: DeleteWalletUseCase;
@@ -215,8 +215,8 @@ export function createWalletCommand(deps: WalletCommandDeps): Command {
     definition: Definitions.wallet,
     requiredRole: "user",
     handler: async (_args, ctx) => {
-      const result = await deps.showWallet.execute(ctx.telegramId);
-      return deps.formatter.formatShowWallet(result);
+      const result = await deps.getWalletInfo.execute(ctx.telegramId);
+      return deps.formatter.formatGetWalletInfo(result);
     },
     subcommands: new Map([
       ["create", createWalletCreateCommand(deps)],

@@ -3,7 +3,7 @@
  */
 
 import {
-  ShowWalletResult,
+  GetWalletInfoResult,
   CreateWalletResult,
   ImportWalletResult,
   DeleteWalletResult,
@@ -38,7 +38,7 @@ export class DcaWalletFormatter {
     return lines.join("\n");
   }
 
-  formatShowWallet(result: ShowWalletResult): ClientResponse {
+  formatGetWalletInfo(result: GetWalletInfoResult): ClientResponse {
     switch (result.type) {
       case "success":
       case "dev_mode":
