@@ -1,8 +1,10 @@
 /**
  * Portfolio domain model (for mock/development mode)
  */
+import type { TelegramId } from "./id/index.js";
+
 export interface Portfolio {
-  telegramId: number;
+  telegramId: TelegramId;
   btcBalance: number;
   ethBalance: number;
   solBalance: number;
@@ -14,7 +16,7 @@ export interface Portfolio {
  * Simplified portfolio data for calculations
  */
 export interface PortfolioBalances {
-  telegramId: number;
+  telegramId: TelegramId;
   btcBalance: number;
   ethBalance: number;
   solBalance: number;

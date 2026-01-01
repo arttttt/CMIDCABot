@@ -1,6 +1,7 @@
 /**
  * Domain models barrel export
  */
+export * from "./id/index.js";
 export * from "./User.js";
 export * from "./Transaction.js";
 export * from "./Portfolio.js";

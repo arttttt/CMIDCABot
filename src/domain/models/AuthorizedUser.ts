@@ -1,6 +1,7 @@
 /**
  * User authorization domain model
  */
+import type { TelegramId } from "./id/index.js";
 
 /**
  * User roles in the system
@@ -15,9 +16,9 @@ export type UserRole = "owner" | "admin" | "user" | "guest";
  * Authorized user - represents a user who has access to the bot
  */
 export interface AuthorizedUser {
-  telegramId: number;
+  telegramId: TelegramId;
   role: UserRole;
-  addedBy: number | null; // telegram_id of admin who added this user, null for owner
+  addedBy: TelegramId | null; // telegram_id of admin who added this user, null for owner
   createdAt: Date;
   updatedAt: Date;
 }

@@ -2,6 +2,7 @@
  * Invite token domain model for one-time authorization links
  */
 import { UserRole } from "./AuthorizedUser.js";
+import type { TelegramId } from "./id/index.js";
 
 /**
  * Invite token - represents a one-time authorization link
@@ -12,13 +13,13 @@ export interface InviteToken {
   /** Role to assign when activated */
   role: UserRole;
   /** Telegram ID of the user who created the invite */
-  createdBy: number;
+  createdBy: TelegramId;
   /** When the token was created */
   createdAt: Date;
   /** When the token expires */
   expiresAt: Date;
   /** Telegram ID of user who used the invite (null if unused) */
-  usedBy: number | null;
+  usedBy: TelegramId | null;
   /** When the token was used (null if unused) */
   usedAt: Date | null;
 }
