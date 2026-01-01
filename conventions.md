@@ -13,6 +13,7 @@
 ### Structure
 - Small modules — single responsibility
 - Utility functions — class with static methods (not top-level exports)
+  - **Exception:** branded type constructors (e.g., `telegramId()`) — top-level functions allowed
 
 ### Naming
 
@@ -26,7 +27,7 @@
 
 ### Branded Types
 
-Use branded types from `src/domain/models/id/` for type-safe identifiers:
+**Primitives (`number`, `string`) are forbidden for ID-like fields.** Use branded types from `src/domain/models/id/`:
 
 | Type | Purpose | Example |
 |------|---------|---------|
@@ -38,10 +39,10 @@ Use branded types from `src/domain/models/id/` for type-safe identifiers:
 | `SessionId` | HTTP session ID | `sessionId("sess...")` |
 
 **Rules:**
-- Import types and constructors from `domain/models/id/` (or `domain/models/` which re-exports them)
+- All new ID-like fields must use branded types
+- Import from `domain/models/id/` (or `domain/models/` which re-exports them)
 - Use constructors at boundaries (presentation layer, DB read)
 - Cast with `as number/string` only at external API boundaries (grammY, Kysely)
-- Never pass raw `number`/`string` where branded type is expected
 
 ## Architecture
 
