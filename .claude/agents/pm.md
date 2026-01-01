@@ -1,6 +1,6 @@
 ---
 name: pm
-description: Transforms ideas and briefs into structured task specifications. Use when defining scope and acceptance criteria.
+description: "MUST BE USED for creating task specifications. Use PROACTIVELY when /spec command is invoked or when translating briefs/ideas into actionable tasks with scope and acceptance criteria."
 tools: Read, Glob, Grep, Write
 model: inherit
 ---

@@ -1,6 +1,6 @@
 ---
 name: analyst
-description: Technical analysis and consultation. Use PROACTIVELY for architecture decisions, code exploration, and preparing briefs for PM.
+description: "MUST BE USED for technical analysis. Use PROACTIVELY when /brief or /consult commands are invoked, for architecture decisions, code exploration, and preparing briefs for PM."
 tools: Read, Glob, Grep, Write
 model: inherit
 ---

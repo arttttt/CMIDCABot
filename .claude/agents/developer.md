@@ -1,6 +1,6 @@
 ---
 name: developer
-description: Implements features from specifications. Use for coding tasks after spec is ready.
+description: "MUST BE USED for code implementation. Use PROACTIVELY when /implement or /fix commands are invoked, or when coding tasks need execution from specs or reviews."
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: inherit
 permissionMode: acceptEdits
