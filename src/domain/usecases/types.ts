@@ -53,7 +53,7 @@ export interface DcaWalletInfo {
   isDevWallet: boolean;
 }
 
-export interface ShowWalletResult {
+export interface GetWalletInfoResult {
   type: "success" | "no_wallet" | "dev_mode";
   wallet?: DcaWalletInfo;
 }

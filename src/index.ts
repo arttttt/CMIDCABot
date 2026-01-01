@@ -32,7 +32,7 @@ import {
   ExecutePurchaseUseCase,
   GetPortfolioStatusUseCase,
   WalletInfoHelper,
-  ShowWalletUseCase,
+  GetWalletInfoUseCase,
   CreateWalletUseCase,
   ImportWalletUseCase,
   DeleteWalletUseCase,
@@ -260,7 +260,7 @@ async function main(): Promise<void> {
 
   // Create use cases
   const initUser = new InitUserUseCase(userRepository, portfolioRepository);
-  const showWallet = new ShowWalletUseCase(userRepository, walletHelper);
+  const getWalletInfo = new GetWalletInfoUseCase(userRepository, walletHelper);
   const createWallet = new CreateWalletUseCase(userRepository, blockchainRepository, walletHelper, secretStore);
   const importWallet = new ImportWalletUseCase(userRepository, blockchainRepository, walletHelper);
   const deleteWallet = new DeleteWalletUseCase(userRepository, walletHelper);
@@ -360,7 +360,7 @@ async function main(): Promise<void> {
       const deps: DevCommandRegistryDeps = {
         start: startDeps,
         wallet: {
-          showWallet,
+          getWalletInfo,
           createWallet,
           importWallet,
           deleteWallet,
@@ -403,7 +403,7 @@ async function main(): Promise<void> {
       const deps: ProdCommandRegistryDeps = {
         start: startDeps,
         wallet: {
-          showWallet,
+          getWalletInfo,
           createWallet,
           importWallet,
           deleteWallet,

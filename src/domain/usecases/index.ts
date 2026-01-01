@@ -15,7 +15,7 @@ export { GetPortfolioStatusUseCase } from "./GetPortfolioStatusUseCase.js";
 
 // Wallet
 export { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
-export { ShowWalletUseCase } from "./ShowWalletUseCase.js";
+export { GetWalletInfoUseCase } from "./GetWalletInfoUseCase.js";
 export { CreateWalletUseCase } from "./CreateWalletUseCase.js";
 export { ImportWalletUseCase } from "./ImportWalletUseCase.js";
 export { DeleteWalletUseCase } from "./DeleteWalletUseCase.js";
