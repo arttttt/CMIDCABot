@@ -34,6 +34,9 @@ export class PurchaseFormatter {
             `Available: ${result.availableBalance?.toFixed(2) ?? "0"} USDC`,
         );
 
+      case "insufficient_sol_balance":
+        return new ClientResponse("Insufficient SOL for transaction fees.");
+
       case "quote_error":
         return new ClientResponse(`Failed to get quote: ${Markdown.escape(result.error ?? "")}`);
 
