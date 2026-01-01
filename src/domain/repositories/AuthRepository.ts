@@ -1,13 +1,14 @@
 /**
  * Authorization repository interface
  */
+import type { TelegramId } from "../models/id/index.js";
 import { AuthorizedUser, UserRole } from "../models/AuthorizedUser.js";
 
 export interface AuthRepository {
   /**
    * Get authorized user by Telegram ID
    */
-  getById(telegramId: number): Promise<AuthorizedUser | undefined>;
+  getById(telegramId: TelegramId): Promise<AuthorizedUser | undefined>;
 
   /**
    * Get all authorized users
@@ -22,22 +23,22 @@ export interface AuthRepository {
   /**
    * Add a new authorized user
    */
-  add(telegramId: number, role: UserRole, addedBy: number | null): Promise<void>;
+  add(telegramId: TelegramId, role: UserRole, addedBy: TelegramId | null): Promise<void>;
 
   /**
    * Remove an authorized user
    */
-  remove(telegramId: number): Promise<boolean>;
+  remove(telegramId: TelegramId): Promise<boolean>;
 
   /**
    * Update user's role
    */
-  updateRole(telegramId: number, newRole: UserRole): Promise<boolean>;
+  updateRole(telegramId: TelegramId, newRole: UserRole): Promise<boolean>;
 
   /**
    * Check if a user is authorized
    */
-  isAuthorized(telegramId: number): Promise<boolean>;
+  isAuthorized(telegramId: TelegramId): Promise<boolean>;
 
   /**
    * Get user count

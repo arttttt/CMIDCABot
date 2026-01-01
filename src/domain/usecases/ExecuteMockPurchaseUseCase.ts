@@ -4,6 +4,7 @@
  * Updates mock portfolio balances based on current prices.
  */
 
+import type { TelegramId } from "../models/id/index.js";
 import { PortfolioRepository } from "../repositories/PortfolioRepository.js";
 import { PurchaseRepository } from "../repositories/PurchaseRepository.js";
 import { PriceRepository } from "../repositories/PriceRepository.js";
@@ -28,7 +29,7 @@ export class ExecuteMockPurchaseUseCase {
   ) {}
 
   async execute(
-    telegramId: number,
+    telegramId: TelegramId,
     amountUsdc: number,
     asset?: AssetSymbol,
   ): Promise<MockPurchaseResult> {

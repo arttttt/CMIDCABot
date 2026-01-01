@@ -19,7 +19,8 @@ export class BalanceFormatter {
 
       case "success": {
         const wallet = result.wallet!;
-        const truncated = `${wallet.address.slice(0, 8)}...${wallet.address.slice(-8)}`;
+        const addr = wallet.address.value;
+        const truncated = `${addr.slice(0, 8)}...${addr.slice(-8)}`;
         return new ClientResponse(
           `Wallet: ${truncated}\n\n` +
           `SOL Balance: ${wallet.balance!.toFixed(4)} SOL`,

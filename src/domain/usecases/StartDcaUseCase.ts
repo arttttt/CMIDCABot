@@ -2,6 +2,7 @@
  * Start DCA use case
  */
 
+import type { TelegramId } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { DcaScheduler } from "../../_wip/dca-scheduling/index.js";
 import { DcaStartResult } from "./types.js";
@@ -13,7 +14,7 @@ export class StartDcaUseCase {
     private dcaScheduler: DcaScheduler | undefined,
   ) {}
 
-  async execute(telegramId: number): Promise<DcaStartResult> {
+  async execute(telegramId: TelegramId): Promise<DcaStartResult> {
     logger.info("StartDca", "Starting DCA", { telegramId });
 
     if (!this.dcaScheduler) {

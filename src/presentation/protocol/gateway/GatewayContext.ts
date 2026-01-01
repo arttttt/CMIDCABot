@@ -6,13 +6,14 @@
  */
 
 import type { UserRole } from "../../../domain/models/AuthorizedUser.js";
+import { RequestId } from "../../../domain/models/id/index.js";
 
 export class GatewayContext {
-  readonly requestId: string;
+  readonly requestId: RequestId;
   readonly nowMs: number;
   private readonly state: Map<string, unknown>;
 
-  constructor(requestId: string) {
+  constructor(requestId: RequestId) {
     this.requestId = requestId;
     this.nowMs = Date.now();
     this.state = new Map();

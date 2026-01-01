@@ -1,23 +1,24 @@
 /**
  * User repository interface
  */
+import type { TelegramId, WalletAddress } from "../models/id/index.js";
 import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../models/User.js";
 
 export interface UserRepository {
   /**
    * Get user by Telegram ID
    */
-  getById(telegramId: number): Promise<User | undefined>;
+  getById(telegramId: TelegramId): Promise<User | undefined>;
 
   /**
    * Create a new user (or ignore if exists)
    */
-  create(telegramId: number): Promise<void>;
+  create(telegramId: TelegramId): Promise<void>;
 
   /**
    * Update user's wallet address
    */
-  setWalletAddress(telegramId: number, walletAddress: string): Promise<void>;
+  setWalletAddress(telegramId: TelegramId, walletAddress: WalletAddress): Promise<void>;
 
   /**
    * Get all users that have a wallet address set
@@ -27,18 +28,18 @@ export interface UserRepository {
   /**
    * Set user's DCA wallet private key
    */
-  setPrivateKey(telegramId: number, privateKey: string): Promise<void>;
+  setPrivateKey(telegramId: TelegramId, privateKey: string): Promise<void>;
 
   /**
    * Get decrypted private key for signing operations.
    * Returns null if user has no private key.
    */
-  getDecryptedPrivateKey(telegramId: number): Promise<string | null>;
+  getDecryptedPrivateKey(telegramId: TelegramId): Promise<string | null>;
 
   /**
    * Clear user's DCA wallet private key
    */
-  clearPrivateKey(telegramId: number): Promise<void>;
+  clearPrivateKey(telegramId: TelegramId): Promise<void>;
 
   /**
    * Get all users that have a DCA wallet (private key) set
@@ -48,7 +49,7 @@ export interface UserRepository {
   /**
    * Set user's DCA active status
    */
-  setDcaActive(telegramId: number, active: boolean): Promise<void>;
+  setDcaActive(telegramId: TelegramId, active: boolean): Promise<void>;
 
   /**
    * Get all active DCA users (have wallet AND DCA is enabled)
@@ -63,5 +64,5 @@ export interface UserRepository {
   /**
    * Delete a user and all their data (wallet, DCA settings)
    */
-  delete(telegramId: number): Promise<void>;
+  delete(telegramId: TelegramId): Promise<void>;
 }

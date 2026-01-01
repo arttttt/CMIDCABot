@@ -4,6 +4,7 @@
  * Wraps ImportSessionCache data source and implements ImportSessionRepository interface.
  */
 
+import type { TelegramId } from "../../../domain/models/id/index.js";
 import {
   ImportSessionRepository,
   FormSession,
@@ -13,7 +14,7 @@ import { ImportSessionCache } from "../../sources/memory/ImportSessionCache.js";
 export class InMemoryImportSessionRepository implements ImportSessionRepository {
   constructor(private readonly cache: ImportSessionCache) {}
 
-  store(telegramId: number): string {
+  store(telegramId: TelegramId): string {
     return this.cache.store(telegramId);
   }
 
@@ -25,7 +26,7 @@ export class InMemoryImportSessionRepository implements ImportSessionRepository 
     return this.cache.consumeToForm(token);
   }
 
-  consumeForm(csrfToken: string): number | null {
+  consumeForm(csrfToken: string): TelegramId | null {
     return this.cache.consumeForm(csrfToken);
   }
 }

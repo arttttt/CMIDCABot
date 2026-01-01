@@ -1,6 +1,8 @@
 /**
  * Domain models barrel export
  */
+// Re-export branded types from id/ for convenience
+export * from "./id/index.js";
 export * from "./User.js";
 export * from "./Transaction.js";
 export * from "./Portfolio.js";

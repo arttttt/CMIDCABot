@@ -50,6 +50,7 @@ export class SwapFormatter {
     }
 
     const { quote, signature, confirmed } = result;
+    const sigStr = signature.value;
 
     const statusIcon = confirmed ? "CONFIRMED" : "PENDING";
     const pricePerUnit = quote.inputAmount / quote.outputAmount;
@@ -63,10 +64,10 @@ export class SwapFormatter {
       `  Price: 1 ${Markdown.escape(quote.outputSymbol)} = ${this.formatPrice(pricePerUnit)} USDC`,
       "",
       "*Transaction:*",
-      `  Signature: ${Markdown.code(this.truncateSignature(signature))}`,
+      `  Signature: ${Markdown.code(this.truncateSignature(sigStr))}`,
       `  Status: ${confirmed ? "Confirmed" : "Pending confirmation..."}`,
       "",
-      Markdown.link("View on Solscan", `https://solscan.io/tx/${signature}`),
+      Markdown.link("View on Solscan", `https://solscan.io/tx/${sigStr}`),
     ];
 
     return new ClientResponse(lines.join("\n"));

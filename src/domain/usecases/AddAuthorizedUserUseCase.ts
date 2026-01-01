@@ -2,6 +2,7 @@
  * AddAuthorizedUserUseCase - adds a new authorized user
  */
 
+import type { TelegramId } from "../models/id/index.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { UserRole, canManageRole, isAdminRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
 import { AuthorizationHelper } from "../helpers/AuthorizationHelper.js";
@@ -18,8 +19,8 @@ export class AddAuthorizedUserUseCase {
   ) {}
 
   async execute(
-    adminTelegramId: number,
-    targetTelegramId: number,
+    adminTelegramId: TelegramId,
+    targetTelegramId: TelegramId,
     role: UserRole = "user",
   ): Promise<AddAuthorizedUserResult> {
     logger.info("AddAuthorizedUser", "Adding user", {

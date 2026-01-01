@@ -24,6 +24,16 @@
 | Repository interface | `*Repository` | `UserRepository` |
 | Use Case | `*UseCase` | `ExecutePurchaseUseCase` |
 
+### Branded Types
+
+Primitives (`number`, `string`) are forbidden for ID-like fields. Use class-based branded types instead.
+
+**Rules:**
+- All ID-like fields must use branded types (classes with `readonly value`)
+- Use `new Type(value)` at boundaries (presentation layer, DB read)
+- Use `.value` to extract primitive at external API boundaries
+- Use `.equals()` method for comparison (not `===`)
+
 ## Architecture
 
 See `ARCHITECTURE.md` for full description of layers and rules.

@@ -7,6 +7,8 @@
  * - One-time consumption
  */
 
+import type { TelegramId } from "../models/id/index.js";
+
 export interface SecretStoreRepository {
   /**
    * Store a secret and return the one-time URL
@@ -15,7 +17,7 @@ export interface SecretStoreRepository {
    * @param telegramId - User ID for audit logging
    * @returns URL to access the secret once
    */
-  store(payload: string, telegramId: number): Promise<string>;
+  store(payload: string, telegramId: TelegramId): Promise<string>;
 
   /**
    * Consume a secret (get and delete atomically)

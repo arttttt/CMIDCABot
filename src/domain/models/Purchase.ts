@@ -2,10 +2,11 @@
  * Purchase domain model
  */
 import { AssetSymbol } from "../../types/portfolio.js";
+import type { TelegramId } from "./id/index.js";
 
 export interface Purchase {
   id: number;
-  telegramId: number;
+  telegramId: TelegramId;
   assetSymbol: AssetSymbol;
   amountUsdc: number;
   amountAsset: number;
@@ -14,7 +15,7 @@ export interface Purchase {
 }
 
 export interface CreatePurchaseData {
-  telegramId: number;
+  telegramId: TelegramId;
   assetSymbol: AssetSymbol;
   amountUsdc: number;
   amountAsset: number;

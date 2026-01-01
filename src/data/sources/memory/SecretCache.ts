@@ -13,6 +13,7 @@
 import { randomBytes } from "node:crypto";
 import { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
+import type { TelegramId } from "../../../domain/models/id/index.js";
 
 /** Default TTL: 5 minutes */
 export const DEFAULT_SECRET_TTL_MS = 5 * 60 * 1000;
@@ -52,7 +53,7 @@ export class SecretCache {
    * @param telegramId - User ID for audit logging
    * @returns URL to access the secret once
    */
-  async store(payload: string, telegramId: number): Promise<string> {
+  async store(payload: string, telegramId: TelegramId): Promise<string> {
     // Generate cryptographically secure token (16 bytes = 128 bits entropy)
     const token = randomBytes(16).toString("base64url");
 
@@ -64,14 +65,14 @@ export class SecretCache {
       encryptedPayload,
       createdAt: now,
       expiresAt: now + this.ttlMs,
-      telegramId,
+      telegramId: telegramId.value,
     };
 
     this.secrets.set(token, entry);
 
     logger.debug("SecretCache", "Secret stored", {
       token: token.substring(0, 4) + "...",
-      telegramId,
+      telegramId: telegramId.value,
       expiresIn: `${this.ttlMs / 1000}s`,
     });
 

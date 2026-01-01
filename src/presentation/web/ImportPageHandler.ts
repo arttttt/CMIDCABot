@@ -11,6 +11,7 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
+import type { TelegramId } from "../../domain/models/id/index.js";
 import type { ImportSessionRepository } from "../../domain/repositories/index.js";
 import type { ImportWalletUseCase } from "../../domain/usecases/ImportWalletUseCase.js";
 import type { MessageSender } from "../telegram/MessageSender.js";
@@ -131,10 +132,10 @@ export class ImportPageHandler {
         case "imported":
           logger.info("ImportPageHandler", "Wallet imported successfully", {
             telegramId,
-            address: result.wallet!.address.slice(0, 8) + "...",
+            address: result.wallet!.address.value.slice(0, 8) + "...",
           });
-          this.sendSuccessPage(res, result.wallet!.address);
-          await this.notifyUser(telegramId, true, undefined, result.wallet!.address);
+          this.sendSuccessPage(res, result.wallet!.address.value);
+          await this.notifyUser(telegramId, true, undefined, result.wallet!.address.value);
           break;
 
         case "already_exists":
@@ -204,18 +205,18 @@ export class ImportPageHandler {
   }
 
   private async notifyUser(
-    telegramId: number,
+    tgId: TelegramId,
     success: boolean,
     error?: string,
     address?: string,
   ): Promise<void> {
     if (success && address) {
       const shortAddress = `${address.slice(0, 4)}...${address.slice(-4)}`;
-      await this.messageSender.send(telegramId, {
+      await this.messageSender.send(tgId, {
         text: `**Wallet Imported Successfully!**\n\nAddress: \`${shortAddress}\`\n\nUse /wallet to view details.`,
       });
     } else {
-      await this.messageSender.send(telegramId, {
+      await this.messageSender.send(tgId, {
         text: `**Import Failed**\n\n${error || "Unknown error"}\n\nUse /wallet import to try again.`,
       });
     }

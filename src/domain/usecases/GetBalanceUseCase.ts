@@ -2,6 +2,7 @@
  * Get balance use case
  */
 
+import type { TelegramId } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
@@ -15,7 +16,7 @@ export class GetBalanceUseCase {
     private walletHelper: WalletInfoHelper,
   ) {}
 
-  async execute(telegramId: number): Promise<BalanceResult> {
+  async execute(telegramId: TelegramId): Promise<BalanceResult> {
     logger.info("GetBalance", "Checking balance", { telegramId });
 
     await this.userRepository.create(telegramId);

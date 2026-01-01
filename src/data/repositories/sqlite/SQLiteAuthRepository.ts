@@ -4,6 +4,7 @@
 import { Kysely, sql, Selectable } from "kysely";
 import { AuthRepository } from "../../../domain/repositories/AuthRepository.js";
 import { AuthorizedUser, UserRole } from "../../../domain/models/AuthorizedUser.js";
+import { TelegramId } from "../../../domain/models/id/index.js";
 import type { AuthDatabase, AuthorizedUsersTable } from "../../types/authDatabase.js";
 
 type AuthUserRow = Selectable<AuthorizedUsersTable>;
@@ -16,19 +17,19 @@ export class SQLiteAuthRepository implements AuthRepository {
    */
   private rowToModel(row: AuthUserRow): AuthorizedUser {
     return {
-      telegramId: row.telegram_id,
+      telegramId: new TelegramId(row.telegram_id),
       role: row.role as UserRole,
-      addedBy: row.added_by,
+      addedBy: row.added_by ? new TelegramId(row.added_by) : null,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
   }
 
-  async getById(telegramId: number): Promise<AuthorizedUser | undefined> {
+  async getById(id: TelegramId): Promise<AuthorizedUser | undefined> {
     const row = await this.db
       .selectFrom("authorized_users")
       .selectAll()
-      .where("telegram_id", "=", telegramId)
+      .where("telegram_id", "=", id.value)
       .executeTakeFirst();
 
     if (!row) return undefined;
@@ -56,45 +57,45 @@ export class SQLiteAuthRepository implements AuthRepository {
     return rows.map((row) => this.rowToModel(row));
   }
 
-  async add(telegramId: number, role: UserRole, addedBy: number | null): Promise<void> {
+  async add(id: TelegramId, role: UserRole, addedBy: TelegramId | null): Promise<void> {
     await this.db
       .insertInto("authorized_users")
       .values({
-        telegram_id: telegramId,
+        telegram_id: id.value,
         role,
-        added_by: addedBy,
+        added_by: addedBy?.value ?? null,
       })
       .onConflict((oc) => oc.column("telegram_id").doNothing())
       .execute();
   }
 
-  async remove(telegramId: number): Promise<boolean> {
+  async remove(id: TelegramId): Promise<boolean> {
     const result = await this.db
       .deleteFrom("authorized_users")
-      .where("telegram_id", "=", telegramId)
+      .where("telegram_id", "=", id.value)
       .executeTakeFirst();
 
     return result.numDeletedRows > 0;
   }
 
-  async updateRole(telegramId: number, newRole: UserRole): Promise<boolean> {
+  async updateRole(id: TelegramId, newRole: UserRole): Promise<boolean> {
     const result = await this.db
       .updateTable("authorized_users")
       .set({
         role: newRole,
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
-      .where("telegram_id", "=", telegramId)
+      .where("telegram_id", "=", id.value)
       .executeTakeFirst();
 
     return result.numUpdatedRows > 0;
   }
 
-  async isAuthorized(telegramId: number): Promise<boolean> {
+  async isAuthorized(id: TelegramId): Promise<boolean> {
     const row = await this.db
       .selectFrom("authorized_users")
       .select("telegram_id")
-      .where("telegram_id", "=", telegramId)
+      .where("telegram_id", "=", id.value)
       .executeTakeFirst();
 
     return row !== undefined;

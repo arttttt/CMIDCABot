@@ -2,6 +2,7 @@
  * Stop DCA use case
  */
 
+import type { TelegramId } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { DcaScheduler } from "../../_wip/dca-scheduling/index.js";
 import { DcaStopResult } from "./types.js";
@@ -13,7 +14,7 @@ export class StopDcaUseCase {
     private dcaScheduler: DcaScheduler | undefined,
   ) {}
 
-  async execute(telegramId: number): Promise<DcaStopResult> {
+  async execute(telegramId: TelegramId): Promise<DcaStopResult> {
     logger.info("StopDca", "Stopping DCA", { telegramId });
 
     if (!this.dcaScheduler) {

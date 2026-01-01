@@ -8,6 +8,7 @@
 import type { GatewayHandler, GatewayPlugin, GatewayRequest } from "./types.js";
 import { GatewayContext } from "./GatewayContext.js";
 import type { ClientResponseStream } from "../types.js";
+import { RequestId } from "../../../domain/models/id/index.js";
 
 export class Gateway {
   private readonly handler: GatewayHandler;
@@ -35,7 +36,7 @@ export class Gateway {
    * Creates fresh GatewayContext for each request.
    */
   handle(req: GatewayRequest): Promise<ClientResponseStream> {
-    const ctx = new GatewayContext(crypto.randomUUID());
+    const ctx = new GatewayContext(new RequestId(crypto.randomUUID()));
     return this.handler.handle(req, ctx);
   }
 }

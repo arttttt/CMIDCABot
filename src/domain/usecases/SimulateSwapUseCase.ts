@@ -9,6 +9,7 @@
  * 4. Return simulation result (success/error, compute units, logs)
  */
 
+import type { TelegramId, WalletAddress } from "../models/id/index.js";
 import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
 import { BlockchainRepository, SimulationResult } from "../repositories/BlockchainRepository.js";
 import { UserRepository } from "../repositories/UserRepository.js";
@@ -47,7 +48,7 @@ export class SimulateSwapUseCase {
    * @param asset Target asset (BTC, ETH, SOL). Defaults to SOL.
    */
   async execute(
-    telegramId: number,
+    telegramId: TelegramId,
     amountUsdc: number,
     asset: string = "SOL",
   ): Promise<SimulateSwapResult> {
@@ -88,22 +89,22 @@ export class SimulateSwapUseCase {
     }
 
     // Get user's wallet address
-    let walletAddress: string | undefined;
+    let walletAddr: WalletAddress | undefined;
 
     if (this.devPrivateKey) {
       // In dev mode, derive address from dev private key
-      walletAddress = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
+      walletAddr = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
     } else {
       const user = await this.userRepository.getById(telegramId);
-      walletAddress = user?.walletAddress ?? undefined;
+      walletAddr = user?.walletAddress ?? undefined;
     }
 
-    if (!walletAddress) {
+    if (!walletAddr) {
       return { status: "no_wallet" };
     }
 
     // Check USDC balance before calling Jupiter API
-    const usdcBalance = await this.blockchainRepository.getUsdcBalance(walletAddress);
+    const usdcBalance = await this.blockchainRepository.getUsdcBalance(walletAddr);
     if (usdcBalance < amountUsdc) {
       logger.warn("SimulateSwap", "Insufficient USDC balance", {
         required: amountUsdc,
@@ -131,7 +132,7 @@ export class SimulateSwapUseCase {
     logger.step("SimulateSwap", 2, 3, "Building transaction...");
     let transactionBase64: string;
     try {
-      const swapTx = await this.swapRepository!.buildSwapTransaction(quote, walletAddress);
+      const swapTx = await this.swapRepository!.buildSwapTransaction(quote, walletAddr);
       transactionBase64 = swapTx.transactionBase64;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";

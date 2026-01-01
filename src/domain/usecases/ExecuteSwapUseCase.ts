@@ -12,6 +12,7 @@
  * Streams progress via execute() AsyncGenerator.
  */
 
+import type { TelegramId, WalletAddress } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { TransactionRepository } from "../repositories/TransactionRepository.js";
 import { BalanceRepository } from "../repositories/BalanceRepository.js";
@@ -41,7 +42,7 @@ export class ExecuteSwapUseCase {
    * @yields SwapStep - progress updates and final result
    */
   async *execute(
-    telegramId: number,
+    telegramId: TelegramId,
     amountUsdc: number,
     asset: string = "SOL",
   ): AsyncGenerator<SwapStep> {
@@ -86,24 +87,24 @@ export class ExecuteSwapUseCase {
     }
 
     // Get user's wallet info
-    let walletAddress: string | undefined;
+    let walletAddr: WalletAddress | undefined;
     let encryptedPrivateKey: string | undefined;
     let useDevKey = false;
 
     if (this.devPrivateKey) {
       // In dev mode, use dev wallet (key is plaintext from env)
       useDevKey = true;
-      walletAddress = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
+      walletAddr = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
     } else {
       // Get user's wallet from database (key is encrypted)
       const user = await this.userRepository.getById(telegramId);
       if (user?.privateKey) {
         encryptedPrivateKey = user.privateKey;
-        walletAddress = user.walletAddress ?? undefined;
+        walletAddr = user?.walletAddress ?? undefined;
       }
     }
 
-    if (!walletAddress || (!useDevKey && !encryptedPrivateKey)) {
+    if (!walletAddr || (!useDevKey && !encryptedPrivateKey)) {
       yield SwapSteps.completed({ status: "no_wallet" });
       return;
     }
@@ -113,7 +114,7 @@ export class ExecuteSwapUseCase {
 
     let usdcBalance: number;
     try {
-      usdcBalance = await this.balanceRepository.getUsdcBalance(walletAddress);
+      usdcBalance = await this.balanceRepository.getUsdcBalance(walletAddr);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Failed to fetch USDC balance", { error: message });
@@ -165,7 +166,7 @@ export class ExecuteSwapUseCase {
 
     let transactionBase64: string;
     try {
-      const swapTx = await this.swapRepository!.buildSwapTransaction(quote, walletAddress);
+      const swapTx = await this.swapRepository!.buildSwapTransaction(quote, walletAddr);
       transactionBase64 = swapTx.transactionBase64;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -223,7 +224,7 @@ export class ExecuteSwapUseCase {
     }
 
     // Invalidate balance cache after successful transaction
-    this.balanceRepository.invalidate(walletAddress);
+    this.balanceRepository.invalidate(walletAddr);
 
     // Save transaction to database
     try {

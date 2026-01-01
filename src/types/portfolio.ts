@@ -1,23 +1,23 @@
-// Target allocations for Crypto Majors Index
-export const TARGET_ALLOCATIONS = {
-  BTC: 0.4, // 40%
-  ETH: 0.3, // 30%
-  SOL: 0.3, // 30%
+/**
+ * Portfolio type definitions
+ *
+ * Defines the target asset allocations for the Crypto Majors Index.
+ */
+
+/**
+ * Supported asset symbols for portfolio
+ */
+export type AssetSymbol = "BTC" | "ETH" | "SOL";
+
+/**
+ * Target allocations for Crypto Majors Index
+ *
+ * - BTC (cbBTC) — 40%
+ * - ETH (wETH) — 30%
+ * - SOL — 30%
+ */
+export const TARGET_ALLOCATIONS: Record<AssetSymbol, number> = {
+  BTC: 0.4,
+  ETH: 0.3,
+  SOL: 0.3,
 } as const;
-
-export type AssetSymbol = keyof typeof TARGET_ALLOCATIONS;
-
-export interface AssetBalance {
-  symbol: AssetSymbol;
-  balance: number;
-  valueInUsdc: number;
-  currentAllocation: number;
-  targetAllocation: number;
-  deviation: number;
-}
-
-export interface Portfolio {
-  assets: AssetBalance[];
-  totalValueInUsdc: number;
-  updatedAt: Date;
-}

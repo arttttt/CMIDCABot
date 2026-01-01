@@ -5,6 +5,7 @@
  * Returns "guest" for unknown users (never undefined).
  */
 
+import type { TelegramId } from "../models/id/index.js";
 import type { AuthRepository } from "../repositories/AuthRepository.js";
 import type { UserIdentity } from "../models/UserIdentity.js";
 import type { UserRole } from "../models/AuthorizedUser.js";
@@ -12,7 +13,7 @@ import type { UserRole } from "../models/AuthorizedUser.js";
 export class GetUserRoleUseCase {
   constructor(
     private readonly authRepository: AuthRepository,
-    private readonly ownerTelegramId: number,
+    private readonly ownerTelegramId: TelegramId,
   ) {}
 
   async execute(identity: UserIdentity): Promise<UserRole> {

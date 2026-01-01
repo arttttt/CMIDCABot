@@ -4,6 +4,7 @@
 import { Kysely, Selectable } from "kysely";
 import { PurchaseRepository } from "../../../domain/repositories/PurchaseRepository.js";
 import { Purchase, CreatePurchaseData } from "../../../domain/models/Purchase.js";
+import { TelegramId } from "../../../domain/models/id/index.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
 import type { MockDatabase, PurchasesTable } from "../../types/database.js";
 
@@ -15,7 +16,7 @@ export class SQLitePurchaseRepository implements PurchaseRepository {
   private rowToModel(row: PurchaseRow): Purchase {
     return {
       id: row.id,
-      telegramId: row.telegram_id,
+      telegramId: new TelegramId(row.telegram_id),
       assetSymbol: row.asset_symbol as AssetSymbol,
       amountUsdc: row.amount_usdc,
       amountAsset: row.amount_asset,
@@ -24,11 +25,11 @@ export class SQLitePurchaseRepository implements PurchaseRepository {
     };
   }
 
-  async getByUserId(telegramId: number): Promise<Purchase[]> {
+  async getByUserId(id: TelegramId): Promise<Purchase[]> {
     const rows = await this.db
       .selectFrom("purchases")
       .selectAll()
-      .where("telegram_id", "=", telegramId)
+      .where("telegram_id", "=", id.value)
       .orderBy("created_at", "desc")
       .execute();
 
@@ -39,7 +40,7 @@ export class SQLitePurchaseRepository implements PurchaseRepository {
     const row = await this.db
       .insertInto("purchases")
       .values({
-        telegram_id: data.telegramId,
+        telegram_id: data.telegramId.value,
         asset_symbol: data.assetSymbol,
         amount_usdc: data.amountUsdc,
         amount_asset: data.amountAsset,
@@ -51,10 +52,10 @@ export class SQLitePurchaseRepository implements PurchaseRepository {
     return this.rowToModel(row);
   }
 
-  async deleteByUserId(telegramId: number): Promise<void> {
+  async deleteByUserId(id: TelegramId): Promise<void> {
     await this.db
       .deleteFrom("purchases")
-      .where("telegram_id", "=", telegramId)
+      .where("telegram_id", "=", id.value)
       .execute();
   }
 }

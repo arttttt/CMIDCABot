@@ -46,11 +46,13 @@ function sanitizeErrorMessage(error: unknown): string {
     .replace(/https?:\/\/[^\s]+/g, "[RPC_URL]"); // RPC URLs
 }
 
+import { WalletAddress, TxSignature, type TokenMint } from "../../../domain/models/id/index.js";
+
 /**
  * Generated keypair with extractable private key
  */
 export interface GeneratedKeypair {
-  address: string;
+  address: WalletAddress;
   privateKeyBase64: string;
 }
 
@@ -66,7 +68,7 @@ export interface GeneratedKeypairWithMnemonic extends GeneratedKeypair {
  */
 export interface ValidateMnemonicResult {
   valid: boolean;
-  address?: string;
+  address?: WalletAddress;
   normalizedKey?: string;
   error?: string;
 }
@@ -86,7 +88,7 @@ export interface SimulationResult {
  */
 export interface SendTransactionResult {
   success: boolean;
-  signature: string | null;
+  signature: TxSignature | null;
   error: string | null;
   confirmed: boolean;
 }
@@ -96,7 +98,7 @@ export interface SendTransactionResult {
  */
 export interface ValidatePrivateKeyResult {
   valid: boolean;
-  address?: string;
+  address?: WalletAddress;
   normalizedKey?: string;
   error?: string;
 }
@@ -115,7 +117,7 @@ export interface BatchBalancesResult {
  * Token configuration for batch balance fetching
  */
 export interface TokenConfig {
-  mint: string;
+  mint: TokenMint;
   decimals: number;
 }
 
@@ -378,9 +380,9 @@ export class SolanaRpcClient {
     return 0;
   }
 
-  isValidAddress(walletAddress: string): boolean {
+  isValidAddress(addr: string): boolean {
     try {
-      address(walletAddress);
+      address(addr);
       return true;
     } catch {
       return false;
@@ -415,7 +417,7 @@ export class SolanaRpcClient {
     );
 
     return {
-      address: signer.address,
+      address: new WalletAddress(signer.address),
       privateKeyBase64: Buffer.from(privateKeyBytes).toString("base64"),
     };
   }
@@ -446,7 +448,7 @@ export class SolanaRpcClient {
     );
 
     return {
-      address: signer.address,
+      address: new WalletAddress(signer.address),
       privateKeyBase64: Buffer.from(privateKeyBytes).toString("base64"),
       mnemonic,
     };
@@ -477,7 +479,7 @@ export class SolanaRpcClient {
     );
 
     return {
-      address: signer.address,
+      address: new WalletAddress(signer.address),
       privateKeyBase64: Buffer.from(privateKeyBytes).toString("base64"),
     };
   }
@@ -506,7 +508,7 @@ export class SolanaRpcClient {
       const keypair = await this.deriveKeypairFromMnemonic(normalizedMnemonic);
 
       // Verify the derived address is valid
-      if (!this.isValidAddress(keypair.address)) {
+      if (!this.isValidAddress(keypair.address.value)) {
         return { valid: false, error: "Derived address is not a valid Solana address" };
       }
 
@@ -540,9 +542,9 @@ export class SolanaRpcClient {
   /**
    * Get address from a base64-encoded private key
    */
-  async getAddressFromPrivateKey(privateKeyBase64: string): Promise<string> {
+  async getAddressFromPrivateKey(privateKeyBase64: string): Promise<WalletAddress> {
     const signer = await this.createSignerFromPrivateKey(privateKeyBase64);
-    return signer.address;
+    return new WalletAddress(signer.address);
   }
 
   /**
@@ -582,14 +584,14 @@ export class SolanaRpcClient {
       const normalizedKey = seed.toString("base64");
 
       // Try to derive address - this validates the key can create a valid Ed25519 keypair
-      const walletAddress = await this.getAddressFromPrivateKey(normalizedKey);
+      const derivedAddr = await this.getAddressFromPrivateKey(normalizedKey);
 
       // Verify the address is valid Solana format (base58, 32-44 chars)
-      if (!this.isValidAddress(walletAddress)) {
+      if (!this.isValidAddress(derivedAddr.value)) {
         return { valid: false, error: "Derived address is not a valid Solana address" };
       }
 
-      return { valid: true, address: walletAddress, normalizedKey };
+      return { valid: true, address: derivedAddr, normalizedKey };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return { valid: false, error: `Invalid Solana private key: ${message}` };
@@ -853,40 +855,41 @@ export class SolanaRpcClient {
    */
   private buildConfirmationResult(
     confirmationStatus: ConfirmationStatus,
-    signature: string,
+    sig: string,
     confirmDuration: number,
   ): SendTransactionResult {
+    const brandedSig = new TxSignature(sig);
     if (confirmationStatus === "confirmed") {
       logger.tx("Solana", "Transaction CONFIRMED", {
-        signature,
+        signature: sig,
         confirmationTime: `${confirmDuration}ms`,
       });
       return {
         success: true,
-        signature: signature,
+        signature: brandedSig,
         error: null,
         confirmed: true,
       };
     } else if (confirmationStatus === "failed") {
       logger.error("Solana", "Transaction FAILED on-chain", {
-        signature,
+        signature: sig,
         confirmationTime: `${confirmDuration}ms`,
       });
       return {
         success: false,
-        signature: signature,
+        signature: brandedSig,
         error: "Transaction failed on-chain",
         confirmed: false,
       };
     } else {
       // timeout
       logger.warn("Solana", "Transaction confirmation timeout", {
-        signature,
+        signature: sig,
         timeout: "30s",
       });
       return {
         success: true,
-        signature: signature,
+        signature: brandedSig,
         error: null,
         confirmed: false,
       };

@@ -2,6 +2,7 @@
  * Show wallet use case
  */
 
+import type { TelegramId } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
 import { ShowWalletResult } from "./types.js";
@@ -13,7 +14,7 @@ export class ShowWalletUseCase {
     private walletHelper: WalletInfoHelper,
   ) {}
 
-  async execute(telegramId: number): Promise<ShowWalletResult> {
+  async execute(telegramId: TelegramId): Promise<ShowWalletResult> {
     logger.info("ShowWallet", "Showing wallet", { telegramId });
 
     await this.userRepository.create(telegramId);

@@ -5,6 +5,7 @@
  * Streams progress via execute() AsyncGenerator.
  */
 
+import type { TelegramId, WalletAddress } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BalanceRepository } from "../repositories/BalanceRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
@@ -35,7 +36,7 @@ export class ExecutePurchaseUseCase {
    * @yields PurchaseStep - progress updates and final result
    */
   async *execute(
-    telegramId: number,
+    telegramId: TelegramId,
     amountUsdc: number,
   ): AsyncGenerator<PurchaseStep> {
     logger.info("ExecutePurchase", "Executing portfolio purchase", {
@@ -66,16 +67,16 @@ export class ExecutePurchaseUseCase {
     }
 
     // Get wallet address for portfolio selection
-    let walletAddress: string | undefined;
+    let walletAddr: WalletAddress | undefined;
 
     if (this.devPrivateKey) {
-      walletAddress = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
+      walletAddr = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
     } else {
       const user = await this.userRepository.getById(telegramId);
-      walletAddress = user?.walletAddress ?? undefined;
+      walletAddr = user?.walletAddress ?? undefined;
     }
 
-    if (!walletAddress) {
+    if (!walletAddr) {
       logger.warn("ExecutePurchase", "No wallet connected", { telegramId });
       yield PurchaseSteps.completed({ type: "no_wallet" });
       return;
@@ -86,7 +87,7 @@ export class ExecutePurchaseUseCase {
 
     let usdcBalance: number;
     try {
-      usdcBalance = await this.balanceRepository.getUsdcBalance(walletAddress);
+      usdcBalance = await this.balanceRepository.getUsdcBalance(walletAddr);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecutePurchase", "Failed to fetch USDC balance", { error: message });
@@ -111,7 +112,7 @@ export class ExecutePurchaseUseCase {
     yield PurchaseSteps.selectingAsset();
 
     // Determine which asset to buy based on portfolio allocation
-    const selection = await this.selectAssetToBuyWithInfo(walletAddress);
+    const selection = await this.selectAssetToBuyWithInfo(walletAddr);
     logger.info("ExecutePurchase", "Selected asset to buy", {
       symbol: selection.symbol,
       currentAllocation: `${(selection.currentAllocation * 100).toFixed(1)}%`,
@@ -203,11 +204,11 @@ export class ExecutePurchaseUseCase {
    *
    * Uses AllocationCalculator to determine which asset is furthest below target.
    */
-  private async selectAssetToBuyWithInfo(walletAddress: string): Promise<AssetAllocation> {
+  private async selectAssetToBuyWithInfo(walletAddr: WalletAddress): Promise<AssetAllocation> {
     try {
       // Fetch balances (cached) and prices in parallel for efficiency
       const [balances, prices] = await Promise.all([
-        this.balanceRepository.getBalances(walletAddress),
+        this.balanceRepository.getBalances(walletAddr),
         this.priceRepository!.getPricesRecord(),
       ]);
 

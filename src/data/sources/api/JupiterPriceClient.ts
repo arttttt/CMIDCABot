@@ -77,9 +77,9 @@ export class JupiterPriceClient {
 
     // Parse prices from response
     const prices: AssetPrices = {
-      BTC: data[TOKEN_MINTS.BTC]?.usdPrice ?? 0,
-      ETH: data[TOKEN_MINTS.ETH]?.usdPrice ?? 0,
-      SOL: data[TOKEN_MINTS.SOL]?.usdPrice ?? 0,
+      BTC: data[TOKEN_MINTS.BTC.value]?.usdPrice ?? 0,
+      ETH: data[TOKEN_MINTS.ETH.value]?.usdPrice ?? 0,
+      SOL: data[TOKEN_MINTS.SOL.value]?.usdPrice ?? 0,
       fetchedAt: new Date(),
     };
 

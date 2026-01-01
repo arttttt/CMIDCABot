@@ -301,8 +301,8 @@ export class JupiterSwapClient {
     const amountLamports = toRawAmount(amountSol, TOKEN_DECIMALS.SOL);
 
     return this.getQuote({
-      inputMint: TOKEN_MINTS.SOL,
-      outputMint: TOKEN_MINTS.USDC,
+      inputMint: TOKEN_MINTS.SOL.value,
+      outputMint: TOKEN_MINTS.USDC.value,
       amount: amountLamports,
       slippageBps,
     });
@@ -319,7 +319,7 @@ export class JupiterSwapClient {
     const amountRaw = toRawAmount(amountUsdc, TOKEN_DECIMALS.USDC);
 
     return this.getQuote({
-      inputMint: TOKEN_MINTS.USDC,
+      inputMint: TOKEN_MINTS.USDC.value,
       outputMint,
       amount: amountRaw,
       slippageBps,
@@ -328,20 +328,20 @@ export class JupiterSwapClient {
 
   private getSymbolFromMint(mint: string): string {
     for (const [symbol, address] of Object.entries(TOKEN_MINTS)) {
-      if (address === mint) return symbol;
+      if (address.value === mint) return symbol;
     }
     return mint.slice(0, 8) + "...";
   }
 
   private getDecimalsForMint(mint: string): number {
     switch (mint) {
-      case TOKEN_MINTS.SOL:
+      case TOKEN_MINTS.SOL.value:
         return TOKEN_DECIMALS.SOL;
-      case TOKEN_MINTS.USDC:
+      case TOKEN_MINTS.USDC.value:
         return TOKEN_DECIMALS.USDC;
-      case TOKEN_MINTS.BTC:
+      case TOKEN_MINTS.BTC.value:
         return TOKEN_DECIMALS.BTC;
-      case TOKEN_MINTS.ETH:
+      case TOKEN_MINTS.ETH.value:
         return TOKEN_DECIMALS.ETH;
       default:
         return 9; // Default to 9 decimals

@@ -1,6 +1,7 @@
 /**
  * Use case for activating invite tokens
  */
+import type { TelegramId } from "../models/id/index.js";
 import { InviteTokenRepository } from "../repositories/InviteTokenRepository.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { UserRole } from "../models/AuthorizedUser.js";
@@ -19,9 +20,9 @@ export class ActivateInviteUseCase {
     private authRepository: AuthRepository,
   ) {}
 
-  async execute(token: string, telegramId: number): Promise<ActivateInviteResult> {
+  async execute(token: string, userId: TelegramId): Promise<ActivateInviteResult> {
     // Check if user is already authorized
-    const existingUser = await this.authRepository.getById(telegramId);
+    const existingUser = await this.authRepository.getById(userId);
     if (existingUser) {
       return { type: "already_authorized" };
     }
@@ -43,14 +44,14 @@ export class ActivateInviteUseCase {
     }
 
     // Mark token as used
-    const marked = await this.inviteTokenRepository.markUsed(token, telegramId);
+    const marked = await this.inviteTokenRepository.markUsed(token, userId);
     if (!marked) {
       // Race condition - token was used by someone else
       return { type: "token_already_used" };
     }
 
     // Add user with the specified role
-    await this.authRepository.add(telegramId, inviteToken.role, inviteToken.createdBy);
+    await this.authRepository.add(userId, inviteToken.role, inviteToken.createdBy);
 
     return {
       type: "success",
