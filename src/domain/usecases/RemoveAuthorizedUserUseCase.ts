@@ -2,7 +2,7 @@
  * RemoveAuthorizedUserUseCase - removes an authorized user
  */
 
-import type { TelegramId } from "../../types/id/index.js";
+import type { TelegramId } from "../models/id/index.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { canManageRole, isAdminRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
 import { AuthorizationHelper } from "../helpers/AuthorizationHelper.js";

@@ -2,7 +2,7 @@
  * Start DCA use case
  */
 
-import type { TelegramId } from "../../types/id/index.js";
+import type { TelegramId } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { DcaScheduler } from "../../_wip/dca-scheduling/index.js";
 import { DcaStartResult } from "./types.js";

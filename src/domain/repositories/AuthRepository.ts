@@ -1,7 +1,7 @@
 /**
  * Authorization repository interface
  */
-import type { TelegramId } from "../../types/id/index.js";
+import type { TelegramId } from "../models/id/index.js";
 import { AuthorizedUser, UserRole } from "../models/AuthorizedUser.js";
 
 export interface AuthRepository {

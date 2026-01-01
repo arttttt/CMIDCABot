@@ -1,7 +1,7 @@
 /**
  * Transaction repository interface
  */
-import type { TelegramId } from "../../types/id/index.js";
+import type { TelegramId } from "../models/id/index.js";
 import { Transaction, CreateTransactionData } from "../models/Transaction.js";
 
 export interface TransactionRepository {

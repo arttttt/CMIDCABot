@@ -1,7 +1,7 @@
 /**
  * Use case for activating invite tokens
  */
-import type { TelegramId } from "../../types/id/index.js";
+import type { TelegramId } from "../models/id/index.js";
 import { InviteTokenRepository } from "../repositories/InviteTokenRepository.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { UserRole } from "../models/AuthorizedUser.js";

@@ -2,7 +2,7 @@
  * Helper for getting wallet info
  */
 
-import type { WalletAddress } from "../../types/id/index.js";
+import type { WalletAddress } from "../models/id/index.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { BalanceRepository } from "../repositories/BalanceRepository.js";
 import { DcaWalletConfig } from "../../infrastructure/shared/config/index.js";

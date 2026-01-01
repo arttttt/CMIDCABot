@@ -26,7 +26,7 @@
 
 ### Branded Types
 
-Use branded types from `src/types/id/` for type-safe identifiers:
+Use branded types from `src/domain/models/id/` for type-safe identifiers:
 
 | Type | Purpose | Example |
 |------|---------|---------|
@@ -38,7 +38,7 @@ Use branded types from `src/types/id/` for type-safe identifiers:
 | `SessionId` | HTTP session ID | `sessionId("sess...")` |
 
 **Rules:**
-- Import types and constructors from `types/id/` (or `domain/models/` which re-exports them)
+- Import types and constructors from `domain/models/id/` (or `domain/models/` which re-exports them)
 - Use constructors at boundaries (presentation layer, DB read)
 - Cast with `as number/string` only at external API boundaries (grammY, Kysely)
 - Never pass raw `number`/`string` where branded type is expected

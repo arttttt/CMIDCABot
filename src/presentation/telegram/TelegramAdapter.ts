@@ -4,7 +4,7 @@
  */
 
 import { Bot, BotError, Context, InlineKeyboard } from "grammy";
-import { telegramId } from "../../types/id/index.js";
+import { telegramId } from "../../domain/models/id/index.js";
 import type { Gateway } from "../protocol/gateway/Gateway.js";
 import type { GatewayRequest } from "../protocol/gateway/types.js";
 import { ClientResponse, StreamItem } from "../protocol/types.js";

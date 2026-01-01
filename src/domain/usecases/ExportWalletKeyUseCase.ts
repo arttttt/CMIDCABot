@@ -5,7 +5,7 @@
  * The decrypted key is stored in SecretStore and shown only once.
  */
 
-import type { TelegramId } from "../../types/id/index.js";
+import type { TelegramId } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { SecretStoreRepository } from "../repositories/SecretStoreRepository.js";
 import { DcaWalletConfig } from "../../infrastructure/shared/config/index.js";

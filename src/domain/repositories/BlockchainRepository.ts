@@ -10,7 +10,7 @@
  * - Token operations (token balances)
  */
 
-import type { TokenMint, TxSignature, WalletAddress } from "../../types/id/index.js";
+import type { TokenMint, TxSignature, WalletAddress } from "../models/id/index.js";
 
 /**
  * Generated keypair with extractable private key

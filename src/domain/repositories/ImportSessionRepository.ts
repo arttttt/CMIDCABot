@@ -9,7 +9,7 @@
  * - CSRF protection via form sessions
  */
 
-import type { TelegramId } from "../../types/id/index.js";
+import type { TelegramId } from "../models/id/index.js";
 
 export interface FormSession {
   csrfToken: string;

@@ -1,7 +1,7 @@
 /**
  * User repository interface
  */
-import type { TelegramId, WalletAddress } from "../../types/id/index.js";
+import type { TelegramId, WalletAddress } from "../models/id/index.js";
 import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../models/User.js";
 
 export interface UserRepository {

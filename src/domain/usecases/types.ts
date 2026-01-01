@@ -4,7 +4,7 @@
  */
 
 import { AssetSymbol } from "../../types/portfolio.js";
-import type { TxSignature, WalletAddress } from "../../types/id/index.js";
+import type { TxSignature, WalletAddress } from "../models/id/index.js";
 import { PortfolioStatus } from "../models/PortfolioTypes.js";
 
 // Wallet info (used by balance)

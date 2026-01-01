@@ -4,7 +4,7 @@
  * Wraps ImportSessionCache data source and implements ImportSessionRepository interface.
  */
 
-import type { TelegramId } from "../../../types/id/index.js";
+import type { TelegramId } from "../../../domain/models/id/index.js";
 import {
   ImportSessionRepository,
   FormSession,

@@ -2,7 +2,7 @@
  * Get portfolio status use case - reads real wallet balances
  */
 
-import type { TelegramId, WalletAddress } from "../../types/id/index.js";
+import type { TelegramId, WalletAddress } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BalanceRepository } from "../repositories/BalanceRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";

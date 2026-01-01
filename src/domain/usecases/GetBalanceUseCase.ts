@@ -2,7 +2,7 @@
  * Get balance use case
  */
 
-import type { TelegramId } from "../../types/id/index.js";
+import type { TelegramId } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";

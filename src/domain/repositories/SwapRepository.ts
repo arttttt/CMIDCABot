@@ -6,7 +6,7 @@
  */
 
 import type { AssetSymbol } from "../../types/portfolio.js";
-import type { TokenMint, WalletAddress } from "../../types/id/index.js";
+import type { TokenMint, WalletAddress } from "../models/id/index.js";
 
 /**
  * Quote parameters for swap

@@ -1,7 +1,7 @@
 /**
  * Portfolio domain model (for mock/development mode)
  */
-import type { TelegramId } from "../../types/id/index.js";
+import type { TelegramId } from "./id/index.js";
 
 export interface Portfolio {
   telegramId: TelegramId;

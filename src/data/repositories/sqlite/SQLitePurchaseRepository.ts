@@ -4,7 +4,7 @@
 import { Kysely, Selectable } from "kysely";
 import { PurchaseRepository } from "../../../domain/repositories/PurchaseRepository.js";
 import { Purchase, CreatePurchaseData } from "../../../domain/models/Purchase.js";
-import { telegramId, type TelegramId } from "../../../types/id/index.js";
+import { telegramId, type TelegramId } from "../../../domain/models/id/index.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
 import type { MockDatabase, PurchasesTable } from "../../types/database.js";
 

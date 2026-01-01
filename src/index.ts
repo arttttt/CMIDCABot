@@ -10,7 +10,7 @@ import type { Kysely } from "kysely";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
-import { telegramId } from "./types/id/index.js";
+import { telegramId } from "./domain/models/id/index.js";
 import { loadConfig } from "./infrastructure/shared/config/index.js";
 import { setLogger, DebugLogger, NoOpLogger } from "./infrastructure/shared/logging/index.js";
 import { createMainDatabase, createMockDatabase, createAuthDatabase } from "./data/sources/database/index.js";

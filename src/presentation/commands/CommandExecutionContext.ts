@@ -5,7 +5,7 @@
  * Provides requestId, identity, role, and convenience telegramId getter.
  */
 
-import type { TelegramId } from "../../types/id/index.js";
+import type { TelegramId } from "../../domain/models/id/index.js";
 import type { UserIdentity } from "../../domain/models/UserIdentity.js";
 import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 

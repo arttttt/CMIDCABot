@@ -1,7 +1,7 @@
 /**
  * Invite token repository interface
  */
-import type { TelegramId } from "../../types/id/index.js";
+import type { TelegramId } from "../models/id/index.js";
 import { InviteToken } from "../models/InviteToken.js";
 import { UserRole } from "../models/AuthorizedUser.js";
 

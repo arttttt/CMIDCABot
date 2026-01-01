@@ -1,7 +1,7 @@
 /**
  * Purchase repository interface
  */
-import type { TelegramId } from "../../types/id/index.js";
+import type { TelegramId } from "../models/id/index.js";
 import { Purchase, CreatePurchaseData } from "../models/Purchase.js";
 
 export interface PurchaseRepository {

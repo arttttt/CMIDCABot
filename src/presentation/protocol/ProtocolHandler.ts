@@ -19,7 +19,7 @@ import {
   UICommand,
   ClientResponseStream,
 } from "./types.js";
-import { telegramId } from "../../types/id/index.js";
+import { telegramId } from "../../domain/models/id/index.js";
 import { AuthorizationHelper } from "../../domain/helpers/AuthorizationHelper.js";
 import { hasRequiredRole, type UserRole } from "../../domain/models/AuthorizedUser.js";
 import { CommandExecutionContext } from "../commands/CommandExecutionContext.js";
