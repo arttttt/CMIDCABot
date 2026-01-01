@@ -77,6 +77,26 @@ export class SQLiteUserRepository implements UserRepository {
       .execute();
   }
 
+  async setWalletData(
+    id: TelegramId,
+    privateKey: string,
+    address: WalletAddress,
+  ): Promise<void> {
+    const encryptedKey = await this.encryptPrivateKey(privateKey);
+
+    await this.db.transaction().execute(async (trx) => {
+      await trx
+        .updateTable("users")
+        .set({
+          private_key: encryptedKey,
+          wallet_address: address.value,
+          updated_at: sql`CURRENT_TIMESTAMP`,
+        })
+        .where("telegram_id", "=", id.value)
+        .execute();
+    });
+  }
+
   async getAllWithWallet(): Promise<UserWithWallet[]> {
     const rows = await this.db
       .selectFrom("users")
