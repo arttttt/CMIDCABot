@@ -10,6 +10,9 @@ import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
 import { ImportWalletResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
+// Maximum allowed input length to prevent DoS via large payloads
+const MAX_INPUT_LENGTH = 512;
+
 export class ImportWalletUseCase {
   constructor(
     private userRepository: UserRepository,
@@ -18,6 +21,11 @@ export class ImportWalletUseCase {
   ) {}
 
   async execute(telegramId: TelegramId, privateKeyBase64: string): Promise<ImportWalletResult> {
+    // Validate input size before any processing (S-03 security measure)
+    if (privateKeyBase64.length > MAX_INPUT_LENGTH) {
+      return { type: "invalid_key" };
+    }
+
     logger.info("ImportWallet", "Importing wallet", { telegramId });
 
     // Ensure user exists
