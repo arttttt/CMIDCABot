@@ -84,17 +84,19 @@ export class SQLiteUserRepository implements UserRepository {
   ): Promise<void> {
     const encryptedKey = await this.encryptPrivateKey(privateKey);
 
-    await this.db.transaction().execute(async (trx) => {
-      await trx
-        .updateTable("users")
-        .set({
-          private_key: encryptedKey,
-          wallet_address: address.value,
-          updated_at: sql`CURRENT_TIMESTAMP`,
-        })
-        .where("telegram_id", "=", id.value)
-        .execute();
-    });
+    const result = await this.db
+      .updateTable("users")
+      .set({
+        private_key: encryptedKey,
+        wallet_address: address.value,
+        updated_at: sql`CURRENT_TIMESTAMP`,
+      })
+      .where("telegram_id", "=", id.value)
+      .executeTakeFirst();
+
+    if (result.numUpdatedRows === BigInt(0)) {
+      throw new Error(`User not found: ${id.value}`);
+    }
   }
 
   async getAllWithWallet(): Promise<UserWithWallet[]> {
