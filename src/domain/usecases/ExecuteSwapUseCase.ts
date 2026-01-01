@@ -21,6 +21,7 @@ import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
+import { MIN_SOL_FOR_FEES } from "../constants.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
@@ -132,6 +133,26 @@ export class ExecuteSwapUseCase {
         required: amountUsdc,
         available: usdcBalance,
       });
+      return;
+    }
+
+    // Check SOL balance for transaction fees
+    let solBalance: number;
+    try {
+      solBalance = await this.balanceRepository.getSolBalance(walletAddr);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("ExecuteSwap", "Failed to fetch SOL balance", { error: message });
+      yield SwapSteps.completed({ status: "rpc_error", message });
+      return;
+    }
+
+    if (solBalance < MIN_SOL_FOR_FEES) {
+      logger.warn("ExecuteSwap", "Insufficient SOL for fees", {
+        required: MIN_SOL_FOR_FEES,
+        available: solBalance,
+      });
+      yield SwapSteps.completed({ status: "insufficient_sol_balance" });
       return;
     }
 
