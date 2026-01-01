@@ -6,6 +6,7 @@
  */
 
 import type { Api } from "grammy";
+import type { TelegramId } from "../../domain/models/id/index.js";
 import type { MessageSender } from "./MessageSender.js";
 import type { ClientResponse } from "../protocol/types.js";
 import { InlineKeyboard } from "grammy";
@@ -31,19 +32,20 @@ function toInlineKeyboard(response: ClientResponse): InlineKeyboard | undefined 
 export class TelegramMessageSender implements MessageSender {
   constructor(private readonly api: Api) {}
 
-  async send(telegramId: number, response: ClientResponse): Promise<void> {
+  async send(tgId: TelegramId, response: ClientResponse): Promise<void> {
     try {
       const keyboard = toInlineKeyboard(response);
 
-      await this.api.sendMessage(telegramId, response.text, {
+      // Cast to number for grammY API
+      await this.api.sendMessage(tgId as number, response.text, {
         parse_mode: "Markdown",
         reply_markup: keyboard,
       });
 
-      logger.debug("TelegramMessageSender", "Message sent", { telegramId });
+      logger.debug("TelegramMessageSender", "Message sent", { telegramId: tgId });
     } catch (error) {
       logger.error("TelegramMessageSender", "Failed to send message", {
-        telegramId,
+        telegramId: tgId,
         error: error instanceof Error ? error.message : String(error),
       });
       // Don't rethrow - notification failure shouldn't break the import flow

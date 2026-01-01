@@ -5,6 +5,7 @@
  * (e.g., HTTP handlers) back to Telegram users.
  */
 
+import type { TelegramId } from "../../domain/models/id/index.js";
 import type { ClientResponse } from "../protocol/types.js";
 
 export interface MessageSender {
@@ -14,5 +15,5 @@ export interface MessageSender {
    * @param telegramId - Target user's Telegram ID
    * @param response - UI response to send
    */
-  send(telegramId: number, response: ClientResponse): Promise<void>;
+  send(telegramId: TelegramId, response: ClientResponse): Promise<void>;
 }

@@ -3,6 +3,7 @@
  */
 
 import { Api } from "grammy";
+import { telegramId, type TelegramId } from "../../domain/models/id/index.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
 /**
@@ -10,7 +11,7 @@ import { logger } from "../../infrastructure/shared/logging/index.js";
  */
 export interface ResolveResult {
   success: boolean;
-  telegramId?: number;
+  telegramId?: TelegramId;
   error?: string;
 }
 
@@ -41,12 +42,12 @@ export function isUsername(identifier: string): boolean {
 /**
  * Parse identifier - returns telegramId if numeric, undefined otherwise
  */
-export function parseNumericId(identifier: string): number | undefined {
+export function parseNumericId(identifier: string): TelegramId | undefined {
   const id = parseInt(identifier, 10);
   if (isNaN(id) || id <= 0) {
     return undefined;
   }
-  return id;
+  return telegramId(id);
 }
 
 /**
@@ -60,7 +61,7 @@ export function normalizeUsername(username: string): string {
 const error = (message: string): ResolveResult => ({ success: false, error: message });
 
 // Helper to create success result
-const success = (telegramId: number): ResolveResult => ({ success: true, telegramId });
+const success = (tgId: TelegramId): ResolveResult => ({ success: true, telegramId: tgId });
 
 /**
  * Telegram-based user resolver using Bot API
@@ -95,8 +96,9 @@ export class TelegramUserResolver implements UserResolver {
         return error(`@${username} is not a user (it's a ${chat.type})`);
       }
 
-      logger.debug("UserResolver", "Resolved username", { username, telegramId: chat.id });
-      return success(chat.id);
+      const tgId = telegramId(chat.id);
+      logger.debug("UserResolver", "Resolved username", { username, telegramId: tgId });
+      return success(tgId);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       logger.debug("UserResolver", "Failed to resolve username", { username, error: message });

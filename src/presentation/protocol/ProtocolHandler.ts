@@ -19,6 +19,7 @@ import {
   UICommand,
   ClientResponseStream,
 } from "./types.js";
+import { telegramId } from "../../domain/models/id/index.js";
 import { AuthorizationHelper } from "../../domain/helpers/AuthorizationHelper.js";
 import { hasRequiredRole, type UserRole } from "../../domain/models/AuthorizedUser.js";
 import { CommandExecutionContext } from "../commands/CommandExecutionContext.js";
@@ -88,12 +89,13 @@ export class ProtocolHandler {
   private async handleCommand(
     command: string,
     args: string[],
-    telegramId: number,
+    rawTelegramId: number,
   ): Promise<ClientResponse> {
     const modeInfo = this.registry.getModeInfo();
+    const tgId = telegramId(rawTelegramId);
 
     // Get user role, default to 'guest' for unauthorized users
-    const userRole: UserRole = (await this.authHelper.getRole(telegramId)) ?? "guest";
+    const userRole: UserRole = (await this.authHelper.getRole(tgId)) ?? "guest";
 
     // /help - show commands available to user based on role
     if (command === "/help") {
@@ -120,7 +122,7 @@ export class ProtocolHandler {
     // Route through command tree
     const execCtx = new CommandExecutionContext(
       `legacy-${Date.now()}`,
-      { provider: "telegram", telegramId },
+      { provider: "telegram", telegramId: tgId },
       userRole,
     );
     return routeCommand(cmd, args, execCtx);
@@ -129,12 +131,13 @@ export class ProtocolHandler {
   private async *handleCommandStreaming(
     command: string,
     args: string[],
-    telegramId: number,
+    rawTelegramId: number,
   ): ClientResponseStream {
     const modeInfo = this.registry.getModeInfo();
+    const tgId = telegramId(rawTelegramId);
 
     // Get user role, default to 'guest' for unauthorized users
-    const userRole: UserRole = (await this.authHelper.getRole(telegramId)) ?? "guest";
+    const userRole: UserRole = (await this.authHelper.getRole(tgId)) ?? "guest";
 
     // /help - show commands available to user based on role
     if (command === "/help") {
@@ -173,7 +176,7 @@ export class ProtocolHandler {
     // Route through command tree with streaming
     const execCtx = new CommandExecutionContext(
       `legacy-${Date.now()}`,
-      { provider: "telegram", telegramId },
+      { provider: "telegram", telegramId: tgId },
       userRole,
     );
     yield* routeCommandStreaming(cmd, args, execCtx);
@@ -203,8 +206,10 @@ export class ProtocolHandler {
       return new ClientResponse("Unknown action.");
     }
 
+    const tgId = telegramId(ctx.telegramId);
+
     // Check role requirement
-    const userRole: UserRole = (await this.authHelper.getRole(ctx.telegramId)) ?? "guest";
+    const userRole: UserRole = (await this.authHelper.getRole(tgId)) ?? "guest";
     if (result.requiredRole) {
       if (!hasRequiredRole(userRole, result.requiredRole)) {
         return new ClientResponse("Unknown action.");
@@ -213,7 +218,7 @@ export class ProtocolHandler {
 
     const execCtx = new CommandExecutionContext(
       `legacy-${Date.now()}`,
-      { provider: "telegram", telegramId: ctx.telegramId },
+      { provider: "telegram", telegramId: tgId },
       userRole,
     );
     return result.handler(execCtx);
