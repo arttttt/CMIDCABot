@@ -12,6 +12,7 @@
  */
 
 import { randomBytes } from "node:crypto";
+import { type TelegramId } from "../../../domain/models/id/index.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 /** Default TTL: 10 minutes for import sessions */
@@ -24,13 +25,13 @@ const FORM_SESSION_TTL_MS = 5 * 60 * 1000;
 const TOKEN_REGEX = /^[A-Za-z0-9_-]{22}$/;
 
 interface ImportSession {
-  telegramId: number;
+  telegramId: TelegramId;
   createdAt: number;
   expiresAt: number;
 }
 
 interface FormSession {
-  telegramId: number;
+  telegramId: TelegramId;
   expiresAt: number;
 }
 
@@ -56,7 +57,7 @@ export class ImportSessionCache {
    * @param telegramId - User ID for the import operation
    * @returns URL to access the import form
    */
-  store(telegramId: number): string {
+  store(telegramId: TelegramId): string {
     // Generate cryptographically secure token (16 bytes = 128 bits entropy)
     const token = randomBytes(16).toString("base64url");
 
@@ -84,7 +85,7 @@ export class ImportSessionCache {
    * @param token - The session token
    * @returns telegramId or null if not found/expired/invalid
    */
-  consume(token: string): number | null {
+  consume(token: string): TelegramId | null {
     // Validate token format first
     if (!TOKEN_REGEX.test(token)) {
       logger.debug("ImportSessionCache", "Invalid token format");
@@ -127,7 +128,7 @@ export class ImportSessionCache {
    * @param token - The import session token
    * @returns Object with csrfToken and telegramId, or null if invalid/expired
    */
-  consumeToForm(token: string): { csrfToken: string; telegramId: number } | null {
+  consumeToForm(token: string): { csrfToken: string; telegramId: TelegramId } | null {
     const telegramId = this.consume(token);
 
     if (telegramId === null) {
@@ -159,7 +160,7 @@ export class ImportSessionCache {
    * @param csrfToken - The CSRF token from the form
    * @returns telegramId or null if invalid/expired
    */
-  consumeForm(csrfToken: string): number | null {
+  consumeForm(csrfToken: string): TelegramId | null {
     if (!TOKEN_REGEX.test(csrfToken)) {
       logger.debug("ImportSessionCache", "Invalid CSRF token format");
       return null;

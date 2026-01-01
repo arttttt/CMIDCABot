@@ -5,6 +5,7 @@ import { Kysely, sql, Selectable } from "kysely";
 import { InviteTokenRepository } from "../../../domain/repositories/InviteTokenRepository.js";
 import { InviteToken } from "../../../domain/models/InviteToken.js";
 import { UserRole } from "../../../domain/models/AuthorizedUser.js";
+import { telegramId, type TelegramId } from "../../../domain/models/id/index.js";
 import type { AuthDatabase, InviteTokensTable } from "../../types/authDatabase.js";
 
 type InviteTokenRow = Selectable<InviteTokensTable>;
@@ -19,21 +20,21 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository {
     return {
       token: row.token,
       role: row.role as UserRole,
-      createdBy: row.created_by,
+      createdBy: telegramId(row.created_by),
       createdAt: new Date(row.created_at),
       expiresAt: new Date(row.expires_at),
-      usedBy: row.used_by,
+      usedBy: row.used_by ? telegramId(row.used_by) : null,
       usedAt: row.used_at ? new Date(row.used_at) : null,
     };
   }
 
-  async create(token: string, role: UserRole, createdBy: number, expiresAt: Date): Promise<void> {
+  async create(token: string, role: UserRole, createdBy: TelegramId, expiresAt: Date): Promise<void> {
     await this.db
       .insertInto("invite_tokens")
       .values({
         token,
         role,
-        created_by: createdBy,
+        created_by: createdBy as number,
         expires_at: expiresAt.toISOString(),
       })
       .execute();
@@ -50,11 +51,11 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository {
     return this.rowToModel(row);
   }
 
-  async markUsed(token: string, usedBy: number): Promise<boolean> {
+  async markUsed(token: string, usedBy: TelegramId): Promise<boolean> {
     const result = await this.db
       .updateTable("invite_tokens")
       .set({
-        used_by: usedBy,
+        used_by: usedBy as number,
         used_at: sql`CURRENT_TIMESTAMP`,
       })
       .where("token", "=", token)
@@ -74,11 +75,11 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository {
     return Number(result.numDeletedRows);
   }
 
-  async getByCreator(createdBy: number): Promise<InviteToken[]> {
+  async getByCreator(createdBy: TelegramId): Promise<InviteToken[]> {
     const rows = await this.db
       .selectFrom("invite_tokens")
       .selectAll()
-      .where("created_by", "=", createdBy)
+      .where("created_by", "=", createdBy as number)
       .orderBy("created_at", "desc")
       .execute();
 

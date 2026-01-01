@@ -4,6 +4,7 @@
 import { Kysely, sql, Selectable } from "kysely";
 import { PortfolioRepository } from "../../../domain/repositories/PortfolioRepository.js";
 import { PortfolioBalances } from "../../../domain/models/Portfolio.js";
+import { telegramId, type TelegramId } from "../../../domain/models/id/index.js";
 import { AssetSymbol } from "../../../types/portfolio.js";
 import type { MockDatabase, PortfolioTable } from "../../types/database.js";
 
@@ -14,18 +15,18 @@ export class SQLitePortfolioRepository implements PortfolioRepository {
 
   private rowToModel(row: PortfolioRow): PortfolioBalances {
     return {
-      telegramId: row.telegram_id,
+      telegramId: telegramId(row.telegram_id),
       btcBalance: row.btc_balance,
       ethBalance: row.eth_balance,
       solBalance: row.sol_balance,
     };
   }
 
-  async getById(telegramId: number): Promise<PortfolioBalances | undefined> {
+  async getById(id: TelegramId): Promise<PortfolioBalances | undefined> {
     const row = await this.db
       .selectFrom("portfolio")
       .selectAll()
-      .where("telegram_id", "=", telegramId)
+      .where("telegram_id", "=", id as number)
       .executeTakeFirst();
 
     if (!row) return undefined;
@@ -33,27 +34,28 @@ export class SQLitePortfolioRepository implements PortfolioRepository {
     return this.rowToModel(row);
   }
 
-  async create(telegramId: number): Promise<void> {
+  async create(id: TelegramId): Promise<void> {
     await this.db
       .insertInto("portfolio")
-      .values({ telegram_id: telegramId })
+      .values({ telegram_id: id as number })
       .onConflict((oc) => oc.column("telegram_id").doNothing())
       .execute();
   }
 
-  async updateBalance(telegramId: number, asset: AssetSymbol, amountToAdd: number): Promise<void> {
+  async updateBalance(id: TelegramId, asset: AssetSymbol, amountToAdd: number): Promise<void> {
     const column = `${asset.toLowerCase()}_balance` as "btc_balance" | "eth_balance" | "sol_balance";
+    const idNum = id as number;
 
     // Use raw SQL for the increment operation
     await sql`
       UPDATE portfolio
       SET ${sql.ref(column)} = ${sql.ref(column)} + ${amountToAdd},
           updated_at = CURRENT_TIMESTAMP
-      WHERE telegram_id = ${telegramId}
+      WHERE telegram_id = ${idNum}
     `.execute(this.db);
   }
 
-  async reset(telegramId: number): Promise<void> {
+  async reset(id: TelegramId): Promise<void> {
     await this.db
       .updateTable("portfolio")
       .set({
@@ -62,14 +64,14 @@ export class SQLitePortfolioRepository implements PortfolioRepository {
         sol_balance: 0,
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
-      .where("telegram_id", "=", telegramId)
+      .where("telegram_id", "=", id as number)
       .execute();
   }
 
-  async deleteByUserId(telegramId: number): Promise<void> {
+  async deleteByUserId(id: TelegramId): Promise<void> {
     await this.db
       .deleteFrom("portfolio")
-      .where("telegram_id", "=", telegramId)
+      .where("telegram_id", "=", id as number)
       .execute();
   }
 }

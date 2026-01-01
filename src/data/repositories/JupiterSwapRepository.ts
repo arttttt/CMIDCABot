@@ -5,6 +5,7 @@
  * Provides Dependency Inversion for domain layer.
  */
 
+import { tokenMint, type TokenMint, type WalletAddress } from "../../domain/models/id/index.js";
 import type {
   SwapRepository,
   SwapQuoteParams,
@@ -19,16 +20,23 @@ export class JupiterSwapRepository implements SwapRepository {
   constructor(private client: JupiterSwapClient) {}
 
   async getQuote(params: SwapQuoteParams): Promise<SwapQuote> {
-    const quote = await this.client.getQuote(params);
+    // Cast branded types to strings for client
+    const clientParams = {
+      inputMint: params.inputMint as string,
+      outputMint: params.outputMint as string,
+      amount: params.amount,
+      slippageBps: params.slippageBps,
+    };
+    const quote = await this.client.getQuote(clientParams);
     return this.mapQuote(quote);
   }
 
   async getQuoteUsdcToToken(
     amountUsdc: number,
-    outputMint: string,
+    outputMint: TokenMint,
     slippageBps?: number,
   ): Promise<SwapQuote> {
-    const quote = await this.client.getQuoteUsdcToToken(amountUsdc, outputMint, slippageBps);
+    const quote = await this.client.getQuoteUsdcToToken(amountUsdc, outputMint as string, slippageBps);
     return this.mapQuote(quote);
   }
 
@@ -46,14 +54,16 @@ export class JupiterSwapRepository implements SwapRepository {
     return this.mapQuote(quote);
   }
 
-  async buildSwapTransaction(quote: SwapQuote, userPublicKey: string): Promise<SwapTransaction> {
+  async buildSwapTransaction(quote: SwapQuote, userPublicKey: WalletAddress): Promise<SwapTransaction> {
     // Cast back to client quote type (rawQuoteResponse contains the original data)
     const clientQuote = {
       ...quote,
+      inputMint: quote.inputMint as string,
+      outputMint: quote.outputMint as string,
       rawQuoteResponse: quote.rawQuoteResponse,
     } as ClientSwapQuote;
 
-    return this.client.buildSwapTransaction(clientQuote, userPublicKey);
+    return this.client.buildSwapTransaction(clientQuote, userPublicKey as string);
   }
 
   /**
@@ -62,11 +72,11 @@ export class JupiterSwapRepository implements SwapRepository {
    */
   private mapQuote(quote: ClientSwapQuote): SwapQuote {
     return {
-      inputMint: quote.inputMint,
+      inputMint: tokenMint(quote.inputMint),
       inputSymbol: quote.inputSymbol,
       inputAmount: quote.inputAmount,
       inputAmountRaw: quote.inputAmountRaw,
-      outputMint: quote.outputMint,
+      outputMint: tokenMint(quote.outputMint),
       outputSymbol: quote.outputSymbol,
       outputAmount: quote.outputAmount,
       outputAmountRaw: quote.outputAmountRaw,

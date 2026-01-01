@@ -5,6 +5,7 @@
  * Provides Dependency Inversion for domain layer.
  */
 
+import type { TokenMint, WalletAddress } from "../../domain/models/id/index.js";
 import type {
   BlockchainRepository,
   GeneratedKeypair,
@@ -23,11 +24,11 @@ export class SolanaBlockchainRepository implements BlockchainRepository {
 
   // === Wallet Operations ===
 
-  async getBalance(walletAddress: string): Promise<number> {
-    return this.client.getBalance(walletAddress);
+  async getBalance(addr: WalletAddress): Promise<number> {
+    return this.client.getBalance(addr as string);
   }
 
-  async getAddressFromPrivateKey(privateKeyBase64: string): Promise<string> {
+  async getAddressFromPrivateKey(privateKeyBase64: string): Promise<WalletAddress> {
     return this.client.getAddressFromPrivateKey(privateKeyBase64);
   }
 
@@ -51,8 +52,8 @@ export class SolanaBlockchainRepository implements BlockchainRepository {
     return this.client.validatePrivateKey(privateKeyBase64);
   }
 
-  isValidAddress(walletAddress: string): boolean {
-    return this.client.isValidAddress(walletAddress);
+  isValidAddress(addr: string): addr is WalletAddress {
+    return this.client.isValidAddress(addr);
   }
 
   // === Transaction Operations ===
@@ -81,25 +82,31 @@ export class SolanaBlockchainRepository implements BlockchainRepository {
   // === Token Operations ===
 
   async getTokenBalance(
-    walletAddress: string,
-    tokenMint: string,
+    addr: WalletAddress,
+    mint: TokenMint,
     decimals?: number,
   ): Promise<number> {
-    return this.client.getTokenBalance(walletAddress, tokenMint, decimals);
+    return this.client.getTokenBalance(addr as string, mint as string, decimals);
   }
 
-  async getUsdcBalance(walletAddress: string): Promise<number> {
-    return this.client.getUsdcBalance(walletAddress);
+  async getUsdcBalance(addr: WalletAddress): Promise<number> {
+    return this.client.getUsdcBalance(addr as string);
   }
 
   async getAllBalancesBatch(
-    walletAddress: string,
+    addr: WalletAddress,
     tokens: {
       btc: TokenConfig;
       eth: TokenConfig;
       usdc: TokenConfig;
     },
   ): Promise<BatchBalancesResult> {
-    return this.client.getAllBalancesBatch(walletAddress, tokens);
+    // Cast TokenMint to string for the client
+    const clientTokens = {
+      btc: { mint: tokens.btc.mint, decimals: tokens.btc.decimals },
+      eth: { mint: tokens.eth.mint, decimals: tokens.eth.decimals },
+      usdc: { mint: tokens.usdc.mint, decimals: tokens.usdc.decimals },
+    };
+    return this.client.getAllBalancesBatch(addr as string, clientTokens);
   }
 }
