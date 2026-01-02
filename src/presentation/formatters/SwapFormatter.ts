@@ -16,10 +16,12 @@ export class SwapFormatter {
       return new ClientResponse(`No wallet found. Create one with ${Markdown.code("/wallet create")}`);
     }
 
-    if (result.status === "insufficient_balance") {
-      return new ClientResponse(
-        `Insufficient USDC balance.\nRequired: ${result.required} USDC\nAvailable: ${result.available} USDC`,
-      );
+    if (result.status === "insufficient_usdc_balance") {
+      return new ClientResponse("Insufficient USDC balance.");
+    }
+
+    if (result.status === "insufficient_sol_balance") {
+      return new ClientResponse("Insufficient SOL balance.");
     }
 
     if (result.status === "invalid_amount") {

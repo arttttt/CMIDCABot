@@ -27,12 +27,11 @@ export class PurchaseFormatter {
             "Use /wallet create to create a new wallet first.",
         );
 
-      case "insufficient_balance":
-        return new ClientResponse(
-          `Insufficient USDC balance.\n\n` +
-            `Required: ${result.requiredBalance} USDC\n` +
-            `Available: ${result.availableBalance?.toFixed(2) ?? "0"} USDC`,
-        );
+      case "insufficient_usdc_balance":
+        return new ClientResponse("Insufficient USDC balance.");
+
+      case "insufficient_sol_balance":
+        return new ClientResponse("Insufficient SOL balance.");
 
       case "quote_error":
         return new ClientResponse(`Failed to get quote: ${Markdown.escape(result.error ?? "")}`);

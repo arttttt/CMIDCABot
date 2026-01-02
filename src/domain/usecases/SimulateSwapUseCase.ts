@@ -15,6 +15,7 @@ import { BlockchainRepository, SimulationResult } from "../repositories/Blockcha
 import { UserRepository } from "../repositories/UserRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
+import { MIN_SOL_AMOUNT } from "../constants.js";
 
 export type SimulateSwapResult =
   | {
@@ -26,7 +27,8 @@ export type SimulateSwapResult =
   | { status: "no_wallet" }
   | { status: "invalid_amount"; message: string }
   | { status: "invalid_asset"; message: string }
-  | { status: "insufficient_balance"; required: number; available: number }
+  | { status: "insufficient_usdc_balance" }
+  | { status: "insufficient_sol_balance" }
   | { status: "quote_error"; message: string }
   | { status: "build_error"; message: string }
   | { status: "simulation_error"; message: string };
@@ -110,11 +112,17 @@ export class SimulateSwapUseCase {
         required: amountUsdc,
         available: usdcBalance,
       });
-      return {
-        status: "insufficient_balance",
-        required: amountUsdc,
-        available: usdcBalance,
-      };
+      return { status: "insufficient_usdc_balance" };
+    }
+
+    // Check SOL balance for transaction fees
+    const solBalance = await this.blockchainRepository.getBalance(walletAddr);
+    if (solBalance < MIN_SOL_AMOUNT) {
+      logger.warn("SimulateSwap", "Insufficient SOL for fees", {
+        required: MIN_SOL_AMOUNT,
+        available: solBalance,
+      });
+      return { status: "insufficient_sol_balance" };
     }
 
     // Step 1: Get quote

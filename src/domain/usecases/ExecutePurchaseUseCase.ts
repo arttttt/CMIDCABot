@@ -18,6 +18,7 @@ import { logger } from "../../infrastructure/shared/logging/index.js";
 import { PurchaseStep, PurchaseSteps } from "../models/index.js";
 import { AllocationCalculator } from "../helpers/AllocationCalculator.js";
 import { AssetAllocation } from "../models/PortfolioTypes.js";
+import { MIN_USDC_AMOUNT } from "../constants.js";
 
 export class ExecutePurchaseUseCase {
   constructor(
@@ -58,10 +59,10 @@ export class ExecutePurchaseUseCase {
       return;
     }
 
-    if (amountUsdc < 0.01) {
+    if (amountUsdc < MIN_USDC_AMOUNT) {
       yield PurchaseSteps.completed({
         type: "invalid_amount",
-        error: "Minimum amount is 0.01 USDC",
+        error: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
       });
       return;
     }
@@ -101,12 +102,12 @@ export class ExecutePurchaseUseCase {
         available: usdcBalance,
       });
       yield PurchaseSteps.completed({
-        type: "insufficient_balance",
-        requiredBalance: amountUsdc,
-        availableBalance: usdcBalance,
+        type: "insufficient_usdc_balance",
       });
       return;
     }
+
+    // Note: SOL balance check is performed by ExecuteSwapUseCase
 
     // Step: Selecting asset
     yield PurchaseSteps.selectingAsset();
@@ -182,12 +183,10 @@ export class ExecutePurchaseUseCase {
       case "invalid_asset":
         // This should not happen since we control the asset selection
         return { type: "invalid_amount", error: swapResult.message };
-      case "insufficient_balance":
-        return {
-          type: "insufficient_balance",
-          requiredBalance: swapResult.required,
-          availableBalance: swapResult.available,
-        };
+      case "insufficient_usdc_balance":
+        return { type: "insufficient_usdc_balance" };
+      case "insufficient_sol_balance":
+        return { type: "insufficient_sol_balance" };
       case "quote_error":
         return { type: "quote_error", error: swapResult.message };
       case "build_error":

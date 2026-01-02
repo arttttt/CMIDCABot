@@ -21,6 +21,7 @@ import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
+import { MIN_SOL_AMOUNT, MIN_USDC_AMOUNT } from "../constants.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
@@ -68,10 +69,10 @@ export class ExecuteSwapUseCase {
       return;
     }
 
-    if (amountUsdc < 0.01) {
+    if (amountUsdc < MIN_USDC_AMOUNT) {
       yield SwapSteps.completed({
         status: "invalid_amount",
-        message: "Minimum amount is 0.01 USDC",
+        message: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
       });
       return;
     }
@@ -128,10 +129,28 @@ export class ExecuteSwapUseCase {
         available: usdcBalance,
       });
       yield SwapSteps.completed({
-        status: "insufficient_balance",
-        required: amountUsdc,
-        available: usdcBalance,
+        status: "insufficient_usdc_balance",
       });
+      return;
+    }
+
+    // Check SOL balance for transaction fees
+    let solBalance: number;
+    try {
+      solBalance = await this.balanceRepository.getSolBalance(walletAddr);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("ExecuteSwap", "Failed to fetch SOL balance", { error: message });
+      yield SwapSteps.completed({ status: "rpc_error", message });
+      return;
+    }
+
+    if (solBalance < MIN_SOL_AMOUNT) {
+      logger.warn("ExecuteSwap", "Insufficient SOL for fees", {
+        required: MIN_SOL_AMOUNT,
+        available: solBalance,
+      });
+      yield SwapSteps.completed({ status: "insufficient_sol_balance" });
       return;
     }
 
