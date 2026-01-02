@@ -39,7 +39,6 @@ cp .env.example .env
 | `OWNER_TELEGRAM_ID` | Yes | - | Telegram ID of the bot owner (super admin) |
 | `MASTER_ENCRYPTION_KEY` | Yes | - | Master key for private key encryption (base64, 32 bytes) |
 | `SOLANA_RPC_URL` | No | `https://api.devnet.solana.com` | Solana RPC endpoint |
-| `DB_MODE` | No | `sqlite` | Database mode (`sqlite` \| `memory`) |
 | `DATABASE_PATH` | No | `./data/bot.db` | Path to SQLite database |
 | `AUTH_DATABASE_PATH` | No | `./data/auth.db` | Path to authorization database |
 | `MOCK_DATABASE_PATH` | No | `./data/mock.db` | Path to mock database (dev only) |
@@ -56,6 +55,8 @@ cp .env.example .env
 | `HTTP_PORT` | No | `8000` | Port for HTTP server (health checks, secret pages) |
 | `HTTP_HOST` | No | `127.0.0.1` | Host for HTTP server (use `0.0.0.0` for containers) |
 | `PUBLIC_URL` | Yes | - | Public URL for one-time secret links |
+| `RATE_LIMIT_WINDOW_MS` | No | `60000` | Rate limit window in ms (1 minute) |
+| `RATE_LIMIT_MAX_REQUESTS` | No | `30` | Maximum requests per window |
 
 \* Not required if `WEB_ENABLED=true`
 \** Required when `PRICE_SOURCE=jupiter`
@@ -176,8 +177,8 @@ npm start
 ```
 
 In production mode (`NODE_ENV=production`):
-- Only wallet and admin commands available
-- DCA, portfolio, prices, and swap commands are disabled
+- Wallet, portfolio, and admin commands available
+- DCA, prices, and swap commands are disabled
 
 ### Transport Modes
 
@@ -245,6 +246,10 @@ npx tsc --noEmit
 | `/admin list` | admin | List all authorized users |
 | `/admin role <id> <role>` | admin | Change user role |
 | `/admin invite [role]` | admin | Create invite link (default role: user) |
+| `/portfolio` | user | Portfolio status |
+| `/portfolio buy <amount>` | user | Purchase asset using DCA strategy |
+| `/version` | user | Show bot version |
+| `/help` | user | Show available commands |
 
 ### Development mode (all production commands plus)
 
@@ -253,8 +258,6 @@ npx tsc --noEmit
 | `/dca` | user | Show DCA status |
 | `/dca start` | user | Start DCA automation |
 | `/dca stop` | user | Stop DCA automation |
-| `/portfolio` | user | Portfolio status |
-| `/portfolio buy <amount>` | user | Purchase asset using DCA strategy |
 | `/prices` | user | Show current asset prices |
 | `/swap` | user | Show swap usage |
 | `/swap quote <amount> [asset]` | user | Get swap quote (default: SOL) |
