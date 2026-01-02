@@ -3,6 +3,8 @@
  *
  * Generic scheduler for stores that support expiration cleanup.
  * Separated from stores for Single Responsibility Principle.
+ *
+ * Supports per-store cleanup intervals for flexible scheduling.
  */
 
 import { logger } from "../logging/index.js";
@@ -12,56 +14,63 @@ export interface CleanableStore {
   deleteExpired(): Promise<number>;
 }
 
-const DEFAULT_CLEANUP_INTERVAL_MS = 60 * 1000; // 1 minute
+/** Entry with store and its cleanup interval */
+export interface CleanableEntry {
+  store: CleanableStore;
+  intervalMs: number;
+}
 
 export class CleanupScheduler {
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timers: Map<CleanableStore, ReturnType<typeof setInterval>> = new Map();
 
-  constructor(
-    private readonly stores: CleanableStore[],
-    private readonly intervalMs: number = DEFAULT_CLEANUP_INTERVAL_MS,
-  ) {}
+  constructor(private readonly entries: CleanableEntry[]) {}
 
   /**
-   * Start periodic cleanup
+   * Start periodic cleanup for all stores
    */
   start(): void {
-    if (this.timer) {
-      return;
-    }
+    for (const entry of this.entries) {
+      if (this.timers.has(entry.store)) {
+        continue;
+      }
 
-    this.timer = setInterval(async () => {
-      const results = await Promise.allSettled(
-        this.stores.map((store) => store.deleteExpired()),
-      );
-
-      for (const result of results) {
-        if (result.status === "rejected") {
+      const timer = setInterval(async () => {
+        try {
+          const deletedCount = await entry.store.deleteExpired();
+          if (deletedCount > 0) {
+            logger.debug("CleanupScheduler", "Cleanup completed", {
+              deletedCount,
+              intervalMs: entry.intervalMs,
+            });
+          }
+        } catch (error) {
           logger.error("CleanupScheduler", "Store cleanup failed", {
-            error: result.reason,
+            error,
           });
         }
-      }
-    }, this.intervalMs);
+      }, entry.intervalMs);
 
-    // Don't prevent process exit
-    this.timer.unref();
+      // Don't prevent process exit
+      timer.unref();
+
+      this.timers.set(entry.store, timer);
+    }
   }
 
   /**
-   * Stop periodic cleanup
+   * Stop periodic cleanup for all stores
    */
   stop(): void {
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = null;
+    for (const timer of this.timers.values()) {
+      clearInterval(timer);
     }
+    this.timers.clear();
   }
 
   /**
    * Check if scheduler is running
    */
   isRunning(): boolean {
-    return this.timer !== null;
+    return this.timers.size > 0;
   }
 }
