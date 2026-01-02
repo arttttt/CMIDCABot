@@ -7,10 +7,11 @@ import { InviteToken } from "../../../domain/models/InviteToken.js";
 import { UserRole } from "../../../domain/models/AuthorizedUser.js";
 import { TelegramId } from "../../../domain/models/id/index.js";
 import type { AuthDatabase, InviteTokensTable } from "../../types/authDatabase.js";
+import type { CleanableStore } from "../../../infrastructure/shared/scheduling/CleanupScheduler.js";
 
 type InviteTokenRow = Selectable<InviteTokensTable>;
 
-export class SQLiteInviteTokenRepository implements InviteTokenRepository {
+export class SQLiteInviteTokenRepository implements InviteTokenRepository, CleanableStore {
   constructor(private db: Kysely<AuthDatabase>) {}
 
   /**

@@ -2,8 +2,8 @@
  * Invite token repository interface
  */
 import type { TelegramId } from "../models/id/index.js";
-import { InviteToken } from "../models/InviteToken.js";
-import { UserRole } from "../models/AuthorizedUser.js";
+import type { InviteToken } from "../models/InviteToken.js";
+import type { UserRole } from "../models/AuthorizedUser.js";
 
 export interface InviteTokenRepository {
   /**
@@ -20,11 +20,6 @@ export interface InviteTokenRepository {
    * Mark token as used
    */
   markUsed(token: string, usedBy: TelegramId): Promise<boolean>;
-
-  /**
-   * Delete expired tokens (cleanup)
-   */
-  deleteExpired(): Promise<number>;
 
   /**
    * Get all tokens created by a specific user

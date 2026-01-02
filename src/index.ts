@@ -162,8 +162,12 @@ async function main(): Promise<void> {
   });
   const rateLimitRepository = new InMemoryRateLimitRepository(rateLimitCache);
 
-  // Start cleanup scheduler for expired secrets and import sessions
-  const cleanupScheduler = new CleanupScheduler([secretCache, importSessionCache]);
+  // Start cleanup scheduler for expired secrets, import sessions, and invite tokens
+  const cleanupScheduler = new CleanupScheduler([
+    { store: secretCache, intervalMs: 60_000, name: "secretCache" },
+    { store: importSessionCache, intervalMs: 60_000, name: "importSessionCache" },
+    { store: inviteTokenRepository, intervalMs: 3_600_000, name: "inviteTokenRepository" },
+  ]);
   cleanupScheduler.start();
 
   // Initialize Price and Swap repositories (require API key)
