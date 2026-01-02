@@ -23,9 +23,16 @@ Conduct code review and create report.
    - **Extract Issue number** from found file (`<!-- GitHub Issue: #123 -->`)
    - Note source type (TASK/BRIEF) for review context
 
-3. **Read `ARCHITECTURE.md`** — mandatory before review
+3. **Update GitHub Issue** (main context, before delegating to subagent):
+   - If Issue number found, use MCP tools:
+     - Update labels: remove `stage:impl`, add `stage:review`
+     - Move to "Review" column in project
+   - If MCP unavailable: show warning, continue
+   - **Note:** This is done by main context, NOT by subagent
 
-4. **Analyze code:**
+4. **Read `ARCHITECTURE.md`** — mandatory before review
+
+5. **Analyze code:**
    - Correctness
    - Architecture compliance
    - Security
@@ -33,14 +40,8 @@ Conduct code review and create report.
    - **If source is BRIEF:** note that AC may be implicit, focus on technical requirements from brief
    - **If no source found:** review against ARCHITECTURE.md only, warn about missing requirements
 
-5. **Create file:** `docs/reviews/REVIEW_<name>.md`
+6. **Create file:** `docs/reviews/REVIEW_<name>.md`
    - Add at the beginning: `<!-- GitHub Issue: #<number> -->` (if found)
-
-6. **Update GitHub Issue:**
-   - If Issue number found:
-     - Update labels: remove `stage:impl`, add `stage:review`
-     - Move to "Review" column in project
-   - If MCP unavailable: show warning, continue
 
 7. **Report result:**
    - Summary of findings
@@ -55,6 +56,8 @@ Project: CMI DCA Bot
 Column: Review
 Labels: stage:review (removes stage:impl)
 ```
+
+**Note:** GitHub operations (labels, project column) are performed by main context via MCP before delegating to subagent.
 
 ## Name sanitization
 
