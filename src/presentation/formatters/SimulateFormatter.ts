@@ -17,9 +17,7 @@ export class SimulateFormatter {
     }
 
     if (result.status === "insufficient_usdc_balance") {
-      return new ClientResponse(
-        `Insufficient USDC balance.\nRequired: ${result.required} USDC\nAvailable: ${result.available} USDC`,
-      );
+      return new ClientResponse("Insufficient USDC balance.");
     }
 
     if (result.status === "insufficient_sol_balance") {

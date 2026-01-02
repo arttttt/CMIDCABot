@@ -28,11 +28,7 @@ export class PurchaseFormatter {
         );
 
       case "insufficient_usdc_balance":
-        return new ClientResponse(
-          `Insufficient USDC balance.\n\n` +
-            `Required: ${result.requiredBalance} USDC\n` +
-            `Available: ${result.availableBalance?.toFixed(2) ?? "0"} USDC`,
-        );
+        return new ClientResponse("Insufficient USDC balance.");
 
       case "insufficient_sol_balance":
         return new ClientResponse("Insufficient SOL for transaction fees.");
