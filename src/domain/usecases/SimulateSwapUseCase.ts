@@ -15,7 +15,7 @@ import { BlockchainRepository, SimulationResult } from "../repositories/Blockcha
 import { UserRepository } from "../repositories/UserRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
-import { MIN_SOL_FOR_FEES } from "../constants.js";
+import { MIN_SOL_AMOUNT } from "../constants.js";
 
 export type SimulateSwapResult =
   | {
@@ -117,9 +117,9 @@ export class SimulateSwapUseCase {
 
     // Check SOL balance for transaction fees
     const solBalance = await this.blockchainRepository.getBalance(walletAddr);
-    if (solBalance < MIN_SOL_FOR_FEES) {
+    if (solBalance < MIN_SOL_AMOUNT) {
       logger.warn("SimulateSwap", "Insufficient SOL for fees", {
-        required: MIN_SOL_FOR_FEES,
+        required: MIN_SOL_AMOUNT,
         available: solBalance,
       });
       return { status: "insufficient_sol_balance" };

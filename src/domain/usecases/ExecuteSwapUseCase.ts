@@ -21,7 +21,7 @@ import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
-import { MIN_SOL_FOR_FEES, MIN_USDC_AMOUNT } from "../constants.js";
+import { MIN_SOL_AMOUNT, MIN_USDC_AMOUNT } from "../constants.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
@@ -145,9 +145,9 @@ export class ExecuteSwapUseCase {
       return;
     }
 
-    if (solBalance < MIN_SOL_FOR_FEES) {
+    if (solBalance < MIN_SOL_AMOUNT) {
       logger.warn("ExecuteSwap", "Insufficient SOL for fees", {
-        required: MIN_SOL_FOR_FEES,
+        required: MIN_SOL_AMOUNT,
         available: solBalance,
       });
       yield SwapSteps.completed({ status: "insufficient_sol_balance" });
