@@ -21,7 +21,7 @@ import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
-import { MIN_SOL_FOR_FEES } from "../constants.js";
+import { MIN_SOL_FOR_FEES, MIN_USDC_AMOUNT } from "../constants.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
@@ -69,10 +69,10 @@ export class ExecuteSwapUseCase {
       return;
     }
 
-    if (amountUsdc < 0.01) {
+    if (amountUsdc < MIN_USDC_AMOUNT) {
       yield SwapSteps.completed({
         status: "invalid_amount",
-        message: "Minimum amount is 0.01 USDC",
+        message: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
       });
       return;
     }
