@@ -18,7 +18,7 @@ import { logger } from "../../infrastructure/shared/logging/index.js";
 import { PurchaseStep, PurchaseSteps } from "../models/index.js";
 import { AllocationCalculator } from "../helpers/AllocationCalculator.js";
 import { AssetAllocation } from "../models/PortfolioTypes.js";
-import { MIN_SOL_FOR_FEES } from "../constants.js";
+import { MIN_USDC_AMOUNT } from "../constants.js";
 
 export class ExecutePurchaseUseCase {
   constructor(
@@ -59,10 +59,10 @@ export class ExecutePurchaseUseCase {
       return;
     }
 
-    if (amountUsdc < 0.01) {
+    if (amountUsdc < MIN_USDC_AMOUNT) {
       yield PurchaseSteps.completed({
         type: "invalid_amount",
-        error: "Minimum amount is 0.01 USDC",
+        error: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
       });
       return;
     }
@@ -109,25 +109,7 @@ export class ExecutePurchaseUseCase {
       return;
     }
 
-    // Check SOL balance for transaction fees
-    let solBalance: number;
-    try {
-      solBalance = await this.balanceRepository.getSolBalance(walletAddr);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      logger.error("ExecutePurchase", "Failed to fetch SOL balance", { error: message });
-      yield PurchaseSteps.completed({ type: "rpc_error", error: message });
-      return;
-    }
-
-    if (solBalance < MIN_SOL_FOR_FEES) {
-      logger.warn("ExecutePurchase", "Insufficient SOL for fees", {
-        required: MIN_SOL_FOR_FEES,
-        available: solBalance,
-      });
-      yield PurchaseSteps.completed({ type: "insufficient_sol_balance" });
-      return;
-    }
+    // Note: SOL balance check is performed by ExecuteSwapUseCase
 
     // Step: Selecting asset
     yield PurchaseSteps.selectingAsset();
