@@ -164,9 +164,9 @@ async function main(): Promise<void> {
 
   // Start cleanup scheduler for expired secrets, import sessions, and invite tokens
   const cleanupScheduler = new CleanupScheduler([
-    { store: secretCache, intervalMs: 60_000 },
-    { store: importSessionCache, intervalMs: 60_000 },
-    { store: inviteTokenRepository, intervalMs: 3_600_000 },
+    { store: secretCache, intervalMs: 60_000, name: "secretCache" },
+    { store: importSessionCache, intervalMs: 60_000, name: "importSessionCache" },
+    { store: inviteTokenRepository, intervalMs: 3_600_000, name: "inviteTokenRepository" },
   ]);
   cleanupScheduler.start();
 

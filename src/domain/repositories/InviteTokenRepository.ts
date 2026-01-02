@@ -4,9 +4,8 @@
 import type { TelegramId } from "../models/id/index.js";
 import type { InviteToken } from "../models/InviteToken.js";
 import type { UserRole } from "../models/AuthorizedUser.js";
-import type { CleanableStore } from "../../infrastructure/shared/scheduling/CleanupScheduler.js";
 
-export interface InviteTokenRepository extends CleanableStore {
+export interface InviteTokenRepository {
   /**
    * Create a new invite token
    */
@@ -26,6 +25,4 @@ export interface InviteTokenRepository extends CleanableStore {
    * Get all tokens created by a specific user
    */
   getByCreator(createdBy: TelegramId): Promise<InviteToken[]>;
-
-  // Note: deleteExpired() is inherited from CleanableStore
 }

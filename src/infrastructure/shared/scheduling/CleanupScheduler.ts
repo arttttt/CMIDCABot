@@ -18,6 +18,7 @@ export interface CleanableStore {
 export interface CleanableEntry {
   store: CleanableStore;
   intervalMs: number;
+  name: string;
 }
 
 export class CleanupScheduler {
@@ -39,12 +40,14 @@ export class CleanupScheduler {
           const deletedCount = await entry.store.deleteExpired();
           if (deletedCount > 0) {
             logger.debug("CleanupScheduler", "Cleanup completed", {
+              store: entry.name,
               deletedCount,
               intervalMs: entry.intervalMs,
             });
           }
         } catch (error) {
           logger.error("CleanupScheduler", "Store cleanup failed", {
+            store: entry.name,
             error,
           });
         }
