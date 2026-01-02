@@ -28,8 +28,6 @@ export interface PurchaseResult {
   priceUsd?: number;
   signature?: TxSignature;
   confirmed?: boolean;
-  requiredBalance?: number;
-  availableBalance?: number;
   error?: string;
 }
 

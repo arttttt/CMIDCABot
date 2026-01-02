@@ -21,7 +21,7 @@ export class SwapFormatter {
     }
 
     if (result.status === "insufficient_sol_balance") {
-      return new ClientResponse("Insufficient SOL for transaction fees.");
+      return new ClientResponse("Insufficient SOL balance.");
     }
 
     if (result.status === "invalid_amount") {

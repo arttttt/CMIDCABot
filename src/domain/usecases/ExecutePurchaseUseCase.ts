@@ -103,8 +103,6 @@ export class ExecutePurchaseUseCase {
       });
       yield PurchaseSteps.completed({
         type: "insufficient_usdc_balance",
-        requiredBalance: amountUsdc,
-        availableBalance: usdcBalance,
       });
       return;
     }
@@ -186,11 +184,7 @@ export class ExecutePurchaseUseCase {
         // This should not happen since we control the asset selection
         return { type: "invalid_amount", error: swapResult.message };
       case "insufficient_usdc_balance":
-        return {
-          type: "insufficient_usdc_balance",
-          requiredBalance: swapResult.required,
-          availableBalance: swapResult.available,
-        };
+        return { type: "insufficient_usdc_balance" };
       case "insufficient_sol_balance":
         return { type: "insufficient_sol_balance" };
       case "quote_error":

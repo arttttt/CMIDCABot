@@ -31,7 +31,7 @@ export class PurchaseFormatter {
         return new ClientResponse("Insufficient USDC balance.");
 
       case "insufficient_sol_balance":
-        return new ClientResponse("Insufficient SOL for transaction fees.");
+        return new ClientResponse("Insufficient SOL balance.");
 
       case "quote_error":
         return new ClientResponse(`Failed to get quote: ${Markdown.escape(result.error ?? "")}`);
