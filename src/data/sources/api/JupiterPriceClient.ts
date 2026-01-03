@@ -55,7 +55,7 @@ export class JupiterPriceClient {
     }
 
     // Fetch fresh prices from Jupiter
-    const mints = [TOKEN_MINTS.BTC, TOKEN_MINTS.ETH, TOKEN_MINTS.SOL];
+    const mints = [TOKEN_MINTS.BTC.value, TOKEN_MINTS.ETH.value, TOKEN_MINTS.SOL.value];
     const url = `${this.baseUrl}?ids=${mints.join(",")}`;
 
     logger.debug("JupiterPriceClient", "Fetching prices from Jupiter");
