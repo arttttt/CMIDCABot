@@ -1,7 +1,7 @@
 ---
 name: developer
 description: "MUST BE USED for code implementation. Use PROACTIVELY when /implement or /fix commands are invoked, or when coding tasks need execution from specs or reviews."
-tools: Read, Write, Edit, Glob, Grep, Bash
+tools: Read, Write, Edit, MultiEdit, Glob, Grep, Bash
 model: inherit
 permissionMode: acceptEdits
 ---

@@ -1,7 +1,7 @@
 ---
 name: pm
 description: "MUST BE USED for creating task specifications. Use PROACTIVELY when /spec command is invoked or when translating briefs/ideas into actionable tasks with scope and acceptance criteria."
-tools: Read, Glob, Grep, Write
+tools: Read, Write, Glob, Grep, Bash
 model: inherit
 ---
 
