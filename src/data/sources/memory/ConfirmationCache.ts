@@ -14,6 +14,7 @@ import { randomBytes } from "node:crypto";
 import type { TelegramId } from "../../../domain/models/id/index.js";
 import type { SwapQuote } from "../../../domain/repositories/SwapRepository.js";
 import type { ConfirmationType, ConfirmationSession } from "../../../domain/models/ConfirmationSession.js";
+import type { CleanableStore } from "../../../infrastructure/shared/scheduling/CleanupScheduler.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 /** Default TTL: 60 seconds for confirmation sessions */
@@ -29,7 +30,7 @@ export interface ConfirmationCacheConfig {
   ttlMs?: number;
 }
 
-export class ConfirmationCache {
+export class ConfirmationCache implements CleanableStore {
   private sessions = new Map<string, ConfirmationSession>();
   private readonly ttlMs: number;
 
