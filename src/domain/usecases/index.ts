@@ -12,6 +12,7 @@ export { ExecutePurchaseUseCase } from "./ExecutePurchaseUseCase.js";
 
 // Portfolio
 export { GetPortfolioStatusUseCase } from "./GetPortfolioStatusUseCase.js";
+export { DetermineAssetToBuyUseCase } from "./DetermineAssetToBuyUseCase.js";
 
 // Wallet
 export { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
