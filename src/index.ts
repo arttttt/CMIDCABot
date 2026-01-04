@@ -31,6 +31,7 @@ import {
   InitUserUseCase,
   ExecutePurchaseUseCase,
   GetPortfolioStatusUseCase,
+  DetermineAssetToBuyUseCase,
   WalletInfoHelper,
   GetWalletInfoUseCase,
   CreateWalletUseCase,
@@ -310,6 +311,16 @@ async function main(): Promise<void> {
       )
     : undefined;
 
+  const determineAssetToBuy = priceRepository
+    ? new DetermineAssetToBuyUseCase(
+        userRepository,
+        balanceRepository,
+        blockchainRepository,
+        priceRepository,
+        config.dcaWallet.devPrivateKey,
+      )
+    : undefined;
+
   // Create invite use cases
   const generateInvite = new GenerateInviteUseCase(inviteTokenRepository, authRepository);
   const activateInvite = new ActivateInviteUseCase(inviteTokenRepository, authRepository);
@@ -388,6 +399,7 @@ async function main(): Promise<void> {
         portfolio: {
           getPortfolioStatus,
           executePurchase,
+          determineAssetToBuy,
           portfolioFormatter,
           purchaseFormatter,
           progressFormatter,
@@ -431,6 +443,7 @@ async function main(): Promise<void> {
         portfolio: {
           getPortfolioStatus,
           executePurchase,
+          determineAssetToBuy,
           portfolioFormatter,
           purchaseFormatter,
           progressFormatter,
