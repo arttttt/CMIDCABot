@@ -14,6 +14,7 @@ import type { ConfirmationSessionId } from "../../domain/models/id/index.js";
 import { SlippageCalculator } from "../../domain/helpers/SlippageCalculator.js";
 import { ClientResponse, ClientButton } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
+import { CallbackBuilder } from "../commands/CallbackBuilder.js";
 
 export class ConfirmationFormatter {
   /**
@@ -74,8 +75,8 @@ export class ConfirmationFormatter {
 
     const buttons: ClientButton[][] = [
       [
-        { text: "Confirm", callbackData: `${commandPrefix}:confirm:${sessionId.value}` },
-        { text: "Cancel", callbackData: `${commandPrefix}:cancel:${sessionId.value}` },
+        { text: "Confirm", callbackData: CallbackBuilder.build(commandPrefix, "confirm", sessionId.value) },
+        { text: "Cancel", callbackData: CallbackBuilder.build(commandPrefix, "cancel", sessionId.value) },
       ],
     ];
 
@@ -131,8 +132,8 @@ export class ConfirmationFormatter {
 
     const buttons: ClientButton[][] = [
       [
-        { text: "Confirm", callbackData: `${commandPrefix}:confirm:${sessionId.value}` },
-        { text: "Cancel", callbackData: `${commandPrefix}:cancel:${sessionId.value}` },
+        { text: "Confirm", callbackData: CallbackBuilder.build(commandPrefix, "confirm", sessionId.value) },
+        { text: "Cancel", callbackData: CallbackBuilder.build(commandPrefix, "cancel", sessionId.value) },
       ],
     ];
 

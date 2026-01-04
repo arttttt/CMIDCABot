@@ -221,7 +221,7 @@ export class ProtocolHandler {
       { provider: "telegram", telegramId: tgId },
       userRole,
     );
-    return result.handler(execCtx);
+    return result.handler(execCtx, result.params);
   }
 
 }

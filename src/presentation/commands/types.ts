@@ -42,9 +42,9 @@ export type StreamingCommandHandler = (
 /**
  * Callback handler function signature
  * @param ctx - Command execution context
- * @param param - Optional parameter extracted from callback data (format: action:param)
+ * @param params - Parameters extracted from callback data (format: action:param1:param2:...)
  */
-export type CallbackHandler = (ctx: CommandExecutionContext, param?: string) => Promise<ClientResponse>;
+export type CallbackHandler = (ctx: CommandExecutionContext, params: string[]) => Promise<ClientResponse>;
 
 /**
  * Callback parameter schema - describes expected parameter
@@ -71,8 +71,8 @@ export interface CallbackDefinition {
 export interface CallbackLookupResult {
   handler: CallbackHandler;
   requiredRole?: UserRole;
-  /** Optional parameter extracted from callback data (format: action:param) */
-  param?: string;
+  /** Parameters extracted from callback data (format: action:param1:param2:...) */
+  params: string[];
 }
 
 /**
