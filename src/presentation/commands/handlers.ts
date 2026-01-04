@@ -24,6 +24,7 @@ import {
   GetDcaStatusUseCase,
   GetPortfolioStatusUseCase,
   ExecutePurchaseUseCase,
+  DetermineAssetToBuyUseCase,
   GetPricesUseCase,
   GetQuoteUseCase,
   SimulateSwapUseCase,
@@ -38,7 +39,11 @@ import {
 
 // Services
 import { UserResolver } from "../telegram/UserResolver.js";
-import type { ImportSessionRepository } from "../../domain/repositories/index.js";
+import type {
+  ImportSessionRepository,
+  ConfirmationRepository,
+  SwapRepository,
+} from "../../domain/repositories/index.js";
 
 // Formatters
 import {
@@ -53,8 +58,15 @@ import {
   AdminFormatter,
   InviteFormatter,
   ProgressFormatter,
+  ConfirmationFormatter,
   parseRole,
 } from "../formatters/index.js";
+
+// Logging
+import { logger } from "../../infrastructure/shared/logging/index.js";
+
+// Domain helpers
+import { SlippageCalculator } from "../../domain/helpers/SlippageCalculator.js";
 
 // Protocol types
 import { StreamItem } from "../protocol/types.js";
@@ -62,6 +74,8 @@ import { StreamItem } from "../protocol/types.js";
 // Domain types
 import type { PurchaseResult } from "../../domain/usecases/types.js";
 import type { SwapResult } from "../../domain/models/SwapStep.js";
+import type { AssetSymbol } from "../../types/portfolio.js";
+import { ConfirmationSessionId } from "../../domain/models/id/index.js";
 
 // ============================================================
 // Helper functions
@@ -106,9 +120,14 @@ export interface DcaCommandDeps {
 export interface PortfolioCommandDeps {
   getPortfolioStatus: GetPortfolioStatusUseCase | undefined;
   executePurchase: ExecutePurchaseUseCase | undefined;
+  determineAssetToBuy: DetermineAssetToBuyUseCase | undefined;
   portfolioFormatter: PortfolioFormatter;
   purchaseFormatter: PurchaseFormatter;
   progressFormatter: ProgressFormatter;
+  // Confirmation flow dependencies
+  confirmationRepository: ConfirmationRepository | undefined;
+  confirmationFormatter: ConfirmationFormatter | undefined;
+  swapRepository: SwapRepository | undefined;
 }
 
 export interface PricesCommandDeps {
@@ -124,6 +143,10 @@ export interface SwapCommandDeps {
   simulateFormatter: SimulateFormatter;
   swapFormatter: SwapFormatter;
   progressFormatter: ProgressFormatter;
+  // Confirmation flow dependencies
+  confirmationRepository: ConfirmationRepository | undefined;
+  confirmationFormatter: ConfirmationFormatter | undefined;
+  swapRepository: SwapRepository | undefined;
 }
 
 export interface AdminCommandDeps {
@@ -288,6 +311,133 @@ function createPortfolioStatusCommand(deps: PortfolioCommandDeps): Command {
 }
 
 function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
+  const { confirmationRepository, confirmationFormatter, swapRepository, determineAssetToBuy } = deps;
+
+  // Check if confirmation flow is available (needs determineAssetToBuy to get real asset)
+  const hasConfirmationFlow =
+    confirmationRepository && confirmationFormatter && swapRepository && determineAssetToBuy;
+
+  /**
+   * Parse session ID from callback parameter
+   */
+  function parseSessionId(sessionIdStr: string): ConfirmationSessionId | null {
+    try {
+      return new ConfirmationSessionId(sessionIdStr);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Handle confirm callback - check slippage and execute or show re-confirm
+   * Note: Current callback system doesn't support streaming, so we execute synchronously
+   * and return final result
+   */
+  async function handleConfirm(
+    sessionIdStr: string,
+    ctx: import("./types.js").CommandExecutionContext,
+  ): Promise<import("../protocol/types.js").ClientResponse> {
+    const sessionId = parseSessionId(sessionIdStr);
+    if (!sessionId) {
+      return confirmationFormatter!.formatSessionNotFound();
+    }
+
+    const session = confirmationRepository!.get(sessionId);
+
+    if (!session) {
+      return confirmationFormatter!.formatSessionNotFound();
+    }
+
+    // Check if session belongs to this user
+    if (!session.telegramId.equals(ctx.telegramId)) {
+      logger.warn("PortfolioBuy", "Session user mismatch", {
+        sessionUser: session.telegramId.value,
+        requestUser: ctx.telegramId.value,
+      });
+      return confirmationFormatter!.formatSessionNotFound();
+    }
+
+    // Get fresh quote to check slippage
+    let freshQuote;
+    try {
+      freshQuote = await swapRepository!.getQuoteUsdcToAsset(
+        session.amount,
+        session.asset as AssetSymbol,
+      );
+    } catch (error) {
+      logger.error("PortfolioBuy", "Failed to get fresh quote", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      confirmationRepository!.cancel(sessionId);
+      return deps.purchaseFormatter.format({
+        type: "quote_error",
+        error: "Failed to refresh quote",
+      });
+    }
+
+    // Check slippage
+    if (SlippageCalculator.isExceeded(session.quote, freshQuote)) {
+      // Can we re-confirm?
+      if (confirmationRepository!.updateQuote(sessionId, freshQuote)) {
+        // Show slippage warning with new price
+        return confirmationFormatter!.formatSlippageWarning(
+          session.type,
+          session.quote,
+          freshQuote,
+          sessionId,
+          confirmationRepository!.getTtlSeconds(),
+        );
+      } else {
+        // Max re-confirms exceeded
+        confirmationRepository!.cancel(sessionId);
+        return confirmationFormatter!.formatMaxSlippageExceeded(session.type);
+      }
+    }
+
+    // Slippage OK - consume session and execute
+    confirmationRepository!.consume(sessionId);
+
+    // Execute purchase (synchronously collect result)
+    let result: PurchaseResult = { type: "unavailable" };
+    for await (const step of deps.executePurchase!.execute(ctx.telegramId, session.amount)) {
+      if (step.step === "completed") {
+        result = step.result;
+      }
+    }
+    return deps.purchaseFormatter.format(result);
+  }
+
+  /**
+   * Handle cancel callback
+   */
+  function handleCancel(
+    sessionIdStr: string,
+    ctx: import("./types.js").CommandExecutionContext,
+  ): import("../protocol/types.js").ClientResponse {
+    const sessionId = parseSessionId(sessionIdStr);
+    if (!sessionId) {
+      return confirmationFormatter!.formatSessionNotFound();
+    }
+
+    const session = confirmationRepository!.get(sessionId);
+
+    if (!session) {
+      return confirmationFormatter!.formatSessionNotFound();
+    }
+
+    // Check if session belongs to this user
+    if (!session.telegramId.equals(ctx.telegramId)) {
+      logger.warn("PortfolioBuy", "Cancel session user mismatch", {
+        sessionUser: session.telegramId.value,
+        requestUser: ctx.telegramId.value,
+      });
+      return confirmationFormatter!.formatSessionNotFound();
+    }
+
+    confirmationRepository!.cancel(sessionId);
+    return confirmationFormatter!.formatCancelled(session.type);
+  }
+
   return {
     definition: { name: "buy", description: "Buy asset for USDC amount", usage: "<amount>" },
     // Fallback handler for non-streaming contexts
@@ -303,7 +453,45 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
       if (amount === null) {
         return deps.purchaseFormatter.formatUsage();
       }
-      // Collect result from streaming execute
+
+      // With confirmation flow: show preview
+      if (hasConfirmationFlow) {
+        try {
+          // Determine which asset to buy based on portfolio allocation
+          const assetInfo = await determineAssetToBuy!.execute(ctx.telegramId);
+          if (!assetInfo) {
+            return deps.purchaseFormatter.format({ type: "no_wallet" });
+          }
+          const asset = assetInfo.symbol;
+
+          const quote = await swapRepository!.getQuoteUsdcToAsset(amount, asset);
+          const sessionId = confirmationRepository!.store(
+            ctx.telegramId,
+            "portfolio_buy",
+            amount,
+            asset,
+            quote,
+          );
+          return confirmationFormatter!.formatPreview(
+            "portfolio_buy",
+            amount,
+            asset,
+            quote,
+            sessionId,
+            confirmationRepository!.getTtlSeconds(),
+          );
+        } catch (error) {
+          logger.error("PortfolioBuy", "Failed to get quote for preview", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          return deps.purchaseFormatter.format({
+            type: "quote_error",
+            error: "Failed to get quote",
+          });
+        }
+      }
+
+      // Without confirmation flow: execute directly
       let result: PurchaseResult = { type: "unavailable" };
       for await (const step of deps.executePurchase.execute(ctx.telegramId, amount)) {
         if (step.step === "completed") {
@@ -332,7 +520,56 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
         return;
       }
 
-      // Stream progress from use case
+      // With confirmation flow: show preview (no streaming needed for preview)
+      if (hasConfirmationFlow) {
+        try {
+          // Determine which asset to buy based on portfolio allocation
+          const assetInfo = await determineAssetToBuy!.execute(ctx.telegramId);
+          if (!assetInfo) {
+            yield {
+              response: deps.purchaseFormatter.format({ type: "no_wallet" }),
+              mode: "final",
+            };
+            return;
+          }
+          const asset = assetInfo.symbol;
+
+          const quote = await swapRepository!.getQuoteUsdcToAsset(amount, asset);
+          const sessionId = confirmationRepository!.store(
+            ctx.telegramId,
+            "portfolio_buy",
+            amount,
+            asset,
+            quote,
+          );
+          yield {
+            response: confirmationFormatter!.formatPreview(
+              "portfolio_buy",
+              amount,
+              asset,
+              quote,
+              sessionId,
+              confirmationRepository!.getTtlSeconds(),
+            ),
+            mode: "final",
+          };
+          return;
+        } catch (error) {
+          logger.error("PortfolioBuy", "Failed to get quote for preview", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          yield {
+            response: deps.purchaseFormatter.format({
+              type: "quote_error",
+              error: "Failed to get quote",
+            }),
+            mode: "final",
+          };
+          return;
+        }
+      }
+
+      // Without confirmation flow: stream progress from use case
       for await (const step of deps.executePurchase.execute(ctx.telegramId, amount)) {
         if (step.step === "completed") {
           yield {
@@ -345,6 +582,28 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
         }
       }
     },
+    callbacks: hasConfirmationFlow
+      ? new Map([
+          ["confirm", {
+            handler: async (ctx, params) => {
+              if (params.length === 0) {
+                return confirmationFormatter!.formatSessionNotFound();
+              }
+              return handleConfirm(params[0], ctx);
+            },
+            params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
+          }],
+          ["cancel", {
+            handler: async (ctx, params) => {
+              if (params.length === 0) {
+                return confirmationFormatter!.formatSessionNotFound();
+              }
+              return handleCancel(params[0], ctx);
+            },
+            params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
+          }],
+        ])
+      : undefined,
   };
 }
 
@@ -428,6 +687,130 @@ function createSwapSimulateCommand(deps: SwapCommandDeps): Command {
 }
 
 function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
+  const { confirmationRepository, confirmationFormatter, swapRepository } = deps;
+
+  // Check if confirmation flow is available
+  const hasConfirmationFlow = confirmationRepository && confirmationFormatter && swapRepository;
+
+  /**
+   * Parse session ID from callback parameter
+   */
+  function parseSessionId(sessionIdStr: string): ConfirmationSessionId | null {
+    try {
+      return new ConfirmationSessionId(sessionIdStr);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Handle confirm callback - check slippage and execute or show re-confirm
+   */
+  async function handleConfirm(
+    sessionIdStr: string,
+    ctx: import("./types.js").CommandExecutionContext,
+  ): Promise<import("../protocol/types.js").ClientResponse> {
+    const sessionId = parseSessionId(sessionIdStr);
+    if (!sessionId) {
+      return confirmationFormatter!.formatSessionNotFound();
+    }
+
+    const session = confirmationRepository!.get(sessionId);
+
+    if (!session) {
+      return confirmationFormatter!.formatSessionNotFound();
+    }
+
+    // Check if session belongs to this user
+    if (!session.telegramId.equals(ctx.telegramId)) {
+      logger.warn("SwapExecute", "Session user mismatch", {
+        sessionUser: session.telegramId.value,
+        requestUser: ctx.telegramId.value,
+      });
+      return confirmationFormatter!.formatSessionNotFound();
+    }
+
+    // Get fresh quote to check slippage
+    let freshQuote;
+    try {
+      freshQuote = await swapRepository!.getQuoteUsdcToAsset(
+        session.amount,
+        session.asset as AssetSymbol,
+      );
+    } catch (error) {
+      logger.error("SwapExecute", "Failed to get fresh quote", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      confirmationRepository!.cancel(sessionId);
+      return deps.swapFormatter.format({
+        status: "quote_error",
+        message: "Failed to refresh quote",
+      });
+    }
+
+    // Check slippage
+    if (SlippageCalculator.isExceeded(session.quote, freshQuote)) {
+      // Can we re-confirm?
+      if (confirmationRepository!.updateQuote(sessionId, freshQuote)) {
+        // Show slippage warning with new price
+        return confirmationFormatter!.formatSlippageWarning(
+          session.type,
+          session.quote,
+          freshQuote,
+          sessionId,
+          confirmationRepository!.getTtlSeconds(),
+        );
+      } else {
+        // Max re-confirms exceeded
+        confirmationRepository!.cancel(sessionId);
+        return confirmationFormatter!.formatMaxSlippageExceeded(session.type);
+      }
+    }
+
+    // Slippage OK - consume session and execute
+    confirmationRepository!.consume(sessionId);
+
+    // Execute swap (synchronously collect result)
+    let result: SwapResult = { status: "unavailable" };
+    for await (const step of deps.executeSwap.execute(ctx.telegramId, session.amount, session.asset)) {
+      if (step.step === "completed") {
+        result = step.result;
+      }
+    }
+    return deps.swapFormatter.format(result);
+  }
+
+  /**
+   * Handle cancel callback
+   */
+  function handleCancel(
+    sessionIdStr: string,
+    ctx: import("./types.js").CommandExecutionContext,
+  ): import("../protocol/types.js").ClientResponse {
+    const sessionId = parseSessionId(sessionIdStr);
+    if (!sessionId) {
+      return confirmationFormatter!.formatSessionNotFound();
+    }
+
+    const session = confirmationRepository!.get(sessionId);
+
+    if (!session) {
+      return confirmationFormatter!.formatSessionNotFound();
+    }
+
+    // Check if session belongs to this user
+    if (!session.telegramId.equals(ctx.telegramId)) {
+      logger.warn("SwapExecute", "Cancel session user mismatch", {
+        sessionUser: session.telegramId.value,
+        requestUser: ctx.telegramId.value,
+      });
+      return confirmationFormatter!.formatSessionNotFound();
+    }
+
+    confirmationRepository!.cancel(sessionId);
+    return confirmationFormatter!.formatCancelled(session.type);
+  }
+
   return {
     definition: { name: "execute", description: "Execute real swap", usage: "<amount> [asset]" },
     // Fallback handler for non-streaming contexts
@@ -441,7 +824,41 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
         return deps.swapFormatter.formatUsage();
       }
       const asset = args[1] || "SOL";
-      // Collect result from streaming execute
+
+      // With confirmation flow: show preview
+      if (hasConfirmationFlow) {
+        try {
+          const quote = await swapRepository!.getQuoteUsdcToAsset(
+            amount,
+            asset.toUpperCase() as AssetSymbol,
+          );
+          const sessionId = confirmationRepository!.store(
+            ctx.telegramId,
+            "swap_execute",
+            amount,
+            asset.toUpperCase(),
+            quote,
+          );
+          return confirmationFormatter!.formatPreview(
+            "swap_execute",
+            amount,
+            asset.toUpperCase(),
+            quote,
+            sessionId,
+            confirmationRepository!.getTtlSeconds(),
+          );
+        } catch (error) {
+          logger.error("SwapExecute", "Failed to get quote for preview", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          return deps.swapFormatter.format({
+            status: "quote_error",
+            message: "Failed to get quote",
+          });
+        }
+      }
+
+      // Without confirmation flow: execute directly
       let result: SwapResult = { status: "unavailable" };
       for await (const step of deps.executeSwap.execute(ctx.telegramId, amount, asset)) {
         if (step.step === "completed") {
@@ -464,7 +881,48 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
       }
       const asset = args[1] || "SOL";
 
-      // Stream progress from use case
+      // With confirmation flow: show preview (no streaming needed for preview)
+      if (hasConfirmationFlow) {
+        try {
+          const quote = await swapRepository!.getQuoteUsdcToAsset(
+            amount,
+            asset.toUpperCase() as AssetSymbol,
+          );
+          const sessionId = confirmationRepository!.store(
+            ctx.telegramId,
+            "swap_execute",
+            amount,
+            asset.toUpperCase(),
+            quote,
+          );
+          yield {
+            response: confirmationFormatter!.formatPreview(
+              "swap_execute",
+              amount,
+              asset.toUpperCase(),
+              quote,
+              sessionId,
+              confirmationRepository!.getTtlSeconds(),
+            ),
+            mode: "final",
+          };
+          return;
+        } catch (error) {
+          logger.error("SwapExecute", "Failed to get quote for preview", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          yield {
+            response: deps.swapFormatter.format({
+              status: "quote_error",
+              message: "Failed to get quote",
+            }),
+            mode: "final",
+          };
+          return;
+        }
+      }
+
+      // Without confirmation flow: stream progress from use case
       for await (const step of deps.executeSwap.execute(ctx.telegramId, amount, asset)) {
         if (step.step === "completed") {
           yield {
@@ -477,6 +935,28 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
         }
       }
     },
+    callbacks: hasConfirmationFlow
+      ? new Map([
+          ["confirm", {
+            handler: async (ctx, params) => {
+              if (params.length === 0) {
+                return confirmationFormatter!.formatSessionNotFound();
+              }
+              return handleConfirm(params[0], ctx);
+            },
+            params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
+          }],
+          ["cancel", {
+            handler: async (ctx, params) => {
+              if (params.length === 0) {
+                return confirmationFormatter!.formatSessionNotFound();
+              }
+              return handleCancel(params[0], ctx);
+            },
+            params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
+          }],
+        ])
+      : undefined,
   };
 }
 

@@ -2,9 +2,10 @@
  * Command router - recursive command execution and callback routing
  */
 
-import { Command, CallbackHandler, CallbackLookupResult, CommandExecutionContext } from "./types.js";
+import { Command, CallbackDefinition, CallbackLookupResult, CommandExecutionContext } from "./types.js";
 import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 import { ClientResponse, ClientResponseStream } from "../protocol/types.js";
+import { logger } from "../../infrastructure/shared/logging/index.js";
 
 /**
  * Result of finding a routed command
@@ -98,12 +99,40 @@ export async function* routeCommandStreaming(
   };
 }
 
+// Telegram callback_data limit (https://core.telegram.org/bots/api#inlinekeyboardbutton)
+const CALLBACK_MAX_LENGTH = 64;
+
+/**
+ * Calculate the maximum callback data length for a callback definition
+ *
+ * Format: "path:action" or "path:action:param"
+ * @param path - Full path including action (e.g., "portfolio/buy:confirm")
+ * @param definition - Callback definition with optional params
+ * @returns Maximum possible length of callback data
+ */
+function calculateCallbackLength(path: string, definition: CallbackDefinition): number {
+  let length = path.length;
+
+  if (definition.params && definition.params.length > 0) {
+    // Add colon separator and max length of each param
+    for (const param of definition.params) {
+      length += 1 + param.maxLength; // ":" + param value
+    }
+  }
+
+  return length;
+}
+
 /**
  * Prefix all callbacks in command tree with their path
  * Mutates the command tree in place
  *
+ * Validates that all callback data lengths are within Telegram's 64-byte limit.
+ * Throws an error at startup if any callback would exceed the limit.
+ *
  * @param commands - Map of commands to prefix
  * @param prefix - Current path prefix
+ * @throws Error if any callback data would exceed 64 bytes
  */
 export function prefixCallbacks(commands: Map<string, Command>, prefix = ""): void {
   for (const [name, cmd] of commands) {
@@ -111,9 +140,19 @@ export function prefixCallbacks(commands: Map<string, Command>, prefix = ""): vo
 
     // Prefix callbacks at this level
     if (cmd.callbacks && cmd.callbacks.size > 0) {
-      const prefixed = new Map<string, CallbackHandler>();
-      for (const [key, handler] of cmd.callbacks) {
-        prefixed.set(`${path}:${key}`, handler);
+      const prefixed = new Map<string, CallbackDefinition>();
+      for (const [key, definition] of cmd.callbacks) {
+        const fullPath = `${path}:${key}`;
+        const maxLength = calculateCallbackLength(fullPath, definition);
+
+        if (maxLength > CALLBACK_MAX_LENGTH) {
+          throw new Error(
+            `Callback "${fullPath}" exceeds max length: ${maxLength} > ${CALLBACK_MAX_LENGTH}. ` +
+            `Reduce path length or parameter maxLength.`,
+          );
+        }
+
+        prefixed.set(fullPath, definition);
       }
       cmd.callbacks = prefixed;
     }
@@ -126,27 +165,63 @@ export function prefixCallbacks(commands: Map<string, Command>, prefix = ""): vo
 }
 
 /**
+ * Parse callback data into base key and parameters
+ *
+ * Format: "path/to/command:action" or "path/to/command:action:param1:param2:..."
+ * Examples:
+ * - "portfolio/buy:confirm" → { baseKey: "portfolio/buy:confirm", params: [] }
+ * - "portfolio/buy:confirm:abc123" → { baseKey: "portfolio/buy:confirm", params: ["abc123"] }
+ * - "cmd:action:p1:p2:p3" → { baseKey: "cmd:action", params: ["p1", "p2", "p3"] }
+ */
+export function parseCallbackData(callbackData: string): { baseKey: string; params: string[] } {
+  // Find first colon (separates path from action)
+  const firstColonIndex = callbackData.indexOf(":");
+  if (firstColonIndex === -1) {
+    return { baseKey: callbackData, params: [] };
+  }
+
+  // Check if there's a second colon (parameters start)
+  const secondColonIndex = callbackData.indexOf(":", firstColonIndex + 1);
+  if (secondColonIndex === -1) {
+    // No parameters
+    return { baseKey: callbackData, params: [] };
+  }
+
+  // Has parameters - split everything after baseKey by colon
+  const baseKey = callbackData.substring(0, secondColonIndex);
+  const paramsPart = callbackData.substring(secondColonIndex + 1);
+  const params = paramsPart.split(":");
+
+  return { baseKey, params };
+}
+
+/**
  * Find callback by navigating path in command tree
- * CallbackData format: "path/to/command:action"
+ * CallbackData format: "path/to/command:action" or "path/to/command:action:param1:param2:..."
  *
  * Tracks requiredRole through the command tree:
  * - If a command has requiredRole, that becomes the effective role
  * - Subcommands without requiredRole inherit from parent
  * - The final requiredRole is returned with the handler
  *
+ * Validates parameters against declared maxLength at runtime.
+ *
  * @param commands - Root commands map
  * @param callbackData - Full callback data with path
- * @returns CallbackLookupResult with handler and requiredRole if found
+ * @returns CallbackLookupResult with handler, requiredRole, and params if found
  */
 export function findCallbackByPath(
   commands: Map<string, Command>,
   callbackData: string,
 ): CallbackLookupResult | undefined {
+  // Parse callback data to extract base key and parameters
+  const { baseKey, params } = parseCallbackData(callbackData);
+
   // Parse: "wallet/export:confirm" → path=["wallet","export"], fullKey="wallet/export:confirm"
-  const colonIndex = callbackData.lastIndexOf(":");
+  const colonIndex = baseKey.lastIndexOf(":");
   if (colonIndex === -1) return undefined;
 
-  const pathPart = callbackData.substring(0, colonIndex);
+  const pathPart = baseKey.substring(0, colonIndex);
   const segments = pathPart.split("/");
 
   // Navigate to the target command, tracking requiredRole
@@ -166,12 +241,28 @@ export function findCallbackByPath(
     currentCommands = current.subcommands ?? new Map();
   }
 
-  // Get callback from target command (key includes full path)
-  const handler = current?.callbacks?.get(callbackData);
-  if (!handler) return undefined;
+  // Get callback definition from target command (key includes full path)
+  const definition = current?.callbacks?.get(baseKey);
+  if (!definition) return undefined;
+
+  // Runtime validation: check parameter lengths against declared maxLength
+  if (params.length > 0 && definition.params) {
+    for (let i = 0; i < params.length && i < definition.params.length; i++) {
+      if (params[i].length > definition.params[i].maxLength) {
+        logger.warn("Router", "Callback param exceeds maxLength", {
+          path: baseKey,
+          paramIndex: i,
+          actual: params[i].length,
+          max: definition.params[i].maxLength,
+        });
+        return undefined;
+      }
+    }
+  }
 
   return {
-    handler,
+    handler: definition.handler,
     requiredRole: effectiveRole,
+    params,
   };
 }

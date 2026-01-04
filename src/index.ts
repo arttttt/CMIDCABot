@@ -31,6 +31,7 @@ import {
   InitUserUseCase,
   ExecutePurchaseUseCase,
   GetPortfolioStatusUseCase,
+  DetermineAssetToBuyUseCase,
   WalletInfoHelper,
   GetWalletInfoUseCase,
   CreateWalletUseCase,
@@ -79,6 +80,7 @@ import {
   AdminFormatter,
   InviteFormatter,
   ProgressFormatter,
+  ConfirmationFormatter,
   HelpFormatter,
 } from "./presentation/formatters/index.js";
 import {
@@ -90,8 +92,8 @@ import {
 } from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
 import { HttpServer } from "./infrastructure/shared/http/index.js";
-import { SecretCache, ImportSessionCache, RateLimitCache } from "./data/sources/memory/index.js";
-import { InMemorySecretRepository, InMemoryImportSessionRepository, InMemoryRateLimitRepository } from "./data/repositories/memory/index.js";
+import { SecretCache, ImportSessionCache, RateLimitCache, ConfirmationCache } from "./data/sources/memory/index.js";
+import { InMemorySecretRepository, InMemoryImportSessionRepository, InMemoryRateLimitRepository, InMemoryConfirmationRepository } from "./data/repositories/memory/index.js";
 import { CleanupScheduler } from "./infrastructure/shared/scheduling/index.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
 import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
@@ -162,11 +164,17 @@ async function main(): Promise<void> {
   });
   const rateLimitRepository = new InMemoryRateLimitRepository(rateLimitCache);
 
+  // Initialize ConfirmationCache for purchase/swap confirmation flow
+  const confirmationCache = new ConfirmationCache();
+  const confirmationRepository = new InMemoryConfirmationRepository(confirmationCache);
+  const confirmationFormatter = new ConfirmationFormatter();
+
   // Start cleanup scheduler for expired secrets, import sessions, and invite tokens
   const cleanupScheduler = new CleanupScheduler([
     { store: secretCache, intervalMs: 60_000, name: "secretCache" },
     { store: importSessionCache, intervalMs: 60_000, name: "importSessionCache" },
     { store: inviteTokenRepository, intervalMs: 3_600_000, name: "inviteTokenRepository" },
+    { store: confirmationCache, intervalMs: 60_000, name: "confirmationCache" },
   ]);
   cleanupScheduler.start();
 
@@ -282,14 +290,20 @@ async function main(): Promise<void> {
   );
 
   // Create use cases that require Jupiter repositories
-  const executePurchase = swapRepository && priceRepository
-    ? new ExecutePurchaseUseCase(
+  const determineAssetToBuy = priceRepository
+    ? new DetermineAssetToBuyUseCase(
         userRepository,
         balanceRepository,
-        executeSwapUseCase,
         blockchainRepository,
         priceRepository,
         config.dcaWallet.devPrivateKey,
+      )
+    : undefined;
+
+  const executePurchase = swapRepository && determineAssetToBuy
+    ? new ExecutePurchaseUseCase(
+        executeSwapUseCase,
+        determineAssetToBuy,
       )
     : undefined;
 
@@ -381,9 +395,13 @@ async function main(): Promise<void> {
         portfolio: {
           getPortfolioStatus,
           executePurchase,
+          determineAssetToBuy,
           portfolioFormatter,
           purchaseFormatter,
           progressFormatter,
+          confirmationRepository,
+          confirmationFormatter,
+          swapRepository,
         },
         prices: {
           getPrices,
@@ -397,6 +415,9 @@ async function main(): Promise<void> {
           simulateFormatter,
           swapFormatter,
           progressFormatter,
+          confirmationRepository,
+          confirmationFormatter,
+          swapRepository,
         },
         admin: adminDeps,
         version: versionDeps,
@@ -418,9 +439,13 @@ async function main(): Promise<void> {
         portfolio: {
           getPortfolioStatus,
           executePurchase,
+          determineAssetToBuy,
           portfolioFormatter,
           purchaseFormatter,
           progressFormatter,
+          confirmationRepository,
+          confirmationFormatter,
+          swapRepository,
         },
         admin: adminDeps,
         version: versionDeps,

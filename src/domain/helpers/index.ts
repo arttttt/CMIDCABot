@@ -9,3 +9,5 @@ export { AuthorizationHelper } from "./AuthorizationHelper.js";
 export type { AuthCheckResult } from "./AuthorizationHelper.js";
 
 export { WalletInfoHelper } from "./WalletInfoHelper.js";
+
+export { SlippageCalculator } from "./SlippageCalculator.js";
