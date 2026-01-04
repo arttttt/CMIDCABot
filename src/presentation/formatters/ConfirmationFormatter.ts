@@ -10,6 +10,7 @@
 
 import type { SwapQuote } from "../../domain/repositories/SwapRepository.js";
 import type { ConfirmationType } from "../../domain/repositories/ConfirmationRepository.js";
+import type { ConfirmationSessionId } from "../../domain/models/id/index.js";
 import { SlippageCalculator } from "../../domain/helpers/SlippageCalculator.js";
 import { ClientResponse, ClientButton } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
@@ -49,7 +50,7 @@ export class ConfirmationFormatter {
     _amount: number,
     _asset: string,
     quote: SwapQuote,
-    sessionId: string,
+    sessionId: ConfirmationSessionId,
     ttlSeconds: number,
   ): ClientResponse {
     const pricePerUnit = quote.inputAmount / quote.outputAmount;
@@ -73,8 +74,8 @@ export class ConfirmationFormatter {
 
     const buttons: ClientButton[][] = [
       [
-        { text: "Confirm", callbackData: `${commandPrefix}:confirm:${sessionId}` },
-        { text: "Cancel", callbackData: `${commandPrefix}:cancel:${sessionId}` },
+        { text: "Confirm", callbackData: `${commandPrefix}:confirm:${sessionId.value}` },
+        { text: "Cancel", callbackData: `${commandPrefix}:cancel:${sessionId.value}` },
       ],
     ];
 
@@ -99,7 +100,7 @@ export class ConfirmationFormatter {
     type: ConfirmationType,
     originalQuote: SwapQuote,
     freshQuote: SwapQuote,
-    sessionId: string,
+    sessionId: ConfirmationSessionId,
     ttlSeconds: number,
   ): ClientResponse {
     const slippageBps = SlippageCalculator.calculateBps(originalQuote, freshQuote);
@@ -130,8 +131,8 @@ export class ConfirmationFormatter {
 
     const buttons: ClientButton[][] = [
       [
-        { text: "Confirm", callbackData: `${commandPrefix}:confirm:${sessionId}` },
-        { text: "Cancel", callbackData: `${commandPrefix}:cancel:${sessionId}` },
+        { text: "Confirm", callbackData: `${commandPrefix}:confirm:${sessionId.value}` },
+        { text: "Cancel", callbackData: `${commandPrefix}:cancel:${sessionId.value}` },
       ],
     ];
 

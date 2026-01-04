@@ -4,7 +4,7 @@
  * Wraps ConfirmationCache data source and implements ConfirmationRepository interface.
  */
 
-import type { TelegramId } from "../../../domain/models/id/index.js";
+import type { TelegramId, ConfirmationSessionId } from "../../../domain/models/id/index.js";
 import type { SwapQuote } from "../../../domain/repositories/SwapRepository.js";
 import {
   ConfirmationRepository,
@@ -22,23 +22,23 @@ export class InMemoryConfirmationRepository implements ConfirmationRepository {
     amount: number,
     asset: string,
     quote: SwapQuote,
-  ): string {
+  ): ConfirmationSessionId {
     return this.cache.store(telegramId, type, amount, asset, quote);
   }
 
-  get(sessionId: string): ConfirmationSession | null {
+  get(sessionId: ConfirmationSessionId): ConfirmationSession | null {
     return this.cache.get(sessionId);
   }
 
-  consume(sessionId: string): ConfirmationSession | null {
+  consume(sessionId: ConfirmationSessionId): ConfirmationSession | null {
     return this.cache.consume(sessionId);
   }
 
-  updateQuote(sessionId: string, newQuote: SwapQuote): boolean {
+  updateQuote(sessionId: ConfirmationSessionId, newQuote: SwapQuote): boolean {
     return this.cache.updateQuote(sessionId, newQuote);
   }
 
-  cancel(sessionId: string): boolean {
+  cancel(sessionId: ConfirmationSessionId): boolean {
     return this.cache.cancel(sessionId);
   }
 

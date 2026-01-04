@@ -75,6 +75,7 @@ import { StreamItem } from "../protocol/types.js";
 import type { PurchaseResult } from "../../domain/usecases/types.js";
 import type { SwapResult } from "../../domain/models/SwapStep.js";
 import type { AssetSymbol } from "../../types/portfolio.js";
+import { ConfirmationSessionId } from "../../domain/models/id/index.js";
 
 // ============================================================
 // Helper functions
@@ -317,14 +318,26 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
     confirmationRepository && confirmationFormatter && swapRepository && determineAssetToBuy;
 
   /**
+   * Parse session ID from callback parameter
+   */
+  function parseSessionId(sessionIdStr: string): ConfirmationSessionId | null {
+    try {
+      return new ConfirmationSessionId(sessionIdStr);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Handle confirm callback - check slippage and execute or show re-confirm
    * Note: Current callback system doesn't support streaming, so we execute synchronously
    * and return final result
    */
   async function handleConfirm(
-    sessionId: string,
+    sessionIdStr: string,
     ctx: import("./types.js").CommandExecutionContext,
   ): Promise<import("../protocol/types.js").ClientResponse> {
+    const sessionId = parseSessionId(sessionIdStr);
     if (!sessionId) {
       return confirmationFormatter!.formatSessionNotFound();
     }
@@ -398,9 +411,10 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
    * Handle cancel callback
    */
   function handleCancel(
-    sessionId: string,
+    sessionIdStr: string,
     ctx: import("./types.js").CommandExecutionContext,
   ): import("../protocol/types.js").ClientResponse {
+    const sessionId = parseSessionId(sessionIdStr);
     if (!sessionId) {
       return confirmationFormatter!.formatSessionNotFound();
     }
@@ -663,12 +677,24 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
   const hasConfirmationFlow = confirmationRepository && confirmationFormatter && swapRepository;
 
   /**
+   * Parse session ID from callback parameter
+   */
+  function parseSessionId(sessionIdStr: string): ConfirmationSessionId | null {
+    try {
+      return new ConfirmationSessionId(sessionIdStr);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Handle confirm callback - check slippage and execute or show re-confirm
    */
   async function handleConfirm(
-    sessionId: string,
+    sessionIdStr: string,
     ctx: import("./types.js").CommandExecutionContext,
   ): Promise<import("../protocol/types.js").ClientResponse> {
+    const sessionId = parseSessionId(sessionIdStr);
     if (!sessionId) {
       return confirmationFormatter!.formatSessionNotFound();
     }
@@ -742,9 +768,10 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
    * Handle cancel callback
    */
   function handleCancel(
-    sessionId: string,
+    sessionIdStr: string,
     ctx: import("./types.js").CommandExecutionContext,
   ): import("../protocol/types.js").ClientResponse {
+    const sessionId = parseSessionId(sessionIdStr);
     if (!sessionId) {
       return confirmationFormatter!.formatSessionNotFound();
     }

@@ -11,7 +11,7 @@
  */
 
 import { randomBytes } from "node:crypto";
-import type { TelegramId } from "../../../domain/models/id/index.js";
+import { TelegramId, ConfirmationSessionId } from "../../../domain/models/id/index.js";
 import type { SwapQuote } from "../../../domain/repositories/SwapRepository.js";
 import type { ConfirmationType, ConfirmationSession } from "../../../domain/models/ConfirmationSession.js";
 import type { CleanableStore } from "../../../infrastructure/shared/scheduling/CleanupScheduler.js";
@@ -22,9 +22,6 @@ export const DEFAULT_CONFIRMATION_TTL_MS = 60 * 1000;
 
 /** Maximum re-confirmations allowed on slippage exceed */
 export const MAX_RECONFIRMS = 1;
-
-/** Session ID format: base64url, 22 characters (16 bytes) */
-const SESSION_ID_REGEX = /^[A-Za-z0-9_-]{22}$/;
 
 export interface ConfirmationCacheConfig {
   ttlMs?: number;
@@ -54,9 +51,9 @@ export class ConfirmationCache implements CleanableStore {
     amount: number,
     asset: string,
     quote: SwapQuote,
-  ): string {
+  ): ConfirmationSessionId {
     // Generate cryptographically secure session ID (16 bytes = 128 bits entropy)
-    const sessionId = randomBytes(16).toString("base64url");
+    const sessionId = new ConfirmationSessionId(randomBytes(16).toString("base64url"));
 
     const now = Date.now();
     const session: ConfirmationSession = {
@@ -70,10 +67,10 @@ export class ConfirmationCache implements CleanableStore {
       reconfirmCount: 0,
     };
 
-    this.sessions.set(sessionId, session);
+    this.sessions.set(sessionId.value, session);
 
     logger.debug("ConfirmationCache", "Session created", {
-      sessionId: sessionId.substring(0, 4) + "...",
+      sessionId: sessionId.toLogString(),
       type,
       amount,
       asset,
@@ -89,16 +86,11 @@ export class ConfirmationCache implements CleanableStore {
    * @param sessionId - The session ID
    * @returns Session or null if not found/expired/invalid
    */
-  get(sessionId: string): ConfirmationSession | null {
-    if (!SESSION_ID_REGEX.test(sessionId)) {
-      logger.debug("ConfirmationCache", "Invalid session ID format");
-      return null;
-    }
-
-    const session = this.sessions.get(sessionId);
+  get(sessionId: ConfirmationSessionId): ConfirmationSession | null {
+    const session = this.sessions.get(sessionId.value);
     if (!session) {
       logger.debug("ConfirmationCache", "Session not found", {
-        sessionId: sessionId.substring(0, 4) + "...",
+        sessionId: sessionId.toLogString(),
       });
       return null;
     }
@@ -106,9 +98,9 @@ export class ConfirmationCache implements CleanableStore {
     // Check if expired
     if (Date.now() > session.expiresAt) {
       logger.debug("ConfirmationCache", "Session expired", {
-        sessionId: sessionId.substring(0, 4) + "...",
+        sessionId: sessionId.toLogString(),
       });
-      this.sessions.delete(sessionId);
+      this.sessions.delete(sessionId.value);
       return null;
     }
 
@@ -121,16 +113,16 @@ export class ConfirmationCache implements CleanableStore {
    * @param sessionId - The session ID
    * @returns Session or null if not found/expired/invalid
    */
-  consume(sessionId: string): ConfirmationSession | null {
+  consume(sessionId: ConfirmationSessionId): ConfirmationSession | null {
     const session = this.get(sessionId);
     if (!session) {
       return null;
     }
 
-    this.sessions.delete(sessionId);
+    this.sessions.delete(sessionId.value);
 
     logger.info("ConfirmationCache", "Session consumed", {
-      sessionId: sessionId.substring(0, 4) + "...",
+      sessionId: sessionId.toLogString(),
       type: session.type,
     });
 
@@ -145,7 +137,7 @@ export class ConfirmationCache implements CleanableStore {
    * @param newQuote - Fresh quote from Jupiter
    * @returns true if updated, false if session not found or max reconfirms exceeded
    */
-  updateQuote(sessionId: string, newQuote: SwapQuote): boolean {
+  updateQuote(sessionId: ConfirmationSessionId, newQuote: SwapQuote): boolean {
     const session = this.get(sessionId);
     if (!session) {
       return false;
@@ -153,7 +145,7 @@ export class ConfirmationCache implements CleanableStore {
 
     if (session.reconfirmCount >= MAX_RECONFIRMS) {
       logger.debug("ConfirmationCache", "Max reconfirms exceeded", {
-        sessionId: sessionId.substring(0, 4) + "...",
+        sessionId: sessionId.toLogString(),
         reconfirmCount: session.reconfirmCount,
       });
       return false;
@@ -166,7 +158,7 @@ export class ConfirmationCache implements CleanableStore {
     session.expiresAt = now + this.ttlMs;
 
     logger.debug("ConfirmationCache", "Session updated with new quote", {
-      sessionId: sessionId.substring(0, 4) + "...",
+      sessionId: sessionId.toLogString(),
       reconfirmCount: session.reconfirmCount,
     });
 
@@ -179,15 +171,11 @@ export class ConfirmationCache implements CleanableStore {
    * @param sessionId - The session ID
    * @returns true if deleted, false if not found
    */
-  cancel(sessionId: string): boolean {
-    if (!SESSION_ID_REGEX.test(sessionId)) {
-      return false;
-    }
-
-    const deleted = this.sessions.delete(sessionId);
+  cancel(sessionId: ConfirmationSessionId): boolean {
+    const deleted = this.sessions.delete(sessionId.value);
     if (deleted) {
       logger.info("ConfirmationCache", "Session cancelled", {
-        sessionId: sessionId.substring(0, 4) + "...",
+        sessionId: sessionId.toLogString(),
       });
     }
     return deleted;

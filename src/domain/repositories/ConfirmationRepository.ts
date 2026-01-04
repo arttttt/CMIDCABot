@@ -10,9 +10,12 @@
  * - Re-confirmation limit (max 1 re-confirm on slippage exceed)
  */
 
-import type { TelegramId } from "../models/id/index.js";
+import type { TelegramId, ConfirmationSessionId } from "../models/id/index.js";
 import type { SwapQuote } from "./SwapRepository.js";
 import type { ConfirmationType, ConfirmationSession } from "../models/ConfirmationSession.js";
+
+// Re-export ConfirmationSessionId for convenience
+export type { ConfirmationSessionId } from "../models/id/index.js";
 
 // Re-export types for consumers of this module
 export type { ConfirmationType, ConfirmationSession } from "../models/ConfirmationSession.js";
@@ -34,7 +37,7 @@ export interface ConfirmationRepository {
     amount: number,
     asset: string,
     quote: SwapQuote,
-  ): string;
+  ): ConfirmationSessionId;
 
   /**
    * Get session without consuming it (for preview/validation)
@@ -42,7 +45,7 @@ export interface ConfirmationRepository {
    * @param sessionId - The session ID
    * @returns Session or null if not found/expired/invalid
    */
-  get(sessionId: string): ConfirmationSession | null;
+  get(sessionId: ConfirmationSessionId): ConfirmationSession | null;
 
   /**
    * Consume a session (get and delete atomically)
@@ -50,7 +53,7 @@ export interface ConfirmationRepository {
    * @param sessionId - The session ID
    * @returns Session or null if not found/expired/invalid
    */
-  consume(sessionId: string): ConfirmationSession | null;
+  consume(sessionId: ConfirmationSessionId): ConfirmationSession | null;
 
   /**
    * Update session with new quote (for re-confirmation flow)
@@ -60,7 +63,7 @@ export interface ConfirmationRepository {
    * @param newQuote - Fresh quote from Jupiter
    * @returns true if updated, false if session not found or max reconfirms exceeded
    */
-  updateQuote(sessionId: string, newQuote: SwapQuote): boolean;
+  updateQuote(sessionId: ConfirmationSessionId, newQuote: SwapQuote): boolean;
 
   /**
    * Cancel (delete) a session
@@ -68,7 +71,7 @@ export interface ConfirmationRepository {
    * @param sessionId - The session ID
    * @returns true if deleted, false if not found
    */
-  cancel(sessionId: string): boolean;
+  cancel(sessionId: ConfirmationSessionId): boolean;
 
   /**
    * Get TTL in seconds (for user display)
