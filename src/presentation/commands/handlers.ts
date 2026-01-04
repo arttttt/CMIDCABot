@@ -584,8 +584,14 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
     },
     callbacks: hasConfirmationFlow
       ? new Map([
-          ["confirm", async (ctx, param) => handleConfirm(param ?? "", ctx)],
-          ["cancel", async (ctx, param) => handleCancel(param ?? "", ctx)],
+          ["confirm", {
+            handler: async (ctx, param) => handleConfirm(param ?? "", ctx),
+            params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
+          }],
+          ["cancel", {
+            handler: async (ctx, param) => handleCancel(param ?? "", ctx),
+            params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
+          }],
         ])
       : undefined,
   };
@@ -921,8 +927,14 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
     },
     callbacks: hasConfirmationFlow
       ? new Map([
-          ["confirm", async (ctx, param) => handleConfirm(param ?? "", ctx)],
-          ["cancel", async (ctx, param) => handleCancel(param ?? "", ctx)],
+          ["confirm", {
+            handler: async (ctx, param) => handleConfirm(param ?? "", ctx),
+            params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
+          }],
+          ["cancel", {
+            handler: async (ctx, param) => handleCancel(param ?? "", ctx),
+            params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
+          }],
         ])
       : undefined,
   };

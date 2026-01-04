@@ -2,7 +2,7 @@
  * Command router - recursive command execution and callback routing
  */
 
-import { Command, CallbackHandler, CallbackLookupResult, CommandExecutionContext } from "./types.js";
+import { Command, CallbackDefinition, CallbackLookupResult, CommandExecutionContext } from "./types.js";
 import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 import { ClientResponse, ClientResponseStream } from "../protocol/types.js";
 
@@ -98,12 +98,40 @@ export async function* routeCommandStreaming(
   };
 }
 
+// Telegram callback data limit
+const CALLBACK_MAX_LENGTH = 64;
+
+/**
+ * Calculate the maximum callback data length for a callback definition
+ *
+ * Format: "path:action" or "path:action:param"
+ * @param path - Full path including action (e.g., "portfolio/buy:confirm")
+ * @param definition - Callback definition with optional params
+ * @returns Maximum possible length of callback data
+ */
+function calculateCallbackLength(path: string, definition: CallbackDefinition): number {
+  let length = path.length;
+
+  if (definition.params && definition.params.length > 0) {
+    // Add colon separator and max length of each param
+    for (const param of definition.params) {
+      length += 1 + param.maxLength; // ":" + param value
+    }
+  }
+
+  return length;
+}
+
 /**
  * Prefix all callbacks in command tree with their path
  * Mutates the command tree in place
  *
+ * Validates that all callback data lengths are within Telegram's 64-byte limit.
+ * Throws an error at startup if any callback would exceed the limit.
+ *
  * @param commands - Map of commands to prefix
  * @param prefix - Current path prefix
+ * @throws Error if any callback data would exceed 64 bytes
  */
 export function prefixCallbacks(commands: Map<string, Command>, prefix = ""): void {
   for (const [name, cmd] of commands) {
@@ -111,9 +139,19 @@ export function prefixCallbacks(commands: Map<string, Command>, prefix = ""): vo
 
     // Prefix callbacks at this level
     if (cmd.callbacks && cmd.callbacks.size > 0) {
-      const prefixed = new Map<string, CallbackHandler>();
-      for (const [key, handler] of cmd.callbacks) {
-        prefixed.set(`${path}:${key}`, handler);
+      const prefixed = new Map<string, CallbackDefinition>();
+      for (const [key, definition] of cmd.callbacks) {
+        const fullPath = `${path}:${key}`;
+        const maxLength = calculateCallbackLength(fullPath, definition);
+
+        if (maxLength > CALLBACK_MAX_LENGTH) {
+          throw new Error(
+            `Callback "${fullPath}" exceeds max length: ${maxLength} > ${CALLBACK_MAX_LENGTH}. ` +
+            `Reduce path length or parameter maxLength.`,
+          );
+        }
+
+        prefixed.set(fullPath, definition);
       }
       cmd.callbacks = prefixed;
     }
@@ -198,12 +236,12 @@ export function findCallbackByPath(
     currentCommands = current.subcommands ?? new Map();
   }
 
-  // Get callback from target command (key includes full path)
-  const handler = current?.callbacks?.get(baseKey);
-  if (!handler) return undefined;
+  // Get callback definition from target command (key includes full path)
+  const definition = current?.callbacks?.get(baseKey);
+  if (!definition) return undefined;
 
   return {
-    handler,
+    handler: definition.handler,
     requiredRole: effectiveRole,
     param,
   };

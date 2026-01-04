@@ -6,6 +6,7 @@
  */
 export class ConfirmationSessionId {
   private static readonly FORMAT_REGEX = /^[A-Za-z0-9_-]{22}$/;
+  public static readonly MAX_LENGTH = 22;
 
   constructor(readonly value: string) {
     if (!ConfirmationSessionId.FORMAT_REGEX.test(value)) {

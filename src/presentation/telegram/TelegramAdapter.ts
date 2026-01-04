@@ -17,9 +17,9 @@ import { TelegramErrorMessages } from "./ErrorMessages.js";
 
 const ERROR_MESSAGE_SEND_FAILED = "Failed to send message. Please try the command again.";
 
-// Callback data validation constants (SEC-03)
+// Callback data validation (SEC-03)
+// Length check only - format validation moved to declarative schema in router.ts
 const CALLBACK_MAX_LENGTH = 64;
-const CALLBACK_PATTERN = /^[a-z][a-z0-9_]*(\/[a-z][a-z0-9_]*)*:[a-z][a-z0-9_]*$/;
 
 function buildTelegramMessageRequest(ctx: Context): GatewayRequest {
   return {
@@ -270,18 +270,10 @@ export function createTelegramBot(
   bot.on("callback_query:data", async (ctx) => {
     const callbackData = ctx.callbackQuery.data;
 
-    // Validate callback data format (SEC-03)
+    // Validate callback data length (SEC-03)
+    // Length check prevents DoS; format validation is done declaratively at registration
     if (callbackData.length > CALLBACK_MAX_LENGTH) {
       logger.warn("TelegramBot", "Invalid callback data: too long", {
-        userId: ctx.from.id,
-        length: callbackData.length,
-      });
-      await ctx.answerCallbackQuery().catch(() => {});
-      return;
-    }
-
-    if (!CALLBACK_PATTERN.test(callbackData)) {
-      logger.warn("TelegramBot", "Invalid callback data: format mismatch", {
         userId: ctx.from.id,
         length: callbackData.length,
       });

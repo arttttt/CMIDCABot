@@ -47,6 +47,25 @@ export type StreamingCommandHandler = (
 export type CallbackHandler = (ctx: CommandExecutionContext, param?: string) => Promise<ClientResponse>;
 
 /**
+ * Callback parameter schema - describes expected parameter
+ */
+export interface CallbackParamSchema {
+  /** Parameter name (for documentation/debugging) */
+  name: string;
+  /** Maximum length of the parameter value */
+  maxLength: number;
+}
+
+/**
+ * Callback definition - handler with optional parameter schema
+ */
+export interface CallbackDefinition {
+  handler: CallbackHandler;
+  /** Parameter schemas for validation. If undefined, callback takes no parameters. */
+  params?: CallbackParamSchema[];
+}
+
+/**
  * Result of callback lookup - includes handler and required role
  */
 export interface CallbackLookupResult {
@@ -83,7 +102,7 @@ export interface Command {
    */
   streamingHandler?: StreamingCommandHandler;
   subcommands?: Map<string, Command>;
-  callbacks?: Map<string, CallbackHandler>;
+  callbacks?: Map<string, CallbackDefinition>;
 }
 
 /**
