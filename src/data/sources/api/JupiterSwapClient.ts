@@ -240,7 +240,7 @@ export class JupiterSwapClient {
           // - When output is SOL mint: Jupiter unwraps WSOL → native SOL automatically
           // This means we receive/spend native SOL, not WSOL token accounts
           // Use dynamic slippage for better execution
-          dynamicSlippage: { maxBps: 300 }, // Max 3% slippage
+          dynamicSlippage: { maxBps: 50 }, // Max 0.5% slippage
           // Priority fee settings
           prioritizationFeeLamports: {
             priorityLevelWithMaxLamports: {
