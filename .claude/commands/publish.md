@@ -8,6 +8,15 @@ allowed-tools: Read, Edit, Glob
 
 Publish an artifact (TASK or BRIEF) to tracker by creating a tracker item and adding it to the project board.
 
+## ⚠️ Critical: Follow Skill Contract
+
+Before creating/updating tracker items, read the **Content Contract** in skill `tracker-github`.
+
+Key requirements:
+- Item body = summary only (NOT full content)
+- Full content = added separately (as comment in GitHub)
+- All text must be in English
+
 ## Algorithm
 
 1. **Check arguments:**
@@ -35,21 +44,15 @@ Publish an artifact (TASK or BRIEF) to tracker by creating a tracker item and ad
    - If found: report "Already published as item #<number>" and exit
 
 5. **Extract metadata from file:**
-   - Parse title from first `#` heading (this becomes item title)
-   - Read full content of the artifact file
-   - Determine artifact type (TASK or BRIEF) for status selection
-   - **Extract summary:**
-     1. Skip tracker item link if present (see skill `tracker-github` for link format)
-     2. Skip first heading (`# Title`)
-     3. Take first paragraph (text until empty line) as summary
-     4. Translate to English if needed
-     5. Limit to ~200 chars, add "..." if truncated
+   - Parse title from first `#` heading
+   - Extract summary (first paragraph after heading)
+   - Read full artifact content
+   - Determine artifact type (TASK or BRIEF)
+   - **Apply skill Content Contract** for language and format requirements
 
 6. **Create new tracker item** (skip if publishing TASK to existing item):
-   - See skill `tracker-github` for item format and creation details
-   - **Language:** All content MUST be in English
-   - **Title:** From first `#` heading (no `[Task]` or `[Brief]` prefixes)
-   - **Status:**
+   - **Follow skill Content Contract** for title, body, and language
+   - Set status:
      - For TASK file: "todo"
      - For BRIEF file: "backlog"
 
@@ -57,10 +60,9 @@ Publish an artifact (TASK or BRIEF) to tracker by creating a tracker item and ad
    - Do NOT modify item body
    - Update status from "backlog" to "todo" (see skill `tracker-github` for status mapping)
 
-8. **Add artifact content as comment:**
-   - See skill `tracker-github` for comment format
-   - Use `## Brief` for BRIEF artifacts
-   - Use `## Specification` for TASK artifacts
+8. **Add full artifact content:**
+   - **Follow skill Content Contract** for method and format
+   - This is where full content goes (NOT in item body)
 
 9. **Add to project board:**
    - See skill `tracker-github` for project operations

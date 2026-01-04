@@ -64,7 +64,6 @@ Use `add_issue_comment` to attach artifact content:
 _Source: `<filepath>`_
 ```
 
-## Language
+## Language & Format
 
-All Issue content MUST be in English.
-Translate Russian content when creating Issues.
+See **Content Contract** in main SKILL.md for all formatting requirements.
