@@ -8,14 +8,14 @@ Currently `/portfolio buy` and `/swap execute` commands execute transactions imm
 
 ## Acceptance Criteria
 
-- [ ] `/portfolio buy` shows preview before execution (amount, asset, rate) with Confirm/Cancel buttons
-- [ ] `/swap execute` shows preview before execution (amount, asset, rate) with Confirm/Cancel buttons
-- [ ] Confirmation times out after 1 minute with message "Confirmation expired"
-- [ ] On Confirm: fresh quote is requested from Jupiter API
-- [ ] If price difference <= `quote.slippageBps` (0.5%): transaction executes
-- [ ] If price difference > slippage: new price is shown, user is asked to confirm again (re-quote flow)
-- [ ] On second slippage exceed: transaction is cancelled with explanation
-- [ ] Cancel button immediately cancels the operation
+- [x] `/portfolio buy` shows preview before execution (amount, asset, rate) with Confirm/Cancel buttons
+- [x] `/swap execute` shows preview before execution (amount, asset, rate) with Confirm/Cancel buttons
+- [x] Confirmation times out after 1 minute with message "Confirmation expired"
+- [x] On Confirm: fresh quote is requested from Jupiter API
+- [x] If price difference <= `quote.slippageBps` (0.5%): transaction executes
+- [x] If price difference > slippage: new price is shown, user is asked to confirm again (re-quote flow)
+- [x] On second slippage exceed: transaction is cancelled with explanation
+- [x] Cancel button immediately cancels the operation
 
 ## Scope
 
