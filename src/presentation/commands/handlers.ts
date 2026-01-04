@@ -24,6 +24,7 @@ import {
   GetDcaStatusUseCase,
   GetPortfolioStatusUseCase,
   ExecutePurchaseUseCase,
+  DetermineAssetToBuyUseCase,
   GetPricesUseCase,
   GetQuoteUseCase,
   SimulateSwapUseCase,
@@ -115,6 +116,7 @@ export interface DcaCommandDeps {
 export interface PortfolioCommandDeps {
   getPortfolioStatus: GetPortfolioStatusUseCase | undefined;
   executePurchase: ExecutePurchaseUseCase | undefined;
+  determineAssetToBuy: DetermineAssetToBuyUseCase | undefined;
   portfolioFormatter: PortfolioFormatter;
   purchaseFormatter: PurchaseFormatter;
   progressFormatter: ProgressFormatter;
@@ -305,10 +307,11 @@ function createPortfolioStatusCommand(deps: PortfolioCommandDeps): Command {
 }
 
 function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
-  const { confirmationRepository, confirmationFormatter, swapRepository } = deps;
+  const { confirmationRepository, confirmationFormatter, swapRepository, determineAssetToBuy } = deps;
 
-  // Check if confirmation flow is available
-  const hasConfirmationFlow = confirmationRepository && confirmationFormatter && swapRepository;
+  // Check if confirmation flow is available (needs determineAssetToBuy to get real asset)
+  const hasConfirmationFlow =
+    confirmationRepository && confirmationFormatter && swapRepository && determineAssetToBuy;
 
   /**
    * Handle confirm callback - check slippage and execute or show re-confirm
@@ -437,18 +440,25 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
       // With confirmation flow: show preview
       if (hasConfirmationFlow) {
         try {
-          const quote = await swapRepository!.getQuoteUsdcToAsset(amount, "SOL");
+          // Determine which asset to buy based on portfolio allocation
+          const assetInfo = await determineAssetToBuy!.execute(ctx.telegramId);
+          if (!assetInfo) {
+            return deps.purchaseFormatter.format({ type: "no_wallet" });
+          }
+          const asset = assetInfo.symbol;
+
+          const quote = await swapRepository!.getQuoteUsdcToAsset(amount, asset);
           const sessionId = confirmationRepository!.store(
             ctx.telegramId,
             "portfolio_buy",
             amount,
-            "AUTO", // Asset is auto-selected by ExecutePurchaseUseCase
+            asset,
             quote,
           );
           return confirmationFormatter!.formatPreview(
             "portfolio_buy",
             amount,
-            "AUTO",
+            asset,
             quote,
             sessionId,
             confirmationRepository!.getTtlSeconds(),
@@ -496,19 +506,30 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
       // With confirmation flow: show preview (no streaming needed for preview)
       if (hasConfirmationFlow) {
         try {
-          const quote = await swapRepository!.getQuoteUsdcToAsset(amount, "SOL");
+          // Determine which asset to buy based on portfolio allocation
+          const assetInfo = await determineAssetToBuy!.execute(ctx.telegramId);
+          if (!assetInfo) {
+            yield {
+              response: deps.purchaseFormatter.format({ type: "no_wallet" }),
+              mode: "final",
+            };
+            return;
+          }
+          const asset = assetInfo.symbol;
+
+          const quote = await swapRepository!.getQuoteUsdcToAsset(amount, asset);
           const sessionId = confirmationRepository!.store(
             ctx.telegramId,
             "portfolio_buy",
             amount,
-            "AUTO",
+            asset,
             quote,
           );
           yield {
             response: confirmationFormatter!.formatPreview(
               "portfolio_buy",
               amount,
-              "AUTO",
+              asset,
               quote,
               sessionId,
               confirmationRepository!.getTtlSeconds(),
