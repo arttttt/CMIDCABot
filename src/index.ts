@@ -174,7 +174,7 @@ async function main(): Promise<void> {
     { store: secretCache, intervalMs: 60_000, name: "secretCache" },
     { store: importSessionCache, intervalMs: 60_000, name: "importSessionCache" },
     { store: inviteTokenRepository, intervalMs: 3_600_000, name: "inviteTokenRepository" },
-    { store: confirmationCache, intervalMs: 30_000, name: "confirmationCache" },
+    { store: confirmationCache, intervalMs: 60_000, name: "confirmationCache" },
   ]);
   cleanupScheduler.start();
 
@@ -290,29 +290,25 @@ async function main(): Promise<void> {
   );
 
   // Create use cases that require Jupiter repositories
-  const executePurchase = swapRepository && priceRepository
-    ? new ExecutePurchaseUseCase(
+  const determineAssetToBuy = priceRepository
+    ? new DetermineAssetToBuyUseCase(
         userRepository,
         balanceRepository,
-        executeSwapUseCase,
         blockchainRepository,
         priceRepository,
         config.dcaWallet.devPrivateKey,
+      )
+    : undefined;
+
+  const executePurchase = swapRepository && determineAssetToBuy
+    ? new ExecutePurchaseUseCase(
+        executeSwapUseCase,
+        determineAssetToBuy,
       )
     : undefined;
 
   const getPortfolioStatus = priceRepository
     ? new GetPortfolioStatusUseCase(
-        userRepository,
-        balanceRepository,
-        blockchainRepository,
-        priceRepository,
-        config.dcaWallet.devPrivateKey,
-      )
-    : undefined;
-
-  const determineAssetToBuy = priceRepository
-    ? new DetermineAssetToBuyUseCase(
         userRepository,
         balanceRepository,
         blockchainRepository,
