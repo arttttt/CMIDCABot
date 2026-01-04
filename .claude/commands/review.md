@@ -20,14 +20,12 @@ Conduct code review and create report.
 2. **Find related source file (priority order):**
    - First: `docs/tasks/TASK_*<name>*.md` — full specification
    - Fallback: `docs/briefs/BRIEF_*<name>*.md` — technical brief
-   - **Extract Issue number** from found file (`<!-- GitHub Issue: #123 -->`)
+   - **Extract tracker item ID** from found file (see skill `tracker-github` for link format)
    - Note source type (TASK/BRIEF) for review context
 
-3. **Update GitHub Issue** (main context, before delegating to subagent):
-   - If Issue number found, use MCP tools:
-     - Update labels: remove `stage:impl`, add `stage:review`
-     - Move to "Review" column in project
-   - If MCP unavailable: show warning, continue
+3. **Update tracker status** (main context, before delegating to subagent):
+   - If tracker item found, update status to "review" (see skill `tracker-github` for status mapping)
+   - If tracker unavailable: show warning, continue
    - **Note:** This is done by main context, NOT by subagent
 
 4. **Read `ARCHITECTURE.md`** — mandatory before review
@@ -41,22 +39,22 @@ Conduct code review and create report.
    - **If no source found:** review against ARCHITECTURE.md only, warn about missing requirements
 
 6. **Create file:** `docs/reviews/REVIEW_<name>.md`
-   - Add at the beginning: `<!-- GitHub Issue: #<number> -->` (if found)
+   - Add tracker item link at the beginning (see skill `tracker-github` for link format)
 
 7. **Report result:**
    - Summary of findings
    - Source type used: TASK / BRIEF / none
-   - "Issue #<number> moved to Review" (if Issue found)
+   - "Item #<number> moved to review" (if tracker item found)
 
 ## Tracker Integration
 
-Use skill `tracker-github` for all GitHub operations:
-- Updating labels (stage:review)
-- Moving to "Review" column
+Use skill `tracker-github` for all tracker operations:
+- Updating status to "review"
+- Link format for artifact files
 
-See skill references for detailed instructions.
+See skill references for status mapping and detailed instructions.
 
-**Note:** GitHub operations (labels, project column) are performed by main context via MCP before delegating to subagent.
+**Note:** Tracker operations are performed by main context before delegating to subagent.
 
 ## Name sanitization
 
