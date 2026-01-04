@@ -126,8 +126,37 @@ export function prefixCallbacks(commands: Map<string, Command>, prefix = ""): vo
 }
 
 /**
+ * Parse callback data into base key and optional parameter
+ *
+ * Format: "path/to/command:action" or "path/to/command:action:param"
+ * Examples:
+ * - "portfolio/buy:confirm" → { baseKey: "portfolio/buy:confirm", param: undefined }
+ * - "portfolio/buy:confirm:abc123" → { baseKey: "portfolio/buy:confirm", param: "abc123" }
+ */
+export function parseCallbackData(callbackData: string): { baseKey: string; param?: string } {
+  // Find first colon (separates path from action)
+  const firstColonIndex = callbackData.indexOf(":");
+  if (firstColonIndex === -1) {
+    return { baseKey: callbackData };
+  }
+
+  // Check if there's a second colon (parameter)
+  const secondColonIndex = callbackData.indexOf(":", firstColonIndex + 1);
+  if (secondColonIndex === -1) {
+    // No parameter
+    return { baseKey: callbackData };
+  }
+
+  // Has parameter
+  const baseKey = callbackData.substring(0, secondColonIndex);
+  const param = callbackData.substring(secondColonIndex + 1);
+
+  return { baseKey, param };
+}
+
+/**
  * Find callback by navigating path in command tree
- * CallbackData format: "path/to/command:action"
+ * CallbackData format: "path/to/command:action" or "path/to/command:action:param"
  *
  * Tracks requiredRole through the command tree:
  * - If a command has requiredRole, that becomes the effective role
@@ -136,17 +165,20 @@ export function prefixCallbacks(commands: Map<string, Command>, prefix = ""): vo
  *
  * @param commands - Root commands map
  * @param callbackData - Full callback data with path
- * @returns CallbackLookupResult with handler and requiredRole if found
+ * @returns CallbackLookupResult with handler, requiredRole, and optional param if found
  */
 export function findCallbackByPath(
   commands: Map<string, Command>,
   callbackData: string,
 ): CallbackLookupResult | undefined {
+  // Parse callback data to extract base key and optional parameter
+  const { baseKey, param } = parseCallbackData(callbackData);
+
   // Parse: "wallet/export:confirm" → path=["wallet","export"], fullKey="wallet/export:confirm"
-  const colonIndex = callbackData.lastIndexOf(":");
+  const colonIndex = baseKey.lastIndexOf(":");
   if (colonIndex === -1) return undefined;
 
-  const pathPart = callbackData.substring(0, colonIndex);
+  const pathPart = baseKey.substring(0, colonIndex);
   const segments = pathPart.split("/");
 
   // Navigate to the target command, tracking requiredRole
@@ -167,11 +199,12 @@ export function findCallbackByPath(
   }
 
   // Get callback from target command (key includes full path)
-  const handler = current?.callbacks?.get(callbackData);
+  const handler = current?.callbacks?.get(baseKey);
   if (!handler) return undefined;
 
   return {
     handler,
     requiredRole: effectiveRole,
+    param,
   };
 }
