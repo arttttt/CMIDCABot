@@ -10,17 +10,9 @@
 
 import type { SwapQuote } from "../../domain/repositories/SwapRepository.js";
 import type { ConfirmationType } from "../../domain/repositories/ConfirmationRepository.js";
+import { SlippageCalculator } from "../../domain/helpers/SlippageCalculator.js";
 import { ClientResponse, ClientButton } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
-
-/**
- * Calculate price difference in basis points
- */
-function calculateSlippageBps(originalQuote: SwapQuote, freshQuote: SwapQuote): number {
-  // Compare output amounts (how much user receives)
-  const priceDiff = (freshQuote.outputAmount - originalQuote.outputAmount) / originalQuote.outputAmount;
-  return Math.abs(priceDiff * 10000); // Convert to basis points
-}
 
 /**
  * Format amount with appropriate precision
@@ -110,7 +102,7 @@ export class ConfirmationFormatter {
     sessionId: string,
     ttlSeconds: number,
   ): ClientResponse {
-    const slippageBps = calculateSlippageBps(originalQuote, freshQuote);
+    const slippageBps = SlippageCalculator.calculateBps(originalQuote, freshQuote);
     const slippagePct = (slippageBps / 100).toFixed(2);
 
     const originalPrice = originalQuote.inputAmount / originalQuote.outputAmount;
@@ -181,8 +173,6 @@ export class ConfirmationFormatter {
    * @returns true if fresh quote differs from original by more than threshold
    */
   static isSlippageExceeded(originalQuote: SwapQuote, freshQuote: SwapQuote): boolean {
-    const slippageBps = calculateSlippageBps(originalQuote, freshQuote);
-    // Use the slippage tolerance from the original quote as threshold
-    return slippageBps > originalQuote.slippageBps;
+    return SlippageCalculator.isExceeded(originalQuote, freshQuote);
   }
 }
