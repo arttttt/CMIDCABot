@@ -25,7 +25,7 @@ Implement functionality from specification or brief.
    - If neither found: ask user to create spec or brief first
 
 3. **Read source file**
-   - **Extract Issue number** (`<!-- GitHub Issue: #123 -->`)
+   - **Extract tracker item ID** (see skill `tracker-github` for link format)
    - Note source type: TASK or BRIEF
 
 4. **Create plan:**
@@ -37,10 +37,8 @@ Implement functionality from specification or brief.
 
 5. **🚨 STOP — output plan and wait for confirmation** ("да", "ok", "yes")
 
-6. **Update GitHub Issue** (main context, before delegating to subagent):
-   - If Issue number found, use MCP tools:
-     - Update labels: remove label, add `stage:impl`
-     - Move to "In Progress" column in project
+6. **Update tracker status** (main context, before delegating to subagent):
+   - If tracker item found, update status to "implementation" (see skill `tracker-github` for status mapping)
    - This is done by main context, NOT by subagent
 
 7. **Delegate to subagent** for implementation:
@@ -70,7 +68,7 @@ Implement functionality from specification or brief.
 
     **Pushed to remote.**
 
-    Next: create PR with `Closes #<number>` in description.
+    Next: create PR with auto-close syntax (see skill `tracker-github`).
     ```
 
 ## Source Priority
@@ -91,13 +89,13 @@ Use skill `git` for all git operations:
 - Pushing to remote
 - Creating pull requests
 
-Use skill `tracker-github` for GitHub Issue operations:
-- Updating labels (stage:impl)
-- Moving to "In Progress" column
+Use skill `tracker-github` for tracker operations:
+- Updating status to "implementation"
+- Auto-close syntax for PR description
 
-See skill references for conventions and detailed instructions.
+See skill references for status mapping and detailed instructions.
 
-**Note:** GitHub operations (labels, project column) are performed by main context via MCP before delegating to subagent.
+**Note:** Tracker operations are performed by main context before delegating to subagent.
 
 ## Plan Format
 
@@ -105,7 +103,7 @@ See skill references for conventions and detailed instructions.
 ## Implementation Plan
 
 **Branch:** `feature/short-description`
-**Source:** `docs/tasks/TASK_xxx.md` (Issue #123)
+**Source:** `docs/tasks/TASK_xxx.md` (Tracker #123)
 
 **Affected layers:**
 - [layer]: [changes]
@@ -125,5 +123,5 @@ See skill references for conventions and detailed instructions.
 - **NEVER** write code without plan confirmation
 - Code must be complete, no placeholders
 - After implementation — mark completed criteria (if TASK exists)
-- Use `Closes #<number>` in PR description for auto-close
+- Use auto-close syntax in PR description (see skill `tracker-github`)
 - When implementing from BRIEF: be more careful, AC less explicit
