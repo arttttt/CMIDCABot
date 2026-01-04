@@ -41,8 +41,7 @@ Show which artifacts exist for a task and their tracker status.
 | Review   | ✅/❌  | path | #123    |
 
 **Tracker Item:** #123 (open/closed)
-**Status:** implementation
-**Stage:** In Progress
+**Status:** <current status>
 
 ### Next step
 [What needs to be done next based on current stage]
