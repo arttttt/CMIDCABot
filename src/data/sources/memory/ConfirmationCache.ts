@@ -13,6 +13,7 @@
 import { randomBytes } from "node:crypto";
 import type { TelegramId } from "../../../domain/models/id/index.js";
 import type { SwapQuote } from "../../../domain/repositories/SwapRepository.js";
+import type { ConfirmationType, ConfirmationSession } from "../../../domain/models/ConfirmationSession.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 /** Default TTL: 60 seconds for confirmation sessions */
@@ -23,25 +24,6 @@ export const MAX_RECONFIRMS = 1;
 
 /** Session ID format: base64url, 22 characters (16 bytes) */
 const SESSION_ID_REGEX = /^[A-Za-z0-9_-]{22}$/;
-
-/**
- * Type of confirmation: portfolio buy or swap execute
- */
-export type ConfirmationType = "portfolio_buy" | "swap_execute";
-
-/**
- * Pending confirmation session data
- */
-export interface ConfirmationSession {
-  telegramId: TelegramId;
-  type: ConfirmationType;
-  amount: number;
-  asset: string;
-  quote: SwapQuote;
-  createdAt: number;
-  expiresAt: number;
-  reconfirmCount: number;
-}
 
 export interface ConfirmationCacheConfig {
   ttlMs?: number;

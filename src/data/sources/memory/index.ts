@@ -16,8 +16,4 @@ export {
   DEFAULT_CONFIRMATION_TTL_MS,
   MAX_RECONFIRMS,
 } from "./ConfirmationCache.js";
-export type {
-  ConfirmationCacheConfig,
-  ConfirmationType,
-  ConfirmationSession,
-} from "./ConfirmationCache.js";
+export type { ConfirmationCacheConfig } from "./ConfirmationCache.js";

@@ -12,25 +12,10 @@
 
 import type { TelegramId } from "../models/id/index.js";
 import type { SwapQuote } from "./SwapRepository.js";
+import type { ConfirmationType, ConfirmationSession } from "../models/ConfirmationSession.js";
 
-/**
- * Type of confirmation: portfolio buy or swap execute
- */
-export type ConfirmationType = "portfolio_buy" | "swap_execute";
-
-/**
- * Pending confirmation session data
- */
-export interface ConfirmationSession {
-  telegramId: TelegramId;
-  type: ConfirmationType;
-  amount: number;
-  asset: string;
-  quote: SwapQuote;
-  createdAt: number;
-  expiresAt: number;
-  reconfirmCount: number;
-}
+// Re-export types for consumers of this module
+export type { ConfirmationType, ConfirmationSession } from "../models/ConfirmationSession.js";
 
 export interface ConfirmationRepository {
   /**
