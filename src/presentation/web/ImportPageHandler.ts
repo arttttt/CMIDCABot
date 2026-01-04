@@ -334,6 +334,9 @@ export class ImportPageHandler {
       error.classList.remove('show');
       btn.disabled = true;
       btn.textContent = 'Importing...';
+      secret.readOnly = true;
+      secret.style.color = '#888';
+      secret.style.borderColor = '#444';
     });
   </script>
 </body>
