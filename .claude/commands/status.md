@@ -1,7 +1,7 @@
 ---
 description: Check task status (briefs, specs, reviews)
 argument-hint: "[name]"
-allowed-tools: Read, Glob, Grep, mcp__github-official__get_issue, mcp__github-projects-local__list_projects, mcp__github-projects-local__get_project_items, mcp__github-projects-local__get_project_fields
+allowed-tools: Read, Glob, Grep
 ---
 
 ## Task
@@ -71,12 +71,13 @@ Show which artifacts exist for a task and their GitHub status.
 - TASK_yyy.md (date) → #124
 ```
 
-## GitHub Integration
+## Tracker Integration
 
-```
-Repository: arttttt/CMIDCABot
-Project: CMI DCA Bot
-```
+Use skill `tracker-github` for all GitHub operations:
+- Getting Issue details
+- Querying Project status
+
+See skill references for detailed instructions.
 
 ## Stage Flow Reference
 

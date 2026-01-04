@@ -83,14 +83,19 @@ TASK file exists?
             └── No → Error: create spec or brief first
 ```
 
-## GitHub Integration
+## Skills Integration
 
-```
-Repository: arttttt/CMIDCABot
-Project: CMI DCA Bot
-Column: In Progress
-Labels: stage:impl (removes previous stage label)
-```
+Use skill `git` for all git operations:
+- Creating branches
+- Making commits
+- Pushing to remote
+- Creating pull requests
+
+Use skill `tracker-github` for GitHub Issue operations:
+- Updating labels (stage:impl)
+- Moving to "In Progress" column
+
+See skill references for conventions and detailed instructions.
 
 **Note:** GitHub operations (labels, project column) are performed by main context via MCP before delegating to subagent.
 
