@@ -585,11 +585,21 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
     callbacks: hasConfirmationFlow
       ? new Map([
           ["confirm", {
-            handler: async (ctx, params) => handleConfirm(params[0] ?? "", ctx),
+            handler: async (ctx, params) => {
+              if (params.length === 0) {
+                return confirmationFormatter!.formatSessionNotFound();
+              }
+              return handleConfirm(params[0], ctx);
+            },
             params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
           }],
           ["cancel", {
-            handler: async (ctx, params) => handleCancel(params[0] ?? "", ctx),
+            handler: async (ctx, params) => {
+              if (params.length === 0) {
+                return confirmationFormatter!.formatSessionNotFound();
+              }
+              return handleCancel(params[0], ctx);
+            },
             params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
           }],
         ])
@@ -928,11 +938,21 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
     callbacks: hasConfirmationFlow
       ? new Map([
           ["confirm", {
-            handler: async (ctx, params) => handleConfirm(params[0] ?? "", ctx),
+            handler: async (ctx, params) => {
+              if (params.length === 0) {
+                return confirmationFormatter!.formatSessionNotFound();
+              }
+              return handleConfirm(params[0], ctx);
+            },
             params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
           }],
           ["cancel", {
-            handler: async (ctx, params) => handleCancel(params[0] ?? "", ctx),
+            handler: async (ctx, params) => {
+              if (params.length === 0) {
+                return confirmationFormatter!.formatSessionNotFound();
+              }
+              return handleCancel(params[0], ctx);
+            },
             params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
           }],
         ])
