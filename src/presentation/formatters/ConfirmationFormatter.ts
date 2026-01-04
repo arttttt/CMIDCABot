@@ -14,33 +14,33 @@ import { SlippageCalculator } from "../../domain/helpers/SlippageCalculator.js";
 import { ClientResponse, ClientButton } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
-/**
- * Format amount with appropriate precision
- */
-function formatAmount(amount: number): string {
-  if (amount >= 1000) {
-    return amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-  if (amount >= 1) {
-    return amount.toFixed(4);
-  }
-  if (amount >= 0.0001) {
-    return amount.toFixed(6);
-  }
-  return amount.toFixed(8);
-}
-
-/**
- * Format price with appropriate precision
- */
-function formatPrice(price: number): string {
-  if (price >= 1000) {
-    return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-  return price.toFixed(2);
-}
-
 export class ConfirmationFormatter {
+  /**
+   * Format amount with appropriate precision
+   */
+  private static formatAmount(amount: number): string {
+    if (amount >= 1000) {
+      return amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    if (amount >= 1) {
+      return amount.toFixed(4);
+    }
+    if (amount >= 0.0001) {
+      return amount.toFixed(6);
+    }
+    return amount.toFixed(8);
+  }
+
+  /**
+   * Format price with appropriate precision
+   */
+  private static formatPrice(price: number): string {
+    if (price >= 1000) {
+      return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return price.toFixed(2);
+  }
+
   /**
    * Format preview message with Confirm/Cancel buttons
    */
@@ -61,11 +61,11 @@ export class ConfirmationFormatter {
     const lines = [
       `*${typeLabel} Preview*`,
       "",
-      `*Spend:* ${formatAmount(quote.inputAmount)} ${Markdown.escape(quote.inputSymbol)}`,
-      `*Receive:* ~${formatAmount(quote.outputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
+      `*Spend:* ${ConfirmationFormatter.formatAmount(quote.inputAmount)} ${Markdown.escape(quote.inputSymbol)}`,
+      `*Receive:* ~${ConfirmationFormatter.formatAmount(quote.outputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
       "",
-      `*Price:* 1 ${Markdown.escape(quote.outputSymbol)} = ${formatPrice(pricePerUnit)} USDC`,
-      `*Min Receive:* ${formatAmount(quote.minOutputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
+      `*Price:* 1 ${Markdown.escape(quote.outputSymbol)} = ${ConfirmationFormatter.formatPrice(pricePerUnit)} USDC`,
+      `*Min Receive:* ${ConfirmationFormatter.formatAmount(quote.minOutputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
       `*Slippage:* ${slippagePct}%`,
       "",
       `_Confirm within ${ttlSeconds} seconds_`,
@@ -118,8 +118,8 @@ export class ConfirmationFormatter {
       "",
       `The price has ${priceDirection} since your quote.`,
       "",
-      `*Original:* ~${formatAmount(originalQuote.outputAmount)} ${Markdown.escape(originalQuote.outputSymbol)}`,
-      `*New:* ~${formatAmount(freshQuote.outputAmount)} ${Markdown.escape(freshQuote.outputSymbol)}`,
+      `*Original:* ~${ConfirmationFormatter.formatAmount(originalQuote.outputAmount)} ${Markdown.escape(originalQuote.outputSymbol)}`,
+      `*New:* ~${ConfirmationFormatter.formatAmount(freshQuote.outputAmount)} ${Markdown.escape(freshQuote.outputSymbol)}`,
       "",
       `*Price change:* ${slippagePct}% (${outputDirection} ${Markdown.escape(freshQuote.outputSymbol)})`,
       "",
@@ -166,13 +166,5 @@ export class ConfirmationFormatter {
       `Session not found or expired.\n\n` +
       `Please start a new operation.`,
     );
-  }
-
-  /**
-   * Check if slippage exceeds threshold
-   * @returns true if fresh quote differs from original by more than threshold
-   */
-  static isSlippageExceeded(originalQuote: SwapQuote, freshQuote: SwapQuote): boolean {
-    return SlippageCalculator.isExceeded(originalQuote, freshQuote);
   }
 }
