@@ -65,6 +65,9 @@ import {
 // Logging
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
+// Domain helpers
+import { SlippageCalculator } from "../../domain/helpers/SlippageCalculator.js";
+
 // Protocol types
 import { StreamItem } from "../protocol/types.js";
 
@@ -360,7 +363,7 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
     }
 
     // Check slippage
-    if (ConfirmationFormatter.isSlippageExceeded(session.quote, freshQuote)) {
+    if (SlippageCalculator.isExceeded(session.quote, freshQuote)) {
       // Can we re-confirm?
       if (confirmationRepository!.updateQuote(sessionId, freshQuote)) {
         // Show slippage warning with new price
@@ -704,7 +707,7 @@ function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
     }
 
     // Check slippage
-    if (ConfirmationFormatter.isSlippageExceeded(session.quote, freshQuote)) {
+    if (SlippageCalculator.isExceeded(session.quote, freshQuote)) {
       // Can we re-confirm?
       if (confirmationRepository!.updateQuote(sessionId, freshQuote)) {
         // Show slippage warning with new price
