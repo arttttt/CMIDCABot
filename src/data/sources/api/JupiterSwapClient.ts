@@ -13,6 +13,9 @@ import { toRawAmount, toHumanAmountNumber } from "../../../infrastructure/shared
 // Jupiter Swap API v1 endpoint
 const JUPITER_SWAP_API = "https://api.jup.ag/swap/v1";
 
+/** Default slippage tolerance in basis points (0.5%) */
+const DEFAULT_SLIPPAGE_BPS = 50;
+
 /**
  * Sanitize error messages to prevent leaking sensitive data (LOW-003).
  * Removes URLs, API keys, and other potentially sensitive information.
@@ -121,7 +124,7 @@ export class JupiterSwapClient {
    * Get a swap quote from Jupiter
    */
   async getQuote(params: QuoteParams): Promise<SwapQuote> {
-    const slippageBps = params.slippageBps ?? 50; // 0.5% default
+    const slippageBps = params.slippageBps ?? DEFAULT_SLIPPAGE_BPS;
 
     const url = new URL(`${this.baseUrl}/quote`);
     url.searchParams.set("inputMint", params.inputMint);
@@ -240,7 +243,7 @@ export class JupiterSwapClient {
           // - When output is SOL mint: Jupiter unwraps WSOL → native SOL automatically
           // This means we receive/spend native SOL, not WSOL token accounts
           // Use dynamic slippage for better execution
-          dynamicSlippage: { maxBps: 50 }, // Max 0.5% slippage
+          dynamicSlippage: { maxBps: DEFAULT_SLIPPAGE_BPS },
           // Priority fee settings
           prioritizationFeeLamports: {
             priorityLevelWithMaxLamports: {
