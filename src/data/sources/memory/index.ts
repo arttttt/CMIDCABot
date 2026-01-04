@@ -10,3 +10,14 @@ export type { ImportSessionStoreConfig } from "./ImportSessionCache.js";
 
 export { RateLimitCache, DEFAULT_CLEANUP_INTERVAL_MS } from "./RateLimitCache.js";
 export type { RateLimitCacheConfig } from "./RateLimitCache.js";
+
+export {
+  ConfirmationCache,
+  DEFAULT_CONFIRMATION_TTL_MS,
+  MAX_RECONFIRMS,
+} from "./ConfirmationCache.js";
+export type {
+  ConfirmationCacheConfig,
+  ConfirmationType,
+  ConfirmationSession,
+} from "./ConfirmationCache.js";
