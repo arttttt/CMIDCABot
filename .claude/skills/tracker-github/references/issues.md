@@ -1,5 +1,21 @@
 # GitHub Issues Operations
 
+## Link Format
+
+Tracker item link in artifact files (first line):
+```markdown
+<!-- GitHub Issue: #123 -->
+```
+
+Parse this to extract Issue number for operations.
+
+## Auto-close Syntax
+
+To automatically close Issue when PR is merged, include in PR description:
+```markdown
+Closes #<number>
+```
+
 ## Creating Issues
 
 Issues can be created from:
@@ -47,15 +63,6 @@ Use `add_issue_comment` to attach artifact content:
 ---
 _Source: `<filepath>`_
 ```
-
-## Artifact Linking
-
-Every artifact file should have Issue link as first line:
-```markdown
-<!-- GitHub Issue: #123 -->
-```
-
-Parse this to find related Issue number.
 
 ## Language
 

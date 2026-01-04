@@ -1,12 +1,12 @@
 ---
-description: Publish artifact to GitHub (create Issue, add to Project)
+description: Publish artifact to tracker (create item, add to Project)
 argument-hint: "<artifact_name>"
 allowed-tools: Read, Edit, Glob
 ---
 
 ## Task
 
-Publish an artifact (TASK or BRIEF) to GitHub by creating an Issue and adding it to the Project board.
+Publish an artifact (TASK or BRIEF) to tracker by creating a tracker item and adding it to the project board.
 
 ## Algorithm
 
@@ -21,97 +21,81 @@ Publish an artifact (TASK or BRIEF) to GitHub by creating an Issue and adding it
    - If not found: `docs/briefs/BRIEF_<name>.md`
    - If neither exists: report error and exit
 
-3. **Check for linked Issue (TASK only):**
+3. **Check for linked tracker item (TASK only):**
    - If artifact is TASK:
      - Check for corresponding BRIEF: `docs/briefs/BRIEF_<name>.md`
-     - If BRIEF exists and has `<!-- GitHub Issue: #<number> -->`:
-       - Extract `<number>` — this is the linked Issue
-       - Go to step 5b (publish TASK to existing Issue)
+     - If BRIEF has tracker item link (see skill `tracker-github` for link format):
+       - Extract item ID — this is the linked tracker item
+       - Go to step 5b (publish TASK to existing item)
    - Otherwise: continue to step 4
 
 4. **Check if already published:**
    - Read the artifact file
-   - Look for `<!-- GitHub Issue: #<number> -->`
-   - If found: report "Already published as Issue #<number>" and exit
+   - Look for tracker item link (see skill `tracker-github` for link format)
+   - If found: report "Already published as item #<number>" and exit
 
 5. **Extract metadata from file:**
-   - Parse title from first `#` heading (this becomes Issue title)
+   - Parse title from first `#` heading (this becomes item title)
    - Read full content of the artifact file
-   - Determine artifact type (TASK or BRIEF) for label selection
+   - Determine artifact type (TASK or BRIEF) for status selection
    - **Extract summary:**
-     1. Skip HTML comment `<!-- GitHub Issue: #xxx -->` if present
+     1. Skip tracker item link if present (see skill `tracker-github` for link format)
      2. Skip first heading (`# Title`)
      3. Take first paragraph (text until empty line) as summary
      4. Translate to English if needed
      5. Limit to ~200 chars, add "..." if truncated
 
-6. **Create new GitHub Issue** (skip if publishing TASK to existing Issue):
-   - **Language:** All Issue content MUST be in English
+6. **Create new tracker item** (skip if publishing TASK to existing item):
+   - See skill `tracker-github` for item format and creation details
+   - **Language:** All content MUST be in English
    - **Title:** From first `#` heading (no `[Task]` or `[Brief]` prefixes)
-   - **Labels:**
-     - For TASK file: `stage:spec`
-     - For BRIEF file: `stage:brief`
-   - **Body format:**
-     ```
-     <summary>
+   - **Status:**
+     - For TASK file: "todo"
+     - For BRIEF file: "backlog"
 
-     ---
-     _Artifacts attached as comments below_
-     _Source: `<filepath>` (local, not yet in main)_
-     ```
-
-7. **Update existing Issue** (only when publishing TASK to Issue from BRIEF):
-   - Do NOT modify Issue body
-   - Update label: remove `stage:brief`, add `stage:spec`
+7. **Update existing tracker item** (only when publishing TASK to item from BRIEF):
+   - Do NOT modify item body
+   - Update status from "backlog" to "todo" (see skill `tracker-github` for status mapping)
 
 8. **Add artifact content as comment:**
-   - **Comment format:**
-     ```
-     ## Brief | Specification
-
-     <full artifact content, translated to English if needed>
-
-     ---
-     _Source: `<filepath>`_
-     ```
+   - See skill `tracker-github` for comment format
    - Use `## Brief` for BRIEF artifacts
    - Use `## Specification` for TASK artifacts
 
-9. **Add to Project:**
-   - Find project "CMI DCA Bot" using `list_projects`
-   - Get project fields to find "Status" field ID and option IDs
-   - Add issue to project (skip if already in project)
-   - Set Status field:
-     - For TASK → "Todo"
-     - For BRIEF → "Backlog"
-   - If fails: show warning, continue (Issue is still created)
+9. **Add to project board:**
+   - See skill `tracker-github` for project operations
+   - Set status:
+     - For TASK: "todo"
+     - For BRIEF: "backlog"
+   - If fails: show warning, continue (item is still created)
 
 10. **Update artifact file:**
-    - Prepend `<!-- GitHub Issue: #<number> -->` as first line
+    - Prepend tracker item link as first line (see skill `tracker-github` for link format)
     - Keep all existing content
 
 11. **Report result:**
    ```
    ✅ Published: <filename>
-   - Issue: #<number>
-   - Project: <column>
+   - Item: #<number>
+   - Status: <status>
    ```
 
 ## Tracker Integration
 
-Use skill `tracker-github` for all GitHub operations:
-- Creating Issues
-- Adding to Project board
-- Setting labels and status
+Use skill `tracker-github` for all tracker operations:
+- Creating tracker items
+- Adding to project board
+- Setting status
+- Link format and comment format
 
-See skill references for detailed instructions on Issue format and Project operations.
+See skill references for detailed instructions.
 
 ## Error Handling
 
 - Artifact not found → clear error message with search paths
-- Already published → show existing Issue number
-- MCP unavailable → cannot publish without GitHub access
-- Project add fails → warn but keep Issue (can be added manually)
+- Already published → show existing item number
+- Tracker unavailable → cannot publish without tracker access
+- Project add fails → warn but keep item (can be added manually)
 
 ## Name sanitization
 

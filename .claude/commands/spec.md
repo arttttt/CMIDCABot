@@ -32,13 +32,13 @@ Create task specification for Developer.
    - Summarize understanding back to user (2-3 sentences)
    - Wait for user confirmation ("да", "ok", "yes")
 
-5. **Inherit GitHub Issue from BRIEF (if exists):**
+5. **Inherit tracker item from BRIEF (if exists):**
    - Look for `docs/briefs/BRIEF_<name>.md`
-   - If found, parse first line for `<!-- GitHub Issue: #xxx -->`
-   - Store Issue number for use in created file
+   - If found, parse first line for tracker item link (see skill `tracker-github` for link format)
+   - Store item ID for use in created file
 
 6. **Create file:** `docs/tasks/TASK_<name>.md`
-   - **If Issue inherited from BRIEF:** prepend `<!-- GitHub Issue: #xxx -->` as first line
+   - **If item inherited from BRIEF:** prepend tracker item link as first line (see skill `tracker-github` for link format)
    - Content sections:
      - Context — why this is needed
      - Acceptance Criteria — checklist with `- [ ]`
@@ -50,11 +50,11 @@ Create task specification for Developer.
    ```
    ✅ Created: docs/tasks/TASK_<name>.md
 
-   [If Issue inherited:]
-   Linked to GitHub Issue #xxx (from BRIEF)
+   [If item inherited:]
+   Linked to tracker item #xxx (from BRIEF)
 
    [If no BRIEF or BRIEF unpublished:]
-   Next: run `/publish <name>` to create GitHub Issue
+   Next: run `/publish <name>` to create tracker item
    ```
 
 ## Name sanitization

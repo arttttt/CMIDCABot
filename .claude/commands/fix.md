@@ -29,7 +29,7 @@ Fix issues identified in code review.
    - Note file locations from findings
 
 4. **Find related source (optional):**
-   - Check for `<!-- GitHub Issue: #N -->` in REVIEW
+   - Check for tracker item link in REVIEW (see skill `tracker-github` for link format)
    - Try to find related TASK/BRIEF for additional context
 
 5. **Create fix plan:**

@@ -33,7 +33,7 @@ Prepare technical brief to hand off to PM.
    ```
    ✅ Created: docs/briefs/BRIEF_<name>.md
 
-   Next: run `/publish <name>` to create GitHub Issue
+   Next: run `/publish <name>` to create tracker item
    ```
 
 ## Name sanitization
