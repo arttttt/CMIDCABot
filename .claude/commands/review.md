@@ -1,7 +1,7 @@
 ---
 description: Code review of files or component
 argument-hint: "<file_path> | <component_name>"
-allowed-tools: Read, Write, Glob, Grep, mcp__github-official__update_issue, mcp__github-official__get_issue, mcp__github-projects-local__list_projects, mcp__github-projects-local__get_project_items, mcp__github-projects-local__move_item_to_column, mcp__github-projects-local__get_project_fields
+allowed-tools: Read, Write, Glob, Grep
 ---
 
 Use subagent `reviewer`.
@@ -48,14 +48,13 @@ Conduct code review and create report.
    - Source type used: TASK / BRIEF / none
    - "Issue #<number> moved to Review" (if Issue found)
 
-## GitHub Integration
+## Tracker Integration
 
-```
-Repository: arttttt/CMIDCABot
-Project: CMI DCA Bot
-Column: Review
-Labels: stage:review (removes stage:impl)
-```
+Use skill `tracker-github` for all GitHub operations:
+- Updating labels (stage:review)
+- Moving to "Review" column
+
+See skill references for detailed instructions.
 
 **Note:** GitHub operations (labels, project column) are performed by main context via MCP before delegating to subagent.
 

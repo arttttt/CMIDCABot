@@ -1,7 +1,7 @@
 ---
 description: Publish artifact to GitHub (create Issue, add to Project)
 argument-hint: "<artifact_name>"
-allowed-tools: Read, Edit, Glob, mcp__github-official__create_issue, mcp__github-official__get_issue, mcp__github-official__add_issue_comment, mcp__github-official__update_issue, mcp__github-projects-local__list_projects, mcp__github-projects-local__get_project_fields, mcp__github-projects-local__add_issue_to_project, mcp__github-projects-local__update_project_item_field
+allowed-tools: Read, Edit, Glob
 ---
 
 ## Task
@@ -97,14 +97,14 @@ Publish an artifact (TASK or BRIEF) to GitHub by creating an Issue and adding it
    - Project: <column>
    ```
 
-## GitHub Integration
+## Tracker Integration
 
-```
-Repository: arttttt/CMIDCABot
-Project: CMI DCA Bot
-TASK → Column: Todo, Label: stage:spec
-BRIEF → Column: Backlog, Label: stage:brief
-```
+Use skill `tracker-github` for all GitHub operations:
+- Creating Issues
+- Adding to Project board
+- Setting labels and status
+
+See skill references for detailed instructions on Issue format and Project operations.
 
 ## Error Handling
 

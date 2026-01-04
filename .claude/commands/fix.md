@@ -59,6 +59,15 @@ New review (v2) created by subsequent `/review` if needed.
 | 🟡 Should Fix | Fix by default |
 | 🟢 Consider | Suggest defer, user decides |
 
+## Skills Integration
+
+Fixes are implemented via the developer subagent, which uses skill `git` for version control operations:
+- Creating branches
+- Making commits
+- Pushing to remote
+
+See skill references for conventions and detailed instructions.
+
 ## Review Versioning
 
 After `/fix`, user runs `/review` again → creates `REVIEW_<name>_v2.md`

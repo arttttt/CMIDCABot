@@ -133,73 +133,15 @@ Implement features based on specifications. Write clean, working code following 
 - Small modules, single responsibility
 - Comments in English
 
-## Git Workflow
+## Git Operations
 
-### Branch Creation
+Use skill `git` for all version control operations:
+- Branch creation and naming
+- Commit messages (Conventional Commits)
+- Pushing to remote
+- Creating pull requests
 
-Create feature branch before coding:
-```bash
-git checkout -b <type>/<name>
-```
-
-Branch naming:
-| Type | When |
-|------|------|
-| `feature/` | New functionality (`/implement` from TASK/BRIEF) |
-| `fix/` | Bug fix or review findings (`/fix`) |
-| `refactor/` | Code restructuring without new behavior |
-
-Name: kebab-case, short description.
-Examples:
-- `feature/portfolio-rebalance`
-- `fix/swap-timeout`
-- `refactor/wallet-encryption`
-
-### Commits
-
-Create granular commits after each logical group of changes.
-
-Format (Conventional Commits):
-```
-<type>(<scope>): <description>
-```
-
-Types:
-| Type | When |
-|------|------|
-| `feat` | New functionality |
-| `fix` | Bug fix or review finding |
-| `refactor` | Change without new behavior |
-| `chore` | Configs, dependencies |
-
-Scopes (by component):
-`portfolio`, `wallet`, `dca`, `swap`, `bot`, `db`, `config`
-
-Examples:
-```
-feat(portfolio): add rebalance calculation
-fix(swap): handle timeout errors
-refactor(wallet): extract encryption logic
-chore(config): add new env variable
-```
-
-Rules:
-- **Granular commits** — one commit per logical change, not one per file
-- **Atomic** — each commit should leave code in working state
-- **Present tense** — "add" not "added"
-- **No period** at the end
-
-### Push
-
-Push to remote **once at the end** of all work:
-```bash
-git push -u origin <branch-name>
-```
-
-**DO NOT:**
-- Push after each commit
-- Force push
-- Push to main/master directly
+See skill `git` and its references for conventions and examples.
 
 ## Rules
 
