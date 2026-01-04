@@ -82,4 +82,4 @@ See skill references for detailed instructions.
 
 ## Stage Flow Reference
 
-See skill `tracker-github` for status mapping (abstract status to tracker-specific labels/columns).
+See skill `tracker-github` for status mapping.
