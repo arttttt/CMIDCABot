@@ -11,6 +11,40 @@ allowed-tools: mcp__github-official__create_issue, mcp__github-official__get_iss
 - **Repository:** arttttt/CMIDCABot
 - **Project:** CMI DCA Bot
 
+## Content Contract (MUST follow)
+
+All content sent to GitHub MUST comply with these rules:
+
+| Aspect | Requirement |
+|--------|-------------|
+| Language | **English only** — translate Russian content before sending |
+| Item title | From artifact `# heading`, no `[Task]`/`[Brief]` prefixes |
+| Item body | **Summary only** — first paragraph, max 200 chars, truncate with "..." |
+| Full content | **As comment**, not in body — use `add_issue_comment` |
+| Comment header | `## Brief` for BRIEF artifacts, `## Specification` for TASK artifacts |
+| Comment footer | `---\n_Source: \`<filepath>\`_` |
+
+### Body Format
+
+```
+<summary in English, max 200 chars>
+
+---
+_Artifacts attached as comments below_
+_Source: `<filepath>` (local, not yet in main)_
+```
+
+### Comment Format
+
+```markdown
+## Brief | Specification
+
+<full artifact content, translated to English>
+
+---
+_Source: `<filepath>`_
+```
+
 ## Stage Flow
 
 ```
