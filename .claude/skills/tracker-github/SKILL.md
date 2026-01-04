@@ -31,11 +31,43 @@ stage:review → Review      → /review created
 
 ## Quick Reference
 
+### Link Format
+
+Tracker item link in artifact files:
+```markdown
+<!-- GitHub Issue: #123 -->
+```
+
+### Auto-close Syntax
+
+To automatically close tracker item when PR is merged:
+```markdown
+Closes #<number>
+```
+
+### Status Mapping
+
+| Abstract Status | GitHub Label | Project Column |
+|-----------------|--------------|----------------|
+| backlog | `stage:brief` | Backlog |
+| todo | `stage:spec` | Todo |
+| implementation | `stage:impl` | In Progress |
+| review | `stage:review` | Review |
+| done | (Issue closed) | Done |
+
 ### Create Issue
 Use `create_issue` with repository from Configuration.
 
 ### Update Labels
 Use `update_issue` to change stage labels.
+
+### Update Status
+
+To update tracker item status:
+1. Update label: remove old `stage:*`, add new `stage:*`
+2. Move to corresponding Project column
+
+See Status Mapping table for label/column correspondence.
 
 ### Add to Project
 1. `list_projects` to find project ID
