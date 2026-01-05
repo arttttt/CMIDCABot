@@ -10,6 +10,15 @@ Use subagent `analyst`.
 
 Prepare technical brief to hand off to PM.
 
+## Interaction Contract (MUST follow)
+
+| Phase | Action | STOP until |
+|-------|--------|------------|
+| 1. Propose structure | Show planned brief sections to user | User says "да" / "ok" / "yes" |
+| 2. Create file | Per output requirements below | — |
+
+🚨 **Creating file without phase 1 approval is a critical violation.**
+
 ## Algorithm
 
 1. **Check arguments:**
@@ -23,13 +32,13 @@ Prepare technical brief to hand off to PM.
    - Identify technical constraints
    - Discover dependencies
 
-3. **Propose brief structure** — show user the plan
+3. **Execute Interaction Contract:**
+   - Propose structure, wait for approval
+   - Do NOT proceed to file creation until approved
 
-4. **Wait for confirmation** ("да", "ok", "yes")
+4. **Create file:** `docs/briefs/BRIEF_<name>.md`
 
-5. **Create file:** `docs/briefs/BRIEF_<name>.md`
-
-6. **Report result:**
+5. **Report result:**
    ```
    ✅ Created: docs/briefs/BRIEF_<name>.md
 
