@@ -51,6 +51,15 @@ export class GetQuoteUseCase {
       };
     }
 
+    // Maximum amount check
+    if (amountUsdc > MAX_USDC_AMOUNT) {
+      logger.warn("GetQuote", "Amount above maximum", { amountUsdc });
+      return {
+        status: "invalid_amount",
+        message: `Maximum amount is ${MAX_USDC_AMOUNT} USDC`,
+      };
+    }
+
     // Validate asset
     const assetUpper = asset.toUpperCase() as AssetSymbol;
     if (!SUPPORTED_ASSETS.includes(assetUpper)) {
