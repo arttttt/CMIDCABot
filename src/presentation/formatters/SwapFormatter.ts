@@ -3,6 +3,7 @@
  */
 
 import { SwapResult } from "../../domain/models/SwapStep.js";
+import { MAX_PRICE_IMPACT_BPS } from "../../domain/constants.js";
 import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
@@ -48,6 +49,16 @@ export class SwapFormatter {
       return new ClientResponse(
         "Failed to check balance. The Solana network may be busy.\n\n" +
           "Please try again in a few seconds.",
+      );
+    }
+
+    if (result.status === "high_price_impact") {
+      const actualPct = result.priceImpactPct.toFixed(2);
+      const maxPct = (MAX_PRICE_IMPACT_BPS / 100).toFixed(1);
+      return new ClientResponse(
+        `Price impact too high: ${actualPct}%\n` +
+          `Maximum allowed: ${maxPct}%\n\n` +
+          "This usually means low liquidity. Try a smaller amount.",
       );
     }
 
