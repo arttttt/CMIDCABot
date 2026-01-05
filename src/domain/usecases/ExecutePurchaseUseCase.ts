@@ -13,7 +13,7 @@ import type { SwapResult } from "../models/SwapStep.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { PurchaseStep, PurchaseSteps } from "../models/index.js";
 import type { DetermineAssetToBuyUseCase } from "./DetermineAssetToBuyUseCase.js";
-import { MIN_USDC_AMOUNT } from "../constants.js";
+import { MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";
 
 export class ExecutePurchaseUseCase {
   constructor(
@@ -43,10 +43,21 @@ export class ExecutePurchaseUseCase {
       return;
     }
 
+    // Defense-in-depth: validate amount here for fast feedback to user,
+    // even though ExecuteSwapUseCase will also validate.
+    // This prevents unnecessary asset selection when amount is clearly invalid.
     if (amountUsdc < MIN_USDC_AMOUNT) {
       yield PurchaseSteps.completed({
         type: "invalid_amount",
         error: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
+      });
+      return;
+    }
+
+    if (amountUsdc > MAX_USDC_AMOUNT) {
+      yield PurchaseSteps.completed({
+        type: "invalid_amount",
+        error: `Maximum amount is ${MAX_USDC_AMOUNT} USDC`,
       });
       return;
     }

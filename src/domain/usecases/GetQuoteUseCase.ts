@@ -6,6 +6,7 @@
 import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
+import { MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";
 
 export type GetQuoteResult =
   | { status: "success"; quote: SwapQuote }
@@ -42,11 +43,20 @@ export class GetQuoteUseCase {
     }
 
     // Minimum amount check
-    if (amountUsdc < 0.01) {
+    if (amountUsdc < MIN_USDC_AMOUNT) {
       logger.warn("GetQuote", "Amount below minimum", { amountUsdc });
       return {
         status: "invalid_amount",
-        message: "Minimum amount is 0.01 USDC",
+        message: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
+      };
+    }
+
+    // Maximum amount check
+    if (amountUsdc > MAX_USDC_AMOUNT) {
+      logger.warn("GetQuote", "Amount above maximum", { amountUsdc });
+      return {
+        status: "invalid_amount",
+        message: `Maximum amount is ${MAX_USDC_AMOUNT} USDC`,
       };
     }
 

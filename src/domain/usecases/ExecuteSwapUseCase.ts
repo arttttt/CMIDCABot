@@ -21,7 +21,7 @@ import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
-import { MIN_SOL_AMOUNT, MIN_USDC_AMOUNT } from "../constants.js";
+import { MIN_SOL_AMOUNT, MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
@@ -73,6 +73,14 @@ export class ExecuteSwapUseCase {
       yield SwapSteps.completed({
         status: "invalid_amount",
         message: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
+      });
+      return;
+    }
+
+    if (amountUsdc > MAX_USDC_AMOUNT) {
+      yield SwapSteps.completed({
+        status: "invalid_amount",
+        message: `Maximum amount is ${MAX_USDC_AMOUNT} USDC`,
       });
       return;
     }

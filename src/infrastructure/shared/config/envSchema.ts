@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_USDC_AMOUNT } from "../../../domain/constants.js";
 
 /**
  * MED-004: Environment variables that are forbidden in production mode.
@@ -43,7 +44,7 @@ const envSchema = z
     WEBHOOK_SECRET: z.string().optional(),
 
     // DCA
-    DCA_AMOUNT_USDC: z.coerce.number().positive().min(1).default(6),
+    DCA_AMOUNT_USDC: z.coerce.number().positive().min(1).max(MAX_USDC_AMOUNT).default(6),
     DCA_INTERVAL_MS: z.coerce.number().int().positive().default(86400000),
 
     // Price
