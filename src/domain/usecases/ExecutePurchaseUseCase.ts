@@ -156,6 +156,8 @@ export class ExecutePurchaseUseCase {
         return { type: "send_error", error: swapResult.message, signature: swapResult.signature };
       case "rpc_error":
         return { type: "rpc_error", error: swapResult.message };
+      case "high_price_impact":
+        return { type: "high_price_impact", error: `Price impact too high: ${swapResult.priceImpactPct.toFixed(2)}%` };
     }
   }
 }

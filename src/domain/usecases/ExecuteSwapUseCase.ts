@@ -21,7 +21,7 @@ import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
-import { MIN_SOL_AMOUNT, MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";
+import { MIN_SOL_AMOUNT, MIN_USDC_AMOUNT, MAX_USDC_AMOUNT, MAX_PRICE_IMPACT_BPS } from "../constants.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
@@ -186,6 +186,21 @@ export class ExecuteSwapUseCase {
       slippageBps: quote.slippageBps,
       route: quote.route,
     });
+
+    // Validate price impact before building transaction
+    const priceImpactBps = quote.priceImpactPct * 100;
+    if (priceImpactBps > MAX_PRICE_IMPACT_BPS) {
+      logger.warn("ExecuteSwap", "Price impact too high", {
+        priceImpactPct: quote.priceImpactPct,
+        priceImpactBps,
+        maxAllowedBps: MAX_PRICE_IMPACT_BPS,
+      });
+      yield SwapSteps.completed({
+        status: "high_price_impact",
+        priceImpactPct: quote.priceImpactPct,
+      });
+      return;
+    }
 
     // Step 2: Build transaction
     yield SwapSteps.buildingTransaction();

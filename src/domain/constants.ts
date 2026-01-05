@@ -19,3 +19,10 @@ export const MIN_USDC_AMOUNT = 0.01;
  * Amounts above this threshold are rejected.
  */
 export const MAX_USDC_AMOUNT = 50;
+
+/**
+ * Maximum allowed price impact in basis points (bps).
+ * Swaps with price impact above this threshold are rejected.
+ * 50 bps = 0.5%
+ */
+export const MAX_PRICE_IMPACT_BPS = 50;

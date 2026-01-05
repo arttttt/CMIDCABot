@@ -51,6 +51,16 @@ export class SwapFormatter {
       );
     }
 
+    if (result.status === "high_price_impact") {
+      const actualPct = result.priceImpactPct.toFixed(2);
+      const maxPct = "0.5";
+      return new ClientResponse(
+        `Price impact too high: ${actualPct}%\n` +
+          `Maximum allowed: ${maxPct}%\n\n` +
+          "This usually means low liquidity. Try a smaller amount.",
+      );
+    }
+
     const { quote, signature, confirmed } = result;
     const sigStr = signature.value;
 
