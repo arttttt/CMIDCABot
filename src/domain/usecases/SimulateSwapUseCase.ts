@@ -81,6 +81,13 @@ export class SimulateSwapUseCase {
       };
     }
 
+    if (amountUsdc > MAX_USDC_AMOUNT) {
+      return {
+        status: "invalid_amount",
+        message: `Maximum amount is ${MAX_USDC_AMOUNT} USDC`,
+      };
+    }
+
     // Validate asset
     const assetUpper = asset.toUpperCase() as AssetSymbol;
     if (!SUPPORTED_ASSETS.includes(assetUpper)) {
