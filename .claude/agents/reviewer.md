@@ -13,8 +13,9 @@ model: inherit
 
 1. **NO git operations** — never create branches, commit, or push
 2. **NO code fixes** — document issues only, don't implement fixes
-3. **ALWAYS create file** — output must be `docs/reviews/REVIEW_*.md`
+3. **OUTPUT IS FILE** — final output is `docs/reviews/REVIEW_*.md`
 4. **STRICT OUTPUT FORMAT** — use EXACT section names and codes from Output Format below
+5. **FOLLOW COMMAND'S INTERACTION CONTRACT** — each command defines its workflow
 
 ## Purpose
 
@@ -30,14 +31,6 @@ Analyze code for correctness, architecture compliance, edge cases, and security.
 
 - A developer — you don't fix code
 - A nitpicker — focus on meaningful issues
-
-## Workflow
-
-1. **Read** `ARCHITECTURE.md` first
-2. **Receive** code or file paths to review
-3. **Analyze** against checklist
-4. **Categorize** findings by severity
-5. **Output** — create `docs/reviews/REVIEW_<name>.md`
 
 ## Review Checklist
 

@@ -10,6 +10,36 @@ Use subagent `developer`.
 
 Implement functionality from specification or brief.
 
+## Interaction Contract (MUST follow)
+
+| Phase | Action | STOP until |
+|-------|--------|------------|
+| 1. Plan | Show implementation plan (branch, files, approach) | User says "да" / "ok" / "yes" |
+| 2. Implement | Code, commit, push per plan | — |
+
+🚨 **Writing code without phase 1 approval is a critical violation.**
+
+### Plan Format
+
+```markdown
+## Implementation Plan
+
+**Branch:** `feature/short-description`
+**Source:** `docs/tasks/TASK_xxx.md` (Tracker #123)
+
+**Affected layers:**
+- [layer]: [changes]
+
+**Files to create/modify:**
+- `path/to/file.ts` — [purpose]
+
+**Approach:**
+1. [Step 1]
+2. [Step 2]
+
+Подтверждаешь?
+```
+
 ## Algorithm
 
 1. **Check arguments:**
@@ -28,20 +58,16 @@ Implement functionality from specification or brief.
    - **Extract tracker item ID** (see skill `tracker-github` for link format)
    - Note source type: TASK or BRIEF
 
-4. **Create plan:**
-   - Branch name (`feature/` for TASK/BRIEF, `fix/` for bug fixes)
-   - Affected layers
-   - Files to create/modify
-   - Approach (steps)
-   - If from BRIEF: note that AC may be less detailed
+4. **Execute Interaction Contract:**
+   - Create plan per format above
+   - Wait for user approval
+   - Do NOT proceed to implementation until approved
 
-5. **🚨 STOP — output plan and wait for confirmation** ("да", "ok", "yes")
-
-6. **Update tracker status** (main context, before delegating to subagent):
+5. **Update tracker status** (main context, before delegating to subagent):
    - If tracker item found, update status to "implementation" (see skill `tracker-github` for status mapping)
    - This is done by main context, NOT by subagent
 
-7. **Delegate to subagent** for implementation:
+6. **Delegate to subagent** for implementation:
    - Create branch:
      ```bash
      git checkout -b <type>/<short-description>
@@ -57,7 +83,7 @@ Implement functionality from specification or brief.
      git push -u origin <branch-name>
      ```
 
-8. **Report completion:**
+7. **Report completion:**
     ```
     ✅ Implementation complete
 
@@ -97,30 +123,8 @@ See skill references for status mapping and detailed instructions.
 
 **Note:** Tracker operations are performed by main context before delegating to subagent.
 
-## Plan Format
-
-```markdown
-## Implementation Plan
-
-**Branch:** `feature/short-description`
-**Source:** `docs/tasks/TASK_xxx.md` (Tracker #123)
-
-**Affected layers:**
-- [layer]: [changes]
-
-**Files to create/modify:**
-- `path/to/file.ts` — [purpose]
-
-**Approach:**
-1. [Step 1]
-2. [Step 2]
-
-Подтверждаешь?
-```
-
 ## Important
 
-- **NEVER** write code without plan confirmation
 - Code must be complete, no placeholders
 - After implementation — mark completed criteria (if TASK exists)
 - Use auto-close syntax in PR description (see skill `tracker-github`)

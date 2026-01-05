@@ -10,6 +10,12 @@ Use subagent `reviewer`.
 
 Conduct code review and create report.
 
+## Interaction Contract
+
+- **No confirmation needed** — analyze and output directly
+- **Output is file** — always create `docs/reviews/REVIEW_<n>.md`
+- If argument empty — ask user what to review before proceeding
+
 ## Algorithm
 
 1. **Check arguments:**

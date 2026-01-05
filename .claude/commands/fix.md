@@ -10,6 +10,38 @@ Use subagent `developer`.
 
 Fix issues identified in code review.
 
+## Interaction Contract (MUST follow)
+
+| Phase | Action | STOP until |
+|-------|--------|------------|
+| 1. Plan | Show fix plan (findings to fix, approach) | User says "да" / "ok" / "yes" |
+| 2. Implement | Fix issues, commit, push | — |
+
+🚨 **Fixing code without phase 1 approval is a critical violation.**
+
+User may adjust scope during phase 1 (add/remove findings to fix).
+
+### Plan Format
+
+```markdown
+## Fix Plan
+
+**Branch:** `fix/short-description`
+**Review:** `docs/reviews/REVIEW_xxx.md`
+
+**Findings to fix:**
+- [C1] Title — approach
+- [S1] Title — approach
+
+**Deferred (with reason):**
+- [N1] Title — why deferred
+
+**Files to modify:**
+- `path/to/file.ts` — [changes]
+
+Подтверждаешь?
+```
+
 ## Algorithm
 
 1. **Check arguments:**
@@ -32,17 +64,15 @@ Fix issues identified in code review.
    - Check for tracker item link in REVIEW (see skill `tracker-github` for link format)
    - Try to find related TASK/BRIEF for additional context
 
-5. **Create fix plan:**
-   - List findings to fix (default: all 🔴 and 🟡)
-   - Suggest deferring 🟢 (user can override)
-   - Show affected files
+5. **Execute Interaction Contract:**
+   - Create plan per format above
+   - Default: fix all 🔴 and 🟡, suggest deferring 🟢
+   - Wait for user approval (user may adjust scope)
+   - Do NOT proceed to fixes until approved
 
-6. **🚨 STOP — output plan and wait for confirmation**
-   - User may adjust scope (add/remove findings)
+6. **After confirmation:** implement fixes
 
-7. **After confirmation:** implement fixes
-
-8. **After fixes applied:**
+7. **After fixes applied:**
    - Report which findings were fixed
    - Remind: `Для повторной проверки запусти /review <name>`
 
