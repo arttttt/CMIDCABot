@@ -10,6 +10,14 @@ Use subagent `pm`.
 
 Create task specification for Developer.
 
+## ⚠️ Critical: Follow Agent Contract
+
+PM agent MUST execute Interaction Contract before creating file:
+- Phase 1: Clarify all ambiguities (questions)
+- Phase 2: Confirm scope with user
+
+See agent `pm` for contract details.
+
 ## Algorithm
 
 1. **Check arguments:**
@@ -22,22 +30,17 @@ Create task specification for Developer.
    - Check `docs/briefs/` for related briefs
    - Study existing code if needed
 
-3. **🚨 Clarify ALL ambiguities:**
-   - List ALL unclear points as numbered questions
-   - Ask user, wait for answers
-   - Repeat if new questions arise from answers
-   - Do NOT proceed until EVERY question is resolved
+3. **Execute Interaction Contract:**
+   - PM agent handles phases 1-2 (questions → confirmation)
+   - See agent `pm` for Interaction Contract details
+   - Do NOT proceed to file creation until contract fulfilled
 
-4. **Confirm scope:**
-   - Summarize understanding back to user (2-3 sentences)
-   - Wait for user confirmation ("да", "ok", "yes")
-
-5. **Inherit tracker item from BRIEF (if exists):**
+4. **Inherit tracker item from BRIEF (if exists):**
    - Look for `docs/briefs/BRIEF_<name>.md`
    - If found, parse first line for tracker item link (see skill `tracker-github` for link format)
    - Store item ID for use in created file
 
-6. **Create file:** `docs/tasks/TASK_<name>.md`
+5. **Create file:** `docs/tasks/TASK_<name>.md`
    - **If item inherited from BRIEF:** prepend tracker item link as first line (see skill `tracker-github` for link format)
    - Content sections:
      - Context — why this is needed
@@ -46,7 +49,7 @@ Create task specification for Developer.
      - Technical Notes — hints (optional)
    - **NO "Open Questions" section**
 
-7. **Report result:**
+6. **Report result:**
    ```
    ✅ Created: docs/tasks/TASK_<name>.md
 
