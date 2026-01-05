@@ -43,6 +43,9 @@ export class ExecutePurchaseUseCase {
       return;
     }
 
+    // Defense-in-depth: validate amount here for fast feedback to user,
+    // even though ExecuteSwapUseCase will also validate.
+    // This prevents unnecessary asset selection when amount is clearly invalid.
     if (amountUsdc < MIN_USDC_AMOUNT) {
       yield PurchaseSteps.completed({
         type: "invalid_amount",
