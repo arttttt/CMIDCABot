@@ -12,12 +12,14 @@ Implement functionality from specification or brief.
 
 ## Interaction Contract (MUST follow)
 
-| Phase | Action | STOP until |
-|-------|--------|------------|
-| 1. Plan | Show implementation plan (branch, files, approach) | User says "да" / "ok" / "yes" |
-| 2. Implement | Code, commit, push per plan | — |
+| Phase | Who | Action | STOP until |
+|-------|-----|--------|------------|
+| 1. Plan | Subagent | Create and show plan | User says "да" / "ok" / "yes" |
+| 2. Tracker | Main context | Update status to "implementation" | — |
+| 3. Implement | Subagent | Code, commit, push per plan | — |
 
 🚨 **Writing code without phase 1 approval is a critical violation.**
+🚨 **Main context does NOT create plans — delegate to subagent.**
 
 ### Plan Format
 
@@ -58,16 +60,17 @@ Implement functionality from specification or brief.
    - **Extract tracker item ID** (see skill `tracker-github` for link format)
    - Note source type: TASK or BRIEF
 
-4. **Execute Interaction Contract:**
-   - Create plan per format above
-   - Wait for user approval
-   - Do NOT proceed to implementation until approved
+4. **Delegate to subagent `developer` (plan phase):**
+   - Subagent creates plan per format above
+   - Subagent shows plan to user, waits for approval
+   - User may request changes (subagent handles iterations)
+   - Subagent returns confirmed plan
+   - **Main context does NOT create plans itself**
 
-5. **Update tracker status** (main context, before delegating to subagent):
+5. **Update tracker status** (main context):
    - If tracker item found, update status to "implementation" (see skill `tracker-github` for status mapping)
-   - This is done by main context, NOT by subagent
 
-6. **Delegate to subagent** for implementation:
+6. **Delegate to subagent `developer` (implementation phase):**
    - Create branch:
      ```bash
      git checkout -b <type>/<short-description>
