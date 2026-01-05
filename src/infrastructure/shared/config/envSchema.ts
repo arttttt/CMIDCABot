@@ -43,7 +43,7 @@ const envSchema = z
     WEBHOOK_SECRET: z.string().optional(),
 
     // DCA
-    DCA_AMOUNT_USDC: z.coerce.number().positive().min(1).default(6),
+    DCA_AMOUNT_USDC: z.coerce.number().positive().min(1).max(50).default(6),
     DCA_INTERVAL_MS: z.coerce.number().int().positive().default(86400000),
 
     // Price
