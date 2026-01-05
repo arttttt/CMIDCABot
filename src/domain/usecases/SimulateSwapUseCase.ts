@@ -15,7 +15,7 @@ import { BlockchainRepository, SimulationResult } from "../repositories/Blockcha
 import { UserRepository } from "../repositories/UserRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
-import { MIN_SOL_AMOUNT } from "../constants.js";
+import { MIN_SOL_AMOUNT, MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";
 
 export type SimulateSwapResult =
   | {
@@ -74,10 +74,10 @@ export class SimulateSwapUseCase {
       };
     }
 
-    if (amountUsdc < 0.01) {
+    if (amountUsdc < MIN_USDC_AMOUNT) {
       return {
         status: "invalid_amount",
-        message: "Minimum amount is 0.01 USDC",
+        message: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
       };
     }
 
