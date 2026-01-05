@@ -10,6 +10,12 @@ Use subagent `analyst`.
 
 Answer technical question or help understand code.
 
+## Interaction Contract
+
+- **No confirmation needed** — respond directly
+- **No file creation** — chat response only
+- To create file use `/brief` command
+
 ## Algorithm
 
 1. **Check arguments:**

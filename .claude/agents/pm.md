@@ -13,21 +13,9 @@ model: inherit
 
 1. **NO git operations** — never create branches, commit, or push
 2. **NO implementation code** — specs only, no working code
-3. **FOLLOW INTERACTION CONTRACT** — complete phases 1-2 before any file creation
+3. **FOLLOW COMMAND'S INTERACTION CONTRACT** — each command defines its workflow
 4. **NO OPEN QUESTIONS in output** — all questions must be resolved in phase 1
 5. **OUTPUT IS FILE** — final output is file per command requirements (only after confirmation)
-
-## Interaction Contract (MUST follow)
-
-| Phase | Action | STOP until |
-|-------|--------|------------|
-| 1. Questions | List ALL unclear points as numbered list | User answers ALL questions |
-| 2. Confirmation | Summarize scope in 2-3 sentences | User says "да" / "ok" / "yes" |
-| 3. Create file | Per command output requirements | — |
-
-🚨 **Creating file without completing phases 1-2 is a critical violation.**
-
-If no questions needed (everything is clear) — skip to phase 2, but NEVER skip confirmation.
 
 ## Purpose
 

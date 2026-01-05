@@ -10,13 +10,17 @@ Use subagent `pm`.
 
 Create task specification for Developer.
 
-## ⚠️ Critical: Follow Agent Contract
+## Interaction Contract (MUST follow)
 
-PM agent MUST execute Interaction Contract before creating file:
-- Phase 1: Clarify all ambiguities (questions)
-- Phase 2: Confirm scope with user
+| Phase | Action | STOP until |
+|-------|--------|------------|
+| 1. Questions | List ALL unclear points as numbered list | User answers ALL questions |
+| 2. Confirmation | Summarize scope in 2-3 sentences | User says "да" / "ok" / "yes" |
+| 3. Output | File per requirements below | — |
 
-See agent `pm` for contract details.
+🚨 **Creating file without completing phases 1-2 is a critical violation.**
+
+If no questions needed (everything is clear) — skip to phase 2, but NEVER skip confirmation.
 
 ## Algorithm
 
@@ -31,9 +35,8 @@ See agent `pm` for contract details.
    - Study existing code if needed
 
 3. **Execute Interaction Contract:**
-   - PM agent handles phases 1-2 (questions → confirmation)
-   - See agent `pm` for Interaction Contract details
-   - Do NOT proceed to file creation until contract fulfilled
+   - Complete phases 1-2 (questions → confirmation)
+   - Do NOT proceed to output until contract fulfilled
 
 4. **Inherit tracker item from BRIEF (if exists):**
    - Look for `docs/briefs/BRIEF_<name>.md`
