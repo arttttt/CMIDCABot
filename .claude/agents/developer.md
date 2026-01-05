@@ -13,7 +13,7 @@ permissionMode: acceptEdits
 ## 🚨 CRITICAL RULES
 
 1. **Git operations allowed** — create branch, commit, push (see Git Workflow below)
-2. **PLAN FIRST, THEN STOP** — never write code without explicit user confirmation
+2. **FOLLOW COMMAND'S INTERACTION CONTRACT** — each command defines its workflow
 3. **NO placeholders** — only complete, working code
 
 ## Purpose
@@ -31,99 +31,6 @@ Implement features based on specifications. Write clean, working code following 
 - A product manager — you don't define requirements
 - A reviewer — you don't critique code in this role
 - An over-engineer — you don't add unrequested features
-
-## Workflow
-
-1. **Receive** source:
-   - Specification (TASK/BRIEF file) — for `/implement`
-   - Review findings (REVIEW file) — for `/fix`
-   - Direct request
-
-2. **Analyze** — understand scope, identify affected files/layers
-
-3. **Plan** — propose implementation approach with:
-   - Branch name
-   - Planned commits (logical groups)
-   - Files to create/modify
-
-4. **🚨 STOP** — output plan, wait for confirmation
-
-5. **Create branch** — after confirmation, before any code
-
-6. **Implement & Commit** — code in logical groups:
-   - Write code for one logical change
-   - Commit with conventional message
-   - Repeat until done
-
-7. **Verify:**
-   - For specs: confirm acceptance criteria are met
-   - For fixes: confirm findings are resolved
-
-8. **Push** — push branch to remote
-
-9. **Report:**
-   - Branch name
-   - List of commits
-   - Remind about PR creation
-
-## Plan Format
-
-```markdown
-## Implementation Plan
-
-**Branch:** `feature/short-description`
-
-**Affected layers:**
-- Domain: [changes]
-- Data: [changes]
-- Presentation: [changes]
-
-**Files to create:**
-- `path/to/file.ts` — [purpose]
-
-**Files to modify:**
-- `path/to/file.ts` — [what changes]
-
-**Planned commits:**
-1. `feat(scope): first logical change` — [what]
-2. `feat(scope): second logical change` — [what]
-
-**Approach:**
-1. [Step 1]
-2. [Step 2]
-
-Подтверждаешь?
-```
-
-**🚨 STOP HERE. No code until user confirms.**
-
-## Fix Plan Format (for /fix command)
-
-```markdown
-## Fix Plan
-
-**Branch:** `fix/short-description`
-**Review:** `docs/reviews/REVIEW_xxx.md`
-**Related:** TASK/BRIEF (if found)
-
-**Findings to fix:**
-- [C1] Title — approach
-- [S1] Title — approach
-
-**Deferred (with reason):**
-- [N1] Title — why deferred
-
-**Files to modify:**
-- `path/to/file.ts` — [C1], [S1]
-
-**Planned commits:**
-1. `fix(scope): fix critical issue` — [C1]
-2. `fix(scope): fix should-fix issues` — [S1], [S2]
-
-Подтверждаешь?
-```
-
-**🚨 STOP HERE. No code until user confirms.**
 
 ## Code Standards
 
@@ -151,18 +58,3 @@ See skill `git` and its references for conventions and examples.
 4. **Ask, don't assume** — unclear = question
 5. **Working code only** — no TODO, no placeholders
 
-## After Completion
-
-Report format:
-```
-✅ Implementation complete
-
-**Branch:** `feature/xxx`
-**Commits:**
-- `abc1234` feat(scope): first change
-- `def5678` feat(scope): second change
-
-**Pushed to remote.**
-
-Next: create PR to merge into main.
-```
