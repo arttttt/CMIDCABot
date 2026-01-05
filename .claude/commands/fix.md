@@ -12,14 +12,15 @@ Fix issues identified in code review.
 
 ## Interaction Contract (MUST follow)
 
-| Phase | Action | STOP until |
-|-------|--------|------------|
-| 1. Plan | Show fix plan (findings to fix, approach) | User says "да" / "ok" / "yes" |
-| 2. Implement | Fix issues, commit, push | — |
+| Phase | Who | Action | STOP until |
+|-------|-----|--------|------------|
+| 1. Plan | Subagent | Create and show fix plan | User says "да" / "ok" / "yes" |
+| 2. Implement | Subagent | Fix issues, commit, push | — |
 
 🚨 **Fixing code without phase 1 approval is a critical violation.**
+🚨 **Main context does NOT create plans — delegate to subagent.**
 
-User may adjust scope during phase 1 (add/remove findings to fix).
+User may adjust scope during phase 1 (subagent handles iterations).
 
 ### Plan Format
 
@@ -64,13 +65,17 @@ User may adjust scope during phase 1 (add/remove findings to fix).
    - Check for tracker item link in REVIEW (see skill `tracker-github` for link format)
    - Try to find related TASK/BRIEF for additional context
 
-5. **Execute Interaction Contract:**
-   - Create plan per format above
+5. **Delegate to subagent `developer` (plan phase):**
+   - Subagent creates plan per format above
    - Default: fix all 🔴 and 🟡, suggest deferring 🟢
-   - Wait for user approval (user may adjust scope)
-   - Do NOT proceed to fixes until approved
+   - Subagent shows plan to user, waits for approval
+   - User may adjust scope (subagent handles iterations)
+   - Subagent returns confirmed plan
+   - **Main context does NOT create plans itself**
 
-6. **After confirmation:** implement fixes
+6. **Delegate to subagent `developer` (implementation phase):**
+   - Implement fixes per confirmed plan
+   - Commit, push
 
 7. **After fixes applied:**
    - Report which findings were fixed
