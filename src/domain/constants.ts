@@ -13,3 +13,9 @@ export const MIN_SOL_AMOUNT = 0.01;
  * Amounts below this threshold are rejected.
  */
 export const MIN_USDC_AMOUNT = 0.01;
+
+/**
+ * Maximum USDC amount for purchases/swaps.
+ * Amounts above this threshold are rejected.
+ */
+export const MAX_USDC_AMOUNT = 50;
