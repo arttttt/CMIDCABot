@@ -16,7 +16,7 @@ Create task specification for Developer.
 |-------|--------|------------|
 | 1. Questions | List ALL unclear points as numbered list | User answers ALL questions |
 | 2. Confirmation | Summarize scope in 2-3 sentences | User says "да" / "ok" / "yes" |
-| 3. Create file | Per output requirements below | — |
+| 3. Output | File per requirements below | — |
 
 🚨 **Creating file without completing phases 1-2 is a critical violation.**
 
@@ -36,7 +36,7 @@ If no questions needed (everything is clear) — skip to phase 2, but NEVER skip
 
 3. **Execute Interaction Contract:**
    - Complete phases 1-2 (questions → confirmation)
-   - Do NOT proceed to file creation until contract fulfilled
+   - Do NOT proceed to output until contract fulfilled
 
 4. **Inherit tracker item from BRIEF (if exists):**
    - Look for `docs/briefs/BRIEF_<name>.md`

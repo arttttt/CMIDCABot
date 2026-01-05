@@ -15,7 +15,7 @@ Prepare technical brief to hand off to PM.
 | Phase | Action | STOP until |
 |-------|--------|------------|
 | 1. Propose structure | Show planned brief sections to user | User says "да" / "ok" / "yes" |
-| 2. Create file | Per output requirements below | — |
+| 2. Output | File per requirements below | — |
 
 🚨 **Creating file without phase 1 approval is a critical violation.**
 
@@ -34,7 +34,7 @@ Prepare technical brief to hand off to PM.
 
 3. **Execute Interaction Contract:**
    - Propose structure, wait for approval
-   - Do NOT proceed to file creation until approved
+   - Do NOT proceed to output until approved
 
 4. **Create file:** `docs/briefs/BRIEF_<name>.md`
 
