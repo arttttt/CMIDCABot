@@ -17,3 +17,6 @@ export {
   MAX_RECONFIRMS,
 } from "./ConfirmationCache.js";
 export type { ConfirmationCacheConfig } from "./ConfirmationCache.js";
+
+export { OperationLockCache, DEFAULT_LOCK_TTL_MS } from "./OperationLockCache.js";
+export type { OperationLockCacheConfig } from "./OperationLockCache.js";
