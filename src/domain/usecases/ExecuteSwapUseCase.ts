@@ -228,12 +228,14 @@ export class ExecuteSwapUseCase {
         sendResult = await this.blockchainRepository.signAndSendTransaction(
           transactionBase64,
           this.devPrivateKey,
+          telegramId,
         );
       } else {
         // Production: use encrypted key with secure signing
         sendResult = await this.blockchainRepository.signAndSendTransactionSecure(
           transactionBase64,
           encryptedPrivateKey!,
+          telegramId,
         );
       }
     } catch (error) {
