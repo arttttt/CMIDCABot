@@ -5,7 +5,7 @@
  * Provides Dependency Inversion for domain layer.
  */
 
-import type { TokenMint, WalletAddress } from "../../domain/models/id/index.js";
+import type { TelegramId, TokenMint, WalletAddress } from "../../domain/models/id/index.js";
 import type {
   BlockchainRepository,
   GeneratedKeypair,
@@ -18,9 +18,13 @@ import type {
   BatchBalancesResult,
 } from "../../domain/repositories/BlockchainRepository.js";
 import type { SolanaRpcClient } from "../sources/api/SolanaRpcClient.js";
+import type { OperationLockCache } from "../sources/memory/OperationLockCache.js";
 
 export class SolanaBlockchainRepository implements BlockchainRepository {
-  constructor(private client: SolanaRpcClient) {}
+  constructor(
+    private client: SolanaRpcClient,
+    private operationLock: OperationLockCache,
+  ) {}
 
   // === Wallet Operations ===
 
@@ -61,18 +65,36 @@ export class SolanaBlockchainRepository implements BlockchainRepository {
   async signAndSendTransaction(
     transactionBase64: string,
     privateKeyBase64: string,
+    userId: TelegramId,
   ): Promise<SendTransactionResult> {
-    return this.client.signAndSendTransaction(transactionBase64, privateKeyBase64);
+    if (!this.operationLock.tryAcquire(userId)) {
+      throw new Error("Operation in progress. Please wait for the current transaction to complete.");
+    }
+
+    try {
+      return await this.client.signAndSendTransaction(transactionBase64, privateKeyBase64);
+    } finally {
+      this.operationLock.release(userId);
+    }
   }
 
   async signAndSendTransactionSecure(
     transactionBase64: string,
     encryptedPrivateKey: string,
+    userId: TelegramId,
   ): Promise<SendTransactionResult> {
-    return this.client.signAndSendTransactionSecure(
-      transactionBase64,
-      encryptedPrivateKey,
-    );
+    if (!this.operationLock.tryAcquire(userId)) {
+      throw new Error("Operation in progress. Please wait for the current transaction to complete.");
+    }
+
+    try {
+      return await this.client.signAndSendTransactionSecure(
+        transactionBase64,
+        encryptedPrivateKey,
+      );
+    } finally {
+      this.operationLock.release(userId);
+    }
   }
 
   async simulateTransaction(transactionBase64: string): Promise<SimulationResult> {
