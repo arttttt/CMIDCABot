@@ -10,7 +10,7 @@
  * - Token operations (token balances)
  */
 
-import type { TokenMint, TxSignature, WalletAddress } from "../models/id/index.js";
+import type { TelegramId, TokenMint, TxSignature, WalletAddress } from "../models/id/index.js";
 
 /**
  * Generated keypair with extractable private key
@@ -136,18 +136,22 @@ export interface BlockchainRepository {
 
   /**
    * Sign and send a transaction (with plaintext private key)
+   * @param userId - User ID for operation locking (prevents parallel transactions)
    */
   signAndSendTransaction(
     transactionBase64: string,
     privateKeyBase64: string,
+    userId: TelegramId,
   ): Promise<SendTransactionResult>;
 
   /**
    * Sign and send a transaction with encrypted private key (secure)
+   * @param userId - User ID for operation locking (prevents parallel transactions)
    */
   signAndSendTransactionSecure(
     transactionBase64: string,
     encryptedPrivateKey: string,
+    userId: TelegramId,
   ): Promise<SendTransactionResult>;
 
   /**
