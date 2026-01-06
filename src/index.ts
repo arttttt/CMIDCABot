@@ -92,7 +92,7 @@ import {
 } from "./presentation/telegram/index.js";
 import { startWebServer } from "./presentation/web/index.js";
 import { HttpServer } from "./infrastructure/shared/http/index.js";
-import { SecretCache, ImportSessionCache, RateLimitCache, ConfirmationCache } from "./data/sources/memory/index.js";
+import { SecretCache, ImportSessionCache, RateLimitCache, ConfirmationCache, OperationLockCache } from "./data/sources/memory/index.js";
 import { InMemorySecretRepository, InMemoryImportSessionRepository, InMemoryRateLimitRepository, InMemoryConfirmationRepository } from "./data/repositories/memory/index.js";
 import { CleanupScheduler } from "./infrastructure/shared/scheduling/index.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
@@ -138,9 +138,12 @@ async function main(): Promise<void> {
   // Create user resolver (will be connected to bot API later)
   const userResolver = new TelegramUserResolver();
 
+  // Initialize OperationLockCache for parallel transaction prevention
+  const operationLockCache = new OperationLockCache();
+
   // Initialize Solana RPC client and blockchain repository
   const solanaRpcClient = new SolanaRpcClient(config.solana, encryptionService);
-  const blockchainRepository = new SolanaBlockchainRepository(solanaRpcClient);
+  const blockchainRepository = new SolanaBlockchainRepository(solanaRpcClient, operationLockCache);
 
   // Initialize balance repository with caching (still uses RPC client internally)
   const balanceRepository = new CachedBalanceRepository(solanaRpcClient);
@@ -169,12 +172,13 @@ async function main(): Promise<void> {
   const confirmationRepository = new InMemoryConfirmationRepository(confirmationCache);
   const confirmationFormatter = new ConfirmationFormatter();
 
-  // Start cleanup scheduler for expired secrets, import sessions, and invite tokens
+  // Start cleanup scheduler for expired secrets, import sessions, invite tokens, and operation locks
   const cleanupScheduler = new CleanupScheduler([
     { store: secretCache, intervalMs: 60_000, name: "secretCache" },
     { store: importSessionCache, intervalMs: 60_000, name: "importSessionCache" },
     { store: inviteTokenRepository, intervalMs: 3_600_000, name: "inviteTokenRepository" },
     { store: confirmationCache, intervalMs: 60_000, name: "confirmationCache" },
+    { store: operationLockCache, intervalMs: 60_000, name: "operationLockCache" },
   ]);
   cleanupScheduler.start();
 
