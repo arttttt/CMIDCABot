@@ -1,7 +1,7 @@
 ---
 name: git
 description: Git version control operations. Use for creating branches, making commits, pushing code, and creating pull requests. Use when implementing features, fixing bugs, or preparing code for review.
-allowed-tools: Bash, mcp__github-official__create_pull_request, mcp__github-official__get_pull_request, mcp__github-official__update_pull_request
+allowed-tools: Bash, github:create_pull_request, github:get_pull_request, github:update_pull_request
 ---
 
 # Git Operations
