@@ -74,3 +74,14 @@ If user input contains invalid characters:
 ## File naming
 
 - Use snake_case: `TASK_portfolio_display.md`
+
+## Output Boundaries
+
+This command produces ONLY:
+- **File:** `docs/tasks/TASK_<n>.md`
+- **Chat:** questions, confirmations, result report
+
+NO other side effects allowed:
+- ❌ No tracker API calls
+- ❌ No git operations
+- ❌ No external service calls
