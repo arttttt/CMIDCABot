@@ -41,7 +41,6 @@ cp .env.example .env
 | `SOLANA_RPC_URL` | No | `https://api.devnet.solana.com` | Solana RPC endpoint |
 | `DATABASE_PATH` | No | `./data/bot.db` | Path to SQLite database |
 | `AUTH_DATABASE_PATH` | No | `./data/auth.db` | Path to authorization database |
-| `MOCK_DATABASE_PATH` | No | `./data/mock.db` | Path to mock database (dev only) |
 | `DCA_AMOUNT_USDC` | No | `6` | Purchase amount in USDC equivalent |
 | `DCA_INTERVAL_MS` | No | `86400000` | Interval between purchases in ms (24h) |
 | `DEV_WALLET_PRIVATE_KEY` | No | - | Base64-encoded private key (dev only) |
@@ -261,7 +260,6 @@ npx tsc --noEmit
 | `/prices` | user | Show current asset prices |
 | `/swap` | user | Show swap usage |
 | `/swap quote <amount> [asset]` | user | Get swap quote (default: SOL) |
-| `/swap simulate <amount> [asset]` | user | Simulate swap without executing |
 | `/swap execute <amount> [asset]` | user | Execute real swap on Solana |
 
 ## Tech stack

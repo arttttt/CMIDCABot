@@ -9,9 +9,14 @@
  */
 
 import { UserRepository } from "../../domain/repositories/UserRepository.js";
-import { SchedulerRepository } from "../../domain/repositories/SchedulerRepository.js";
-import { ExecuteBatchDcaUseCase } from "../../domain/usecases/ExecuteBatchDcaUseCase.js";
+// TODO: restore after DcaScheduler refactoring
+// import { SchedulerRepository } from "../../domain/repositories/SchedulerRepository.js";
+// import { ExecuteBatchDcaUseCase } from "../../domain/usecases/ExecuteBatchDcaUseCase.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
+
+// TODO: restore after DcaScheduler refactoring - placeholder types
+type SchedulerRepository = unknown;
+type ExecuteBatchDcaUseCase = unknown;
 
 export interface DcaSchedulerConfig {
   intervalMs: number;

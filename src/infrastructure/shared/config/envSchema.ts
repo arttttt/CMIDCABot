@@ -30,7 +30,6 @@ const envSchema = z
 
     // Database
     DATABASE_PATH: z.string().default("./data/bot.db"),
-    MOCK_DATABASE_PATH: z.string().default("./data/mock.db"),
     AUTH_DATABASE_PATH: z.string().default("./data/auth.db"),
 
     // HTTP
@@ -143,7 +142,6 @@ export interface SolanaConfig {
 
 export interface DatabaseConfig {
   path: string;
-  mockPath: string;
 }
 
 export interface WebConfig {
@@ -214,7 +212,6 @@ function envToConfig(env: ValidatedEnv): Config {
     },
     database: {
       path: env.DATABASE_PATH,
-      mockPath: env.MOCK_DATABASE_PATH,
     },
     dca: {
       amountUsdc: env.DCA_AMOUNT_USDC,
