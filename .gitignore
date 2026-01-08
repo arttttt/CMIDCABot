@@ -32,3 +32,6 @@ npm-debug.log*
 !package.json
 !package-lock.json
 !tsconfig.json
+
+# Perles
+.perles/
