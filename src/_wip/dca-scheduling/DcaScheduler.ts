@@ -9,14 +9,19 @@
  */
 
 import { UserRepository } from "../../domain/repositories/UserRepository.js";
-// TODO: restore after DcaScheduler refactoring
-// import { SchedulerRepository } from "../../domain/repositories/SchedulerRepository.js";
-// import { ExecuteBatchDcaUseCase } from "../../domain/usecases/ExecuteBatchDcaUseCase.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
-// TODO: restore after DcaScheduler refactoring - placeholder types
-type SchedulerRepository = unknown;
-type ExecuteBatchDcaUseCase = unknown;
+// TODO: restore after DcaScheduler refactoring
+// These interfaces are placeholders until SchedulerRepository and ExecuteBatchDcaUseCase are restored
+interface SchedulerRepository {
+  getState(): Promise<{ lastRunAt: Date | null; intervalMs: number; updatedAt: Date } | undefined>;
+  initState(intervalMs: number): Promise<void>;
+  updateLastRunAt(timestamp: Date): Promise<void>;
+}
+
+interface ExecuteBatchDcaUseCase {
+  execute(amountUsdc: number): Promise<{ successful: number; processed: number }>;
+}
 
 export interface DcaSchedulerConfig {
   intervalMs: number;

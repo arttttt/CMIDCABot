@@ -557,13 +557,6 @@ async function main(): Promise<void> {
   await transport.start();
 }
 
-function formatInterval(ms: number): string {
-  if (ms >= 86400000) return `${(ms / 86400000).toFixed(1)} days`;
-  if (ms >= 3600000) return `${(ms / 3600000).toFixed(1)} hours`;
-  if (ms >= 60000) return `${(ms / 60000).toFixed(1)} minutes`;
-  return `${ms} ms`;
-}
-
 function maskUrl(url: string): string {
   try {
     const parsed = new URL(url);
