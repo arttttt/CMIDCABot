@@ -1,7 +1,7 @@
 ---
 name: tracker-github
 description: GitHub Issues and Projects integration. Use for creating/updating issues, managing labels, adding to project boards, and tracking task status. Use when publishing artifacts, updating task status, or checking project state.
-allowed-tools: mcp__github-official__create_issue, mcp__github-official__get_issue, mcp__github-official__add_issue_comment, mcp__github-official__update_issue, mcp__github-projects-local__list_projects, mcp__github-projects-local__get_project_fields, mcp__github-projects-local__get_project_items, mcp__github-projects-local__add_issue_to_project, mcp__github-projects-local__update_project_item_field, mcp__github-projects-local__move_item_to_column
+allowed-tools: github:issue_write, github:issue_read, github:add_issue_comment, mcp__github-projects-local__list_projects, mcp__github-projects-local__get_project_fields, mcp__github-projects-local__get_project_items, mcp__github-projects-local__add_issue_to_project, mcp__github-projects-local__update_project_item_field, mcp__github-projects-local__move_item_to_column
 ---
 
 # GitHub Tracker
@@ -90,10 +90,25 @@ Closes #<number>
 | done | (Issue closed) | Done |
 
 ### Create Issue
-Use `create_issue` with repository from Configuration.
+Use `github:issue_write` with `method: "create"`:
+- `owner`: from Configuration
+- `repo`: from Configuration
+- `title`: issue title
+- `body`: issue body
+- `labels`: array of label names
+
+### Get Issue
+Use `github:issue_read` with `method: "get"`:
+- `owner`: from Configuration
+- `repo`: from Configuration
+- `issue_number`: issue number
 
 ### Update Labels
-Use `update_issue` to change stage labels.
+Use `github:issue_write` with `method: "update"`:
+- `owner`: from Configuration
+- `repo`: from Configuration
+- `issue_number`: issue number
+- `labels`: new array of label names
 
 ### Update Status
 

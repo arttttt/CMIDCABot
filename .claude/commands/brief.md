@@ -57,3 +57,14 @@ If user input contains invalid characters:
 
 - Use snake_case: `BRIEF_jupiter_retry.md`
 - No spaces or special characters
+
+## Output Boundaries
+
+This command produces ONLY:
+- **File:** `docs/briefs/BRIEF_<n>.md`
+- **Chat:** questions, confirmations, result report
+
+NO other side effects allowed:
+- ❌ No tracker API calls
+- ❌ No git operations
+- ❌ No external service calls
