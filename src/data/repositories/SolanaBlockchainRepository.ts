@@ -13,7 +13,6 @@ import type {
   ValidateMnemonicResult,
   ValidatePrivateKeyResult,
   SendTransactionResult,
-  SimulationResult,
   TokenConfig,
   BatchBalancesResult,
 } from "../../domain/repositories/BlockchainRepository.js";
@@ -73,10 +72,6 @@ export class SolanaBlockchainRepository implements BlockchainRepository {
       transactionBase64,
       encryptedPrivateKey,
     );
-  }
-
-  async simulateTransaction(transactionBase64: string): Promise<SimulationResult> {
-    return this.client.simulateTransaction(transactionBase64);
   }
 
   // === Token Operations ===

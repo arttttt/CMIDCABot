@@ -4,7 +4,6 @@ export type {
   GeneratedKeypair,
   GeneratedKeypairWithMnemonic,
   ValidateMnemonicResult,
-  SimulationResult,
   SendTransactionResult,
   ValidatePrivateKeyResult,
   BatchBalancesResult,

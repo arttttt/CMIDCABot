@@ -6,15 +6,14 @@ try {
 }
 
 import { createRequire } from "module";
-import type { Kysely } from "kysely";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
 import { TelegramId } from "./domain/models/id/index.js";
 import { loadConfig } from "./infrastructure/shared/config/index.js";
 import { setLogger, DebugLogger, NoOpLogger } from "./infrastructure/shared/logging/index.js";
-import { createMainDatabase, createMockDatabase, createAuthDatabase } from "./data/sources/database/index.js";
-import { createMainRepositories, createMockRepositories } from "./data/factories/RepositoryFactory.js";
+import { createMainDatabase, createAuthDatabase } from "./data/sources/database/index.js";
+import { createMainRepositories } from "./data/factories/RepositoryFactory.js";
 import { SQLiteAuthRepository } from "./data/repositories/sqlite/SQLiteAuthRepository.js";
 import { SQLiteInviteTokenRepository } from "./data/repositories/sqlite/SQLiteInviteTokenRepository.js";
 import { CachedBalanceRepository } from "./data/repositories/memory/CachedBalanceRepository.js";
@@ -26,7 +25,8 @@ import { JupiterPriceClient } from "./data/sources/api/JupiterPriceClient.js";
 import { JupiterSwapClient } from "./data/sources/api/JupiterSwapClient.js";
 import { KeyEncryptionService } from "./infrastructure/internal/crypto/index.js";
 import { TelegramUserResolver } from "./presentation/telegram/UserResolver.js";
-import { DcaScheduler } from "./_wip/dca-scheduling/index.js";
+// TODO: restore after DcaScheduler refactoring
+// import { DcaScheduler } from "./_wip/dca-scheduling/index.js";
 import {
   InitUserUseCase,
   ExecutePurchaseUseCase,
@@ -43,7 +43,6 @@ import {
   GetDcaStatusUseCase,
   GetPricesUseCase,
   GetQuoteUseCase,
-  SimulateSwapUseCase,
   ExecuteSwapUseCase,
   GenerateInviteUseCase,
   ActivateInviteUseCase,
@@ -53,8 +52,6 @@ import {
   RemoveAuthorizedUserUseCase,
   GetAllAuthorizedUsersUseCase,
   UpdateUserRoleUseCase,
-  ExecuteMockPurchaseUseCase,
-  ExecuteBatchDcaUseCase,
   AuthorizationHelper,
   GetUserRoleUseCase,
 } from "./domain/usecases/index.js";
@@ -75,7 +72,6 @@ import {
   PurchaseFormatter,
   PriceFormatter,
   QuoteFormatter,
-  SimulateFormatter,
   SwapFormatter,
   AdminFormatter,
   InviteFormatter,
@@ -98,7 +94,6 @@ import { CleanupScheduler } from "./infrastructure/shared/scheduling/index.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
 import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
 import { TelegramMessageSender } from "./presentation/telegram/TelegramMessageSender.js";
-import type { MockDatabase } from "./data/types/database.js";
 
 async function main(): Promise<void> {
   console.log(`CMI DCA Bot v${pkg.version}`);
@@ -115,7 +110,6 @@ async function main(): Promise<void> {
   // Initialize database connections
   const mainDb = createMainDatabase(config.database.path);
   const authDb = createAuthDatabase(config.auth.dbPath);
-  let mockDb: Kysely<MockDatabase> | undefined;
 
   // Create repositories
   const { userRepository, transactionRepository } = createMainRepositories(mainDb, encryptionService);
@@ -196,66 +190,15 @@ async function main(): Promise<void> {
   const getAllAuthorizedUsers = new GetAllAuthorizedUsersUseCase(authRepository);
   const updateUserRole = new UpdateUserRoleUseCase(authRepository, authHelper);
 
-  // Initialize mock database and scheduler only in development mode
-  let dcaScheduler: DcaScheduler | undefined;
-  let deleteUserData: DeleteUserDataUseCase;
-  let portfolioRepository: import("./domain/repositories/PortfolioRepository.js").PortfolioRepository | undefined;
+  // Create delete user data use case
+  const deleteUserData = new DeleteUserDataUseCase(
+    removeAuthorizedUser,
+    userRepository,
+    transactionRepository,
+  );
 
-  if (config.isDev) {
-    mockDb = createMockDatabase(config.database.mockPath);
-
-    const mockRepos = createMockRepositories(mockDb);
-    portfolioRepository = mockRepos.portfolioRepository;
-
-    // Create delete user data use case with dev-mode repositories
-    deleteUserData = new DeleteUserDataUseCase(
-      removeAuthorizedUser,
-      userRepository,
-      transactionRepository,
-      mockRepos.portfolioRepository,
-      mockRepos.purchaseRepository,
-    );
-
-    // Create DCA scheduler if configured (requires price repository)
-    if (config.dca.amountUsdc > 0 && config.dca.intervalMs > 0 && priceRepository) {
-      // Create mock purchase use case for scheduler
-      const executeMockPurchase = new ExecuteMockPurchaseUseCase(
-        mockRepos.portfolioRepository,
-        mockRepos.purchaseRepository,
-        priceRepository,
-      );
-
-      // Create batch DCA use case for scheduler
-      const executeBatchDca = new ExecuteBatchDcaUseCase(
-        userRepository,
-        balanceRepository,
-        priceRepository,
-        executeMockPurchase,
-      );
-
-      dcaScheduler = new DcaScheduler(
-        userRepository,
-        mockRepos.schedulerRepository,
-        executeBatchDca,
-        {
-          intervalMs: config.dca.intervalMs,
-          amountUsdc: config.dca.amountUsdc,
-        },
-      );
-
-      // Try to start scheduler if there are already active users
-      dcaScheduler.start().catch((error) => {
-        console.error("[DCA Scheduler] Failed to check for active users:", error);
-      });
-    }
-  } else {
-    // Create delete user data use case for production (no mock repositories)
-    deleteUserData = new DeleteUserDataUseCase(
-      removeAuthorizedUser,
-      userRepository,
-      transactionRepository,
-    );
-  }
+  // TODO: restore DcaScheduler after refactoring
+  const dcaScheduler = undefined;
 
   // Create helpers
   const walletHelper = new WalletInfoHelper(blockchainRepository, balanceRepository, config.dcaWallet);
@@ -271,7 +214,7 @@ async function main(): Promise<void> {
   );
 
   // Create use cases
-  const initUser = new InitUserUseCase(userRepository, portfolioRepository);
+  const initUser = new InitUserUseCase(userRepository);
   const getWalletInfo = new GetWalletInfoUseCase(userRepository, walletHelper);
   const createWallet = new CreateWalletUseCase(userRepository, blockchainRepository, walletHelper, secretStore);
   const importWallet = new ImportWalletUseCase(userRepository, blockchainRepository, walletHelper);
@@ -282,12 +225,6 @@ async function main(): Promise<void> {
   const getDcaStatus = new GetDcaStatusUseCase(userRepository, dcaScheduler);
   const getPrices = new GetPricesUseCase(priceRepository);
   const getQuote = new GetQuoteUseCase(swapRepository);
-  const simulateSwap = new SimulateSwapUseCase(
-    swapRepository,
-    blockchainRepository,
-    userRepository,
-    config.dcaWallet.devPrivateKey,
-  );
 
   // Create use cases that require Jupiter repositories
   const determineAssetToBuy = priceRepository
@@ -328,7 +265,6 @@ async function main(): Promise<void> {
   const purchaseFormatter = new PurchaseFormatter();
   const priceFormatter = new PriceFormatter();
   const quoteFormatter = new QuoteFormatter();
-  const simulateFormatter = new SimulateFormatter();
   const swapFormatter = new SwapFormatter();
   const adminFormatter = new AdminFormatter();
   const progressFormatter = new ProgressFormatter();
@@ -409,10 +345,8 @@ async function main(): Promise<void> {
         },
         swap: {
           getQuote,
-          simulateSwap,
           executeSwap: executeSwapUseCase,
           quoteFormatter,
-          simulateFormatter,
           swapFormatter,
           progressFormatter,
           confirmationRepository,
@@ -468,8 +402,6 @@ async function main(): Promise<void> {
   // Cleanup function
   const cleanup = async (): Promise<void> => {
     cleanupScheduler.stop();
-    dcaScheduler?.stop();
-    await mockDb?.destroy();
     await mainDb?.destroy();
     await authDb?.destroy();
   };
@@ -609,9 +541,6 @@ async function main(): Promise<void> {
     console.log(`Bot: @${botInfo.username}`);
     console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
     console.log(`Mode: ${transportModeLabel}`);
-    if (dcaScheduler) {
-      console.log(`DCA: ${config.dca.amountUsdc} USDC every ${formatInterval(config.dca.intervalMs)}`);
-    }
     console.log(`Prices: ${config.price.source === "jupiter" ? "Jupiter API (real-time)" : "Mock (static)"}`);
     console.log(`Secret links: ${config.http.publicUrl}/secret/{token}`);
     console.log(`Import links: ${config.http.publicUrl}/import/{token}`);
@@ -626,13 +555,6 @@ async function main(): Promise<void> {
 
   // Start transport (handles both polling and webhook modes)
   await transport.start();
-}
-
-function formatInterval(ms: number): string {
-  if (ms >= 86400000) return `${(ms / 86400000).toFixed(1)} days`;
-  if (ms >= 3600000) return `${(ms / 3600000).toFixed(1)} hours`;
-  if (ms >= 60000) return `${(ms / 60000).toFixed(1)} minutes`;
-  return `${ms} ms`;
 }
 
 function maskUrl(url: string): string {

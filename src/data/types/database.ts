@@ -12,15 +12,6 @@ export interface MainDatabase {
 }
 
 /**
- * Mock database tables (development only)
- */
-export interface MockDatabase {
-  portfolio: PortfolioTable;
-  purchases: PurchasesTable;
-  scheduler_state: SchedulerStateTable;
-}
-
-/**
  * Users table
  */
 export interface UsersTable {
@@ -43,39 +34,4 @@ export interface TransactionsTable {
   amount_usdc: number;
   amount_asset: number;
   created_at: Generated<string>;
-}
-
-/**
- * Portfolio table (mock/development)
- */
-export interface PortfolioTable {
-  telegram_id: number;
-  btc_balance: Generated<number>;
-  eth_balance: Generated<number>;
-  sol_balance: Generated<number>;
-  created_at: Generated<string>;
-  updated_at: Generated<string>;
-}
-
-/**
- * Purchases table
- */
-export interface PurchasesTable {
-  id: Generated<number>;
-  telegram_id: number;
-  asset_symbol: string;
-  amount_usdc: number;
-  amount_asset: number;
-  price_usd: number;
-  created_at: Generated<string>;
-}
-
-/**
- * Scheduler state table
- */
-export interface SchedulerStateTable {
-  id: number;
-  last_run_at: string | null;
-  interval_ms: number;
-  updated_at: Generated<string>;
 }
