@@ -8,21 +8,21 @@
 
 ## Acceptance Criteria
 
-- [ ] Удалены файлы Swap Simulation (SimulateSwapUseCase.ts, SimulateFormatter.ts)
-- [ ] Удалена команда `/swap simulate` из handlers.ts
-- [ ] Удалён метод `simulateTransaction()` из BlockchainRepository и реализаций
-- [ ] Удалены файлы Mock Purchase System (ExecuteMockPurchaseUseCase.ts, ExecuteBatchDcaUseCase.ts)
-- [ ] Удалены domain models: Portfolio.ts, Purchase.ts, SchedulerState.ts
-- [ ] Удалены repository interfaces: PortfolioRepository.ts, PurchaseRepository.ts, SchedulerRepository.ts
-- [ ] Удалены SQLite implementations: SQLitePortfolioRepository.ts, SQLitePurchaseRepository.ts, SQLiteSchedulerRepository.ts
-- [ ] Очищены database types (MockDatabase, PortfolioTable, PurchasesTable, SchedulerStateTable)
-- [ ] Удалены mock-функции из KyselyDatabase.ts (createMockDatabase, initMockSchema, etc.)
-- [ ] Очищен RepositoryFactory.ts (MockRepositories, createMockRepositories)
-- [ ] Удалён MOCK_DATABASE_PATH из envSchema.ts и .env.example
-- [ ] Обновлён README.md (удалены упоминания mock database)
-- [ ] Закомментированы сломанные импорты в src/_wip/dca-scheduling/DcaScheduler.ts с TODO-пометкой
-- [ ] Проект компилируется без ошибок (`npm run build`)
-- [ ] Линтер проходит без ошибок (`npm run lint`)
+- [x] Удалены файлы Swap Simulation (SimulateSwapUseCase.ts, SimulateFormatter.ts)
+- [x] Удалена команда `/swap simulate` из handlers.ts
+- [x] Удалён метод `simulateTransaction()` из BlockchainRepository и реализаций
+- [x] Удалены файлы Mock Purchase System (ExecuteMockPurchaseUseCase.ts, ExecuteBatchDcaUseCase.ts)
+- [x] Удалены domain models: Portfolio.ts, Purchase.ts, SchedulerState.ts
+- [x] Удалены repository interfaces: PortfolioRepository.ts, PurchaseRepository.ts, SchedulerRepository.ts
+- [x] Удалены SQLite implementations: SQLitePortfolioRepository.ts, SQLitePurchaseRepository.ts, SQLiteSchedulerRepository.ts
+- [x] Очищены database types (MockDatabase, PortfolioTable, PurchasesTable, SchedulerStateTable)
+- [x] Удалены mock-функции из KyselyDatabase.ts (createMockDatabase, initMockSchema, etc.)
+- [x] Очищен RepositoryFactory.ts (MockRepositories, createMockRepositories)
+- [x] Удалён MOCK_DATABASE_PATH из envSchema.ts и .env.example
+- [x] Обновлён README.md (удалены упоминания mock database)
+- [x] Закомментированы сломанные импорты в src/_wip/dca-scheduling/DcaScheduler.ts с TODO-пометкой
+- [x] Проект компилируется без ошибок (`npm run build`)
+- [ ] Линтер проходит без ошибок (`npm run lint`) — есть предсуществующие ошибки boundaries
 
 ## Scope
 
