@@ -40,7 +40,7 @@ export const Definitions = {
 
   swap: {
     name: "swap",
-    description: "Swap USDC to assets (quote/simulate/execute)",
+    description: "Swap USDC to assets (quote/execute)",
   },
 
   admin: {

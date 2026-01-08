@@ -27,7 +27,6 @@ import {
   DetermineAssetToBuyUseCase,
   GetPricesUseCase,
   GetQuoteUseCase,
-  SimulateSwapUseCase,
   ExecuteSwapUseCase,
   GenerateInviteUseCase,
   ActivateInviteUseCase,
@@ -53,7 +52,6 @@ import {
   PurchaseFormatter,
   PriceFormatter,
   QuoteFormatter,
-  SimulateFormatter,
   SwapFormatter,
   AdminFormatter,
   InviteFormatter,
@@ -137,10 +135,8 @@ export interface PricesCommandDeps {
 
 export interface SwapCommandDeps {
   getQuote: GetQuoteUseCase;
-  simulateSwap: SimulateSwapUseCase;
   executeSwap: ExecuteSwapUseCase;
   quoteFormatter: QuoteFormatter;
-  simulateFormatter: SimulateFormatter;
   swapFormatter: SwapFormatter;
   progressFormatter: ProgressFormatter;
   // Confirmation flow dependencies
@@ -667,25 +663,6 @@ function createSwapQuoteCommand(deps: SwapCommandDeps): Command {
   };
 }
 
-function createSwapSimulateCommand(deps: SwapCommandDeps): Command {
-  return {
-    definition: { name: "simulate", description: "Simulate swap without executing", usage: "<amount> [asset]" },
-    handler: async (args, ctx) => {
-      const amountStr = args[0];
-      if (!amountStr) {
-        return deps.simulateFormatter.formatUsage();
-      }
-      const amount = parseAmount(amountStr);
-      if (amount === null) {
-        return deps.simulateFormatter.formatUsage();
-      }
-      const asset = args[1] || "SOL";
-      const result = await deps.simulateSwap.execute(ctx.telegramId, amount, asset);
-      return deps.simulateFormatter.format(result);
-    },
-  };
-}
-
 function createSwapExecuteCommand(deps: SwapCommandDeps): Command {
   const { confirmationRepository, confirmationFormatter, swapRepository } = deps;
 
@@ -973,7 +950,6 @@ export function createSwapCommand(deps: SwapCommandDeps): Command {
     },
     subcommands: new Map([
       ["quote", createSwapQuoteCommand(deps)],
-      ["simulate", createSwapSimulateCommand(deps)],
       ["execute", createSwapExecuteCommand(deps)],
     ]),
   };

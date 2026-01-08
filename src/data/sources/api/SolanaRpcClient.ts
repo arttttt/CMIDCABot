@@ -74,16 +74,6 @@ export interface ValidateMnemonicResult {
 }
 
 /**
- * Result of transaction simulation
- */
-export interface SimulationResult {
-  success: boolean;
-  error: string | null;
-  unitsConsumed: number | null;
-  logs: string[];
-}
-
-/**
  * Result of sending a transaction
  */
 export interface SendTransactionResult {
@@ -595,85 +585,6 @@ export class SolanaRpcClient {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return { valid: false, error: `Invalid Solana private key: ${message}` };
-    }
-  }
-
-  /**
-   * Simulate a transaction without sending it to the network.
-   * This is useful for checking if a transaction will succeed and how many compute units it will use.
-   *
-   * @param transactionBase64 - Base64 encoded serialized transaction (from Jupiter API)
-   * @returns SimulationResult with success status, error, compute units, and logs
-   */
-  async simulateTransaction(transactionBase64: string): Promise<SimulationResult> {
-    logger.step("Solana", 2, 2, "Simulating transaction...");
-
-    try {
-      const startTime = Date.now();
-
-      // Call simulateTransaction RPC method
-      // The transaction is already base64 encoded from Jupiter
-      // Cast to branded type - Jupiter returns valid base64 transactions
-      const result = await this.rpc
-        .simulateTransaction(transactionBase64 as Base64EncodedWireTransaction, {
-          encoding: "base64",
-          commitment: "confirmed",
-          replaceRecentBlockhash: true, // Use fresh blockhash for simulation
-        })
-        .send();
-
-      const duration = Date.now() - startTime;
-      const { value } = result;
-
-      // Check if simulation succeeded
-      const success = value.err === null;
-
-      // Extract error message if present
-      let errorMessage: string | null = null;
-      if (value.err !== null) {
-        if (typeof value.err === "string") {
-          errorMessage = value.err;
-        } else if (typeof value.err === "object") {
-          errorMessage = JSON.stringify(value.err);
-        }
-      }
-
-      const simulationResult = {
-        success,
-        error: errorMessage,
-        unitsConsumed: value.unitsConsumed ? Number(value.unitsConsumed) : null,
-        logs: value.logs ?? [],
-      };
-
-      if (success) {
-        logger.tx("Solana", "Simulation SUCCESS", {
-          unitsConsumed: simulationResult.unitsConsumed,
-          duration: `${duration}ms`,
-        });
-      } else {
-        logger.tx("Solana", "Simulation FAILED", {
-          error: errorMessage,
-          duration: `${duration}ms`,
-        });
-        // Log relevant transaction logs for debugging
-        if (value.logs && value.logs.length > 0) {
-          logger.debug("Solana", "Simulation logs", {
-            logs: value.logs.slice(-10), // Last 10 logs
-          });
-        }
-      }
-
-      return simulationResult;
-    } catch (error) {
-      // Handle RPC errors - sanitize to prevent leaking sensitive data (LOW-003)
-      const sanitizedMessage = sanitizeErrorMessage(error);
-      logger.error("Solana", "Simulation RPC error", { error: sanitizedMessage });
-      return {
-        success: false,
-        error: `Simulation RPC error: ${sanitizedMessage}`,
-        unitsConsumed: null,
-        logs: [],
-      };
     }
   }
 

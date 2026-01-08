@@ -58,16 +58,6 @@ export interface SendTransactionResult {
 }
 
 /**
- * Result of transaction simulation
- */
-export interface SimulationResult {
-  success: boolean;
-  error: string | null;
-  unitsConsumed: number | null;
-  logs: string[];
-}
-
-/**
  * Token configuration for batch balance fetching
  */
 export interface TokenConfig {
@@ -149,11 +139,6 @@ export interface BlockchainRepository {
     transactionBase64: string,
     encryptedPrivateKey: string,
   ): Promise<SendTransactionResult>;
-
-  /**
-   * Simulate a transaction without sending
-   */
-  simulateTransaction(transactionBase64: string): Promise<SimulationResult>;
 
   // === Token Operations ===
 

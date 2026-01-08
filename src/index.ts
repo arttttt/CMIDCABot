@@ -43,7 +43,6 @@ import {
   GetDcaStatusUseCase,
   GetPricesUseCase,
   GetQuoteUseCase,
-  SimulateSwapUseCase,
   ExecuteSwapUseCase,
   GenerateInviteUseCase,
   ActivateInviteUseCase,
@@ -75,7 +74,6 @@ import {
   PurchaseFormatter,
   PriceFormatter,
   QuoteFormatter,
-  SimulateFormatter,
   SwapFormatter,
   AdminFormatter,
   InviteFormatter,
@@ -282,12 +280,6 @@ async function main(): Promise<void> {
   const getDcaStatus = new GetDcaStatusUseCase(userRepository, dcaScheduler);
   const getPrices = new GetPricesUseCase(priceRepository);
   const getQuote = new GetQuoteUseCase(swapRepository);
-  const simulateSwap = new SimulateSwapUseCase(
-    swapRepository,
-    blockchainRepository,
-    userRepository,
-    config.dcaWallet.devPrivateKey,
-  );
 
   // Create use cases that require Jupiter repositories
   const determineAssetToBuy = priceRepository
@@ -328,7 +320,6 @@ async function main(): Promise<void> {
   const purchaseFormatter = new PurchaseFormatter();
   const priceFormatter = new PriceFormatter();
   const quoteFormatter = new QuoteFormatter();
-  const simulateFormatter = new SimulateFormatter();
   const swapFormatter = new SwapFormatter();
   const adminFormatter = new AdminFormatter();
   const progressFormatter = new ProgressFormatter();
@@ -409,10 +400,8 @@ async function main(): Promise<void> {
         },
         swap: {
           getQuote,
-          simulateSwap,
           executeSwap: executeSwapUseCase,
           quoteFormatter,
-          simulateFormatter,
           swapFormatter,
           progressFormatter,
           confirmationRepository,
