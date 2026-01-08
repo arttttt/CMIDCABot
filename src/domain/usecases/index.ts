@@ -51,9 +51,5 @@ export { UpdateUserRoleUseCase, type UpdateUserRoleResult } from "./UpdateUserRo
 export { GetAllAuthorizedUsersUseCase, type GetAllAuthorizedUsersResult } from "./GetAllAuthorizedUsersUseCase.js";
 export { GetUserRoleUseCase } from "./GetUserRoleUseCase.js";
 
-// Mock Purchase (dev-only)
-export { ExecuteMockPurchaseUseCase, type MockPurchaseResult } from "./ExecuteMockPurchaseUseCase.js";
-export { ExecuteBatchDcaUseCase, type BatchDcaResult } from "./ExecuteBatchDcaUseCase.js";
-
 // Helpers (re-export from domain/helpers)
 export * from "../helpers/index.js";

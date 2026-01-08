@@ -52,8 +52,6 @@ import {
   RemoveAuthorizedUserUseCase,
   GetAllAuthorizedUsersUseCase,
   UpdateUserRoleUseCase,
-  ExecuteMockPurchaseUseCase,
-  ExecuteBatchDcaUseCase,
   AuthorizationHelper,
   GetUserRoleUseCase,
 } from "./domain/usecases/index.js";
