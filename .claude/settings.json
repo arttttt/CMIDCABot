@@ -11,22 +11,25 @@
       "Bash(git log*)",
       "Skill"
     ],
+    "deny": [
+      "Read(.env)",
+      "Edit(.env)",
+      "Bash(rm -rf*)"
+    ],
     "ask": [
       "Edit(**/*)",
       "Write(**/*)",
       "Bash(git add*)",
       "Bash(git commit*)",
       "Bash(git push*)"
-    ],
-    "deny": [
-      "Read(.env)",
-      "Edit(.env)",
-      "Bash(rm -rf*)"
     ]
   },
   "statusLine": {
     "type": "command",
     "command": "bun x ccusage statusline",
     "padding": 0
+  },
+  "enabledPlugins": {
+    "beads@beads-marketplace": true
   }
 }
