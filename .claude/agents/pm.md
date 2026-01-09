@@ -25,7 +25,7 @@ Transform ideas, briefs, and user requests into clear, actionable task specifica
 
 - User's direct request
 - Brief from Analyst (`docs/drafts/BRIEF_*.md`)
-- Beads issues (`bd list`, `bd show <id>`)
+- Beads issues (context passed by command)
 - Existing context in codebase
 
 ## Output
