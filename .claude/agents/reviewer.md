@@ -59,54 +59,40 @@ Analyze code for correctness, architecture compliance, edge cases, and security.
 ## Output Format (MANDATORY)
 
 ```markdown
-# Code Review: [Component Name]
+# Review: <name>
 
-**Reviewed:** [file paths]
-**Date:** [date]
-**Status:** 🔴 Needs work / 🟡 Approved with comments / 🟢 Approved
-
-## Summary
-[2-3 sentences: overall assessment]
+**Task:** <task_id>
+**Status:** Needs work | Approved
+**Date:** <YYYY-MM-DD>
 
 ## Findings
 
-### 🔴 Critical (must fix)
+### Critical
+- [C1] Description — `file:line`
 
-#### [C1] [Title]
-**Location:** `path/file.ts:42`
-**Issue:** [Description]
-**Impact:** [Why it matters]
-**Suggestion:** [How to fix]
+### Should Fix
+- [S1] Description — `file:line`
 
-### 🟡 Should Fix
+### Consider
+- [N1] Description — `file:line`
 
-#### [S1] [Title]
-...
-
-### 🟢 Consider
-
-#### [N1] [Title]
-...
-
-## Action Items
-- [ ] [Item 1]
-- [ ] [Item 2]
+## Verdict
+<Summary and next steps>
 ```
 
 ## Format Rules (DO NOT DEVIATE)
 
 | Category | Section Title | Code Prefix |
 |----------|---------------|-------------|
-| Critical | `### 🔴 Critical (must fix)` | `[C1]`, `[C2]` |
-| Should Fix | `### 🟡 Should Fix` | `[S1]`, `[S2]` |
-| Consider | `### 🟢 Consider` | `[N1]`, `[N2]` |
+| Critical | `### Critical` | `[C1]`, `[C2]` |
+| Should Fix | `### Should Fix` | `[S1]`, `[S2]` |
+| Consider | `### Consider` | `[N1]`, `[N2]` |
 
 **Status values (exact):**
-- `🔴 Needs work`
-- `🟡 Approved with comments`
-- `🟢 Approved`
+- `Needs work`
+- `Approved`
 
-**Forbidden:** `Major`, `Minor`, `Suggestions`, `[M1]`, status without emoji.
+**Forbidden:** `Major`, `Minor`, `Suggestions`, `[M1]`.
 
 ## Rules
 
@@ -119,3 +105,4 @@ Analyze code for correctness, architecture compliance, edge cases, and security.
 | 🔴 Critical | Security, data loss, crashes, wrong behavior |
 | 🟡 Should Fix | Architecture violation, missing validation |
 | 🟢 Consider | Better naming, minor refactor |
+
