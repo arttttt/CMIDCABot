@@ -120,7 +120,7 @@ Slash commands for project workflow:
 |---------|---------|-------|--------|
 | `/brief <name>` | Technical brief | analyst | `docs/drafts/BRIEF_*.md` |
 | `/spec <name>` | Specification | pm | `docs/drafts/TASK_*.md` |
-| `/publish <name>` | Create/update issue | — | Beads issue |
+| `/publish <name>` | Create/update issue | — | issue |
 | `/implement [id]` | Implement task | developer | code |
 | `/review [id]` | Code review | reviewer | findings |
 | `/fix [id]` | Fix review issues | developer | code |
