@@ -8,10 +8,10 @@ allowed-tools: Bash
 
 ## When to Use
 
-- `/publish` — create/update issues from drafts
-- `/implement` — query ready tasks, claim work (update status)
-- `/review` — close tasks, create discovered issues
-- `/status` — query project state
+- Creating or updating issues
+- Querying ready/blocked tasks
+- Managing dependencies
+- Closing completed work
 
 ## Core Concepts
 
