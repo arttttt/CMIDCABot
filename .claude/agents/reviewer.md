@@ -119,3 +119,35 @@ Analyze code for correctness, architecture compliance, edge cases, and security.
 | 🔴 Critical | Security, data loss, crashes, wrong behavior |
 | 🟡 Should Fix | Architecture violation, missing validation |
 | 🟢 Consider | Better naming, minor refactor |
+
+## Issue Classification
+
+When reviewing, distinguish between:
+
+### Related Issues (In Scope)
+- Issues directly related to the task being reviewed
+- Should be fixed in the same PR
+- Include in review findings
+
+### Unrelated Issues (Out of Scope)
+- Pre-existing issues discovered during review
+- Issues in files not changed by this PR
+- **Action:** Create with `bd create` for future work
+- Do NOT block the PR for unrelated issues
+
+## Beads Integration
+
+When reviewing tasks managed by Beads:
+
+- **Get task AC** — use `bd show <id>` to retrieve acceptance criteria
+- **Verify AC met** — check each criterion against implementation
+- **Check dependencies** — ensure task dependencies are satisfied
+- **Note task in header** — include task ID in review document header
+- **Review output format:**
+  ```markdown
+  # Code Review: [Component Name]
+
+  **Task:** [task-id]
+  **Reviewed:** [file paths]
+  ...
+  ```
