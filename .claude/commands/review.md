@@ -17,7 +17,7 @@ Conduct code review and create report.
 | 1. Scope | Determine what to review, show to user | — |
 | 2. Review | Analyze code, create findings | — |
 | 3. Verdict | Show findings, ask about unrelated issues | User responds to each unrelated finding |
-| 4. Close | If approved, close task | — |
+| 4. Close | If approved, notify ready for merge | — |
 
 **Closing task without user seeing the verdict is a critical violation.**
 
@@ -71,9 +71,9 @@ Conduct code review and create report.
    ```
    Review complete. Status: Approved.
 
-   Closing task <id>...
+   Ready for merge. Task remains open until PR is merged.
    ```
-   Close task using `beads` skill.
+   Do NOT close task — developer closes after merge.
 
 ## Output Format
 
@@ -126,7 +126,7 @@ Detect existing versions and increment automatically.
 
 ## Important Rules
 
-- **Only close on approval** — needs work = task stays open
+- **Never close task** — developer closes after PR merge
 - **Categorize findings** — related vs unrelated
 - **Create issues for unrelated** — with `discovered-from` link
 - **No fixes** — document only, developer fixes
