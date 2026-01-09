@@ -15,7 +15,7 @@ Use `reviewer` subagent for execution.
 ### Step 1: Determine Scope
 
 1. If task `<id>` provided:
-   - Get task details: `bd show <id> --json`
+   - Get task details using `beads` skill
    - Find associated branch/changes
    - Review all files changed for that task
 
@@ -59,11 +59,9 @@ Save review to `docs/reviews/REVIEW_<id-or-name>.md`
 For each unrelated finding, ask user:
 > "Found unrelated issue: [description]. Create new issue with `discovered-from` link?"
 
-If yes:
-```bash
-bd create "Issue title" -t bug -p 2 -d "Description" --json
-bd dep add <new-id> <current-task-id> --type discovered-from
-```
+If yes, use `beads` skill to:
+1. Create new issue (type: bug, priority 2)
+2. Add `discovered-from` dependency linking to current task
 
 ### Step 6: Verdict
 
@@ -89,10 +87,7 @@ Review complete. Status: Approved.
 Closing task <id>...
 ```
 
-Close the task:
-```bash
-bd close <id> --reason "Review passed. Implemented: <summary>"
-```
+Close the task using `beads` skill with reason: "Review passed. Implemented: <summary>"
 
 ## Output Format
 

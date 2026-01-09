@@ -37,33 +37,21 @@ Based on what exists:
 
 ### Step 4: Create Issues
 
-Use `beads` skill commands:
+Use `beads` skill to create issues:
 
 #### For Simple Task
-```bash
-bd create "Title" -t task -p 2 -d "Description from spec" --json
-```
+Create task with title, description from spec, priority 2.
 
 #### For Epic (no children yet)
-```bash
-bd create "Epic Title" -t epic -p 1 -d "Description" --json
-```
+Create epic with title, description, priority 1.
 
 #### For Epic with Children
-```bash
-# Create epic first
-bd create "Epic Title" -t epic -p 1 -d "Description" --json
-# Create each subtask
-bd create "Subtask 1" -t task -p 2 --parent <epic-id> -d "AC list" --json
-bd create "Subtask 2" -t task -p 2 --parent <epic-id> -d "AC list" --json
-# Add dependencies between subtasks
-bd dep add <task2-id> <task1-id> --type blocks
-```
+1. Create epic first
+2. Create each subtask with parent reference to epic
+3. Add `blocks` dependencies between subtasks in order
 
 #### Update Existing
-```bash
-bd update <id> -d "New description from TASK" --json
-```
+Update issue description with new content from TASK.
 
 ### Step 5: Update refs.json
 
@@ -71,8 +59,10 @@ After creating issues, update `docs/drafts/.refs.json`:
 
 ```json
 {
-  "BRIEF_<name>.md": "<issue-id>",
-  "TASK_<name>.md": "<issue-id>"
+  "<name>": {
+    "issue_id": "<id>",
+    "type": "epic|task"
+  }
 }
 ```
 

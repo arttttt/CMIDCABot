@@ -14,12 +14,9 @@ None — execute in main context using `beads` skill.
 
 ### Mode 1: Specific Task (with `<id>`)
 
-Show detailed task information:
-
-```bash
-bd show <id> --json
-bd dep tree <id>
-```
+Show detailed task information using `beads` skill:
+- Get task details
+- Get dependency tree
 
 Output:
 ```
@@ -37,13 +34,10 @@ Dependency Tree:
 
 ### Mode 2: Project Overview (no `<id>`)
 
-Show overall project status:
-
-```bash
-bd list --status open --json
-bd ready --json
-bd blocked --json
-```
+Show overall project status using `beads` skill:
+- List open tasks
+- List ready tasks
+- List blocked tasks
 
 Output:
 ```
@@ -73,8 +67,8 @@ In Progress:
 
 ### Stats
 - Total open issues
-- Ready count (from `bd ready`)
-- Blocked count (from `bd blocked`)
+- Ready count (tasks without blockers)
+- Blocked count (tasks with unresolved dependencies)
 
 ### Ready Tasks
 Tasks with no blockers, sorted by priority (P0 first).
@@ -144,6 +138,6 @@ DCATgBot-abc (open)
 
 ## Notes
 
-- Use `bd ready` output to suggest next task for `/implement`
+- Use ready tasks list to suggest next task for `/implement`
 - Blocked tasks show their immediate blocker and its status
 - Priority displayed as P0-P4 for quick scanning

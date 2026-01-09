@@ -15,31 +15,21 @@ Use `developer` subagent for execution.
 ### Step 1: Select Task
 
 1. If `<id>` not provided:
-   ```bash
-   bd ready --json
-   ```
-   Show list of ready tasks, ask user to select
+   - List ready tasks (use `beads` skill)
+   - Show list to user, ask to select
 
 2. If `<id>` provided:
-   ```bash
-   bd show <id> --json
-   ```
-   Verify task exists and is ready (not blocked)
+   - Get task details (use `beads` skill)
+   - Verify task exists and is ready (not blocked)
 
 ### Step 2: Claim Task
 
-Update status to in_progress:
-```bash
-bd update <id> --status in_progress --json
-```
+Claim task (set status to `in_progress`) using `beads` skill.
 
 ### Step 3: Understand Requirements
 
 1. Read task description and acceptance criteria
-2. If task has parent epic, read epic context:
-   ```bash
-   bd show <parent-id> --json
-   ```
+2. If task has parent epic, get epic context using `beads` skill
 3. Explore relevant codebase areas
 
 ### Step 4: Plan Implementation
@@ -53,27 +43,23 @@ bd update <id> --status in_progress --json
 ### Step 5: Implement
 
 1. Create branch using `git` skill:
-   ```bash
-   git checkout -b beads/<task-id>-<short-description>
-   ```
+   - `feature/<id>-<short>` for feature, task, epic, chore
+   - `fix/<id>-<short>` for bug
 
 2. Implement according to plan:
    - Follow project conventions (`conventions.md`)
    - Follow architecture (`ARCHITECTURE.md`)
    - No placeholders — working code only
 
-3. Commit changes:
-   ```bash
-   git add .
-   git commit -m "feat(<scope>): <description>
-
-   Implements <task-id>"
+3. Commit changes using `git` skill:
    ```
+   <type>(<scope>): <description>
 
-4. Push branch:
-   ```bash
-   git push -u origin <branch-name>
+   [Task: <id>]
    ```
+   Types: feat, fix, refactor, docs, chore
+
+4. Push branch to remote
 
 ### Step 6: Report Completion
 
@@ -96,7 +82,7 @@ After implementation:
 ```
 Implementation complete for <task-id>.
 
-Branch: beads/<task-id>-<description>
+Branch: feature/<id>-<description> (or fix/<id>-<description>)
 Files changed:
 - src/path/file1.ts (new)
 - src/path/file2.ts (modified)
@@ -117,6 +103,6 @@ User: /implement DCATgBot-abc
    - Update dependency injection
 4. [User approves]
 5. Implementing...
-6. Branch: beads/DCATgBot-abc-wallet-adapter
+6. Branch: feature/DCATgBot-abc-wallet-adapter
 7. Ready for review.
 ```

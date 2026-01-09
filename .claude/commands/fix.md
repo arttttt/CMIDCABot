@@ -58,18 +58,18 @@ Wait for user approval.
 
 ### Step 5: Commit Fixes
 
-```bash
-git add .
-git commit -m "fix(<scope>): address review findings
+Commit using `git` skill with format:
+```
+fix(<scope>): address review findings
 
 Fixes:
 - [C1] <description>
 - [S1] <description>
 
-Task: <task-id>"
-
-git push
+[Task: <id>]
 ```
+
+Push changes to remote.
 
 ### Step 6: Request Re-review
 
