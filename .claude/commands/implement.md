@@ -70,6 +70,11 @@ Confirm?
    - Create branch using `git` skill:
      - `feature/<id>-<short>` for feature, task, epic, chore
      - `fix/<id>-<short>` for bug
+   - **Save branch to refs.json:**
+     - Read `docs/drafts/.refs.json`
+     - Find entry where `issue_id` matches task_id (iterate entries)
+     - Add `"branch": "<branch_name>"` to that entry
+     - Write updated refs.json
    - Implement with granular commits:
      - Write code for one logical change
      - Commit with conventional message: `<type>(<scope>): <description>`

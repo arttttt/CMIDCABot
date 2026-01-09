@@ -27,7 +27,8 @@ User may adjust scope during phase 1 (subagent handles iterations).
 ```markdown
 ## Fix Plan
 
-**Branch:** current branch
+**Task:** <task_id>
+**Branch:** <branch_name> (from refs.json)
 **Review:** `docs/reviews/REVIEW_xxx.md`
 
 **Findings to fix:**
@@ -61,7 +62,13 @@ Confirm?
    - Extract finding codes ([C1], [S1], [N1])
    - Note file locations from findings
 
-4. **Delegate to subagent `developer` (plan phase):**
+4. **Checkout correct branch:**
+   - Read `docs/drafts/.refs.json`
+   - Find entry where `issue_id` matches task_id (iterate entries)
+   - If entry has `branch`: `git checkout <branch>`
+   - If no branch found: error "Branch not found. Was /implement run?"
+
+5. **Delegate to subagent `developer` (plan phase):**
    - Subagent creates plan per format above
    - Default: fix all Critical and Should Fix, suggest deferring Consider
    - Subagent shows plan to user, waits for approval
@@ -69,7 +76,7 @@ Confirm?
    - Subagent returns confirmed plan
    - **Main context does NOT create plans itself**
 
-5. **Delegate to subagent `developer` (implementation phase):**
+6. **Delegate to subagent `developer` (implementation phase):**
    - Implement fixes per confirmed plan
    - Commit with format:
      ```
@@ -83,7 +90,7 @@ Confirm?
      ```
    - Push to remote
 
-6. **Report completion:**
+7. **Report completion:**
    ```
    Fixes complete for <task-id>.
 
