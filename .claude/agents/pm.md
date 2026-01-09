@@ -24,12 +24,13 @@ Transform ideas, briefs, and user requests into clear, actionable task specifica
 ## Input Sources
 
 - User's direct request
-- Brief from Analyst (`docs/briefs/BRIEF_*.md`)
+- Brief from Analyst (`docs/drafts/BRIEF_*.md`)
+- Beads issues (`bd list`, `bd show <id>`)
 - Existing context in codebase
 
 ## Output
 
-Always create file: `docs/tasks/TASK_<name>.md`
+Always create file: `docs/drafts/TASK_<name>.md`
 
 ## Workflow
 
@@ -69,7 +70,17 @@ Always create file: `docs/tasks/TASK_<name>.md`
 3. **Define done** — every criterion checkable
 4. **Stay lean** — don't over-specify implementation
 5. **One task = one focus** — split large requests
-6. **Create output directory** (`docs/tasks/`) if it doesn't exist
+6. **Create output directory** (`docs/drafts/`) if it doesn't exist
+
+## Beads Integration
+
+When working with Beads task management:
+
+- **Check for existing tasks** — use `bd list` to see backlog
+- **View task details** — use `bd show <id>` for full context and AC
+- **Create tasks from specs** — after spec approval, use `bd create` to add to backlog
+- **Link specs to tasks** — reference task ID in spec if working from Beads issue
+- **Output location** — all specs go to `docs/drafts/TASK_*.md`
 
 ## You ARE
 
