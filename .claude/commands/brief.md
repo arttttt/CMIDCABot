@@ -1,41 +1,62 @@
-# /brief — Create Technical Brief
+---
+description: Prepare technical brief for PM
+argument-hint: "<name> [description]"
+allowed-tools: Read, Write, Glob, Grep
+---
 
-Create a technical brief for a feature or change.
+Use subagent `analyst`.
 
-## Arguments
+## Task
 
-- `<name>` — Brief identifier (optional, will prompt if not provided)
+Prepare technical brief to hand off to PM.
 
-## Subagent
+## Interaction Contract (MUST follow)
 
-Use `analyst` subagent for execution.
+| Phase | Action | STOP until |
+|-------|--------|------------|
+| 1. Propose structure | Show planned brief sections to user | User says "da" / "ok" / "yes" |
+| 2. Output | File per requirements below | — |
 
-## Interaction Contract
+**Creating file without phase 1 approval is a critical violation.**
 
-### Phase 1: Discovery
+## Algorithm
 
-1. If `<name>` not provided, ask user for feature/change description
-2. Explore codebase to understand technical context
-3. Ask clarifying questions (max 3) to understand:
-   - What problem needs to be solved
-   - What constraints exist
-   - What integrations are involved
+1. **Check arguments:**
+   - If `$ARGUMENTS` is empty or whitespace only:
+     - Ask user for brief name and short description
+     - Wait for response
+   - Otherwise: use first word as `<name>`, rest as description
 
-### Phase 2: Draft
+2. **Research context:**
+   - Find related files in codebase
+   - Identify technical constraints
+   - Discover dependencies
 
-1. Present draft brief in chat for review:
-   - Context
-   - Goals
-   - Scope
-   - Out of Scope
-   - Open Questions (for PM)
-2. Wait for user feedback
-3. Iterate if needed
+3. **Execute Interaction Contract:**
+   - Propose structure, wait for approval
+   - Do NOT proceed to output until approved
 
-### Phase 3: Save
+4. **Create file:** `docs/drafts/BRIEF_<name>.md`
 
-1. After user confirms, save to `docs/drafts/BRIEF_<name>.md`
-2. Create directory if not exists
+5. **Report result:**
+   ```
+   Created: docs/drafts/BRIEF_<name>.md
+
+   Next: run `/publish <name>` to create tracker item
+   ```
+
+## Name Sanitization
+
+If user input contains invalid characters:
+- Replace spaces with `_`
+- Remove special characters except `-` and `_`
+- Convert to lowercase
+- Example: "My Cool Feature!" -> `my_cool_feature`
+
+## File Naming
+
+- Use snake_case: `BRIEF_jupiter_retry.md`
+- No spaces or special characters
 
 ## Output Format
 
@@ -43,7 +64,7 @@ Use `analyst` subagent for execution.
 # Brief: [Feature/Change Name]
 
 ## Context
-[Why this matters, background — 2-3 sentences]
+[Why this matters, background - 2-3 sentences]
 
 ## Goals
 - [Goal 1]
@@ -63,14 +84,13 @@ Use `analyst` subagent for execution.
 - [Links to related files in codebase]
 ```
 
-## Output Location
+## Output Boundaries
 
-`docs/drafts/BRIEF_<name>.md`
+This command produces ONLY:
+- **File:** `docs/drafts/BRIEF_<name>.md`
+- **Chat:** questions, confirmations, result report
 
-## Example
-
-```
-User: /brief wallet-connection
-```
-
-Analyst explores wallet-related code, asks about supported wallets, creates brief about implementing wallet connection feature.
+NO other side effects allowed:
+- No tracker API calls
+- No git operations
+- No external service calls

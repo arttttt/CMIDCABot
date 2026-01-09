@@ -1,108 +1,115 @@
-# /implement — Implement Task
+---
+description: Implement task from specification
+argument-hint: "<task_id>"
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
+---
 
-Implement a task from the issue tracker.
+Use subagent `developer`.
 
-## Arguments
+## Task
 
-- `<id>` — Issue ID (optional, will show ready tasks)
+Implement functionality from task specification.
 
-## Subagent
+## Interaction Contract (MUST follow)
 
-Use `developer` subagent for execution.
+| Phase | Who | Action | STOP until |
+|-------|-----|--------|------------|
+| 1. Plan | Subagent | Create and show plan | User says "da" / "ok" / "yes" |
+| 2. Claim | Main context | Update status to "in_progress" | — |
+| 3. Implement | Subagent | Code, commit, push per plan | — |
 
-## Workflow
+**Writing code without phase 1 approval is a critical violation.**
+**Main context does NOT create plans — delegate to subagent.**
 
-### Step 1: Select Task
+### Plan Format
 
-1. If `<id>` not provided:
-   - List ready tasks (use `beads` skill)
-   - Show list to user, ask to select
+```markdown
+## Implementation Plan
 
-2. If `<id>` provided:
-   - Get task details (use `beads` skill)
-   - Verify task exists and is ready (not blocked)
+**Branch:** `feature/<id>-short-description`
+**Task:** <id> - <title>
 
-### Step 2: Claim Task
+**Affected layers:**
+- [layer]: [changes]
 
-Claim task (set status to `in_progress`) using `beads` skill.
+**Files to create/modify:**
+- `path/to/file.ts` - [purpose]
 
-### Step 3: Understand Requirements
+**Approach:**
+1. [Step 1]
+2. [Step 2]
 
-1. Read task description and acceptance criteria
-2. If task has parent epic, get epic context using `beads` skill
-3. Explore relevant codebase areas
+Confirm?
+```
 
-### Step 4: Plan Implementation
+## Algorithm
 
-1. Present implementation plan to user:
-   - Files to create/modify
-   - Key changes
-   - Order of implementation
-2. Wait for user approval before coding
+1. **Check arguments:**
+   - If `$ARGUMENTS` is empty or whitespace only:
+     - Ask: "Which task to implement? Provide task ID."
+     - Wait for response
+   - Otherwise: use `$ARGUMENTS` as task ID
 
-### Step 5: Implement
+2. **Get task details:**
+   - Use `beads` skill to get task information
+   - Verify task exists and is not blocked
+   - If blocked: report blocker and exit
 
-1. Create branch using `git` skill:
-   - `feature/<id>-<short>` for feature, task, epic, chore
-   - `fix/<id>-<short>` for bug
+3. **Delegate to subagent `developer` (plan phase):**
+   - Subagent reads task requirements
+   - Subagent creates plan per format above
+   - Subagent shows plan to user, waits for approval
+   - User may request changes (subagent handles iterations)
+   - Subagent returns confirmed plan
+   - **Main context does NOT create plans itself**
 
-2. Implement according to plan:
-   - Follow project conventions (`conventions.md`)
-   - Follow architecture (`ARCHITECTURE.md`)
-   - No placeholders — working code only
+4. **Claim task** (main context):
+   - Use `beads` skill to set status to "in_progress"
 
-3. Commit changes using `git` skill:
+5. **Delegate to subagent `developer` (implementation phase):**
+   - Create branch using `git` skill:
+     - `feature/<id>-<short>` for feature, task, epic, chore
+     - `fix/<id>-<short>` for bug
+   - Implement with granular commits:
+     - Write code for one logical change
+     - Commit with conventional message: `<type>(<scope>): <description>`
+     - Include `[Task: <id>]` in commit body
+     - Repeat until done
+   - Push branch to remote
+
+6. **Report completion:**
    ```
-   <type>(<scope>): <description>
+   Implementation complete
 
-   [Task: <id>]
+   **Branch:** `<branch-name>`
+   **Commits:**
+   - `<hash>` <message>
+   - `<hash>` <message>
+
+   **Pushed to remote.**
+
+   Next: run /review to check implementation.
    ```
-   Types: feat, fix, refactor, docs, chore
 
-4. Push branch to remote
+## Skills Integration
 
-### Step 6: Report Completion
+Use skill `git` for all git operations:
+- Creating branches
+- Making commits
+- Pushing to remote
 
-1. Report to user:
-   - What was implemented
-   - Files changed
-   - Branch name
-2. DO NOT close task — wait for review
+Use skill `beads` for tracker operations:
+- Getting task details
+- Claiming task (set in_progress)
 
-## Important Rules
+See skill references for detailed instructions.
 
-- **Do NOT close task** — reviewer will close after approval
-- **Do NOT merge** — PR review required
-- **Ask if unclear** — better to clarify than assume
-- **Plan first** — never code without user approval
+**Note:** Tracker operations are performed by main context before/after delegating to subagent.
 
-## Output
+## Important
 
-After implementation:
-```
-Implementation complete for <task-id>.
-
-Branch: feature/<id>-<description> (or fix/<id>-<description>)
-Files changed:
-- src/path/file1.ts (new)
-- src/path/file2.ts (modified)
-
-Next: Run /review to check implementation.
-```
-
-## Example
-
-```
-User: /implement DCATgBot-abc
-
-1. Task: "Setup wallet adapter"
-2. Claiming task... done
-3. Plan:
-   - Create src/infrastructure/wallet/adapter.ts
-   - Add WalletAdapter interface to domain
-   - Update dependency injection
-4. [User approves]
-5. Implementing...
-6. Branch: feature/DCATgBot-abc-wallet-adapter
-7. Ready for review.
-```
+- Code must be complete, no placeholders
+- Do NOT close task — wait for review
+- Do NOT merge — PR review required
+- Ask if unclear — better to clarify than assume
+- Use `conventions.md` and `ARCHITECTURE.md` for code style

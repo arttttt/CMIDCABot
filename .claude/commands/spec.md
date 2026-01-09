@@ -1,44 +1,69 @@
-# /spec — Create Task Specification
+---
+description: Create task specification (TASK)
+argument-hint: "<name> [description]"
+allowed-tools: Read, Write, Glob, Grep
+---
 
-Transform a brief or idea into actionable task specification.
+Use subagent `pm`.
 
-## Arguments
+## Task
 
-- `<name>` — Spec identifier (optional, will prompt if not provided)
+Create task specification for Developer.
 
-## Subagent
+## Interaction Contract (MUST follow)
 
-Use `pm` subagent for execution.
+| Phase | Action | STOP until |
+|-------|--------|------------|
+| 1. Questions | List ALL unclear points as numbered list | User answers ALL questions |
+| 2. Confirmation | Summarize scope in 2-3 sentences | User says "da" / "ok" / "yes" |
+| 3. Output | File per requirements below | — |
 
-## Prerequisites
+**Creating file without completing phases 1-2 is a critical violation.**
 
-Before creating spec:
-1. Check if `docs/drafts/BRIEF_<name>.md` exists — use as input
-2. Check `docs/drafts/.refs.json` for existing related issues
+If no questions needed (everything is clear) — skip to phase 2, but NEVER skip confirmation.
 
-## Interaction Contract
+## Algorithm
 
-### Phase 1: Discovery
+1. **Check arguments:**
+   - If `$ARGUMENTS` is empty or whitespace only:
+     - Ask user for task name and what needs to be done
+     - Wait for response
+   - Otherwise: use first word as `<name>`, rest as description
 
-1. If `<name>` not provided, ask user
-2. Read brief if exists (`docs/drafts/BRIEF_<name>.md`)
-3. Ask clarifying questions to resolve ALL open questions from brief
-4. Determine task type:
-   - **Simple task** — single deliverable, clear scope
-   - **Epic** — multiple subtasks needed
+2. **Find context:**
+   - Check `docs/drafts/` for related briefs
+   - Study existing code if needed
 
-### Phase 2: Draft
+3. **Execute Interaction Contract:**
+   - Complete phases 1-2 (questions -> confirmation)
+   - Do NOT proceed to output until contract fulfilled
 
-1. Present draft specification:
-   - For simple task: Context, Acceptance Criteria, Scope, Out of Scope
-   - For epic: Context, Tasks list with dependencies, Scope, Out of Scope
-2. Wait for user confirmation
-3. Iterate if needed
+4. **Create file:** `docs/drafts/TASK_<name>.md`
+   - Content sections:
+     - Context — why this is needed
+     - Acceptance Criteria — checklist with `- [ ]`
+     - Scope / Out of Scope — boundaries
+     - Technical Notes — hints (optional)
+   - **NO "Open Questions" section**
 
-### Phase 3: Save
+5. **Report result:**
+   ```
+   Created: docs/drafts/TASK_<name>.md
 
-1. After confirmation, save to `docs/drafts/TASK_<name>.md`
-2. Create directory if not exists
+   Next: run `/publish <name>` to create tracker item
+   ```
+
+## Name Sanitization
+
+If user input contains invalid characters:
+- Replace spaces with `_`
+- Remove special characters except `-` and `_`
+- Convert to lowercase
+- Example: "My Cool Feature!" -> `my_cool_feature`
+
+## File Naming
+
+- Use snake_case: `TASK_portfolio_display.md`
 
 ## Output Format — Simple Task
 
@@ -46,10 +71,10 @@ Before creating spec:
 # Task: [Short Descriptive Title]
 
 ## Context
-[Why this task exists — 2-3 sentences]
+[Why this task exists - 2-3 sentences]
 
 ## Acceptance Criteria
-- [ ] [Criterion 1 — must be verifiable]
+- [ ] [Criterion 1 - must be verifiable]
 - [ ] [Criterion 2]
 - [ ] [Criterion 3]
 
@@ -60,7 +85,7 @@ Before creating spec:
 [What is explicitly NOT included]
 
 ## Technical Notes
-[Implementation hints — optional]
+[Implementation hints - optional]
 ```
 
 ## Output Format — Epic
@@ -69,7 +94,7 @@ Before creating spec:
 # Epic: [Feature Name]
 
 ## Context
-[Why this epic exists — 2-3 sentences]
+[Why this epic exists - 2-3 sentences]
 
 ## Tasks
 
@@ -90,12 +115,13 @@ Before creating spec:
 [What is explicitly NOT included]
 ```
 
-## Output Location
+## Output Boundaries
 
-`docs/drafts/TASK_<name>.md`
+This command produces ONLY:
+- **File:** `docs/drafts/TASK_<name>.md`
+- **Chat:** questions, confirmations, result report
 
-## Notes
-
-- NO open questions in output — all must be resolved in Phase 1
-- Each acceptance criterion must be verifiable
-- Dependencies only between tasks within same epic
+NO other side effects allowed:
+- No tracker API calls
+- No git operations
+- No external service calls

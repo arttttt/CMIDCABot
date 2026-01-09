@@ -1,100 +1,96 @@
-# /publish — Publish Draft to Issue Tracker
+---
+description: Publish artifact to tracker (create item, add to Project)
+argument-hint: "<artifact_name>"
+allowed-tools: Read, Edit, Glob, Bash
+---
 
-Publish BRIEF or TASK drafts as issues in Beads.
+## Task
 
-## Arguments
+Publish an artifact (TASK or BRIEF) to tracker by creating a tracker item and adding it to the project board.
 
-- `<name>` — Draft identifier (optional, will list available drafts)
+## Interaction Contract (MUST follow)
 
-## Subagent
+| Phase | Action | STOP until |
+|-------|--------|------------|
+| 1. Find artifact | Locate and show artifact to publish | — |
+| 2. Confirm | Show what will be created (type, title) | User says "da" / "ok" / "yes" |
+| 3. Publish | Create tracker item, update refs | — |
 
-None — execute in main context using `beads` skill.
+**Publishing without phase 2 confirmation is a critical violation.**
 
-## Workflow
+## Critical: Follow Skill Contract
 
-### Step 1: Find Drafts
+Before creating/updating tracker items, read the **Content Contract** in skill `beads`.
 
-1. If `<name>` not provided, list all drafts in `docs/drafts/`:
-   - `BRIEF_*.md`
-   - `TASK_*.md`
-2. Ask user to select which to publish
+Key requirements:
+- Item body = summary only (NOT full content)
+- All text must be in English
 
-### Step 2: Check Existing Issues
+## Algorithm
 
-Read `docs/drafts/.refs.json` to check if draft already has linked issue.
+1. **Check arguments:**
+   - If `$ARGUMENTS` is empty or whitespace only:
+     - Ask user for artifact name
+     - Wait for response
+   - Otherwise: use `$ARGUMENTS` as `<name>`
 
-### Step 3: Determine Action
+2. **Find artifact file** (priority order):
+   - First check: `docs/drafts/TASK_<name>.md`
+   - If not found: `docs/drafts/BRIEF_<name>.md`
+   - If neither exists: report error and exit
 
-Based on what exists:
+3. **Check if already published:**
+   - Read `docs/drafts/.refs.json`
+   - Look for existing entry with this name
+   - If found: report "Already published as item #<id>" and exit
 
-| Has BRIEF | Has TASK | Prior Issue | Action |
-|-----------|----------|-------------|--------|
-| Yes | No | No | Create task/epic (no children) |
-| No | Yes | No | Create task OR epic with children + deps |
-| No | Yes | Yes | Create children under existing OR update description |
-| Yes | Yes | No | Create epic with children from TASK |
-| Yes | Yes | Yes | Update existing with TASK details |
+4. **Extract metadata from file:**
+   - Parse title from first `#` heading
+   - Extract summary (first paragraph after heading)
+   - Determine artifact type (TASK or BRIEF)
+   - Determine if epic (has subtasks)
 
-### Step 4: Create Issues
+5. **Confirm with user:**
+   - Show: artifact type, title, what will be created
+   - Wait for confirmation
 
-Use `beads` skill to create issues:
+6. **Create tracker item(s):**
+   - Use `beads` skill for issue creation
+   - For epic: create parent first, then children with dependencies
 
-#### For Simple Task
-Create task with title, description from spec, priority 2.
+7. **Update refs.json:**
+   - Add entry mapping name to issue ID
 
-#### For Epic (no children yet)
-Create epic with title, description, priority 1.
+8. **Cleanup:**
+   - Delete published draft files
 
-#### For Epic with Children
-1. Create epic first
-2. Create each subtask with parent reference to epic
-3. Add `blocks` dependencies between subtasks in order
+9. **Report result:**
+   ```
+   Published: <filename>
+   - Item: #<id>
+   - Type: <type>
 
-#### Update Existing
-Update issue description with new content from TASK.
+   Deleted draft files.
+   ```
 
-### Step 5: Update refs.json
+## Tracker Integration
 
-After creating issues, update `docs/drafts/.refs.json`:
+Use skill `beads` for all tracker operations:
+- Creating tracker items
+- Setting dependencies
+- Priority mapping
 
-```json
-{
-  "<name>": {
-    "issue_id": "<id>",
-    "type": "epic|task"
-  }
-}
-```
+See skill references for detailed instructions.
 
-### Step 6: Cleanup
+## Error Handling
 
-After successful publish:
-1. Delete `docs/drafts/BRIEF_<name>.md` (if exists)
-2. Delete `docs/drafts/TASK_<name>.md` (if exists)
-3. Keep `.refs.json` updated
+- Artifact not found -> clear error message with search paths
+- Already published -> show existing item ID
+- Tracker unavailable -> cannot publish without tracker access
 
-## Output
+## Name Sanitization
 
-Report to user:
-- Created issue IDs
-- Links/dependencies created
-- Files deleted
-
-## Example Flow
-
-```
-User: /publish wallet-connection
-
-1. Found: BRIEF_wallet-connection.md, TASK_wallet-connection.md
-2. No prior issue in .refs.json
-3. TASK defines epic with 3 subtasks
-4. Creating:
-   - Epic: DCATgBot-abc (Wallet Connection)
-   - Task: DCATgBot-def (Setup wallet adapter) - parent: abc
-   - Task: DCATgBot-ghi (Connect flow) - parent: abc, blocked by: def
-   - Task: DCATgBot-jkl (Disconnect handling) - parent: abc, blocked by: ghi
-5. Updated .refs.json
-6. Deleted drafts
-
-Done. Epic DCATgBot-abc created with 3 subtasks.
-```
+Accept name as-is (should already be sanitized when artifact was created).
+If file not found with exact name, try:
+- lowercase
+- with underscores instead of spaces

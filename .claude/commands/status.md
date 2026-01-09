@@ -1,143 +1,95 @@
-# /status — Show Project Status
+---
+description: Check task status (tracker and local artifacts)
+argument-hint: "[task_id]"
+allowed-tools: Read, Glob, Grep, Bash
+---
 
-Display issue tracker status and task details.
+## Task
 
-## Arguments
+Show task status from tracker and related local artifacts.
 
-- `<id>` — Task ID (optional)
+## Algorithm
 
-## Subagent
+1. **Check arguments:**
+   - If `$ARGUMENTS` is empty or whitespace only:
+     - Show overall project status
+   - Otherwise: show specific task status
 
-None — execute in main context using `beads` skill.
+2. **Mode 1: Project Overview (no argument)**
 
-## Workflow
+   Use `beads` skill to get:
+   - List open tasks
+   - List ready tasks (not blocked)
+   - List blocked tasks
+   - List in-progress tasks
 
-### Mode 1: Specific Task (with `<id>`)
+   Output:
+   ```
+   Project Status
+   ==============
 
-Show detailed task information using `beads` skill:
-- Get task details
-- Get dependency tree
+   Stats:
+   - Open tasks: <count>
+   - Ready to work: <count>
+   - Blocked: <count>
+   - In progress: <count>
 
-Output:
-```
-Task: <id> — <title>
-Status: <status>
-Type: <type>
-Priority: <priority>
+   Ready Tasks (can start now):
+   - <id1> - <title> (P<priority>)
+   - <id2> - <title> (P<priority>)
 
-Description:
-<description>
+   Blocked Tasks:
+   - <id3> - <title>
+     Blocked by: <blocker-id> (<blocker-status>)
 
-Dependency Tree:
-<tree output>
-```
+   In Progress:
+   - <id5> - <title>
+   ```
 
-### Mode 2: Project Overview (no `<id>`)
+3. **Mode 2: Specific Task (with argument)**
 
-Show overall project status using `beads` skill:
-- List open tasks
-- List ready tasks
-- List blocked tasks
+   Use `beads` skill to get task details and dependency tree.
 
-Output:
-```
-Project Status
-==============
+   Also check local artifacts:
+   - `docs/drafts/BRIEF_*<name>*.md`
+   - `docs/drafts/TASK_*<name>*.md`
+   - `docs/reviews/REVIEW_*<name>*.md`
 
-Stats:
-- Open tasks: <count>
-- Ready to work: <count>
-- Blocked: <count>
+   Output:
+   ```
+   Task: <id> - <title>
+   Status: <status>
+   Type: <type>
+   Priority: <priority>
 
-Ready Tasks (can start now):
-- <id1> — <title> (P<priority>)
-- <id2> — <title> (P<priority>)
+   Description:
+   <description>
 
-Blocked Tasks:
-- <id3> — <title>
-  Blocked by: <blocker-id> (<blocker-status>)
-- <id4> — <title>
-  Blocked by: <blocker-id> (<blocker-status>)
+   Dependency Tree:
+   <tree output>
 
-In Progress:
-- <id5> — <title>
-```
+   Local Artifacts:
+   - Brief: <exists/none>
+   - Spec: <exists/none>
+   - Review: <exists/none>
 
-## Output Sections
+   Next step:
+   [What needs to be done based on current stage]
+   ```
 
-### Stats
-- Total open issues
-- Ready count (tasks without blockers)
-- Blocked count (tasks with unresolved dependencies)
+## Tracker Integration
 
-### Ready Tasks
-Tasks with no blockers, sorted by priority (P0 first).
-These can be picked up with `/implement`.
+Use skill `beads` for all tracker operations:
+- Getting task details
+- Listing tasks by status
+- Getting dependency tree
 
-### Blocked Tasks
-Tasks waiting on dependencies.
-Shows what's blocking each task.
+See skill references for detailed instructions.
 
-### In Progress
-Tasks currently being worked on.
-Shows assignee if available.
+## Next Step Suggestions
 
-## Example — Project Overview
-
-```
-User: /status
-
-Project Status
-==============
-
-Stats:
-- Open tasks: 12
-- Ready to work: 3
-- Blocked: 7
-- In progress: 2
-
-Ready Tasks:
-- DCATgBot-abc — Setup wallet adapter (P1)
-- DCATgBot-def — Add config validation (P2)
-- DCATgBot-ghi — Update README (P3)
-
-Blocked Tasks:
-- DCATgBot-jkl — Implement swap
-  Blocked by: DCATgBot-abc (open)
-- DCATgBot-mno — Add tests
-  Blocked by: DCATgBot-jkl (open)
-
-In Progress:
-- DCATgBot-pqr — Database schema
-```
-
-## Example — Specific Task
-
-```
-User: /status DCATgBot-abc
-
-Task: DCATgBot-abc — Setup wallet adapter
-Status: open
-Type: task
-Priority: 1 (High)
-
-Description:
-Implement Solana wallet adapter for connecting user wallets.
-
-Acceptance Criteria:
-- [ ] WalletAdapter interface defined
-- [ ] Phantom wallet support
-- [ ] Connection state management
-
-Dependency Tree:
-DCATgBot-abc (open)
-├── blocks: DCATgBot-jkl (open)
-│   └── blocks: DCATgBot-mno (open)
-└── parent: DCATgBot-xyz (epic, open)
-```
-
-## Notes
-
-- Use ready tasks list to suggest next task for `/implement`
-- Blocked tasks show their immediate blocker and its status
-- Priority displayed as P0-P4 for quick scanning
+Based on task status, suggest:
+- `open` + no blocker -> `/implement <id>`
+- `in_progress` -> continue implementation
+- `in_progress` + code done -> `/review <id>`
+- `needs_work` -> `/fix <id>`

@@ -1,97 +1,104 @@
-# /review — Code Review
+---
+description: Code review of files or task
+argument-hint: "<file_path> | <task_id>"
+allowed-tools: Read, Write, Glob, Grep, Bash
+---
 
-Review code changes for a task.
+Use subagent `reviewer`.
 
-## Arguments
+## Task
 
-- `<path>` or `<id>` — File path, directory, or task ID (optional)
+Conduct code review and create report.
 
-## Subagent
+## Interaction Contract (MUST follow)
 
-Use `reviewer` subagent for execution.
+| Phase | Action | STOP until |
+|-------|--------|------------|
+| 1. Scope | Determine what to review, show to user | — |
+| 2. Review | Analyze code, create findings | — |
+| 3. Verdict | Show findings, ask about unrelated issues | User responds to each unrelated finding |
+| 4. Close | If approved, close task | — |
 
-## Workflow
+**Closing task without user seeing the verdict is a critical violation.**
 
-### Step 1: Determine Scope
+## Algorithm
 
-1. If task `<id>` provided:
-   - Get task details using `beads` skill
-   - Find associated branch/changes
-   - Review all files changed for that task
+1. **Check arguments:**
+   - If `$ARGUMENTS` is empty or whitespace only:
+     - Ask user what to review (file path or task ID)
+     - Wait for response
+   - Otherwise: use as review scope
 
-2. If `<path>` provided:
-   - Review specified file or directory
+2. **Determine scope:**
+   - If task ID provided: get task details using `beads` skill, find changed files
+   - If file path provided: review that file/directory
+   - If branch detected: review files changed on branch
 
-3. If nothing provided:
-   - Check current branch for uncommitted changes
-   - Or ask user what to review
+3. **Read `ARCHITECTURE.md`** — mandatory before review
 
-### Step 2: Perform Review
+4. **Delegate to subagent `reviewer`:**
+   - Analyze code against checklist:
+     - Correctness (logic, edge cases, error handling)
+     - Architecture (Clean Architecture compliance)
+     - Security (no secrets, input validation)
+     - Code quality (types, naming, structure)
+   - Categorize findings:
+     - **Related** — directly about task implementation
+     - **Unrelated** — pre-existing issues, tech debt
 
-Review against checklist:
-- Correctness (logic, edge cases, error handling)
-- Architecture (Clean Architecture compliance)
-- Security (no secrets, input validation)
-- Code quality (types, naming, structure)
+5. **Save review:** `docs/reviews/REVIEW_<id-or-name>.md`
 
-### Step 3: Categorize Findings
+6. **Handle unrelated findings:**
+   - For each unrelated finding, ask user:
+     > "Found unrelated issue: [description]. Create new issue?"
+   - If yes: use `beads` skill to create issue with `discovered-from` link
 
-Separate findings into two categories:
+7. **Verdict based on related findings:**
 
-#### Related Findings
-Issues directly related to the task being reviewed:
-- Implementation bugs
-- Missing acceptance criteria
-- Architecture violations in new code
+   **If Critical Issues (Needs work):**
+   ```
+   Review complete. Status: Needs work.
 
-#### Unrelated Findings
-Issues discovered but not part of current task:
-- Pre-existing bugs
-- Tech debt in touched files
-- Improvements outside scope
+   Critical issues found:
+   - [C1] Description
+   - [C2] Description
 
-### Step 4: Save Review
+   Run /fix to address these issues.
+   ```
+   Task remains open.
 
-Save review to `docs/reviews/REVIEW_<id-or-name>.md`
+   **If Approved:**
+   ```
+   Review complete. Status: Approved.
 
-### Step 5: Handle Unrelated Findings
-
-For each unrelated finding, ask user:
-> "Found unrelated issue: [description]. Create new issue with `discovered-from` link?"
-
-If yes, use `beads` skill to:
-1. Create new issue (type: bug, priority 2)
-2. Add `discovered-from` dependency linking to current task
-
-### Step 6: Verdict
-
-Based on related findings:
-
-#### If Critical Issues (Status: Needs work)
-```
-Review complete. Status: Needs work.
-
-Critical issues found that must be fixed:
-- [C1] Description
-- [C2] Description
-
-Run /fix to address these issues.
-```
-
-Task remains open.
-
-#### If Approved (Status: Approved or Approved with comments)
-```
-Review complete. Status: Approved.
-
-Closing task <id>...
-```
-
-Close the task using `beads` skill with reason: "Review passed. Implemented: <summary>"
+   Closing task <id>...
+   ```
+   Close task using `beads` skill.
 
 ## Output Format
 
-Review saved to `docs/reviews/REVIEW_<name>.md` with format from `reviewer` agent.
+Review saved to `docs/reviews/REVIEW_<name>.md`.
+
+## Name Sanitization
+
+If user input contains invalid characters:
+- Replace spaces with `_`
+- Remove special characters except `-` and `_`
+- Convert to lowercase
+
+## File Naming
+
+- By task: `REVIEW_DCATgBot-abc.md`
+- By component: `REVIEW_portfolio_handler.md`
+
+## Versioning
+
+For re-reviews after `/fix`:
+- First review: `REVIEW_<name>.md`
+- After fix: `REVIEW_<name>_v2.md`
+- Subsequent: `REVIEW_<name>_v3.md`
+
+Detect existing versions and increment automatically.
 
 ## Important Rules
 
@@ -99,29 +106,3 @@ Review saved to `docs/reviews/REVIEW_<name>.md` with format from `reviewer` agen
 - **Categorize findings** — related vs unrelated
 - **Create issues for unrelated** — with `discovered-from` link
 - **No fixes** — document only, developer fixes
-
-## Example
-
-```
-User: /review DCATgBot-abc
-
-1. Task: "Setup wallet adapter"
-2. Reviewing files:
-   - src/infrastructure/wallet/adapter.ts
-   - src/domain/wallet/types.ts
-
-3. Related findings:
-   - [S1] Missing error handling in connect()
-
-4. Unrelated findings:
-   - [N1] Old TODO in nearby file
-
-5. Create issue for [N1]? [y/n]
-   > y
-   Created DCATgBot-xyz (discovered-from DCATgBot-abc)
-
-6. Status: Approved with comments
-7. Closing DCATgBot-abc...
-
-Review saved to docs/reviews/REVIEW_DCATgBot-abc.md
-```

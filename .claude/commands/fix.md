@@ -1,88 +1,123 @@
-# /fix — Fix Review Findings
+---
+description: Fix issues from code review
+argument-hint: "<review_name> | <task_id>"
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
+---
 
-Fix issues found during code review.
+Use subagent `developer`.
 
-## Arguments
+## Task
 
-- `<id>` — Task ID (optional, will use current task context)
+Fix issues identified in code review.
 
-## Subagent
+## Interaction Contract (MUST follow)
 
-Use `developer` subagent for execution.
+| Phase | Who | Action | STOP until |
+|-------|-----|--------|------------|
+| 1. Plan | Subagent | Create and show fix plan | User says "da" / "ok" / "yes" |
+| 2. Implement | Subagent | Fix issues, commit, push | — |
 
-## Workflow
+**Fixing code without phase 1 approval is a critical violation.**
+**Main context does NOT create plans — delegate to subagent.**
 
-### Step 1: Find Review
+User may adjust scope during phase 1 (subagent handles iterations).
 
-1. If `<id>` provided:
-   - Look for `docs/reviews/REVIEW_<id>.md`
+### Plan Format
 
-2. If not provided:
-   - Check current branch name for task ID
-   - Look for most recent review file
+```markdown
+## Fix Plan
 
-3. If no review found:
-   - Error: "No review found. Run /review first."
+**Branch:** current branch
+**Review:** `docs/reviews/REVIEW_xxx.md`
 
-### Step 2: Parse Findings
+**Findings to fix:**
+- [C1] Title - approach
+- [S1] Title - approach
 
-Extract findings that need fixing from review:
-- **Critical (must fix)** — all items
-- **Should Fix** — all items
-- **Consider** — skip unless user requests
+**Deferred (with reason):**
+- [N1] Title - why deferred
 
-### Step 3: Plan Fixes
+**Files to modify:**
+- `path/to/file.ts` - [changes]
 
-Present fix plan to user:
-```
-Findings to fix:
-
-[C1] Missing null check in connect()
-     Location: src/wallet/adapter.ts:42
-     Fix: Add null guard before wallet access
-
-[S1] No error logging
-     Location: src/wallet/adapter.ts:58
-     Fix: Add logger.error() call
-
-Proceed with fixes? [y/n]
+Confirm?
 ```
 
-Wait for user approval.
+## Algorithm
 
-### Step 4: Implement Fixes
+1. **Check arguments:**
+   - If `$ARGUMENTS` is empty or whitespace only:
+     - Ask: "Which review to fix? Provide review name or task ID."
+     - Wait for response
+   - Otherwise: use as search term
 
-1. Fix each issue in order (Critical first, then Should Fix)
-2. Follow same coding standards as implementation
-3. No new features — only fix what's documented
+2. **Find REVIEW file:**
+   - Try: `docs/reviews/REVIEW_*<name>*.md`
+   - If not found: error "Review not found. Run /review first."
 
-### Step 5: Commit Fixes
+3. **Parse REVIEW file:**
+   - Extract findings by severity (Critical, Should Fix, Consider)
+   - Extract finding codes ([C1], [S1], [N1])
+   - Note file locations from findings
 
-Commit using `git` skill with format:
-```
-fix(<scope>): address review findings
+4. **Delegate to subagent `developer` (plan phase):**
+   - Subagent creates plan per format above
+   - Default: fix all Critical and Should Fix, suggest deferring Consider
+   - Subagent shows plan to user, waits for approval
+   - User may adjust scope (subagent handles iterations)
+   - Subagent returns confirmed plan
+   - **Main context does NOT create plans itself**
 
-Fixes:
-- [C1] <description>
-- [S1] <description>
+5. **Delegate to subagent `developer` (implementation phase):**
+   - Implement fixes per confirmed plan
+   - Commit with format:
+     ```
+     fix(<scope>): address review findings
 
-[Task: <id>]
-```
+     Fixes:
+     - [C1] <description>
+     - [S1] <description>
 
-Push changes to remote.
+     [Task: <id>]
+     ```
+   - Push to remote
 
-### Step 6: Request Re-review
+6. **Report completion:**
+   ```
+   Fixes complete for <task-id>.
 
-After fixes complete:
-```
-Fixes complete for <task-id>.
+   Fixed:
+   - [C1] Description
+   - [S1] Description
 
-Fixed:
-- [C1] Missing null check
-- [S1] No error logging
+   Run /review <task-id> to verify fixes.
+   ```
 
-Run /review <task-id> to verify fixes.
-```
+## Output
+
+Code changes only. Does not modify REVIEW file.
+New review (v2) created by subsequent `/review` if needed.
+
+## Severity Handling
+
+| Severity | Default Action |
+|----------|----------------|
+| Critical | Always fix |
+| Should Fix | Fix by default |
+| Consider | Suggest defer, user decides |
+
+## Skills Integration
+
+Fixes are implemented via the developer subagent, which uses skill `git` for version control operations:
+- Making commits
+- Pushing to remote
+
+See skill references for conventions and detailed instructions.
+
+## Review Versioning
+
+After `/fix`, user runs `/review` again -> creates `REVIEW_<name>_v2.md`
+Naming: `_v2`, `_v3`, etc.
 
 ## Important Rules
 
@@ -90,37 +125,3 @@ Run /review <task-id> to verify fixes.
 - **Plan before fixing** — get user approval
 - **Re-review required** — always run /review after /fix
 - **No new features** — fix mode only
-
-## Output
-
-```
-Fixes applied for <task-id>.
-
-Commit: <hash>
-Files changed:
-- src/path/file.ts
-
-Next: Run /review <task-id> to verify.
-```
-
-## Example
-
-```
-User: /fix DCATgBot-abc
-
-1. Found review: docs/reviews/REVIEW_DCATgBot-abc.md
-2. Status: Needs work
-
-3. Findings to fix:
-   - [C1] Missing null check in connect()
-   - [S1] No error logging
-
-4. [User approves]
-
-5. Fixing [C1]... done
-6. Fixing [S1]... done
-
-7. Committed: fix(wallet): address review findings
-
-Next: Run /review DCATgBot-abc to verify.
-```
