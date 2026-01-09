@@ -35,3 +35,4 @@ npm-debug.log*
 
 # Perles
 .perles/
+!docs/drafts/.refs.json
