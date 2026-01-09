@@ -18,13 +18,12 @@ Publish an artifact (TASK or BRIEF) to tracker by creating a tracker item and ad
 
 **Publishing without phase 2 confirmation is a critical violation.**
 
-## Critical: Follow Skill Contract
+## Content Rules
 
-Before creating/updating tracker items, read the **Content Contract** in skill `beads`.
-
-Key requirements:
-- Item body = summary only (NOT full content)
-- All text must be in English
+When creating tracker items:
+- **Title:** Short, descriptive (from artifact heading)
+- **Description:** Summary only — NOT full artifact content
+- **Language:** English only (translate if source is Russian)
 
 ## Algorithm
 
