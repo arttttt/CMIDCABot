@@ -57,4 +57,3 @@ bd sync
 
 - `references/types.md` — Issue types and priorities
 - `references/dependencies.md` — Dependency types and usage
-- `references/rules.md` — Do/Don't rules and session protocol
