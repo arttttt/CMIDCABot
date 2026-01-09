@@ -1,10 +1,17 @@
 ---
 name: beads
-description: "Issue tracking with Beads. Commands abstract bd CLI — user never writes bd commands directly."
+description: "Issue tracking with Beads (bd CLI). Use when commands need to create, query, or update issues."
 allowed-tools: Bash
 ---
 
 # Beads Issue Tracker
+
+## When to Use
+
+- `/publish` — create/update issues from drafts
+- `/implement` — query ready tasks, claim work (update status)
+- `/review` — close tasks, create discovered issues
+- `/status` — query project state
 
 ## Core Concepts
 
@@ -43,15 +50,6 @@ bd close <id> --reason "Done: summary" --json
 
 ### Sync
 bd sync
-
-## Draft Tracking
-`docs/drafts/.refs.json` tracks draft-to-issue mapping.
-
-## Session End Protocol
-1. bd update <id> --notes "..."
-2. bd close <id> --reason "..."
-3. bd sync
-4. git push
 
 ## References
 
