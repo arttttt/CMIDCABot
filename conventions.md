@@ -71,6 +71,5 @@ presentation → domain ← data
 | `ARCHITECTURE.md` | Layer structure, dependency rules |
 | `conventions.md` | Code style, project rules |
 | `CLAUDE.md` | Instructions for AI assistant |
-| `docs/briefs/` | Technical briefs from Analyst |
-| `docs/tasks/` | Task specifications from PM |
+| `docs/drafts/` | Briefs and task specifications |
 | `docs/reviews/` | Code review results |
