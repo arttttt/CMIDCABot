@@ -56,6 +56,7 @@ Confirm?
    - If not found: error "Review not found. Run /review first."
 
 3. **Parse REVIEW file:**
+   - Extract `**Task:** <task_id>` from header
    - Extract findings by severity (Critical, Should Fix, Consider)
    - Extract finding codes ([C1], [S1], [N1])
    - Note file locations from findings

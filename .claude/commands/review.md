@@ -79,6 +79,30 @@ Conduct code review and create report.
 
 Review saved to `docs/reviews/REVIEW_<name>.md`.
 
+### Review File Structure
+
+```markdown
+# Review: <name>
+
+**Task:** <task_id>
+**Status:** Needs work | Approved
+**Date:** <YYYY-MM-DD>
+
+## Findings
+
+### Critical
+- [C1] Description — `file:line`
+
+### Should Fix
+- [S1] Description — `file:line`
+
+### Consider
+- [N1] Description — `file:line`
+
+## Verdict
+<Summary and next steps>
+```
+
 ## Name Sanitization
 
 If user input contains invalid characters:

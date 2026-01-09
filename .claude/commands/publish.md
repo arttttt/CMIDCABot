@@ -61,7 +61,9 @@ When creating tracker items:
    - Add entry mapping name to issue ID
 
 8. **Cleanup:**
-   - Delete published draft files
+   - Delete `docs/drafts/BRIEF_<name>.md` (if exists)
+   - Delete `docs/drafts/TASK_<name>.md` (if exists)
+   - Note: BRIEF deleted immediately — /spec gets context from issue via beads
 
 9. **Report result:**
    ```

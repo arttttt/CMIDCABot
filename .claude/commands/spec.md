@@ -31,7 +31,8 @@ If no questions needed (everything is clear) — skip to phase 2, but NEVER skip
    - Otherwise: use first word as `<name>`, rest as description
 
 2. **Find context:**
-   - Check `docs/drafts/` for related briefs
+   - Check `docs/drafts/.refs.json` for existing issue with this name
+   - If issue exists: use `beads` skill to get issue details (title, description)
    - Study existing code if needed
 
 3. **Execute Interaction Contract:**
