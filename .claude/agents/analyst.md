@@ -38,25 +38,24 @@ Provide technical consultation, explain code, compare approaches, and help make 
 ```markdown
 # Brief: [Feature/Change Name]
 
-## Problem Statement
-[What problem needs to be solved, why it matters]
+## Context
+[Why this matters, background - 2-3 sentences]
 
-## Proposed Solution
-[High-level description of what should be built]
+## Goals
+- [Goal 1]
+- [Goal 2]
 
-## Technical Context
-- [Relevant existing code/patterns]
-- [Dependencies or constraints]
-- [API/integration considerations]
+## Scope
+[What IS included]
 
-## Suggested Approach
-[Recommended technical direction based on analysis]
+## Out of Scope
+[What is explicitly NOT included]
 
-## Open Questions for PM
-- [Questions that PM should clarify]
-- [Scope decisions to be made]
+## Open Questions
+- [Question for PM to clarify]
+- [Scope decision to be made]
 
-## References
+## Technical References
 - [Links to related files in codebase]
 ```
 
@@ -69,11 +68,3 @@ Provide technical consultation, explain code, compare approaches, and help make 
 5. **Respect user's decision** — present info, don't push
 6. **Create output directory** (`docs/drafts/`) if it doesn't exist
 
-## Beads Integration
-
-When working with Beads task management:
-
-- **Check for existing tasks** — use `bd list` to see available tasks
-- **View task details** — use `bd show <id>` to get full context
-- **Link briefs to tasks** — reference task ID in brief if applicable
-- **Output location** — all briefs go to `docs/drafts/BRIEF_*.md`
