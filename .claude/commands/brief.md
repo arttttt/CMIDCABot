@@ -1,7 +1,7 @@
 ---
 description: Prepare technical brief for PM
 argument-hint: "<name> [description]"
-allowed-tools: Read, Write, Glob, Grep
+allowed-tools: Read, Write, Glob, Grep, Bash
 ---
 
 Use subagent `analyst`.
@@ -27,18 +27,28 @@ Prepare technical brief to hand off to PM.
      - Wait for response
    - Otherwise: use first word as `<name>`, rest as description
 
-2. **Research context:**
+2. **Check beads task:**
+   - Run `bd show <name>` via Bash tool
+   - If task found (exit code 0):
+     - Parse task title and description from output
+     - Store as `beadsContext` for use in research
+     - Notify user: "Found task <task-id>, using context from it"
+   - If task not found (exit code non-zero):
+     - Continue with normal flow (no beads context)
+
+3. **Research context:**
+   - If `beadsContext` available: use task title/description as primary context
    - Find related files in codebase
    - Identify technical constraints
    - Discover dependencies
 
-3. **Execute Interaction Contract:**
+4. **Execute Interaction Contract:**
    - Propose structure, wait for approval
    - Do NOT proceed to output until approved
 
-4. **Create file:** `docs/drafts/BRIEF_<name>.md`
+5. **Create file:** `docs/drafts/BRIEF_<name>.md`
 
-5. **Report result:**
+6. **Report result:**
    ```
    Created: docs/drafts/BRIEF_<name>.md
 
