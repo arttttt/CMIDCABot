@@ -116,17 +116,26 @@ Correctness over completeness. A compact, accurate patch beats a broad, speculat
 
 Slash commands for project workflow:
 
-| Command | Purpose | Output |
-|---------|---------|--------|
-| `/brief <name>` | Technical brief for PM | `docs/briefs/BRIEF_*.md` |
-| `/spec <name>` | Task specification | `docs/tasks/TASK_*.md` |
-| `/publish <name>` | Publish artifact to GitHub | Issue + Project |
-| `/implement <name>` | Implementation from spec | code |
-| `/review <path>` | Code review | `docs/reviews/REVIEW_*.md` |
-| `/consult` | Technical consultation | chat response |
-| `/status [name]` | Artifact status | chat response |
+| Command | Purpose | Agent | Output |
+|---------|---------|-------|--------|
+| `/brief <name>` | Technical brief | analyst | `docs/drafts/BRIEF_*.md` |
+| `/spec <name>` | Specification | pm | `docs/drafts/TASK_*.md` |
+| `/publish <name>` | Create/update issue | — | Beads issue |
+| `/implement [id]` | Implement task | developer | code |
+| `/review [id]` | Code review | reviewer | findings |
+| `/fix [id]` | Fix review issues | developer | code |
+| `/status [id]` | Show status | — | chat |
+| `/consult` | Consultation | analyst | chat |
 
 Argument is optional — if not provided, command will ask interactively.
+
+## Workflow
+
+Standard development flow:
+
+```
+/brief → /publish → /spec → /publish → /implement → /review → done
+```
 
 ## Agents
 
@@ -137,39 +146,6 @@ Agents in `.claude/agents/`:
 - `reviewer` — code review
 
 Agents are invoked automatically via commands.
-
-## Subagent Delegation Rules
-
-**CRITICAL:** Commands below MUST be delegated to specialized subagents via Task tool.
-Do NOT execute these commands in main context.
-
-| Command | Subagent | Action |
-|---------|----------|--------|
-| `/brief` | `analyst` | MUST delegate via Task |
-| `/consult` | `analyst` | MUST delegate via Task |
-| `/spec` | `pm` | MUST delegate via Task |
-| `/implement` | `developer` | MUST delegate via Task |
-| `/fix` | `developer` | MUST delegate via Task |
-| `/review` | `reviewer` | MUST delegate via Task |
-
-### Why Delegate?
-
-1. **Specialized prompts** — each subagent has domain-specific instructions
-2. **Clean context** — main conversation stays focused on high-level flow
-3. **Better results** — subagents are fine-tuned for their specific tasks
-4. **Isolation** — subagent failures don't pollute main context
-
-### How to Delegate
-
-When user invokes a command (e.g., `/brief feature_x`):
-
-1. Identify the appropriate subagent from the table above
-2. Invoke subagent via Task tool with:
-   - Task description matching the command
-   - Full user arguments passed through
-   - Reference to relevant files if any
-3. Wait for subagent to complete
-4. Report result to user
 
 ## Useful Links
 
