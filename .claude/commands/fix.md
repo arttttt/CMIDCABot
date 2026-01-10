@@ -62,13 +62,19 @@ Confirm?
    - Extract finding codes ([C1], [S1], [N1])
    - Note file locations from findings
 
-4. **Checkout correct branch:**
+4. **Get task details (main context, before subagent):**
+   - Using extracted `<task_id>` from REVIEW file
+   - **Use skill `beads` to get issue details**
+   - If found: notify user "Found issue: `<id>` - <title>"
+   - Pass issue context (title, description) inline to subagent
+
+5. **Checkout correct branch:**
    - Read `docs/drafts/.refs.json`
    - Find entry where `issue_id` matches task_id (iterate entries)
    - If entry has `branch`: `git checkout <branch>`
    - If no branch found: error "Branch not found. Was /implement run?"
 
-5. **Delegate to subagent `developer` (plan phase):**
+6. **Delegate to subagent `developer` (plan phase):**
    - Subagent creates plan per format above
    - Default: fix all Critical and Should Fix, suggest deferring Consider
    - Subagent shows plan to user, waits for approval
@@ -76,7 +82,7 @@ Confirm?
    - Subagent returns confirmed plan
    - **Main context does NOT create plans itself**
 
-6. **Delegate to subagent `developer` (implementation phase):**
+7. **Delegate to subagent `developer` (implementation phase):**
    - Implement fixes per confirmed plan
    - Commit with format:
      ```
@@ -90,7 +96,7 @@ Confirm?
      ```
    - Push to remote
 
-7. **Report completion:**
+8. **Report completion:**
    ```
    Fixes complete for <task-id>.
 

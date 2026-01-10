@@ -50,10 +50,16 @@ Confirm?
      - Wait for response
    - Otherwise: use `$ARGUMENTS` as task ID
 
-2. **Get task details:**
-   - Use `beads` skill to get task information
+2. **Get task details (main context, before subagent):**
+   - Determine if argument looks like an issue ID:
+     - 2-4 characters without spaces (e.g., "9en", "abc")
+     - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
+   - Normalize ID: if no prefix, add "DCATgBot-" prefix
+   - **Use skill `beads` to get issue details**
    - Verify task exists and is not blocked
    - If blocked: report blocker and exit
+   - If found: notify user "Found issue: `<id>` - <title>"
+   - Pass issue context (title, description, status) inline to subagent
 
 3. **Delegate to subagent `developer` (plan phase):**
    - Subagent reads task requirements

@@ -30,16 +30,28 @@ If no questions needed (everything is clear) — skip to phase 2, but NEVER skip
      - Wait for response
    - Otherwise: use first word as `<name>`, rest as description
 
-2. **Find context:**
+2. **Check beads for ID-like argument (main context, before subagent):**
+   - Determine if `<name>` looks like an issue ID:
+     - 2-4 characters without spaces (e.g., "9en", "abc")
+     - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
+   - If ID-like:
+     - Normalize ID: if no prefix, add "DCATgBot-" prefix
+     - **Use skill `beads` to get issue details**
+     - If issue found:
+       - Notify user: "Found issue: `<id>` - <title>"
+       - Pass issue context (title, description) inline to subagent
+     - If issue not found: continue without tracker context
+
+3. **Find context:**
    - Check `docs/drafts/.refs.json` for existing issue with this name
    - If issue exists: use `beads` skill to get issue details (title, description)
    - Study existing code if needed
 
-3. **Execute Interaction Contract:**
+4. **Execute Interaction Contract:**
    - Complete phases 1-2 (questions -> confirmation)
    - Do NOT proceed to output until contract fulfilled
 
-4. **Create file:** `docs/drafts/TASK_<name>.md`
+5. **Create file:** `docs/drafts/TASK_<name>.md`
    - Content sections:
      - Context — why this is needed
      - Acceptance Criteria — checklist with `- [ ]`
@@ -47,7 +59,7 @@ If no questions needed (everything is clear) — skip to phase 2, but NEVER skip
      - Technical Notes — hints (optional)
    - **NO "Open Questions" section**
 
-5. **Report result:**
+6. **Report result:**
    ```
    Created: docs/drafts/TASK_<name>.md
 

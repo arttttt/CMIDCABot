@@ -27,16 +27,17 @@ Prepare technical brief to hand off to PM.
      - Wait for response
    - Otherwise: use first word as `<name>`, rest as description
 
-2. **Check beads for ID-like argument:**
+2. **Check beads for ID-like argument (main context, before subagent):**
    - Determine if `<name>` looks like an issue ID:
      - 2-4 characters without spaces (e.g., "9en", "abc")
      - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
    - If ID-like:
-     - Use skill `beads` to check if issue exists
+     - Normalize ID: if no prefix, add "DCATgBot-" prefix
+     - **Use skill `beads` to get issue details**
      - If issue found:
-       - Notify user: "Issue `<id>` already exists: <title>"
+       - Notify user: "Found issue: `<id>` - <title>"
        - Ask: "Create brief to expand context, or use `/implement`/`/spec`?"
-       - If user confirms brief creation: continue to next step with issue context
+       - If user confirms brief creation: pass issue context (title, description) inline to subagent
        - If user declines: stop and suggest alternative command
      - If issue not found: continue to next step
 
