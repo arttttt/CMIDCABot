@@ -1,7 +1,2 @@
 {
-  "xbc": {
-    "issue_id": "DCATgBot-xbc",
-    "relationship": "linked_to",
-    "branch": "fix/xbc-publish-link-existing"
-  }
 }
