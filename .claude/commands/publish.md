@@ -43,11 +43,11 @@ When creating tracker items:
      - 2-4 characters without spaces (e.g., "9en", "abc")
      - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
    - If ID-like:
-     - Use `beads` skill: `bd show <name>` or `bd show DCATgBot-<name>`
+     - Use skill `beads`: `bd show <name>` or `bd show DCATgBot-<name>`
      - If issue found:
        - Notify user: "Issue `<id>` already exists: <title>"
        - Ask: "Publish anyway (will link to existing), or cancel?"
-       - If user confirms publishing: continue to next step
+       - If user confirms to publish anyway: continue to next step
        - If user declines: stop and suggest `/implement` or `/spec`
      - If issue not found: continue to next step
 
