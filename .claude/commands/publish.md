@@ -70,8 +70,7 @@ When creating tracker items:
 
 7. **Create or update tracker item(s):**
    - If `linked_to` entry exists in refs.json:
-     - Use `beads` skill to update existing issue with artifact content
-     - Command: `bd edit <issue_id> --title "<title>" --body "<description>"`
+     - Use `beads` skill to update existing issue title and body with artifact content
    - If no entry (new issue):
      - Use `beads` skill for issue creation
      - For epic: create parent first, then children with dependencies
