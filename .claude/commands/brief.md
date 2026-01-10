@@ -32,7 +32,7 @@ Prepare technical brief to hand off to PM.
      - 2-4 characters without spaces (e.g., "9en", "abc")
      - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
    - If ID-like:
-     - Use `beads` skill: `bd show <name>` or `bd show DCATgBot-<name>`
+     - Use skill `beads` to check if issue exists
      - If issue found:
        - Notify user: "Issue `<id>` already exists: <title>"
        - Ask: "Create brief to expand context, or use `/implement`/`/spec`?"
