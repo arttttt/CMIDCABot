@@ -39,10 +39,10 @@ When creating tracker items:
    - If neither exists: report error and exit
 
 3. **Check beads for existing issue:**
-   - Search for existing issue using `<name>`:
-     - Try `bd show <name>` (as short ID)
-     - Try `bd show DCATgBot-<name>` (as full ID with prefix)
-     - Try `bd list --state open` and search by title match
+   - Use skill `beads` to search for existing issue by `<name>`:
+     - Check if issue exists by short ID (`<name>`)
+     - Check if issue exists by full ID with prefix (`DCATgBot-<name>`)
+     - Search open issues and match by title
    - If issue found by any method:
      - Notify user: "Issue `<id>` already exists: <title>"
      - Ask: "Publish anyway (will link to existing), or cancel?"
