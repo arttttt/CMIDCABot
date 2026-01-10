@@ -1124,9 +1124,9 @@ export function createStartCommand(deps: StartCommandDeps): Command {
 
       let text = "**CMI DCA Bot**\n\n";
       text += "Target allocations:\n";
-      text += "- BTC: 40%\n";
-      text += "- ETH: 30%\n";
-      text += "- SOL: 30%\n\n";
+      text += "- SOL: 40%\n";
+      text += "- BTC: 30%\n";
+      text += "- ETH: 30%\n\n";
       text += "The bot purchases the asset furthest below its target allocation.\n\n";
       text += "Use /help to see available commands.";
 
