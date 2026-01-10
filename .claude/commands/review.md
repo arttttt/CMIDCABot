@@ -17,7 +17,7 @@ Conduct code review and create report.
 | 1. Scope | Determine what to review, show to user | — |
 | 2. Review | Analyze code, create findings | — |
 | 3. Verdict | Show findings, ask about unrelated issues | User responds to each unrelated finding |
-| 4. Close | If approved, notify ready for merge | — |
+| 4. Notify | If approved, notify ready for merge | — |
 
 **Closing task without user seeing the verdict is a critical violation.**
 
