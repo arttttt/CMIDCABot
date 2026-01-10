@@ -1,7 +1,7 @@
 ---
 description: Prepare technical brief for PM
 argument-hint: "<name> [description]"
-allowed-tools: Read, Write, Glob, Grep, Bash
+allowed-tools: Read, Write, Glob, Grep
 ---
 
 Use subagent `analyst`.
@@ -27,17 +27,14 @@ Prepare technical brief to hand off to PM.
      - Wait for response
    - Otherwise: use first word as `<name>`, rest as description
 
-2. **Check beads task:**
-   - Run `bd show <name>` via Bash tool
-   - If task found (exit code 0):
-     - Parse task title and description from output
-     - Store as `beadsContext` for use in research
-     - Notify user: "Found task <task-id>, using context from it"
-   - If task not found (exit code non-zero):
-     - Continue with normal flow (no beads context)
+2. **Find context:**
+   - Check `docs/drafts/.refs.json` for existing issue with this name
+   - If issue exists: use `beads` skill to get issue details (title, description)
+   - Notify user: "Found issue <id>, using context from it"
+   - If not found: continue without tracker context
 
 3. **Research context:**
-   - If `beadsContext` available: use task title/description as primary context
+   - If issue found, use its title/description as primary context
    - Find related files in codebase
    - Identify technical constraints
    - Discover dependencies
