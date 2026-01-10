@@ -35,8 +35,9 @@ Prepare technical brief to hand off to PM.
      - Use `beads` skill: `bd show <name>` or `bd show DCATgBot-<name>`
      - If issue found:
        - Notify user: "Issue `<id>` already exists: <title>"
-       - Suggest: "Use `/implement <id>` to implement or `/spec <id>` to create specification"
-       - **STOP** — do not proceed with brief creation
+       - Ask: "Create brief to expand context, or use `/implement`/`/spec`?"
+       - If user confirms brief creation: continue to next step with issue context
+       - If user declines: stop and suggest alternative command
      - If issue not found: continue to next step
 
 3. **Find context:**
