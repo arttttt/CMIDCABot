@@ -1,1 +1,8 @@
-{}
+{
+  "beads_operations": {
+    "beads_id": "DCATgBot-87b",
+    "brief": "docs/drafts/BRIEF_beads_operations.md",
+    "task": "docs/drafts/TASK_beads_operations.md",
+    "branch": "chore/DCATgBot-87b-beads-operations"
+  }
+}
