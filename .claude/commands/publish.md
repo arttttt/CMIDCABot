@@ -73,6 +73,8 @@ When creating tracker items:
    - Wait for confirmation
 
 7. **Create or update tracker item(s):**
+   - If `published_as_brief` entry exists in refs.json:
+     - Use `beads` skill to update existing issue with TASK content
    - If `linked_to` entry exists in refs.json:
      - Use `beads` skill to update existing issue title and body with artifact content
    - If no entry (new issue):
