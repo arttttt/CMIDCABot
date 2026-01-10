@@ -38,34 +38,47 @@ When creating tracker items:
    - If not found: `docs/drafts/BRIEF_<name>.md`
    - If neither exists: report error and exit
 
-3. **Check if already published:**
+3. **Check beads for ID-like argument:**
+   - Determine if `<name>` looks like an issue ID:
+     - 2-4 characters without spaces (e.g., "9en", "abc")
+     - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
+   - If ID-like:
+     - Use skill `beads`: `bd show <name>` or `bd show DCATgBot-<name>`
+     - If issue found:
+       - Notify user: "Issue `<id>` already exists: <title>"
+       - Ask: "Publish anyway (will link to existing), or cancel?"
+       - If user confirms to publish anyway: continue to next step
+       - If user declines: stop and suggest `/implement` or `/spec`
+     - If issue not found: continue to next step
+
+4. **Check if already published:**
    - Read `docs/drafts/.refs.json`
    - Look for existing entry with this name
    - If found: report "Already published as item #<id>" and exit
 
-4. **Extract metadata from file:**
+5. **Extract metadata from file:**
    - Parse title from first `#` heading
    - Extract summary (first paragraph after heading)
    - Determine artifact type (TASK or BRIEF)
    - Determine if epic (has subtasks)
 
-5. **Confirm with user:**
+6. **Confirm with user:**
    - Show: artifact type, title, what will be created
    - Wait for confirmation
 
-6. **Create tracker item(s):**
+7. **Create tracker item(s):**
    - Use `beads` skill for issue creation
    - For epic: create parent first, then children with dependencies
 
-7. **Update refs.json:**
+8. **Update refs.json:**
    - Add entry mapping name to issue ID
 
-8. **Cleanup:**
+9. **Cleanup:**
    - Delete `docs/drafts/BRIEF_<name>.md` (if exists)
    - Delete `docs/drafts/TASK_<name>.md` (if exists)
    - Note: BRIEF deleted immediately — /spec gets context from issue via beads
 
-9. **Report result:**
+10. **Report result:**
    ```
    Published: <filename>
    - Item: #<id>
@@ -87,6 +100,7 @@ See skill references for detailed instructions.
 
 - Artifact not found -> clear error message with search paths
 - Already published -> show existing item ID
+- Issue exists in beads -> ask user to confirm or cancel
 - Tracker unavailable -> cannot publish without tracker access
 
 ## Name Sanitization
