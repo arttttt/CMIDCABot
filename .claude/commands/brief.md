@@ -12,10 +12,10 @@ Prepare technical brief to hand off to PM.
 
 ## Interaction Contract (MUST follow)
 
-| Phase | Action | STOP until |
-|-------|--------|------------|
-| 1. Propose structure | Show planned brief sections to user | User says "da" / "ok" / "yes" |
-| 2. Output | File per requirements below | — |
+| Phase | Action | STOP until | Steps |
+|-------|--------|------------|-------|
+| 1. Propose structure | Show planned brief sections to user | User says "da" / "ok" / "yes" | 1-6 |
+| 2. Output | File per requirements below | — | 7-8 |
 
 **Creating file without phase 1 approval is a critical violation.**
 

@@ -10,11 +10,11 @@ Publish an artifact (TASK or BRIEF) to tracker by creating a tracker item and ad
 
 ## Interaction Contract (MUST follow)
 
-| Phase | Action | STOP until |
-|-------|--------|------------|
-| 1. Find artifact | Locate and show artifact to publish | — |
-| 2. Confirm | Show what will be created (type, title) | User says "da" / "ok" / "yes" |
-| 3. Publish | Create tracker item, update refs | — |
+| Phase | Action | STOP until | Steps |
+|-------|--------|------------|-------|
+| 1. Find artifact | Locate and show artifact to publish | — | 1-5 |
+| 2. Confirm | Show what will be created (type, title) | User says "da" / "ok" / "yes" | 6 |
+| 3. Publish | Create tracker item, update refs | — | 7-10 |
 
 **Publishing without phase 2 confirmation is a critical violation.**
 
