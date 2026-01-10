@@ -27,25 +27,37 @@ Prepare technical brief to hand off to PM.
      - Wait for response
    - Otherwise: use first word as `<name>`, rest as description
 
-2. **Find context:**
+2. **Check beads for ID-like argument:**
+   - Determine if `<name>` looks like an issue ID:
+     - 2-4 characters without spaces (e.g., "9en", "abc")
+     - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
+   - If ID-like:
+     - Use `beads` skill: `bd show <name>` or `bd show DCATgBot-<name>`
+     - If issue found:
+       - Notify user: "Issue `<id>` already exists: <title>"
+       - Suggest: "Use `/implement <id>` to implement or `/spec <id>` to create specification"
+       - **STOP** — do not proceed with brief creation
+     - If issue not found: continue to next step
+
+3. **Find context:**
    - Check `docs/drafts/.refs.json` for existing issue with this name
    - If issue exists: use `beads` skill to get issue details (title, description)
    - Notify user: "Found issue <id>, using context from it"
    - If not found: continue without tracker context
 
-3. **Research context:**
+4. **Research context:**
    - If issue found, use its title/description as primary context
    - Find related files in codebase
    - Identify technical constraints
    - Discover dependencies
 
-4. **Execute Interaction Contract:**
+5. **Execute Interaction Contract:**
    - Propose structure, wait for approval
    - Do NOT proceed to output until approved
 
-5. **Create file:** `docs/drafts/BRIEF_<name>.md`
+6. **Create file:** `docs/drafts/BRIEF_<name>.md`
 
-6. **Report result:**
+7. **Report result:**
    ```
    Created: docs/drafts/BRIEF_<name>.md
 
