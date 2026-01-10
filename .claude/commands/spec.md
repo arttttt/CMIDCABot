@@ -36,7 +36,7 @@ If no questions needed (everything is clear) — skip to phase 2, but NEVER skip
      - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
    - If ID-like:
      - Normalize ID: if no prefix, add "DCATgBot-" prefix
-     - **Run `bd show DCATgBot-<suffix>` directly in main context**
+     - **Use skill `beads` to get issue details (`bd show DCATgBot-<suffix>`)**
      - If issue found:
        - Notify user: "Found issue: `<id>` - <title>"
        - Pass issue context (title, description) inline to subagent

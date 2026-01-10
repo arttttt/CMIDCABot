@@ -55,7 +55,7 @@ Confirm?
      - 2-4 characters without spaces (e.g., "9en", "abc")
      - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
    - Normalize ID: if no prefix, add "DCATgBot-" prefix
-   - **Run `bd show DCATgBot-<suffix>` directly in main context**
+   - **Use skill `beads` to get issue details (`bd show DCATgBot-<suffix>`)**
    - Verify task exists and is not blocked
    - If blocked: report blocker and exit
    - If found: notify user "Found issue: `<id>` - <title>"

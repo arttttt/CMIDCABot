@@ -64,7 +64,7 @@ Confirm?
 
 4. **Get task details (main context, before subagent):**
    - Using extracted `<task_id>` from REVIEW file
-   - **Run `bd show <task_id>` directly in main context**
+   - **Use skill `beads` to get issue details (`bd show <task_id>`)**
    - If found: notify user "Found issue: `<id>` - <title>"
    - Pass issue context (title, description) inline to subagent
 

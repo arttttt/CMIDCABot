@@ -35,7 +35,7 @@ Conduct code review and create report.
      - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
    - If ID-like:
      - Normalize ID: if no prefix, add "DCATgBot-" prefix
-     - **Run `bd show DCATgBot-<suffix>` directly in main context**
+     - **Use skill `beads` to get issue details (`bd show DCATgBot-<suffix>`)**
      - If found: notify user "Found issue: `<id>` - <title>"
      - Pass issue context (title, description) inline to subagent
    - If not ID-like: continue (file path or branch case)
