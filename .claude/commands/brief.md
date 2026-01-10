@@ -27,18 +27,25 @@ Prepare technical brief to hand off to PM.
      - Wait for response
    - Otherwise: use first word as `<name>`, rest as description
 
-2. **Research context:**
+2. **Find context:**
+   - Check `docs/drafts/.refs.json` for existing issue with this name
+   - If issue exists: use `beads` skill to get issue details (title, description)
+   - Notify user: "Found issue <id>, using context from it"
+   - If not found: continue without tracker context
+
+3. **Research context:**
+   - If issue found, use its title/description as primary context
    - Find related files in codebase
    - Identify technical constraints
    - Discover dependencies
 
-3. **Execute Interaction Contract:**
+4. **Execute Interaction Contract:**
    - Propose structure, wait for approval
    - Do NOT proceed to output until approved
 
-4. **Create file:** `docs/drafts/BRIEF_<name>.md`
+5. **Create file:** `docs/drafts/BRIEF_<name>.md`
 
-5. **Report result:**
+6. **Report result:**
    ```
    Created: docs/drafts/BRIEF_<name>.md
 
