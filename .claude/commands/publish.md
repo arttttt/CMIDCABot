@@ -51,10 +51,13 @@ When creating tracker items:
        - If user declines: stop and suggest `/implement` or `/spec`
      - If issue not found: continue to next step
 
-4. **Check if already published:**
+4. **Check refs.json for existing entry:**
    - Read `docs/drafts/.refs.json`
    - Look for existing entry with this name
-   - If found: report "Already published as item #<id>" and exit
+   - If entry found:
+     - If `relationship: "published_as"`: report "Already published as item #<id>" and exit
+     - If `relationship: "linked_to"`: continue (will update existing issue)
+   - If entry not found: continue (will create new issue)
 
 5. **Extract metadata from file:**
    - Parse title from first `#` heading
@@ -66,12 +69,25 @@ When creating tracker items:
    - Show: artifact type, title, what will be created
    - Wait for confirmation
 
-7. **Create tracker item(s):**
-   - Use `beads` skill for issue creation
-   - For epic: create parent first, then children with dependencies
+7. **Create or update tracker item(s):**
+   - If `linked_to` entry exists in refs.json:
+     - Use `beads` skill to update existing issue with artifact content
+     - Command: `bd edit <issue_id> --title "<title>" --body "<description>"`
+   - If no entry (new issue):
+     - Use `beads` skill for issue creation
+     - For epic: create parent first, then children with dependencies
 
 8. **Update refs.json:**
-   - Add entry mapping name to issue ID
+   - If entry existed with `linked_to`: change `relationship` to `"published_as"` (note: `issue_id` remains unchanged — only `relationship` is updated)
+   - If new entry: add mapping with `relationship: "published_as"`:
+     ```json
+     {
+       "<name>": {
+         "issue_id": "<id>",
+         "relationship": "published_as"
+       }
+     }
+     ```
 
 9. **Cleanup:**
    - Delete `docs/drafts/BRIEF_<name>.md` (if exists)
