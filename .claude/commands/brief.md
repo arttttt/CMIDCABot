@@ -33,7 +33,7 @@ Prepare technical brief to hand off to PM.
      - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
    - If ID-like:
      - Normalize ID: if no prefix, add "DCATgBot-" prefix
-     - **Use skill `beads` to get issue details (`bd show DCATgBot-<suffix>`)**
+     - **Use skill `beads` to get issue details**
      - If issue found:
        - Notify user: "Found issue: `<id>` - <title>"
        - Ask: "Create brief to expand context, or use `/implement`/`/spec`?"
