@@ -38,18 +38,17 @@ When creating tracker items:
    - If not found: `docs/drafts/BRIEF_<name>.md`
    - If neither exists: report error and exit
 
-3. **Check beads for ID-like argument:**
-   - Determine if `<name>` looks like an issue ID:
-     - 2-4 characters without spaces (e.g., "9en", "abc")
-     - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
-   - If ID-like:
-     - Use skill `beads`: `bd show <name>` or `bd show DCATgBot-<name>`
-     - If issue found:
-       - Notify user: "Issue `<id>` already exists: <title>"
-       - Ask: "Publish anyway (will link to existing), or cancel?"
-       - If user confirms to publish anyway: continue to next step
-       - If user declines: stop and suggest `/implement` or `/spec`
-     - If issue not found: continue to next step
+3. **Check beads for existing issue:**
+   - Search for existing issue using `<name>`:
+     - Try `bd show <name>` (as short ID)
+     - Try `bd show DCATgBot-<name>` (as full ID with prefix)
+     - Try `bd list --state open` and search by title match
+   - If issue found by any method:
+     - Notify user: "Issue `<id>` already exists: <title>"
+     - Ask: "Publish anyway (will link to existing), or cancel?"
+     - If user confirms to publish anyway: continue to next step
+     - If user declines: stop and suggest `/implement` or `/spec`
+   - If issue not found: continue to next step
 
 4. **Check refs.json for existing entry:**
    - Read `docs/drafts/.refs.json`

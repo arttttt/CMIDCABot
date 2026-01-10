@@ -1,1 +1,7 @@
-{}
+{
+  "kvq": {
+    "issue_id": "DCATgBot-kvq",
+    "relationship": "published_as",
+    "branch": "fix/DCATgBot-kvq-publish-beads-link"
+  }
+}
