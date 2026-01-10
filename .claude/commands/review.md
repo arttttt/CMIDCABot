@@ -29,14 +29,25 @@ Conduct code review and create report.
      - Wait for response
    - Otherwise: use as review scope
 
-2. **Determine scope:**
-   - If task ID provided: get task details using `beads` skill, find changed files
+2. **Get task details if task ID provided (main context, before subagent):**
+   - Determine if argument looks like an issue ID:
+     - 2-4 characters without spaces (e.g., "9en", "abc")
+     - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
+   - If ID-like:
+     - Normalize ID: if no prefix, add "DCATgBot-" prefix
+     - **Run `bd show DCATgBot-<suffix>` directly in main context**
+     - If found: notify user "Found issue: `<id>` - <title>"
+     - Pass issue context (title, description) inline to subagent
+   - If not ID-like: continue (file path or branch case)
+
+3. **Determine scope:**
+   - If task ID provided: find changed files from branch
    - If file path provided: review that file/directory
    - If branch detected: review files changed on branch
 
-3. **Read `ARCHITECTURE.md`** — mandatory before review
+4. **Read `ARCHITECTURE.md`** — mandatory before review
 
-4. **Delegate to subagent `reviewer`:**
+5. **Delegate to subagent `reviewer`:**
    - Analyze code against checklist:
      - Correctness (logic, edge cases, error handling)
      - Architecture (Clean Architecture compliance)
@@ -46,14 +57,14 @@ Conduct code review and create report.
      - **Related** — directly about task implementation
      - **Unrelated** — pre-existing issues, tech debt
 
-5. **Save review:** `docs/reviews/REVIEW_<id-or-name>.md`
+6. **Save review:** `docs/reviews/REVIEW_<id-or-name>.md`
 
-6. **Handle unrelated findings:**
+7. **Handle unrelated findings:**
    - For each unrelated finding, ask user:
      > "Found unrelated issue: [description]. Create new issue?"
    - If yes: use `beads` skill to create issue with `discovered-from` link
 
-7. **Verdict based on related findings:**
+8. **Verdict based on related findings:**
 
    **If Critical Issues (Needs work):**
    ```
