@@ -3,9 +3,9 @@
 Telegram bot for automated DCA (Dollar Cost Averaging) investing in cryptocurrencies on Solana.
 
 Implements the "Crypto Majors Index" strategy — a basket of three assets:
-- **BTC (cbBTC)** — 40%
+- **SOL** — 40%
+- **BTC (cbBTC)** — 30%
 - **ETH (wETH)** — 30%
-- **SOL** — 30%
 
 On each purchase, the bot selects the asset whose portfolio share lags furthest behind its target allocation.
 

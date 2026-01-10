@@ -12,12 +12,12 @@ export type AssetSymbol = "BTC" | "ETH" | "SOL";
 /**
  * Target allocations for Crypto Majors Index
  *
- * - BTC (cbBTC) — 40%
+ * - SOL — 40%
+ * - BTC (cbBTC) — 30%
  * - ETH (wETH) — 30%
- * - SOL — 30%
  */
 export const TARGET_ALLOCATIONS: Record<AssetSymbol, number> = {
-  BTC: 0.4,
+  SOL: 0.4,
+  BTC: 0.3,
   ETH: 0.3,
-  SOL: 0.3,
 } as const;

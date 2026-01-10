@@ -2,9 +2,9 @@
  * AllocationCalculator - calculates portfolio allocations and deviations
  *
  * Implements Crypto Majors Index logic:
- * - BTC: 40%
+ * - SOL: 40%
+ * - BTC: 30%
  * - ETH: 30%
- * - SOL: 30%
  *
  * The asset with the most negative deviation is recommended for purchase.
  */
@@ -116,9 +116,9 @@ export class AllocationCalculator {
   ): AssetSymbol {
     const status = this.calculatePortfolioStatus(balances, prices);
 
-    // If portfolio is empty, buy BTC (largest target allocation)
+    // If portfolio is empty, buy SOL (largest target allocation)
     if (status.totalValueInUsdc === 0) {
-      return "BTC";
+      return "SOL";
     }
 
     return status.assetToBuy;
