@@ -78,7 +78,7 @@ When creating tracker items:
      - For epic: create parent first, then children with dependencies
 
 8. **Update refs.json:**
-   - If entry existed with `linked_to`: change `relationship` to `"published_as"`
+   - If entry existed with `linked_to`: change `relationship` to `"published_as"` (note: `issue_id` remains unchanged — only `relationship` is updated)
    - If new entry: add mapping with `relationship: "published_as"`:
      ```json
      {

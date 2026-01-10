@@ -46,7 +46,7 @@ Prepare technical brief to hand off to PM.
    - Notify user: "Found issue <id>, using context from it"
    - If not found: continue without tracker context
 
-4. **Update refs.json when issue found (step 2):**
+4. **Update refs.json when issue found via beads check (step 2):**
    - If issue was found in step 2 and user confirms brief creation:
      - Add entry to `docs/drafts/.refs.json`:
        ```json
