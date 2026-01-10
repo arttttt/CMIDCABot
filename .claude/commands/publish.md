@@ -46,7 +46,17 @@ When creating tracker items:
    - If issue found by any method:
      - Notify user: "Issue `<id>` already exists: <title>"
      - Ask: "Publish anyway (will link to existing), or cancel?"
-     - If user confirms to publish anyway: continue to next step
+     - If user confirms to publish anyway:
+       - Save entry to `docs/drafts/.refs.json`:
+         ```json
+         {
+           "<name>": {
+             "issue_id": "<existing_id>",
+             "relationship": "linked_to"
+           }
+         }
+         ```
+       - Continue to next step
      - If user declines: stop and suggest `/implement` or `/spec`
    - If issue not found: continue to next step
 
