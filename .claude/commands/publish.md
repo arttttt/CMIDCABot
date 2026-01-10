@@ -54,7 +54,11 @@ When creating tracker items:
    - Read `docs/drafts/.refs.json`
    - Look for existing entry with this name
    - If entry found:
-     - If `relationship: "published_as"`: report "Already published as item #<id>" and exit
+     - If `relationship: "published_as_task"`: report "Already published as TASK #<id>" and exit (final state)
+     - If `relationship: "published_as_brief"`:
+       - Check if `docs/drafts/TASK_<name>.md` exists
+       - If TASK exists: continue (will publish TASK and update relationship)
+       - If TASK doesn't exist: report "Already published as BRIEF #<id>. Create TASK first with /spec" and exit
      - If `relationship: "linked_to"`: continue (will update existing issue)
    - If entry not found: continue (will create new issue)
 
@@ -76,13 +80,16 @@ When creating tracker items:
      - For epic: create parent first, then children with dependencies
 
 8. **Update refs.json:**
-   - If entry existed with `linked_to`: change `relationship` to `"published_as"` (note: `issue_id` remains unchanged — only `relationship` is updated)
-   - If new entry: add mapping with `relationship: "published_as"`:
+   - Determine relationship value based on artifact type:
+     - If publishing BRIEF: use `"published_as_brief"`
+     - If publishing TASK: use `"published_as_task"`
+   - If entry existed with `linked_to` or `published_as_brief`: update `relationship` to new value (note: `issue_id` remains unchanged)
+   - If new entry: add mapping:
      ```json
      {
        "<name>": {
          "issue_id": "<id>",
-         "relationship": "published_as"
+         "relationship": "<published_as_brief|published_as_task>"
        }
      }
      ```
