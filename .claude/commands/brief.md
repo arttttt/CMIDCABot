@@ -46,19 +46,32 @@ Prepare technical brief to hand off to PM.
    - Notify user: "Found issue <id>, using context from it"
    - If not found: continue without tracker context
 
-4. **Research context:**
+4. **Update refs.json when issue found (step 2):**
+   - If issue was found in step 2 and user confirms brief creation:
+     - Add entry to `docs/drafts/.refs.json`:
+       ```json
+       {
+         "<name>": {
+           "issue_id": "<id>",
+           "relationship": "linked_to"
+         }
+       }
+       ```
+   - This marks the brief as linked to (but not published from) existing issue
+
+5. **Research context:**
    - If issue found, use its title/description as primary context
    - Find related files in codebase
    - Identify technical constraints
    - Discover dependencies
 
-5. **Execute Interaction Contract:**
+6. **Execute Interaction Contract:**
    - Propose structure, wait for approval
    - Do NOT proceed to output until approved
 
-6. **Create file:** `docs/drafts/BRIEF_<name>.md`
+7. **Create file:** `docs/drafts/BRIEF_<name>.md`
 
-7. **Report result:**
+8. **Report result:**
    ```
    Created: docs/drafts/BRIEF_<name>.md
 
