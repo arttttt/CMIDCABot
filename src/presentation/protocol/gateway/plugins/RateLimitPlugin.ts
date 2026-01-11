@@ -14,6 +14,7 @@ import type { GatewayPlugin, GatewayHandler, GatewayRequest } from "../types.js"
 import type { GatewayContext } from "../GatewayContext.js";
 import type { ClientResponseStream } from "../../types.js";
 import type { RateLimitRepository } from "../../../../domain/repositories/RateLimitRepository.js";
+import type { OwnerConfig } from "../../../../infrastructure/shared/config/index.js";
 import type { UserIdentity } from "../../../../domain/models/UserIdentity.js";
 import { ClientResponse } from "../../types.js";
 import { StreamUtils } from "../stream.js";
@@ -36,7 +37,7 @@ function getRateLimitKey(identity: UserIdentity): string {
 class RateLimitHandler implements GatewayHandler {
   constructor(
     private readonly repository: RateLimitRepository,
-    private readonly ownerTelegramId: number,
+    private readonly ownerConfig: OwnerConfig,
     private readonly next: GatewayHandler,
   ) {}
 
@@ -67,7 +68,7 @@ class RateLimitHandler implements GatewayHandler {
   private isOwner(identity: UserIdentity): boolean {
     return (
       identity.provider === "telegram" &&
-      identity.telegramId.value === this.ownerTelegramId
+      identity.telegramId.equals(this.ownerConfig.telegramId)
     );
   }
 }
@@ -75,10 +76,10 @@ class RateLimitHandler implements GatewayHandler {
 export class RateLimitPlugin implements GatewayPlugin {
   constructor(
     private readonly repository: RateLimitRepository,
-    private readonly ownerTelegramId: number,
+    private readonly ownerConfig: OwnerConfig,
   ) {}
 
   apply(next: GatewayHandler): GatewayHandler {
-    return new RateLimitHandler(this.repository, this.ownerTelegramId, next);
+    return new RateLimitHandler(this.repository, this.ownerConfig, next);
   }
 }
