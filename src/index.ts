@@ -10,7 +10,7 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
 import { TelegramId } from "./domain/models/id/index.js";
-import { loadConfig } from "./infrastructure/shared/config/index.js";
+import { loadConfig, type OwnerConfig } from "./infrastructure/shared/config/index.js";
 import { setLogger, DebugLogger, NoOpLogger } from "./infrastructure/shared/logging/index.js";
 import { createMainDatabase, createAuthDatabase } from "./data/sources/database/index.js";
 import { createMainRepositories } from "./data/factories/RepositoryFactory.js";
@@ -119,13 +119,17 @@ async function main(): Promise<void> {
   // Create invite token repository
   const inviteTokenRepository = new SQLiteInviteTokenRepository(authDb);
 
+  // Initialize owner configuration (single source of truth)
+  const ownerConfig: OwnerConfig = {
+    telegramId: new TelegramId(config.auth.ownerTelegramId),
+  };
+
   // Initialize owner authorization
-  const ownerTelegramId = new TelegramId(config.auth.ownerTelegramId);
-  const initializeAuth = new InitializeAuthorizationUseCase(authRepository, ownerTelegramId);
+  const initializeAuth = new InitializeAuthorizationUseCase(authRepository, ownerConfig);
   await initializeAuth.execute();
 
   // Create GetUserRoleUseCase for Gateway and use cases
-  const getUserRole = new GetUserRoleUseCase(authRepository, ownerTelegramId);
+  const getUserRole = new GetUserRoleUseCase(authRepository, ownerConfig);
 
   // Create user resolver (will be connected to bot API later)
   const userResolver = new TelegramUserResolver();
@@ -184,9 +188,9 @@ async function main(): Promise<void> {
 
   // Create authorization use cases
   const addAuthorizedUser = new AddAuthorizedUserUseCase(authRepository, getUserRole);
-  const removeAuthorizedUser = new RemoveAuthorizedUserUseCase(authRepository, getUserRole, ownerTelegramId);
+  const removeAuthorizedUser = new RemoveAuthorizedUserUseCase(authRepository, getUserRole, ownerConfig);
   const getAllAuthorizedUsers = new GetAllAuthorizedUsersUseCase(authRepository);
-  const updateUserRole = new UpdateUserRoleUseCase(authRepository, getUserRole, ownerTelegramId);
+  const updateUserRole = new UpdateUserRoleUseCase(authRepository, getUserRole, ownerConfig);
 
   // Create delete user data use case
   const deleteUserData = new DeleteUserDataUseCase(
@@ -391,7 +395,7 @@ async function main(): Promise<void> {
       getUserRole,
       commandRegistry: registry,
       rateLimitRepository,
-      ownerTelegramId: config.auth.ownerTelegramId,
+      ownerConfig,
     });
 
     return { registry, gateway };
