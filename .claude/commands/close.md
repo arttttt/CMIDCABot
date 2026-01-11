@@ -73,10 +73,8 @@ Close a task in tracker and cleanup all related local artifacts (refs.json entri
    ```
 
 9. **Commit and push cleanup:**
-   - Stage changes:
-     - `docs/drafts/.refs.json` (with removed entry)
-     - Deleted REVIEW files (git will track deletions)
-   - Commit: `chore: cleanup after closing <full_id>`
+   - Stage changes: `git add -A`
+   - Commit: `chore: cleanup refs.json after closing <full_id>`
    - Push to current branch
    - If push fails: report error but consider cleanup successful
 
