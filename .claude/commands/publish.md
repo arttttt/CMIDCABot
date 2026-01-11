@@ -20,9 +20,13 @@ Publish an artifact (TASK or BRIEF) to tracker by creating a tracker item and ad
 
 ## Content Rules
 
+**Content Length Limit:** `MAX_DESCRIPTION_LENGTH = 10000` characters
+
 When creating tracker items:
 - **Title:** Short, descriptive (from artifact heading)
-- **Description:** Summary only — NOT full artifact content
+- **Description:**
+  - If artifact content <= MAX_DESCRIPTION_LENGTH: publish full content
+  - If artifact content > MAX_DESCRIPTION_LENGTH: create summary of exactly MAX_DESCRIPTION_LENGTH characters (preserve sentence boundaries, do not truncate mid-sentence)
 - **Language:** English only (translate if source is Russian)
 
 ## Algorithm
@@ -74,9 +78,12 @@ When creating tracker items:
 
 5. **Extract metadata from file:**
    - Parse title from first `#` heading
-   - Extract summary (first paragraph after heading)
    - Determine artifact type (TASK or BRIEF)
    - Determine if epic (has subtasks)
+   - **Prepare description content:**
+     - Measure full artifact content length (characters)
+     - If content <= MAX_DESCRIPTION_LENGTH: use full content as description
+     - If content > MAX_DESCRIPTION_LENGTH: create summary that fits within limit (preserve sentence boundaries)
 
 6. **Confirm with user:**
    - Show: artifact type, title, what will be created

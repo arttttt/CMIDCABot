@@ -1,1 +1,7 @@
-{}
+{
+  "iwz": {
+    "issue_id": "DCATgBot-iwz",
+    "relationship": "published_as_task",
+    "branch": "fix/iwz-publish-full-content"
+  }
+}
