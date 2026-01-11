@@ -12,10 +12,10 @@ Fix issues identified in code review.
 
 ## Interaction Contract (MUST follow)
 
-| Phase | Who | Action | STOP until |
-|-------|-----|--------|------------|
-| 1. Plan | Subagent | Create and show fix plan | User says "da" / "ok" / "yes" |
-| 2. Implement | Subagent | Fix issues, commit, push | — |
+| Phase | Who | Action | STOP until | Steps |
+|-------|-----|--------|------------|-------|
+| 1. Plan | Subagent | Create and show fix plan | User says "da" / "ok" / "yes" | 1-6 |
+| 2. Implement | Subagent | Fix issues, commit, push | — | 7-8 |
 
 **Fixing code without phase 1 approval is a critical violation.**
 **Main context does NOT create plans — delegate to subagent.**

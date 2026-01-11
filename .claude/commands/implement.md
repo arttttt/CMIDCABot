@@ -12,11 +12,11 @@ Implement functionality from task specification.
 
 ## Interaction Contract (MUST follow)
 
-| Phase | Who | Action | STOP until |
-|-------|-----|--------|------------|
-| 1. Plan | Subagent | Create and show plan | User says "da" / "ok" / "yes" |
-| 2. Claim | Main context | Update status to "in_progress" | — |
-| 3. Implement | Subagent | Code, commit, push per plan | — |
+| Phase | Who | Action | STOP until | Steps |
+|-------|-----|--------|------------|-------|
+| 1. Plan | Subagent | Create and show plan | User says "da" / "ok" / "yes" | 1-3 |
+| 2. Claim | Main context | Update status to "in_progress" | — | 4 |
+| 3. Implement | Subagent | Code, commit, push per plan | — | 5-6 |
 
 **Writing code without phase 1 approval is a critical violation.**
 **Main context does NOT create plans — delegate to subagent.**

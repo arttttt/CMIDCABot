@@ -12,11 +12,11 @@ Create task specification for Developer.
 
 ## Interaction Contract (MUST follow)
 
-| Phase | Action | STOP until |
-|-------|--------|------------|
-| 1. Questions | List ALL unclear points as numbered list | User answers ALL questions |
-| 2. Confirmation | Summarize scope in 2-3 sentences | User says "da" / "ok" / "yes" |
-| 3. Output | File per requirements below | — |
+| Phase | Action | STOP until | Steps |
+|-------|--------|------------|-------|
+| 1. Questions | List ALL unclear points as numbered list | User answers ALL questions | 1-3 |
+| 2. Confirmation | Summarize scope in 2-3 sentences | User says "da" / "ok" / "yes" | 4 |
+| 3. Output | File per requirements below | — | 5-6 |
 
 **Creating file without completing phases 1-2 is a critical violation.**
 
