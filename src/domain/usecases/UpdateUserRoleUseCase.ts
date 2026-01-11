@@ -5,7 +5,7 @@
 import type { TelegramId } from "../models/id/index.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { UserRole, canManageRole, isAdminRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
-import { AuthorizationHelper } from "../helpers/AuthorizationHelper.js";
+import type { GetUserRoleUseCase } from "./GetUserRoleUseCase.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export type UpdateUserRoleResult =
@@ -15,7 +15,8 @@ export type UpdateUserRoleResult =
 export class UpdateUserRoleUseCase {
   constructor(
     private authRepository: AuthRepository,
-    private authHelper: AuthorizationHelper,
+    private getUserRole: GetUserRoleUseCase,
+    private ownerTelegramId: TelegramId,
   ) {}
 
   async execute(
@@ -30,7 +31,7 @@ export class UpdateUserRoleUseCase {
     });
 
     // Cannot change owner
-    if (targetTelegramId === this.authHelper.getOwnerTelegramId()) {
+    if (targetTelegramId.equals(this.ownerTelegramId)) {
       return { success: false, error: "Cannot change owner's role" };
     }
 
@@ -46,8 +47,8 @@ export class UpdateUserRoleUseCase {
     }
 
     // Check admin permissions
-    const adminRole = await this.authHelper.getRole(adminTelegramId);
-    if (!adminRole) {
+    const adminRole = await this.getUserRole.execute({ provider: "telegram", telegramId: adminTelegramId });
+    if (adminRole === "guest") {
       return { success: false, error: "Admin not found" };
     }
 

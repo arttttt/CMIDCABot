@@ -6,8 +6,6 @@
  */
 
 import { TelegramId } from "../models/id/index.js";
-import { AuthRepository } from "../repositories/AuthRepository.js";
-import { UserRole } from "../models/AuthorizedUser.js";
 
 /**
  * Authorization helper - permission checks for use cases
@@ -15,22 +13,8 @@ import { UserRole } from "../models/AuthorizedUser.js";
 export class AuthorizationHelper {
   private ownerTelegramIdBranded: TelegramId;
 
-  constructor(
-    private authRepository: AuthRepository,
-    ownerTelegramIdRaw: number,
-  ) {
+  constructor(ownerTelegramIdRaw: number) {
     this.ownerTelegramIdBranded = new TelegramId(ownerTelegramIdRaw);
-  }
-
-  /**
-   * Get user's role
-   * @deprecated Use GetUserRoleUseCase instead. This method will be removed in future versions.
-   */
-  async getRole(id: TelegramId): Promise<UserRole | undefined> {
-    if (id.equals(this.ownerTelegramIdBranded)) return "owner";
-
-    const user = await this.authRepository.getById(id);
-    return user?.role;
   }
 
   /**

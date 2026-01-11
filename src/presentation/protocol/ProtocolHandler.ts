@@ -20,7 +20,7 @@ import {
   ClientResponseStream,
 } from "./types.js";
 import { TelegramId, RequestId } from "../../domain/models/id/index.js";
-import { AuthorizationHelper } from "../../domain/helpers/AuthorizationHelper.js";
+import { GetUserRoleUseCase } from "../../domain/usecases/index.js";
 import { hasRequiredRole, type UserRole } from "../../domain/models/AuthorizedUser.js";
 import { CommandExecutionContext } from "../commands/CommandExecutionContext.js";
 
@@ -29,7 +29,7 @@ export class ProtocolHandler {
 
   constructor(
     private registry: CommandRegistry,
-    private authHelper: AuthorizationHelper,
+    private getUserRole: GetUserRoleUseCase,
   ) {
     this.helpFormatter = new HelpFormatter();
   }
@@ -94,8 +94,8 @@ export class ProtocolHandler {
     const modeInfo = this.registry.getModeInfo();
     const tgId = new TelegramId(rawTelegramId);
 
-    // Get user role, default to 'guest' for unauthorized users
-    const userRole: UserRole = (await this.authHelper.getRole(tgId)) ?? "guest";
+    // Get user role
+    const userRole = await this.getUserRole.execute({ provider: "telegram", telegramId: tgId });
 
     // /help - show commands available to user based on role
     if (command === "/help") {
@@ -136,8 +136,8 @@ export class ProtocolHandler {
     const modeInfo = this.registry.getModeInfo();
     const tgId = new TelegramId(rawTelegramId);
 
-    // Get user role, default to 'guest' for unauthorized users
-    const userRole: UserRole = (await this.authHelper.getRole(tgId)) ?? "guest";
+    // Get user role
+    const userRole = await this.getUserRole.execute({ provider: "telegram", telegramId: tgId });
 
     // /help - show commands available to user based on role
     if (command === "/help") {
@@ -209,7 +209,7 @@ export class ProtocolHandler {
     const tgId = new TelegramId(ctx.telegramId);
 
     // Check role requirement
-    const userRole: UserRole = (await this.authHelper.getRole(tgId)) ?? "guest";
+    const userRole = await this.getUserRole.execute({ provider: "telegram", telegramId: tgId });
     if (result.requiredRole) {
       if (!hasRequiredRole(userRole, result.requiredRole)) {
         return new ClientResponse("Unknown action.");
