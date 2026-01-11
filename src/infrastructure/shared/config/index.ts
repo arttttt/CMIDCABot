@@ -1,5 +1,6 @@
 export { loadConfig } from "./AppConfig.js";
 export { TOKENS, TOKEN_MINTS, TOKEN_DECIMALS, type TokenConfig } from "./tokens.js";
+export { type OwnerConfig } from "./OwnerConfig.js";
 export {
   envSchema,
   parseEnv,
