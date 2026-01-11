@@ -3,9 +3,10 @@
  */
 
 import type { TelegramId } from "../models/id/index.js";
+import { UserIdentity } from "../models/UserIdentity.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { UserRole, canManageRole, isAdminRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
-import { AuthorizationHelper } from "../helpers/AuthorizationHelper.js";
+import type { GetUserRoleUseCase } from "./GetUserRoleUseCase.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export type AddAuthorizedUserResult =
@@ -15,7 +16,7 @@ export type AddAuthorizedUserResult =
 export class AddAuthorizedUserUseCase {
   constructor(
     private authRepository: AuthRepository,
-    private authHelper: AuthorizationHelper,
+    private getUserRole: GetUserRoleUseCase,
   ) {}
 
   async execute(
@@ -30,8 +31,8 @@ export class AddAuthorizedUserUseCase {
     });
 
     // Check admin permissions
-    const adminRole = await this.authHelper.getRole(adminTelegramId);
-    if (!adminRole) {
+    const adminRole = await this.getUserRole.execute(UserIdentity.telegram(adminTelegramId));
+    if (adminRole === "guest") {
       return { success: false, error: "Not authorized" };
     }
 

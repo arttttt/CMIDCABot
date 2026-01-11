@@ -8,7 +8,7 @@
  * - RequestHandler: typed handler for specific request kinds
  */
 
-import type { UserIdentity } from "../../../domain/models/UserIdentity.js";
+import type { TelegramIdentity, HttpIdentity } from "../../../domain/models/UserIdentity.js";
 import type { ClientResponseStream } from "../types.js";
 import type { GatewayContext } from "./GatewayContext.js";
 
@@ -18,18 +18,18 @@ import type { GatewayContext } from "./GatewayContext.js";
 export type GatewayRequest =
   | {
       kind: "telegram-message";
-      identity: Extract<UserIdentity, { provider: "telegram" }>;
+      identity: TelegramIdentity;
       text: string;
       username?: string;
     }
   | {
       kind: "telegram-callback";
-      identity: Extract<UserIdentity, { provider: "telegram" }>;
+      identity: TelegramIdentity;
       callbackData: string;
     }
   | {
       kind: "http-request";
-      identity: Extract<UserIdentity, { provider: "http" }>;
+      identity: HttpIdentity;
       // TBD: structure will be refined after HTTP server investigation
       path: string;
       method: string;

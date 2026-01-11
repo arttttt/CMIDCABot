@@ -52,7 +52,6 @@ import {
   RemoveAuthorizedUserUseCase,
   GetAllAuthorizedUsersUseCase,
   UpdateUserRoleUseCase,
-  AuthorizationHelper,
   GetUserRoleUseCase,
 } from "./domain/usecases/index.js";
 import type { ImportSessionRepository } from "./domain/repositories/index.js";
@@ -120,13 +119,12 @@ async function main(): Promise<void> {
   // Create invite token repository
   const inviteTokenRepository = new SQLiteInviteTokenRepository(authDb);
 
-  // Create authorization helper and initialize owner
+  // Initialize owner authorization
   const ownerTelegramId = new TelegramId(config.auth.ownerTelegramId);
-  const authHelper = new AuthorizationHelper(authRepository, config.auth.ownerTelegramId);
   const initializeAuth = new InitializeAuthorizationUseCase(authRepository, ownerTelegramId);
   await initializeAuth.execute();
 
-  // Create GetUserRoleUseCase for Gateway
+  // Create GetUserRoleUseCase for Gateway and use cases
   const getUserRole = new GetUserRoleUseCase(authRepository, ownerTelegramId);
 
   // Create user resolver (will be connected to bot API later)
@@ -185,10 +183,10 @@ async function main(): Promise<void> {
   }
 
   // Create authorization use cases
-  const addAuthorizedUser = new AddAuthorizedUserUseCase(authRepository, authHelper);
-  const removeAuthorizedUser = new RemoveAuthorizedUserUseCase(authRepository, authHelper);
+  const addAuthorizedUser = new AddAuthorizedUserUseCase(authRepository, getUserRole);
+  const removeAuthorizedUser = new RemoveAuthorizedUserUseCase(authRepository, getUserRole, ownerTelegramId);
   const getAllAuthorizedUsers = new GetAllAuthorizedUsersUseCase(authRepository);
-  const updateUserRole = new UpdateUserRoleUseCase(authRepository, authHelper);
+  const updateUserRole = new UpdateUserRoleUseCase(authRepository, getUserRole, ownerTelegramId);
 
   // Create delete user data use case
   const deleteUserData = new DeleteUserDataUseCase(
@@ -420,7 +418,7 @@ async function main(): Promise<void> {
 
     // Create registry and legacy handler for web mode (Gateway integration pending)
     const { registry } = createRegistryAndHandler(importSessionStore);
-    const webHandler = new ProtocolHandler(registry, authHelper);
+    const webHandler = new ProtocolHandler(registry, getUserRole);
 
     console.log("Starting DCA Bot in WEB MODE...");
     console.log("─".repeat(50));

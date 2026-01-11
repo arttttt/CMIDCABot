@@ -3,9 +3,10 @@
  */
 
 import type { TelegramId } from "../models/id/index.js";
+import { UserIdentity } from "../models/UserIdentity.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { canManageRole, isAdminRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
-import { AuthorizationHelper } from "../helpers/AuthorizationHelper.js";
+import type { GetUserRoleUseCase } from "./GetUserRoleUseCase.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export type RemoveAuthorizedUserResult =
@@ -15,7 +16,8 @@ export type RemoveAuthorizedUserResult =
 export class RemoveAuthorizedUserUseCase {
   constructor(
     private authRepository: AuthRepository,
-    private authHelper: AuthorizationHelper,
+    private getUserRole: GetUserRoleUseCase,
+    private ownerTelegramId: TelegramId,
   ) {}
 
   async execute(
@@ -28,7 +30,7 @@ export class RemoveAuthorizedUserUseCase {
     });
 
     // Cannot remove owner
-    if (targetTelegramId === this.authHelper.getOwnerTelegramId()) {
+    if (targetTelegramId.equals(this.ownerTelegramId)) {
       return { success: false, error: "Cannot remove owner" };
     }
 
@@ -39,8 +41,8 @@ export class RemoveAuthorizedUserUseCase {
     }
 
     // Check admin permissions
-    const adminRole = await this.authHelper.getRole(adminTelegramId);
-    if (!adminRole) {
+    const adminRole = await this.getUserRole.execute(UserIdentity.telegram(adminTelegramId));
+    if (adminRole === "guest") {
       return { success: false, error: "Not authorized" };
     }
 

@@ -20,7 +20,8 @@ import {
   ClientResponseStream,
 } from "./types.js";
 import { TelegramId, RequestId } from "../../domain/models/id/index.js";
-import { AuthorizationHelper } from "../../domain/helpers/AuthorizationHelper.js";
+import { UserIdentity } from "../../domain/models/UserIdentity.js";
+import { GetUserRoleUseCase } from "../../domain/usecases/index.js";
 import { hasRequiredRole, type UserRole } from "../../domain/models/AuthorizedUser.js";
 import { CommandExecutionContext } from "../commands/CommandExecutionContext.js";
 
@@ -29,7 +30,7 @@ export class ProtocolHandler {
 
   constructor(
     private registry: CommandRegistry,
-    private authHelper: AuthorizationHelper,
+    private getUserRole: GetUserRoleUseCase,
   ) {
     this.helpFormatter = new HelpFormatter();
   }
@@ -94,8 +95,8 @@ export class ProtocolHandler {
     const modeInfo = this.registry.getModeInfo();
     const tgId = new TelegramId(rawTelegramId);
 
-    // Get user role, default to 'guest' for unauthorized users
-    const userRole: UserRole = (await this.authHelper.getRole(tgId)) ?? "guest";
+    // Get user role
+    const userRole = await this.getUserRole.execute(UserIdentity.telegram(tgId));
 
     // /help - show commands available to user based on role
     if (command === "/help") {
@@ -122,7 +123,7 @@ export class ProtocolHandler {
     // Route through command tree
     const execCtx = new CommandExecutionContext(
       new RequestId(crypto.randomUUID()),
-      { provider: "telegram", telegramId: tgId },
+      UserIdentity.telegram(tgId),
       userRole,
     );
     return routeCommand(cmd, args, execCtx);
@@ -136,8 +137,8 @@ export class ProtocolHandler {
     const modeInfo = this.registry.getModeInfo();
     const tgId = new TelegramId(rawTelegramId);
 
-    // Get user role, default to 'guest' for unauthorized users
-    const userRole: UserRole = (await this.authHelper.getRole(tgId)) ?? "guest";
+    // Get user role
+    const userRole = await this.getUserRole.execute(UserIdentity.telegram(tgId));
 
     // /help - show commands available to user based on role
     if (command === "/help") {
@@ -176,7 +177,7 @@ export class ProtocolHandler {
     // Route through command tree with streaming
     const execCtx = new CommandExecutionContext(
       new RequestId(crypto.randomUUID()),
-      { provider: "telegram", telegramId: tgId },
+      UserIdentity.telegram(tgId),
       userRole,
     );
     yield* routeCommandStreaming(cmd, args, execCtx);
@@ -209,7 +210,7 @@ export class ProtocolHandler {
     const tgId = new TelegramId(ctx.telegramId);
 
     // Check role requirement
-    const userRole: UserRole = (await this.authHelper.getRole(tgId)) ?? "guest";
+    const userRole = await this.getUserRole.execute(UserIdentity.telegram(tgId));
     if (result.requiredRole) {
       if (!hasRequiredRole(userRole, result.requiredRole)) {
         return new ClientResponse("Unknown action.");
@@ -218,7 +219,7 @@ export class ProtocolHandler {
 
     const execCtx = new CommandExecutionContext(
       new RequestId(crypto.randomUUID()),
-      { provider: "telegram", telegramId: tgId },
+      UserIdentity.telegram(tgId),
       userRole,
     );
     return result.handler(execCtx, result.params);
