@@ -26,7 +26,7 @@ When creating tracker items:
 - **Title:** Short, descriptive (from artifact heading)
 - **Description:**
   - If artifact content <= MAX_DESCRIPTION_LENGTH: publish full content
-  - If artifact content > MAX_DESCRIPTION_LENGTH: create summary of exactly MAX_DESCRIPTION_LENGTH characters (preserve sentence boundaries, do not truncate mid-sentence)
+  - If artifact content > MAX_DESCRIPTION_LENGTH: create summary of up to MAX_DESCRIPTION_LENGTH characters (preserve sentence boundaries, do not truncate mid-sentence)
 - **Language:** English only (translate if source is Russian)
 
 ## Algorithm
