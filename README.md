@@ -35,7 +35,7 @@ cp .env.example .env
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `NODE_ENV` | No | `development` | Environment mode (`development` \| `production`) |
-| `TELEGRAM_BOT_TOKEN` | Yes* | - | Telegram bot token from @BotFather |
+| `TELEGRAM_BOT_TOKEN` | Yes | - | Telegram bot token from @BotFather |
 | `OWNER_TELEGRAM_ID` | Yes | - | Telegram ID of the bot owner (super admin) |
 | `MASTER_ENCRYPTION_KEY` | Yes | - | Master key for private key encryption (base64, 32 bytes) |
 | `SOLANA_RPC_URL` | No | `https://api.devnet.solana.com` | Solana RPC endpoint |
@@ -45,11 +45,9 @@ cp .env.example .env
 | `DCA_INTERVAL_MS` | No | `86400000` | Interval between purchases in ms (24h) |
 | `DEV_WALLET_PRIVATE_KEY` | No | - | Base64-encoded private key (dev only) |
 | `PRICE_SOURCE` | No | `jupiter` | Price source (`jupiter` \| `mock`) |
-| `JUPITER_API_KEY` | Yes** | - | Jupiter API key from portal.jup.ag |
-| `WEB_ENABLED` | No | `false` | Enable web test interface |
-| `WEB_PORT` | No | `3000` | Port for web interface |
+| `JUPITER_API_KEY` | Yes* | - | Jupiter API key from portal.jup.ag |
 | `BOT_TRANSPORT` | No | `polling` | Transport mode (`polling` \| `webhook`) |
-| `WEBHOOK_URL` | Yes*** | - | Public HTTPS URL for webhook |
+| `WEBHOOK_URL` | Yes** | - | Public HTTPS URL for webhook |
 | `WEBHOOK_SECRET` | No | - | Secret token for webhook validation |
 | `HTTP_PORT` | No | `8000` | Port for HTTP server (health checks, secret pages) |
 | `HTTP_HOST` | No | `127.0.0.1` | Host for HTTP server (use `0.0.0.0` for containers) |
@@ -57,9 +55,8 @@ cp .env.example .env
 | `RATE_LIMIT_WINDOW_MS` | No | `60000` | Rate limit window in ms (1 minute) |
 | `RATE_LIMIT_MAX_REQUESTS` | No | `30` | Maximum requests per window |
 
-\* Not required if `WEB_ENABLED=true`
-\** Required when `PRICE_SOURCE=jupiter`
-\*** Required when `BOT_TRANSPORT=webhook`
+\* Required when `PRICE_SOURCE=jupiter`
+\** Required when `BOT_TRANSPORT=webhook`
 
 ### Encryption Setup
 
@@ -148,25 +145,6 @@ In development mode (`NODE_ENV=development`):
 - Webhook is automatically deleted to enable polling
 - Hot-reload enabled via tsx
 - All commands available (portfolio, dca, prices, swap, admin)
-
-### Web test interface
-
-For testing without Telegram, use the web interface:
-
-```bash
-npm run dev:web
-```
-
-Then open http://localhost:3000 in your browser. The web interface provides:
-- Chat-like UI that mimics Telegram
-- Quick command buttons for testing
-- No Telegram token required
-
-You can also enable it via environment variable:
-```env
-WEB_ENABLED=true
-WEB_PORT=3000  # optional, default 3000
-```
 
 ### Production
 
