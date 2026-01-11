@@ -10,7 +10,6 @@ export {
   type TransportMode,
   type SolanaConfig,
   type DatabaseConfig,
-  type WebConfig,
   type HttpConfig,
   type DcaConfig,
   type DcaWalletConfig,

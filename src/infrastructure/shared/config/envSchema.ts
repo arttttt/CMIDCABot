@@ -17,7 +17,7 @@ const envSchema = z
     NODE_ENV: z.enum(["development", "production"]).default("development"),
 
     // Telegram
-    TELEGRAM_BOT_TOKEN: z.string().optional(),
+    TELEGRAM_BOT_TOKEN: z.string().min(1, "TELEGRAM_BOT_TOKEN is required"),
     OWNER_TELEGRAM_ID: z.coerce.number().int().positive(),
 
     // Encryption
@@ -50,13 +50,6 @@ const envSchema = z
     PRICE_SOURCE: z.enum(["jupiter", "mock"]).default("jupiter"),
     JUPITER_API_KEY: z.string().optional(),
 
-    // Web
-    WEB_ENABLED: z.preprocess(
-      (v) => String(v ?? "false").toLowerCase() === "true" || v === "1",
-      z.boolean(),
-    ).default(false),
-    WEB_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-
     // Rate limiting
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
     RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(30),
@@ -66,15 +59,6 @@ const envSchema = z
   })
   .superRefine((data, ctx) => {
     const isDev = data.NODE_ENV !== "production";
-
-    // TELEGRAM_BOT_TOKEN required unless WEB_ENABLED
-    if (!data.WEB_ENABLED && !data.TELEGRAM_BOT_TOKEN) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "TELEGRAM_BOT_TOKEN is required when WEB_ENABLED is not true",
-        path: ["TELEGRAM_BOT_TOKEN"],
-      });
-    }
 
     // JUPITER_API_KEY required when PRICE_SOURCE=jupiter
     if (data.PRICE_SOURCE === "jupiter" && !data.JUPITER_API_KEY) {
@@ -144,11 +128,6 @@ export interface DatabaseConfig {
   path: string;
 }
 
-export interface WebConfig {
-  enabled: boolean;
-  port: number;
-}
-
 export interface HttpConfig {
   port: number;
   host: string;
@@ -195,7 +174,6 @@ export interface Config {
   http: HttpConfig;
   transport: TransportConfig;
   rateLimit: RateLimitConfig;
-  web?: WebConfig;
   isDev: boolean;
 }
 
@@ -245,12 +223,6 @@ function envToConfig(env: ValidatedEnv): Config {
       windowMs: env.RATE_LIMIT_WINDOW_MS,
       maxRequests: env.RATE_LIMIT_MAX_REQUESTS,
     },
-    web: env.WEB_ENABLED
-      ? {
-          enabled: true,
-          port: env.WEB_PORT,
-        }
-      : undefined,
     isDev,
   };
 }

@@ -2,4 +2,5 @@
  * Web adapter exports
  */
 
-export { startWebServer } from "./WebAdapter.js";
+export { SecretPageHandler } from "./SecretPageHandler.js";
+export { ImportPageHandler } from "./ImportPageHandler.js";

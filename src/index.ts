@@ -55,7 +55,6 @@ import {
 } from "./domain/usecases/index.js";
 import type { ImportSessionRepository } from "./domain/repositories/index.js";
 import { GatewayFactory } from "./presentation/protocol/gateway/index.js";
-import { ProtocolHandler } from "./presentation/protocol/index.js";
 import {
   DevCommandRegistry,
   ProdCommandRegistry,
@@ -84,7 +83,6 @@ import {
   type BotTransport,
   type TransportConfig as TelegramTransportConfig,
 } from "./presentation/telegram/index.js";
-import { startWebServer } from "./presentation/web/index.js";
 import { HttpServer } from "./infrastructure/shared/http/index.js";
 import { SecretCache, ImportSessionCache, RateLimitCache, ConfirmationCache } from "./data/sources/memory/index.js";
 import { InMemorySecretRepository, InMemoryImportSessionRepository, InMemoryRateLimitRepository, InMemoryConfirmationRepository } from "./data/repositories/memory/index.js";
@@ -405,49 +403,7 @@ async function main(): Promise<void> {
     await authDb?.destroy();
   };
 
-  // Web-only mode: just start the web server
-  if (config.web?.enabled) {
-    // Block web server in production mode for security
-    if (!config.isDev) {
-      console.warn("─".repeat(50));
-      console.warn("WARNING: Web interface is disabled in production mode!");
-      console.warn("The web interface is intended for local development only.");
-      console.warn("Set NODE_ENV=development or disable WEB_ENABLED to proceed.");
-      console.warn("─".repeat(50));
-      process.exit(1);
-    }
-
-    // Create registry and legacy handler for web mode (Gateway integration pending)
-    const { registry } = createRegistryAndHandler(importSessionStore);
-    const webHandler = new ProtocolHandler(registry, getUserRole);
-
-    console.log("Starting DCA Bot in WEB MODE...");
-    console.log("─".repeat(50));
-    console.log("WEB TEST INTERFACE");
-    console.log("─".repeat(50));
-    console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
-    console.log("─".repeat(50));
-
-    await startWebServer(config.web.port ?? 3000, webHandler);
-
-    console.log("Press Ctrl+C to stop.\n");
-
-    // Keep process alive
-    process.on("SIGINT", async () => {
-      console.log("\nShutting down...");
-      await cleanup();
-      process.exit(0);
-    });
-    process.on("SIGTERM", async () => {
-      console.log("\nShutting down...");
-      await cleanup();
-      process.exit(0);
-    });
-
-    return;
-  }
-
-  // Telegram bot mode
+  // Start Telegram bot
   console.log("Starting DCA Telegram Bot...");
 
   // Get bot info first to have botUsername for invite links and API for message sending
