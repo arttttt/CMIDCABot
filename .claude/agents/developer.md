@@ -42,7 +42,9 @@ Implement features based on specifications. Write clean, working code following 
 
 ## Git Operations
 
-Use skill `git` for all version control operations:
+**CRITICAL:** Use skill `git` for ALL version control operations.
+**DO NOT use direct git commands via Bash.**
+
 - Branch creation and naming
 - Commit messages (Conventional Commits)
 - Pushing to remote
