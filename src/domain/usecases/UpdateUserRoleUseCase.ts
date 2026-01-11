@@ -3,6 +3,7 @@
  */
 
 import type { TelegramId } from "../models/id/index.js";
+import type { OwnerConfig } from "../../infrastructure/shared/config/index.js";
 import { UserIdentity } from "../models/UserIdentity.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { UserRole, canManageRole, isAdminRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
@@ -17,7 +18,7 @@ export class UpdateUserRoleUseCase {
   constructor(
     private authRepository: AuthRepository,
     private getUserRole: GetUserRoleUseCase,
-    private ownerTelegramId: TelegramId,
+    private ownerConfig: OwnerConfig,
   ) {}
 
   async execute(
@@ -32,7 +33,7 @@ export class UpdateUserRoleUseCase {
     });
 
     // Cannot change owner
-    if (targetTelegramId.equals(this.ownerTelegramId)) {
+    if (targetTelegramId.equals(this.ownerConfig.telegramId)) {
       return { success: false, error: "Cannot change owner's role" };
     }
 

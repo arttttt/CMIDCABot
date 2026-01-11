@@ -3,6 +3,7 @@
  */
 
 import type { TelegramId } from "../models/id/index.js";
+import type { OwnerConfig } from "../../infrastructure/shared/config/index.js";
 import { UserIdentity } from "../models/UserIdentity.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { canManageRole, isAdminRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
@@ -17,7 +18,7 @@ export class RemoveAuthorizedUserUseCase {
   constructor(
     private authRepository: AuthRepository,
     private getUserRole: GetUserRoleUseCase,
-    private ownerTelegramId: TelegramId,
+    private ownerConfig: OwnerConfig,
   ) {}
 
   async execute(
@@ -30,7 +31,7 @@ export class RemoveAuthorizedUserUseCase {
     });
 
     // Cannot remove owner
-    if (targetTelegramId.equals(this.ownerTelegramId)) {
+    if (targetTelegramId.equals(this.ownerConfig.telegramId)) {
       return { success: false, error: "Cannot remove owner" };
     }
 

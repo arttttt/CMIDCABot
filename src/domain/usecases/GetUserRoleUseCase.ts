@@ -5,7 +5,7 @@
  * Returns "guest" for unknown users (never undefined).
  */
 
-import type { TelegramId } from "../models/id/index.js";
+import type { OwnerConfig } from "../../infrastructure/shared/config/index.js";
 import type { AuthRepository } from "../repositories/AuthRepository.js";
 import type { UserIdentity } from "../models/UserIdentity.js";
 import type { UserRole } from "../models/AuthorizedUser.js";
@@ -13,13 +13,13 @@ import type { UserRole } from "../models/AuthorizedUser.js";
 export class GetUserRoleUseCase {
   constructor(
     private readonly authRepository: AuthRepository,
-    private readonly ownerTelegramId: TelegramId,
+    private readonly ownerConfig: OwnerConfig,
   ) {}
 
   async execute(identity: UserIdentity): Promise<UserRole> {
     if (identity.provider === "telegram") {
       // Owner is always "owner" role
-      if (identity.telegramId.equals(this.ownerTelegramId)) {
+      if (identity.telegramId.equals(this.ownerConfig.telegramId)) {
         return "owner";
       }
 
