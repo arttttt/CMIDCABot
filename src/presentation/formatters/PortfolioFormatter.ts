@@ -7,6 +7,16 @@ import { TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
+/**
+ * Format target allocations from TARGET_ALLOCATIONS constant
+ * Returns: "- SOL: 40%\n- BTC: 30%\n- ETH: 30%"
+ */
+export function formatTargetAllocations(): string {
+  return Object.entries(TARGET_ALLOCATIONS)
+    .map(([symbol, target]) => `- ${symbol}: ${(target * 100).toFixed(0)}%`)
+    .join("\n");
+}
+
 export class PortfolioFormatter {
   formatStatus(result: PortfolioStatusResult): ClientResponse {
     switch (result.type) {
@@ -25,13 +35,10 @@ export class PortfolioFormatter {
         );
 
       case "empty":
-        const allocationsText = Object.entries(TARGET_ALLOCATIONS)
-          .map(([symbol, target]) => `• ${symbol}: ${(target * 100).toFixed(0)}%`)
-          .join("\n");
         return new ClientResponse(
           "Your portfolio is empty.\n\n" +
             "Target allocations:\n" +
-            allocationsText + "\n\n" +
+            formatTargetAllocations() + "\n\n" +
             "Use /portfolio buy {amount} to start building your portfolio.",
         );
 

@@ -3,5 +3,10 @@
     "issue_id": "DCATgBot-0m8",
     "relationship": "published_as_task",
     "branch": "feature/0m8-unify-asset-ordering"
+  },
+  "m5l": {
+    "issue_id": "DCATgBot-m5l",
+    "relationship": "published_as_task",
+    "branch": "feature/m5l-centralize-allocation-formatting"
   }
 }
