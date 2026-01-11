@@ -247,8 +247,8 @@ npx tsc --noEmit
 | `/admin invite [role]` | admin | Create invite link (default role: user) |
 | `/portfolio` | user | Portfolio status |
 | `/portfolio buy <amount>` | user | Purchase asset using DCA strategy |
-| `/version` | user | Show bot version |
-| `/help` | user | Show available commands |
+| `/version` | admin | Show bot version |
+| `/help` | guest | Show available commands |
 
 ### Development mode (all production commands plus)
 
