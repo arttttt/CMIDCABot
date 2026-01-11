@@ -324,6 +324,13 @@ export class ImportPageHandler {
     const error = document.getElementById('error');
     const btn = document.getElementById('submitBtn');
 
+    secret.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
     form.addEventListener('submit', (e) => {
       if (!secret.value.trim()) {
         e.preventDefault();
