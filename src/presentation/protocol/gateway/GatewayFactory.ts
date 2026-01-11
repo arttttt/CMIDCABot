@@ -7,6 +7,7 @@
 
 import type { GetUserRoleUseCase } from "../../../domain/usecases/GetUserRoleUseCase.js";
 import type { RateLimitRepository } from "../../../domain/repositories/RateLimitRepository.js";
+import type { OwnerConfig } from "../../../infrastructure/shared/config/index.js";
 import type { CommandRegistry } from "../../commands/types.js";
 import { Gateway } from "./Gateway.js";
 import { GatewayCore } from "./GatewayCore.js";
@@ -24,7 +25,7 @@ export interface GatewayFactoryDeps {
   getUserRole: GetUserRoleUseCase;
   commandRegistry: CommandRegistry;
   rateLimitRepository: RateLimitRepository;
-  ownerTelegramId: number;
+  ownerConfig: OwnerConfig;
 }
 
 /**
@@ -53,7 +54,7 @@ export class GatewayFactory {
     // Note: RateLimit before LoadRole to reject spam without DB access
     const plugins = [
       new ErrorBoundaryPlugin(),
-      new RateLimitPlugin(deps.rateLimitRepository, deps.ownerTelegramId),
+      new RateLimitPlugin(deps.rateLimitRepository, deps.ownerConfig),
       new LoadRolePlugin(deps.getUserRole),
     ];
 
