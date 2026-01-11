@@ -7,15 +7,7 @@
 
 import { TelegramId } from "../models/id/index.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
-import { AuthorizedUser, UserRole, isAdminRole } from "../models/AuthorizedUser.js";
-
-/**
- * Result of an authorization check
- */
-export interface AuthCheckResult {
-  authorized: boolean;
-  user?: AuthorizedUser;
-}
+import { UserRole } from "../models/AuthorizedUser.js";
 
 /**
  * Authorization helper - permission checks for use cases
@@ -28,42 +20,6 @@ export class AuthorizationHelper {
     ownerTelegramIdRaw: number,
   ) {
     this.ownerTelegramIdBranded = new TelegramId(ownerTelegramIdRaw);
-  }
-
-  /**
-   * Check if a user is authorized to use the bot
-   */
-  async checkAuthorization(id: TelegramId): Promise<AuthCheckResult> {
-    // Owner is always authorized
-    if (id.equals(this.ownerTelegramIdBranded)) {
-      const user = await this.authRepository.getById(id);
-      return { authorized: true, user: user ?? this.createOwnerUser() };
-    }
-
-    const user = await this.authRepository.getById(id);
-    if (user) {
-      return { authorized: true, user };
-    }
-
-    return { authorized: false };
-  }
-
-  /**
-   * Check if a user is authorized (simple boolean check)
-   */
-  async isAuthorized(id: TelegramId): Promise<boolean> {
-    if (id.equals(this.ownerTelegramIdBranded)) return true;
-    return this.authRepository.isAuthorized(id);
-  }
-
-  /**
-   * Check if a user has admin privileges
-   */
-  async isAdmin(id: TelegramId): Promise<boolean> {
-    if (id.equals(this.ownerTelegramIdBranded)) return true;
-
-    const user = await this.authRepository.getById(id);
-    return user !== undefined && isAdminRole(user.role);
   }
 
   /**
@@ -82,18 +38,5 @@ export class AuthorizationHelper {
    */
   getOwnerTelegramId(): TelegramId {
     return this.ownerTelegramIdBranded;
-  }
-
-  /**
-   * Create a virtual owner user (when not yet in DB)
-   */
-  private createOwnerUser(): AuthorizedUser {
-    return {
-      telegramId: this.ownerTelegramIdBranded,
-      role: "owner",
-      addedBy: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
   }
 }

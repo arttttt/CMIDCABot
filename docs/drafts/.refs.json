@@ -1,1 +1,7 @@
-{}
+{
+  "q3f": {
+    "issue_id": "DCATgBot-q3f",
+    "relationship": "published_as_task",
+    "branch": "fix/q3f-remove-unused-auth-methods"
+  }
+}
