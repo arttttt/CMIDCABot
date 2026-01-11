@@ -42,9 +42,9 @@ export class AllocationCalculator {
     prices: AssetPrices,
   ): AssetAllocation[] {
     const assets: { symbol: AssetSymbol; balance: number }[] = [
+      { symbol: "SOL", balance: balances.solBalance },
       { symbol: "BTC", balance: balances.btcBalance },
       { symbol: "ETH", balance: balances.ethBalance },
-      { symbol: "SOL", balance: balances.solBalance },
     ];
 
     // Step 1: Calculate USD value of each asset using Decimal for precision
@@ -88,7 +88,7 @@ export class AllocationCalculator {
     const totalValueInUsdc = allocations.reduce((sum, a) => sum + a.valueInUsdc, 0);
 
     // Find asset with maximum negative deviation (most below target)
-    let assetToBuy: AssetSymbol = "BTC";
+    let assetToBuy: AssetSymbol = "SOL";
     let maxDeviation = 0;
 
     for (const alloc of allocations) {

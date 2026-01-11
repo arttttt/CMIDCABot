@@ -25,12 +25,13 @@ export class PortfolioFormatter {
         );
 
       case "empty":
+        const allocationsText = Object.entries(TARGET_ALLOCATIONS)
+          .map(([symbol, target]) => `• ${symbol}: ${(target * 100).toFixed(0)}%`)
+          .join("\n");
         return new ClientResponse(
           "Your portfolio is empty.\n\n" +
             "Target allocations:\n" +
-            `• BTC: ${(TARGET_ALLOCATIONS.BTC * 100).toFixed(0)}%\n` +
-            `• ETH: ${(TARGET_ALLOCATIONS.ETH * 100).toFixed(0)}%\n` +
-            `• SOL: ${(TARGET_ALLOCATIONS.SOL * 100).toFixed(0)}%\n\n` +
+            allocationsText + "\n\n" +
             "Use /portfolio buy {amount} to start building your portfolio.",
         );
 

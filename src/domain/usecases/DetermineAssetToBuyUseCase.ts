@@ -85,7 +85,7 @@ export class DetermineAssetToBuyUseCase {
     } catch (error) {
       logger.warn(
         "DetermineAssetToBuy",
-        "Failed to calculate allocations, defaulting to BTC",
+        "Failed to calculate allocations, defaulting to SOL",
         {
           error: error instanceof Error ? error.message : String(error),
         },
@@ -95,16 +95,16 @@ export class DetermineAssetToBuyUseCase {
   }
 
   /**
-   * Get default allocation info for BTC (used when calculation fails)
+   * Get default allocation info for SOL (used when calculation fails)
    */
   private getDefaultAllocation(): AssetAllocation {
     return {
-      symbol: "BTC",
+      symbol: "SOL",
       balance: 0,
       valueInUsdc: 0,
       currentAllocation: 0,
-      targetAllocation: TARGET_ALLOCATIONS.BTC,
-      deviation: -TARGET_ALLOCATIONS.BTC,
+      targetAllocation: TARGET_ALLOCATIONS.SOL,
+      deviation: -TARGET_ALLOCATIONS.SOL,
     };
   }
 }
