@@ -72,13 +72,13 @@ export class DetermineAssetToBuyUseCase {
       );
 
       logger.info("DetermineAssetToBuy", "Asset determined", {
-        symbol: selectedAllocation?.symbol ?? "BTC",
+        symbol: selectedAllocation?.symbol ?? "SOL",
         currentAllocation: selectedAllocation
           ? `${(selectedAllocation.currentAllocation * 100).toFixed(1)}%`
           : "0%",
         targetAllocation: selectedAllocation
           ? `${(selectedAllocation.targetAllocation * 100).toFixed(1)}%`
-          : `${(TARGET_ALLOCATIONS.BTC * 100).toFixed(1)}%`,
+          : `${(TARGET_ALLOCATIONS.SOL * 100).toFixed(1)}%`,
       });
 
       return selectedAllocation ?? this.getDefaultAllocation();
