@@ -5,6 +5,7 @@
 
 import { Bot, BotError, Context, InlineKeyboard } from "grammy";
 import { TelegramId } from "../../domain/models/id/index.js";
+import { UserIdentity } from "../../domain/models/UserIdentity.js";
 import type { Gateway } from "../protocol/gateway/Gateway.js";
 import type { GatewayRequest } from "../protocol/gateway/types.js";
 import { ClientResponse, StreamItem } from "../protocol/types.js";
@@ -24,10 +25,7 @@ const CALLBACK_MAX_LENGTH = 64;
 function buildTelegramMessageRequest(ctx: Context): GatewayRequest {
   return {
     kind: "telegram-message",
-    identity: {
-      provider: "telegram",
-      telegramId: new TelegramId(ctx.from!.id),
-    },
+    identity: UserIdentity.telegram(new TelegramId(ctx.from!.id)),
     text: ctx.message!.text!,
     username: ctx.from!.username,
   };
@@ -36,10 +34,7 @@ function buildTelegramMessageRequest(ctx: Context): GatewayRequest {
 function buildTelegramCallbackRequest(ctx: Context): GatewayRequest {
   return {
     kind: "telegram-callback",
-    identity: {
-      provider: "telegram",
-      telegramId: new TelegramId(ctx.from!.id),
-    },
+    identity: UserIdentity.telegram(new TelegramId(ctx.from!.id)),
     callbackData: ctx.callbackQuery!.data!,
   };
 }

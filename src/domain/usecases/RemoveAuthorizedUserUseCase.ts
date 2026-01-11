@@ -3,6 +3,7 @@
  */
 
 import type { TelegramId } from "../models/id/index.js";
+import { UserIdentity } from "../models/UserIdentity.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { canManageRole, isAdminRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
 import type { GetUserRoleUseCase } from "./GetUserRoleUseCase.js";
@@ -40,7 +41,7 @@ export class RemoveAuthorizedUserUseCase {
     }
 
     // Check admin permissions
-    const adminRole = await this.getUserRole.execute({ provider: "telegram", telegramId: adminTelegramId });
+    const adminRole = await this.getUserRole.execute(UserIdentity.telegram(adminTelegramId));
     if (adminRole === "guest") {
       return { success: false, error: "Not authorized" };
     }
