@@ -19,7 +19,7 @@ export class GetUserRoleUseCase {
   async execute(identity: UserIdentity): Promise<UserRole> {
     if (identity.provider === "telegram") {
       // Owner is always "owner" role
-      if (identity.telegramId === this.ownerTelegramId) {
+      if (identity.telegramId.equals(this.ownerTelegramId)) {
         return "owner";
       }
 
