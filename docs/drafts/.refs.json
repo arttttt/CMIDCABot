@@ -1,7 +1,2 @@
 {
-  "aci": {
-    "issue_id": "DCATgBot-aci",
-    "relationship": "published_as_task",
-    "branch": "feature/DCATgBot-aci-cleanup-on-close"
-  }
 }
