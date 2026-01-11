@@ -5,8 +5,12 @@
  * through the application layers.
  */
 
-import type { TelegramId } from "../../../domain/models/id/index.js";
+import { TelegramId } from "../../../domain/models/id/index.js";
 
-export interface OwnerConfig {
+export class OwnerConfig {
   readonly telegramId: TelegramId;
+
+  constructor(rawTelegramId: number) {
+    this.telegramId = new TelegramId(rawTelegramId);
+  }
 }

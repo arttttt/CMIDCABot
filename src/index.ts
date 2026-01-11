@@ -9,8 +9,7 @@ import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
-import { TelegramId } from "./domain/models/id/index.js";
-import { loadConfig, type OwnerConfig } from "./infrastructure/shared/config/index.js";
+import { loadConfig, OwnerConfig } from "./infrastructure/shared/config/index.js";
 import { setLogger, DebugLogger, NoOpLogger } from "./infrastructure/shared/logging/index.js";
 import { createMainDatabase, createAuthDatabase } from "./data/sources/database/index.js";
 import { createMainRepositories } from "./data/factories/RepositoryFactory.js";
@@ -120,9 +119,7 @@ async function main(): Promise<void> {
   const inviteTokenRepository = new SQLiteInviteTokenRepository(authDb);
 
   // Initialize owner configuration (single source of truth)
-  const ownerConfig: OwnerConfig = {
-    telegramId: new TelegramId(config.auth.ownerTelegramId),
-  };
+  const ownerConfig = new OwnerConfig(config.auth.ownerTelegramId);
 
   // Initialize owner authorization
   const initializeAuth = new InitializeAuthorizationUseCase(authRepository, ownerConfig);
