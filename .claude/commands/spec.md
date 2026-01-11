@@ -14,7 +14,7 @@ Create task specification for Developer.
 
 | Phase | Action | STOP until | Steps |
 |-------|--------|------------|-------|
-| 1. Questions | List ALL unclear points as numbered list | User answers ALL questions | 1-4 |
+| 1. Questions | List ALL unclear points as numbered list | User answers ALL questions | 1-3 |
 | 2. Confirmation | Summarize scope in 2-3 sentences | User says "da" / "ok" / "yes" | 4 |
 | 3. Output | File per requirements below | — | 5-6 |
 
