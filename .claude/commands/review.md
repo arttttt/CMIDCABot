@@ -45,7 +45,7 @@ Conduct code review and create report.
    - If file path provided: review that file/directory
    - If branch detected: review files changed on branch
 
-4. **Read `ARCHITECTURE.md`** — mandatory before review
+4. **Read `ARCHITECTURE.md` and `conventions.md`** — mandatory before review
 
 5. **Delegate to subagent `reviewer`:**
    - Analyze code against checklist:

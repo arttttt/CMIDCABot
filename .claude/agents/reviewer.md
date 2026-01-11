@@ -7,7 +7,7 @@ model: inherit
 
 # Agent: Reviewer
 
-> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md`, `conventions.md`, and `ARCHITECTURE.md`. This file extends, not replaces. Read `ARCHITECTURE.md` before every review.
+> ⚠️ **MANDATORY:** Follow ALL rules from `CLAUDE.md`, `conventions.md`, and `ARCHITECTURE.md`. This file extends, not replaces. Read `ARCHITECTURE.md` and `conventions.md` before every review.
 
 ## 🚨 CRITICAL RULES
 
