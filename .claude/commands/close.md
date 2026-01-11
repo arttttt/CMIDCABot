@@ -14,7 +14,7 @@ Close a task in tracker and cleanup all related local artifacts (refs.json entri
 |-------|--------|------------|-------|
 | 1. Find task | Locate task and related artifacts | - | 1-3 |
 | 2. Confirm | Show what will be closed and deleted | User says "da" / "ok" / "yes" | 4 |
-| 3. Execute | Close in tracker, delete artifacts, update refs | - | 5-8 |
+| 3. Execute | Close in tracker, delete artifacts, update refs, commit | - | 5-9 |
 
 **Closing without phase 2 confirmation is a critical violation.**
 
@@ -72,6 +72,13 @@ Close a task in tracker and cleanup all related local artifacts (refs.json entri
    - Deleted REVIEW files: <list of files>
    ```
 
+9. **Commit and push cleanup:**
+   - **Use skill `git` for commit and push operations. DO NOT use direct git commands.**
+   - Stage all changes
+   - Commit with message: `chore: cleanup refs.json after closing <full_id>`
+   - Push to current branch
+   - If push fails: report error but consider cleanup successful
+
 ## Tracker Integration
 
 Use skill `beads` for closing task. See skill references for detailed instructions.
@@ -82,6 +89,7 @@ Use skill `beads` for closing task. See skill references for detailed instructio
 - Task already closed: report and continue cleanup
 - No refs.json entries found: report "No refs.json entries for this task"
 - No REVIEW files found: report "No REVIEW files to delete"
+- Git push rejected: report error but consider cleanup successful (changes are committed locally)
 
 ## ID Normalization Examples
 
