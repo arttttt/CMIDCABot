@@ -33,15 +33,15 @@ Close a task in tracker and cleanup all related local artifacts (refs.json entri
    - Store short ID (without prefix) as `<short_id>`
 
 3. **Find related artifacts:**
-   - Read `docs/drafts/.refs.json`
+   - Read `docs/drafts/.refs.json` (if file doesn't exist, treat as empty `{}`)
    - Find all entries where `issue_id` matches `<full_id>` or `<short_id>`:
      - Check both exact match and with/without prefix
    - For each found entry, collect:
      - Entry key (name)
      - Branch name (if present)
    - Find REVIEW files:
-     - For each entry name, glob `docs/reviews/REVIEW_<name>*.md`
-     - This catches versioned files: REVIEW_name.md, REVIEW_name_v2.md, etc.
+     - Glob `docs/reviews/REVIEW_<name>.md` (base file)
+     - Glob `docs/reviews/REVIEW_<name>_v*.md` (versioned files)
 
 4. **Confirm with user:**
    - Show task ID to close
@@ -50,10 +50,7 @@ Close a task in tracker and cleanup all related local artifacts (refs.json entri
    - Wait for confirmation
 
 5. **Close task in tracker:**
-   - Use skill `beads`:
-     ```bash
-     bd close <full_id> --reason "Completed" --json
-     ```
+   - Use skill `beads` to close task with reason "Completed"
    - If error (task not found or already closed): report and continue cleanup
 
 6. **Delete REVIEW files:**
@@ -62,8 +59,7 @@ Close a task in tracker and cleanup all related local artifacts (refs.json entri
    - Report deleted files
 
 7. **Update refs.json:**
-   - Read current `docs/drafts/.refs.json`
-   - Remove all entries found in step 3
+   - Using entries found in step 3, remove them from refs.json
    - Write updated refs.json
    - If refs.json becomes empty (`{}`), keep the empty object
 
@@ -78,10 +74,7 @@ Close a task in tracker and cleanup all related local artifacts (refs.json entri
 
 ## Tracker Integration
 
-Use skill `beads` for closing task:
-- `bd close <id> --reason "Completed" --json`
-
-See skill references for detailed instructions.
+Use skill `beads` for closing task. See skill references for detailed instructions.
 
 ## Error Handling
 
@@ -89,7 +82,6 @@ See skill references for detailed instructions.
 - Task already closed: report and continue cleanup
 - No refs.json entries found: report "No refs.json entries for this task"
 - No REVIEW files found: report "No REVIEW files to delete"
-- refs.json doesn't exist: create empty `{}` after cleanup (edge case)
 
 ## ID Normalization Examples
 
