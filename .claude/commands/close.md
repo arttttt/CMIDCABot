@@ -73,8 +73,9 @@ Close a task in tracker and cleanup all related local artifacts (refs.json entri
    ```
 
 9. **Commit and push cleanup:**
-   - Stage changes: `git add -A`
-   - Commit: `chore: cleanup refs.json after closing <full_id>`
+   - **Use skill `git` for commit and push operations. DO NOT use direct git commands.**
+   - Stage all changes
+   - Commit with message: `chore: cleanup refs.json after closing <full_id>`
    - Push to current branch
    - If push fails: report error but consider cleanup successful
 
