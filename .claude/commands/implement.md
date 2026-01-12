@@ -13,9 +13,9 @@ Implement functionality from issue specification.
 ## Resume Pattern
 
 1. **Main context:** get issue via `beads`, verify not blocked
-2. **Task(developer):** research + create plan → return `{ plan }`
-3. **Main context:** show plan → wait for "ok" → claim issue (set in_progress)
-4. **Task(developer, resume):** implement, commit, push
+2. **Task(developer):** research + create plan → return `{ plan }` + `agent_id`
+3. **Main context:** save `agent_id`, show plan → wait for "ok" → claim issue (set in_progress)
+4. **Task(developer, resume=agent_id):** implement, commit, push
 
 ## Algorithm
 
@@ -28,6 +28,8 @@ Implement functionality from issue specification.
 - Notify: "Found issue: `<id>` - <title>"
 
 ### Step 2: Subagent — create plan
+
+Call `Task(developer)` and **save returned `agent_id`**.
 
 Prompt:
 ```
@@ -52,6 +54,8 @@ Confirm? (ok / changes)
 After "ok": claim issue via `beads` (set in_progress)
 
 ### Step 4: Resume subagent
+
+Call `Task(developer, resume=agent_id)`:
 
 ```
 User approved. Implement:

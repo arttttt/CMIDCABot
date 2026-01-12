@@ -13,9 +13,9 @@ Fix issues identified in code review.
 ## Resume Pattern
 
 1. **Main context:** get issue + review findings via `beads`
-2. **Task(developer):** analyze findings → return `{ fix_plan }`
-3. **Main context:** show plan → wait for "ok"
-4. **Task(developer, resume):** implement fixes, commit, push
+2. **Task(developer):** analyze findings → return `{ fix_plan }` + `agent_id`
+3. **Main context:** save `agent_id`, show plan → wait for "ok"
+4. **Task(developer, resume=agent_id):** implement fixes, commit, push
 
 ## Algorithm
 
@@ -28,6 +28,8 @@ Fix issues identified in code review.
 - Parse findings (Critical, Should Fix, Consider)
 
 ### Step 2: Subagent — create fix plan
+
+Call `Task(developer)` and **save returned `agent_id`**.
 
 Prompt:
 ```
@@ -50,6 +52,8 @@ Confirm? (ok / changes)
 ```
 
 ### Step 4: Resume subagent
+
+Call `Task(developer, resume=agent_id)`:
 
 ```
 User approved. Implement fixes:

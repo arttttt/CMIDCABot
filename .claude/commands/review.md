@@ -13,9 +13,9 @@ Conduct code review and record findings.
 ## Resume Pattern
 
 1. **Main context:** get issue via `beads`, determine scope
-2. **Task(reviewer):** analyze code → return `{ related, unrelated, verdict }`
-3. **Main context:** show verdict → ask about unrelated issues
-4. **Task(reviewer, resume):** save comment, create issues if requested
+2. **Task(reviewer):** analyze code → return `{ related, unrelated, verdict }` + `agent_id`
+3. **Main context:** save `agent_id`, show verdict → ask about unrelated issues
+4. **Task(reviewer, resume=agent_id):** save comment, create issues if requested
 
 ## Algorithm
 
@@ -27,6 +27,8 @@ Conduct code review and record findings.
 - Determine scope: changed files from branch
 
 ### Step 2: Subagent — review
+
+Call `Task(reviewer)` and **save returned `agent_id`**.
 
 Prompt:
 ```
@@ -63,6 +65,8 @@ Create issues for unrelated? (yes/no/select)
 ```
 
 ### Step 4: Resume subagent
+
+Call `Task(reviewer, resume=agent_id)`:
 
 ```
 User response: <yes/no/selection>

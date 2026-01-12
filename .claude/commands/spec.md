@@ -13,9 +13,9 @@ Create new issue or enrich existing one with full specification.
 ## Resume Pattern
 
 1. **Main context:** parse argument → determine mode (create/enrich)
-2. **Task(planner):** research + draft spec → return `{ draft_spec, questions? }`
-3. **Main context:** show draft → wait for "ok"
-4. **Task(planner, resume):** create/update issue via skill `beads`
+2. **Task(planner):** research + draft spec → return `{ draft_spec, questions? }` + `agent_id`
+3. **Main context:** save `agent_id`, show draft → wait for "ok"
+4. **Task(planner, resume=agent_id):** create/update issue via skill `beads`
 
 ## Algorithm
 
@@ -26,6 +26,8 @@ Create new issue or enrich existing one with full specification.
 - Otherwise → create mode, use as description
 
 ### Step 2: Subagent — research and draft
+
+Call `Task(planner)` and **save returned `agent_id`**.
 
 Prompt:
 ```
@@ -48,8 +50,10 @@ Confirm? (ok / corrections)
 
 ### Step 4: Resume subagent
 
-- If "ok": `resume` → create/update issue
-- If corrections: `resume` with corrections → update draft, create/update issue
+Call `Task(planner, resume=agent_id)`:
+
+- If "ok": prompt "User confirmed. Create/update issue now."
+- If corrections: prompt "User corrections: <input>. Update and create/update issue."
 
 ### Step 5: Report
 
