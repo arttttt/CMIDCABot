@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: "Code review. Use for checking correctness, architecture, and security."
+description: "MUST BE USED for code review. Use PROACTIVELY when /review command is invoked or after any code changes to check correctness, architecture, and security."
 tools: Read, Glob, Grep, Bash
 model: inherit
 ---

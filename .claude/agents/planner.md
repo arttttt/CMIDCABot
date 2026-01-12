@@ -1,6 +1,6 @@
 ---
 name: planner
-description: "Task planning and technical consultation. Use for creating issue specifications and answering technical questions."
+description: "MUST BE USED for task planning and consultation. Use PROACTIVELY when /spec or /consult commands are invoked, for creating issue specifications and answering technical questions."
 tools: Read, Glob, Grep, Bash
 model: inherit
 ---

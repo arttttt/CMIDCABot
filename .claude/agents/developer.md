@@ -1,6 +1,6 @@
 ---
 name: developer
-description: "Code implementation. Use for implementing tasks and fixing review findings."
+description: "MUST BE USED for code implementation. Use PROACTIVELY when /implement or /fix commands are invoked, or when coding tasks need execution."
 tools: Read, Write, Edit, MultiEdit, Glob, Grep, Bash
 model: inherit
 ---
