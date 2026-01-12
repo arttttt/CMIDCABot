@@ -1,140 +1,70 @@
 ---
-description: Create task specification (TASK)
-argument-hint: "<name> [description]"
-allowed-tools: Read, Write, Glob, Grep
+description: Create or enrich issue specification
+argument-hint: "[id|description]"
+allowed-tools: Read, Glob, Grep, Bash
 ---
 
-Use subagent `pm`.
+Use subagent `planner`.
 
 ## Task
 
-Create task specification for Developer.
+Create new issue or enrich existing one with full specification.
 
 ## Interaction Contract (MUST follow)
 
-| Phase | Action | STOP until | Steps |
-|-------|--------|------------|-------|
-| 1. Questions | List ALL unclear points as numbered list | User answers ALL questions | 1-3 |
-| 2. Confirmation | Summarize scope in 2-3 sentences | User says "da" / "ok" / "yes" | 4 |
-| 3. Output | File per requirements below | — | 5-6 |
+| Phase | Action | STOP until |
+|-------|--------|------------|
+| 1. Questions | List unclear points | User answers |
+| 2. Confirmation | Summarize scope in 2-3 sentences | User says "ok" |
+| 3. Create/Update | Issue via skill `beads` | — |
 
-**Creating file without completing phases 1-2 is a critical violation.**
+**Creating/updating issue without phases 1-2 is a critical violation.**
 
-If no questions needed (everything is clear) — skip to phase 2, but NEVER skip confirmation.
+If everything is clear — skip phase 1, but NEVER skip confirmation.
 
 ## Algorithm
 
-1. **Check arguments:**
-   - If `$ARGUMENTS` is empty or whitespace only:
-     - Ask user for task name and what needs to be done
-     - Wait for response
-   - Otherwise: use first word as `<name>`, rest as description
+1. **Parse argument:**
+   - Empty → ask "Describe the task:", wait for response
+   - ID-like (2-4 chars or has `DCATgBot-` prefix) → enrich mode
+   - Otherwise → treat as description, generate title
 
-2. **Check beads for ID-like argument (main context, before subagent):**
-   - Determine if `<name>` looks like an issue ID:
-     - 2-4 characters without spaces (e.g., "9en", "abc")
-     - OR contains "DCATgBot-" prefix (e.g., "DCATgBot-9en")
-   - If ID-like:
-     - Normalize ID: if no prefix, add "DCATgBot-" prefix
-     - **Use skill `beads` to get issue details**
-     - If issue found:
-       - Notify user: "Found issue: `<id>` - <title>"
-       - Pass issue context (title, description) inline to subagent
-     - If issue not found: continue without tracker context
+2. **Enrich mode:**
+   - Get issue via skill `beads`
+   - Show current title and description
+   - Say: "Enriching issue `<id>` — <title>"
+   - Research context, ask questions
+   - Update issue description via skill `beads`
 
-3. **Find context:**
-   - Check `docs/drafts/.refs.json` for existing issue with this name
-   - If issue exists: use `beads` skill to get issue details (title, description)
-   - Study existing code if needed
+3. **Create mode:**
+   - Generate short title from description (5-7 words max)
+   - Research context (existing code, related issues via skill `beads`)
+   - Ask clarifying questions if needed
+   - Create issue via skill `beads`:
+     - Title: generated from description
+     - Type: task (or feature/bug based on context)
+     - Priority: 2 (default)
+     - Description: formatted per template below
 
-4. **Execute Interaction Contract:**
-   - Complete phases 1-2 (questions -> confirmation)
-   - Do NOT proceed to output until contract fulfilled
+4. **Issue description format:**
+   ```markdown
+   ## Context
+   [Why this matters — 2-3 sentences]
 
-5. **Create file:** `docs/drafts/TASK_<name>.md`
-   - Content sections:
-     - Context — why this is needed
-     - Acceptance Criteria — checklist with `- [ ]`
-     - Scope / Out of Scope — boundaries
-     - Technical Notes — hints (optional)
-   - **NO "Open Questions" section**
+   ## Acceptance Criteria
+   - [ ] Criterion 1
+   - [ ] Criterion 2
 
-6. **Report result:**
+   ## Scope
+   [What IS included]
+
+   ## Out of Scope
+   [What is NOT included]
+
+   ## Technical Notes
+   [Optional — implementation hints]
    ```
-   Created: docs/drafts/TASK_<name>.md
 
-   Next: run `/publish <name>` to create tracker item
-   ```
-
-## Name Sanitization
-
-If user input contains invalid characters:
-- Replace spaces with `_`
-- Remove special characters except `-` and `_`
-- Convert to lowercase
-- Example: "My Cool Feature!" -> `my_cool_feature`
-
-## File Naming
-
-- Use snake_case: `TASK_portfolio_display.md`
-
-## Output Format — Simple Task
-
-```markdown
-# Task: [Short Descriptive Title]
-
-## Context
-[Why this task exists - 2-3 sentences]
-
-## Acceptance Criteria
-- [ ] [Criterion 1 - must be verifiable]
-- [ ] [Criterion 2]
-- [ ] [Criterion 3]
-
-## Scope
-[What IS included]
-
-## Out of Scope
-[What is explicitly NOT included]
-
-## Technical Notes
-[Implementation hints - optional]
-```
-
-## Output Format — Epic
-
-```markdown
-# Epic: [Feature Name]
-
-## Context
-[Why this epic exists - 2-3 sentences]
-
-## Tasks
-
-### <name>-1 — [Subtask 1 Title]
-**Depends on:** none
-- [ ] [AC 1]
-- [ ] [AC 2]
-
-### <name>-2 — [Subtask 2 Title]
-**Depends on:** <name>-1
-- [ ] [AC 1]
-- [ ] [AC 2]
-
-## Scope
-[What IS included in entire epic]
-
-## Out of Scope
-[What is explicitly NOT included]
-```
-
-## Output Boundaries
-
-This command produces ONLY:
-- **File:** `docs/drafts/TASK_<name>.md`
-- **Chat:** questions, confirmations, result report
-
-NO other side effects allowed:
-- No tracker API calls
-- No git operations
-- No external service calls
+5. **Report result:**
+   - Create: "Created: `<id>` — <title>"
+   - Enrich: "Updated: `<id>` — <title>"

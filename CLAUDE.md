@@ -116,16 +116,15 @@ Correctness over completeness. A compact, accurate patch beats a broad, speculat
 
 Slash commands for project workflow:
 
-| Command | Purpose | Agent | Output |
-|---------|---------|-------|--------|
-| `/brief <name>` | Technical brief | analyst | `docs/drafts/BRIEF_*.md` |
-| `/spec <name>` | Specification | pm | `docs/drafts/TASK_*.md` |
-| `/publish <name>` | Create/update issue | — | issue |
-| `/implement [id]` | Implement task | developer | code |
-| `/review [id]` | Code review | reviewer | findings |
-| `/fix [id]` | Fix review issues | developer | code |
-| `/status [id]` | Show status | — | chat |
-| `/consult` | Consultation | analyst | chat |
+| Command | Purpose | Agent |
+|---------|---------|-------|
+| `/spec [id\|description]` | Create or enrich issue | planner |
+| `/consult` | Technical consultation | planner |
+| `/implement <id>` | Implement from issue | developer |
+| `/fix <id>` | Fix review findings | developer |
+| `/review <id>` | Code review | reviewer |
+| `/close <id>` | Close issue | — |
+| `/status [id]` | Show status | — |
 
 Argument is optional — if not provided, command will ask interactively.
 
@@ -134,14 +133,15 @@ Argument is optional — if not provided, command will ask interactively.
 Standard development flow:
 
 ```
-/brief → /publish → /spec → /publish → /implement → /review → done
+/spec → /implement → /review → /close
+         ↑            ↓
+         └── /fix ←───┘
 ```
 
 ## Agents
 
 Agents in `.claude/agents/`:
-- `analyst` — technical analysis, briefs
-- `pm` — task specifications
+- `planner` — task planning, specifications, consultations
 - `developer` — implementation
 - `reviewer` — code review
 

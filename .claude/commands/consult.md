@@ -4,7 +4,7 @@ argument-hint: "[question]"
 allowed-tools: Read, Glob, Grep
 ---
 
-Use subagent `analyst`.
+Use subagent `planner`.
 
 ## Task
 
