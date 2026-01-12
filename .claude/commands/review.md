@@ -10,68 +10,84 @@ Use subagent `reviewer`.
 
 Conduct code review and record findings.
 
-## Interaction Contract (MUST follow)
+## Resume Pattern
 
-| Phase | Action | STOP until |
-|-------|--------|------------|
-| 1. Scope | Determine what to review | — |
-| 2. Review | Analyze code, create findings | — |
-| 3. Verdict | Show findings, ask about unrelated issues | User confirms |
-| 4. Record | Save findings as comment to issue | — |
-
-**Closing issue without user seeing the verdict is a critical violation.**
+1. **Main context:** get issue via `beads`, determine scope
+2. **Task(reviewer):** analyze code → return `{ related, unrelated, verdict }` + `agent_id`
+3. **Main context:** save `agent_id`, show verdict → ask about unrelated issues
+4. **Task(reviewer, resume=agent_id):** save comment, create issues if requested
 
 ## Algorithm
 
-1. **Check arguments:**
-   - If `$ARGUMENTS` is empty → ask "Which issue to review?"
-   - Otherwise: use as issue ID
+### Step 1: Get issue (main context)
 
-2. **Get issue details (main context):**
-   - Normalize ID: if no `DCATgBot-` prefix, add it
-   - Use skill `beads` to get issue details
-   - Notify user: "Found issue: `<id>` - <title>"
-   - Determine scope: find changed files from branch
+- If `$ARGUMENTS` empty → ask "Which issue to review?"
+- Normalize ID: add `DCATgBot-` prefix if missing
+- Use skill `beads` to get issue details
+- Determine scope: changed files from branch
 
-3. **Read `ARCHITECTURE.md` and `conventions.md`** — mandatory before review
+### Step 2: Subagent — review
 
-4. **Delegate to subagent `reviewer`:**
-   - Analyze code against checklist:
-     - Correctness (logic, edge cases, error handling)
-     - Architecture (Clean Architecture compliance)
-     - Security (no secrets, input validation)
-     - Code quality (types, naming, structure)
-   - Categorize findings:
-     - **Related** — directly about task implementation
-     - **Unrelated** — pre-existing issues, tech debt
+Call `Task(reviewer)` and **save returned `agent_id`**.
 
-5. **Handle unrelated findings:**
-   - For each unrelated finding, ask user:
-     > "Found unrelated issue: [description]. Create new issue?"
-   - If yes: use skill `beads` to create issue with `discovered-from` dependency
+Prompt:
+```
+Issue: <id> - <title>
+Branch: <branch>
+Changed files: <list>
 
-6. **Save review as comment (main context):**
-   - Use skill `beads` to add comment to issue with findings
+Read ARCHITECTURE.md and conventions.md first.
 
-7. **Report verdict:**
+Review checklist:
+- Correctness (logic, edge cases, error handling)
+- Architecture (Clean Architecture compliance)
+- Security (no secrets, input validation)
+- Code quality (types, naming, structure)
 
-   **If Critical Issues (Needs work):**
-   ```
-   Review complete. Status: Needs work.
+Categorize: related vs unrelated.
+Return: { status: "needs_confirmation", related, unrelated, verdict, summary }
+DO NOT save comment yet.
+```
 
-   Critical issues found:
-   - [C1] Description
-   - [C2] Description
+### Step 3: Show verdict (main context)
 
-   Run /fix <id> to address these issues.
-   ```
+```
+## Review Complete
+Status: <verdict>
 
-   **If Approved:**
-   ```
-   Review complete. Status: Approved.
+### Related Findings
+<related>
 
-   Ready for merge.
-   ```
+### Unrelated Issues
+<unrelated>
+---
+Create issues for unrelated? (yes/no/select)
+```
+
+### Step 4: Resume subagent
+
+Call `Task(reviewer, resume=agent_id)`:
+
+```
+User response: <yes/no/selection>
+1. Save review as comment via skill `beads`
+2. If approved: create issues for unrelated with `discovered-from` dependency
+```
+
+### Step 5: Report
+
+**Needs work:**
+```
+Review complete. Status: Needs work.
+Critical: [C1], [C2]...
+Next: /fix <id>
+```
+
+**Approved:**
+```
+Review complete. Status: Approved.
+Ready for merge.
+```
 
 ## Findings Format (for comment)
 
@@ -91,19 +107,12 @@ Conduct code review and record findings.
 - [N1] Description — `file:line`
 
 ### Verdict
-<Summary and next steps>
+<Summary>
 ```
 
-## Skills Integration
+## Important
 
-Use skill `beads` for:
-- Getting issue details
-- Adding review comment
-- Creating discovered issues
-
-## Important Rules
-
-- **Never close issue** — developer closes after PR merge
-- **Categorize findings** — related vs unrelated
+- **Never skip verdict confirmation**
+- **Resume preserves context** — no need to re-analyze
+- **Never close issue** — developer closes after merge
 - **Create issues for unrelated** — with `discovered-from` dependency
-- **No fixes** — document only, developer fixes
