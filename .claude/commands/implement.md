@@ -10,18 +10,66 @@ Use subagent `developer`.
 
 Implement functionality from issue specification.
 
-## Interaction Contract (MUST follow)
+## Resume Pattern
 
-| Phase | Who | Action | STOP until |
-|-------|-----|--------|------------|
-| 1. Plan | Subagent | Create and show plan | User says "ok" |
-| 2. Claim | Main context | Update status to "in_progress" | — |
-| 3. Implement | Subagent | Code, commit, push per plan | — |
+1. **Main context:** get issue via `beads`, verify not blocked
+2. **Task(developer):** research + create plan → return `{ plan }`
+3. **Main context:** show plan → wait for "ok" → claim issue (set in_progress)
+4. **Task(developer, resume):** implement, commit, push
 
-**Writing code without phase 1 approval is a critical violation.**
-**Main context does NOT create plans — delegate to subagent.**
+## Algorithm
 
-### Plan Format
+### Step 1: Get issue (main context)
+
+- If `$ARGUMENTS` empty → ask "Which issue to implement?"
+- Normalize ID: add `DCATgBot-` prefix if missing
+- Use skill `beads` to get issue details
+- If blocked: report blocker and exit
+- Notify: "Found issue: `<id>` - <title>"
+
+### Step 2: Subagent — create plan
+
+Prompt:
+```
+Issue: <id> - <title>
+Description: <description>
+Acceptance criteria: <criteria>
+
+Create implementation plan.
+Return: { status: "needs_approval", plan }
+DO NOT implement yet.
+```
+
+### Step 3: Show plan (main context)
+
+```
+## Implementation Plan
+<plan>
+---
+Confirm? (ok / changes)
+```
+
+After "ok": claim issue via `beads` (set in_progress)
+
+### Step 4: Resume subagent
+
+```
+User approved. Implement:
+1. Create branch via skill `git`
+2. Implement with granular commits
+3. Push to remote
+```
+
+### Step 5: Report
+
+```
+Implementation complete
+Branch: <branch>
+Commits: <list>
+Next: /review <id>
+```
+
+## Plan Format
 
 ```markdown
 ## Implementation Plan
@@ -38,74 +86,16 @@ Implement functionality from issue specification.
 **Approach:**
 1. [Step 1]
 2. [Step 2]
-
-Confirm?
 ```
 
-## Algorithm
+## Branch Naming
 
-1. **Check arguments:**
-   - If `$ARGUMENTS` is empty → ask "Which issue to implement?"
-   - Otherwise: use as issue ID
-
-2. **Get issue details (main context, before subagent):**
-   - Normalize ID: if no `DCATgBot-` prefix, add it
-   - Use skill `beads` to get issue details
-   - Verify issue exists and is not blocked
-   - If blocked: report blocker and exit
-   - If found: notify user "Found issue: `<id>` - <title>"
-   - Pass issue context (title, description, acceptance criteria) to subagent
-
-3. **Delegate to subagent `developer` (plan phase):**
-   - Subagent reads issue requirements
-   - Subagent creates plan per format above
-   - Subagent shows plan to user, waits for approval
-   - User may request changes (subagent handles iterations)
-   - Subagent returns confirmed plan
-
-4. **Claim issue (main context):**
-   - Use skill `beads` to set status to "in_progress"
-
-5. **Delegate to subagent `developer` (implementation phase):**
-   - Create branch using skill `git`:
-     - `feature/<id>-<short>` for feature, task, epic, chore
-     - `fix/<id>-<short>` for bug
-   - Implement with granular commits:
-     - Write code for one logical change
-     - Commit with conventional message: `<type>(<scope>): <description>`
-     - Repeat until done
-   - Push branch to remote
-
-6. **Report completion:**
-   ```
-   Implementation complete
-
-   **Branch:** `<branch-name>`
-   **Commits:**
-   - `<hash>` <message>
-
-   **Pushed to remote.**
-
-   Next: run /review <id> to check implementation.
-   ```
-
-## Skills Integration
-
-Use skill `git` for all git operations:
-- Creating branches
-- Making commits
-- Pushing to remote
-
-Use skill `beads` for tracker operations:
-- Getting issue details
-- Claiming issue (set in_progress)
-
-**Note:** Tracker operations are performed by main context before/after delegating to subagent.
+- `feature/<id>-<short>` for feature, task, epic, chore
+- `fix/<id>-<short>` for bug
 
 ## Important
 
-- Code must be complete, no placeholders
-- Do NOT close issue — wait for review
-- Do NOT merge — PR review required
-- Ask if unclear — better to clarify than assume
-- Use `conventions.md` and `ARCHITECTURE.md` for code style
+- **Never implement without plan approval**
+- **Resume preserves context** — subagent remembers research
+- **Code must be complete** — no placeholders
+- **Do NOT close issue** — wait for review

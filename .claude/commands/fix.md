@@ -10,101 +10,89 @@ Use subagent `developer`.
 
 Fix issues identified in code review.
 
-## Interaction Contract (MUST follow)
+## Resume Pattern
 
-| Phase | Who | Action | STOP until |
-|-------|-----|--------|------------|
-| 1. Plan | Subagent | Create and show fix plan | User says "ok" |
-| 2. Implement | Subagent | Fix issues, commit, push | — |
+1. **Main context:** get issue + review findings via `beads`
+2. **Task(developer):** analyze findings → return `{ fix_plan }`
+3. **Main context:** show plan → wait for "ok"
+4. **Task(developer, resume):** implement fixes, commit, push
 
-**Fixing code without phase 1 approval is a critical violation.**
-**Main context does NOT create plans — delegate to subagent.**
+## Algorithm
 
-### Plan Format
+### Step 1: Get findings (main context)
+
+- If `$ARGUMENTS` empty → ask "Which issue to fix?"
+- Normalize ID: add `DCATgBot-` prefix if missing
+- Use skill `beads` to get issue details + comments
+- If no review comments: error "No review findings. Run /review first."
+- Parse findings (Critical, Should Fix, Consider)
+
+### Step 2: Subagent — create fix plan
+
+Prompt:
+```
+Issue: <id> - <title>
+Review findings: <findings>
+
+Create fix plan.
+Default: fix Critical + Should Fix, suggest defer Consider.
+Return: { status: "needs_approval", fix_plan }
+DO NOT implement yet.
+```
+
+### Step 3: Show plan (main context)
+
+```
+## Fix Plan
+<plan>
+---
+Confirm? (ok / changes)
+```
+
+### Step 4: Resume subagent
+
+```
+User approved. Implement fixes:
+1. Apply fixes per plan
+2. Commit: fix(<scope>): address review findings
+3. Push to remote
+```
+
+### Step 5: Report
+
+```
+Fixes complete for <id>.
+Fixed: [C1], [S1]...
+Next: /review <id>
+```
+
+## Plan Format
 
 ```markdown
 ## Fix Plan
 
 **Issue:** <id> - <title>
-**Branch:** <current branch>
+**Branch:** <current>
 
 **Findings to fix:**
 - [C1] Title - approach
 - [S1] Title - approach
 
-**Deferred (with reason):**
-- [N1] Title - why deferred
-
-**Files to modify:**
-- `path/to/file.ts` - [changes]
-
-Confirm?
+**Deferred:**
+- [N1] Title - reason
 ```
-
-## Algorithm
-
-1. **Check arguments:**
-   - If `$ARGUMENTS` is empty → ask "Which issue to fix?"
-   - Otherwise: use as issue ID
-
-2. **Get issue and review findings (main context):**
-   - Normalize ID: if no `DCATgBot-` prefix, add it
-   - Use skill `beads` to get issue details
-   - Use skill `beads` to get issue comments (review findings)
-   - If no review comments found: error "No review findings. Run /review first."
-   - Notify user: "Found issue: `<id>` - <title>"
-   - Parse findings from latest review comment (Critical, Should Fix, Consider)
-
-3. **Delegate to subagent `developer` (plan phase):**
-   - Subagent creates plan per format above
-   - Default: fix all Critical and Should Fix, suggest deferring Consider
-   - Subagent shows plan to user, waits for approval
-   - User may adjust scope (subagent handles iterations)
-
-4. **Delegate to subagent `developer` (implementation phase):**
-   - Implement fixes per confirmed plan
-   - Commit with format:
-     ```
-     fix(<scope>): address review findings
-
-     Fixes:
-     - [C1] <description>
-     - [S1] <description>
-     ```
-   - Push to remote
-
-5. **Report completion:**
-   ```
-   Fixes complete for <id>.
-
-   Fixed:
-   - [C1] Description
-   - [S1] Description
-
-   Run /review <id> to verify fixes.
-   ```
 
 ## Severity Handling
 
-| Severity | Default Action |
-|----------|----------------|
+| Severity | Default |
+|----------|---------|
 | Critical | Always fix |
 | Should Fix | Fix by default |
-| Consider | Suggest defer, user decides |
+| Consider | Suggest defer |
 
-## Skills Integration
+## Important
 
-Use skill `beads` for:
-- Getting issue details
-- Getting review comments (findings)
-
-Use skill `git` for:
-- Making commits
-- Pushing to remote
-
-## Important Rules
-
+- **Never fix without plan approval**
+- **Resume preserves context**
 - **Fix documented issues only** — no scope creep
-- **Plan before fixing** — get user approval
-- **Re-review required** — always run /review after /fix
-- **No new features** — fix mode only
+- **Re-review required** — always run /review after
