@@ -148,11 +148,6 @@ export class ImportPageHandler {
           await this.notifyUser(telegramId, false, result.error || "Invalid key or seed phrase");
           break;
 
-        case "dev_mode":
-          this.sendErrorPage(res, "Cannot import wallets in dev mode");
-          await this.notifyUser(telegramId, false, "Cannot import wallets in dev mode");
-          break;
-
         default:
           this.sendErrorPage(res, "Import failed");
           await this.notifyUser(telegramId, false, "Import failed");

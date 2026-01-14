@@ -6,9 +6,7 @@ import { MAX_USDC_AMOUNT } from "../../../domain/constants.js";
  * These variables are for development only and may contain sensitive data
  * or change bot behavior in ways that are unsafe for production.
  */
-const FORBIDDEN_IN_PRODUCTION = [
-  "DEV_WALLET_PRIVATE_KEY", // Development wallet private key - security risk
-];
+const FORBIDDEN_IN_PRODUCTION: string[] = [];
 
 // Base schema for environment variables
 const envSchema = z
@@ -54,8 +52,6 @@ const envSchema = z
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
     RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(30),
 
-    // Development only
-    DEV_WALLET_PRIVATE_KEY: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     const isDev = data.NODE_ENV !== "production";
@@ -139,9 +135,6 @@ export interface DcaConfig {
   intervalMs: number;
 }
 
-export interface DcaWalletConfig {
-  devPrivateKey?: string;
-}
 
 export interface EncryptionConfig {
   masterKey: string;
@@ -167,7 +160,6 @@ export interface Config {
   solana: SolanaConfig;
   database: DatabaseConfig;
   dca: DcaConfig;
-  dcaWallet: DcaWalletConfig;
   encryption: EncryptionConfig;
   price: PriceConfig;
   auth: AuthConfig;
@@ -194,9 +186,6 @@ function envToConfig(env: ValidatedEnv): Config {
     dca: {
       amountUsdc: env.DCA_AMOUNT_USDC,
       intervalMs: env.DCA_INTERVAL_MS,
-    },
-    dcaWallet: {
-      devPrivateKey: isDev ? env.DEV_WALLET_PRIVATE_KEY : undefined,
     },
     encryption: {
       masterKey: env.MASTER_ENCRYPTION_KEY,

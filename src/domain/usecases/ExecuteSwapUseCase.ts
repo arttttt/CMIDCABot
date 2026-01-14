@@ -33,7 +33,6 @@ export class ExecuteSwapUseCase {
     private userRepository: UserRepository,
     private transactionRepository: TransactionRepository,
     private balanceRepository: BalanceRepository,
-    private devPrivateKey?: string,
   ) {}
 
   /**
@@ -99,22 +98,15 @@ export class ExecuteSwapUseCase {
     // Get user's wallet info
     let walletAddr: WalletAddress | undefined;
     let encryptedPrivateKey: string | undefined;
-    let useDevKey = false;
 
-    if (this.devPrivateKey) {
-      // In dev mode, use dev wallet (key is plaintext from env)
-      useDevKey = true;
-      walletAddr = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
-    } else {
-      // Get user's wallet from database (key is encrypted)
-      const user = await this.userRepository.getById(telegramId);
-      if (user?.privateKey) {
-        encryptedPrivateKey = user.privateKey;
-        walletAddr = user?.walletAddress ?? undefined;
-      }
+    // Get user's wallet from database (key is encrypted)
+    const user = await this.userRepository.getById(telegramId);
+    if (user?.privateKey) {
+      encryptedPrivateKey = user.privateKey;
+      walletAddr = user?.walletAddress ?? undefined;
     }
 
-    if (!walletAddr || (!useDevKey && !encryptedPrivateKey)) {
+    if (!walletAddr || !encryptedPrivateKey) {
       yield SwapSteps.completed({ status: "no_wallet" });
       return;
     }
@@ -224,19 +216,10 @@ export class ExecuteSwapUseCase {
 
     let sendResult: SendTransactionResult;
     try {
-      if (useDevKey && this.devPrivateKey) {
-        // Dev mode: use plaintext key
-        sendResult = await this.blockchainRepository.signAndSendTransaction(
-          transactionBase64,
-          this.devPrivateKey,
-        );
-      } else {
-        // Production: use encrypted key with secure signing
-        sendResult = await this.blockchainRepository.signAndSendTransactionSecure(
-          transactionBase64,
-          encryptedPrivateKey!,
-        );
-      }
+      sendResult = await this.blockchainRepository.signAndSendTransactionSecure(
+        transactionBase64,
+        encryptedPrivateKey,
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.error("ExecuteSwap", "Send failed", { error: message });

@@ -9,8 +9,6 @@ import { SecretStoreRepository } from "../repositories/SecretStoreRepository.js"
 import { CreateWalletResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { withRetry } from "../../infrastructure/shared/resilience/index.js";
-import { IsDevModeUseCase } from "./IsDevModeUseCase.js";
-import { GetDevWalletInfoUseCase } from "./GetDevWalletInfoUseCase.js";
 import { GetWalletInfoByAddressUseCase } from "./GetWalletInfoByAddressUseCase.js";
 import { GetWalletInfoByPrivateKeyUseCase } from "./GetWalletInfoByPrivateKeyUseCase.js";
 
@@ -21,8 +19,6 @@ export class CreateWalletUseCase {
   constructor(
     private userRepository: UserRepository,
     private blockchainRepository: BlockchainRepository,
-    private isDevModeUseCase: IsDevModeUseCase,
-    private getDevWalletInfoUseCase: GetDevWalletInfoUseCase,
     private getWalletInfoByAddressUseCase: GetWalletInfoByAddressUseCase,
     private getWalletInfoByPrivateKeyUseCase: GetWalletInfoByPrivateKeyUseCase,
     private secretStore: SecretStoreRepository,
@@ -33,18 +29,12 @@ export class CreateWalletUseCase {
 
     await this.userRepository.create(telegramId);
 
-    if (this.isDevModeUseCase.execute()) {
-      logger.debug("CreateWallet", "Dev mode - returning shared wallet");
-      const wallet = await this.getDevWalletInfoUseCase.execute();
-      return { type: "dev_mode", wallet };
-    }
-
     const user = await this.userRepository.getById(telegramId);
 
     if (user?.privateKey && user?.walletAddress) {
       logger.info("CreateWallet", "Wallet already exists", { telegramId });
       // Use walletAddress instead of decrypting privateKey
-      const wallet = await this.getWalletInfoByAddressUseCase.execute(user.walletAddress, false);
+      const wallet = await this.getWalletInfoByAddressUseCase.execute(user.walletAddress);
       return { type: "already_exists", wallet };
     }
 
@@ -85,7 +75,7 @@ export class CreateWalletUseCase {
       address: keypair.address,
     });
 
-    const wallet = await this.getWalletInfoByPrivateKeyUseCase.execute(keypair.privateKeyBase64, false);
+    const wallet = await this.getWalletInfoByPrivateKeyUseCase.execute(keypair.privateKeyBase64);
 
     return { type: "created", wallet, seedUrl: seedUrl! };
   }

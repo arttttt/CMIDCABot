@@ -8,8 +8,6 @@ import { UserRepository } from "../repositories/UserRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { ImportWalletResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
-import { IsDevModeUseCase } from "./IsDevModeUseCase.js";
-import { GetDevWalletInfoUseCase } from "./GetDevWalletInfoUseCase.js";
 import { GetWalletInfoByAddressUseCase } from "./GetWalletInfoByAddressUseCase.js";
 import { GetWalletInfoByPrivateKeyUseCase } from "./GetWalletInfoByPrivateKeyUseCase.js";
 
@@ -20,8 +18,6 @@ export class ImportWalletUseCase {
   constructor(
     private userRepository: UserRepository,
     private blockchainRepository: BlockchainRepository,
-    private isDevModeUseCase: IsDevModeUseCase,
-    private getDevWalletInfoUseCase: GetDevWalletInfoUseCase,
     private getWalletInfoByAddressUseCase: GetWalletInfoByAddressUseCase,
     private getWalletInfoByPrivateKeyUseCase: GetWalletInfoByPrivateKeyUseCase,
   ) {}
@@ -37,19 +33,12 @@ export class ImportWalletUseCase {
     // Ensure user exists
     await this.userRepository.create(telegramId);
 
-    // Check dev mode
-    if (this.isDevModeUseCase.execute()) {
-      logger.debug("ImportWallet", "Dev mode - cannot import wallets");
-      const wallet = await this.getDevWalletInfoUseCase.execute();
-      return { type: "dev_mode", wallet };
-    }
-
     // Check if wallet already exists
     const user = await this.userRepository.getById(telegramId);
     if (user?.privateKey && user?.walletAddress) {
       logger.info("ImportWallet", "Wallet already exists", { telegramId });
       // Use walletAddress instead of decrypting privateKey
-      const wallet = await this.getWalletInfoByAddressUseCase.execute(user.walletAddress, false);
+      const wallet = await this.getWalletInfoByAddressUseCase.execute(user.walletAddress);
       return { type: "already_exists", wallet };
     }
 
@@ -96,7 +85,7 @@ export class ImportWalletUseCase {
       address: walletAddr,
     });
 
-    const wallet = await this.getWalletInfoByPrivateKeyUseCase.execute(normalizedKey, false);
+    const wallet = await this.getWalletInfoByPrivateKeyUseCase.execute(normalizedKey);
     return { type: "imported", wallet };
   }
 }

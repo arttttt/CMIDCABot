@@ -16,10 +16,10 @@ export class GetWalletInfoByPrivateKeyUseCase {
    * Get wallet info from plaintext private key.
    * Used for newly created/imported wallets before encryption.
    */
-  async execute(privateKeyBase64: string, isDevWallet: boolean): Promise<DcaWalletInfo> {
+  async execute(privateKeyBase64: string): Promise<DcaWalletInfo> {
     const address = await this.blockchainRepository.getAddressFromPrivateKey(privateKeyBase64);
     const { balance, usdcBalance } = await this.getWalletBalancesUseCase.execute(address);
 
-    return { address, balance, usdcBalance, isDevWallet };
+    return { address, balance, usdcBalance };
   }
 }

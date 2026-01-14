@@ -15,9 +15,9 @@ export class GetWalletInfoByAddressUseCase {
    * Get wallet info from address only.
    * Used for existing wallets where we don't want to decrypt the key.
    */
-  async execute(address: WalletAddress, isDevWallet: boolean): Promise<DcaWalletInfo> {
+  async execute(address: WalletAddress): Promise<DcaWalletInfo> {
     const { balance, usdcBalance } = await this.getWalletBalancesUseCase.execute(address);
 
-    return { address, balance, usdcBalance, isDevWallet };
+    return { address, balance, usdcBalance };
   }
 }

@@ -8,7 +8,6 @@
 import type { TelegramId } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { SecretStoreRepository } from "../repositories/SecretStoreRepository.js";
-import { DcaWalletConfig } from "../../infrastructure/shared/config/index.js";
 import { ExportKeyResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
@@ -16,21 +15,10 @@ export class ExportWalletKeyUseCase {
   constructor(
     private userRepository: UserRepository,
     private secretStore: SecretStoreRepository,
-    private config: DcaWalletConfig,
   ) {}
 
   async execute(telegramId: TelegramId): Promise<ExportKeyResult> {
     logger.info("ExportWalletKey", "Exporting wallet key", { telegramId });
-
-    if (this.config.devPrivateKey) {
-      logger.debug("ExportWalletKey", "Dev mode - exporting shared wallet key");
-      const keyUrl = await this.secretStore.store(this.config.devPrivateKey, telegramId);
-      return {
-        type: "dev_mode",
-        keyUrl,
-        isDevWallet: true,
-      };
-    }
 
     // Get decrypted key from repository
     const decryptedKey = await this.userRepository.getDecryptedPrivateKey(telegramId);
@@ -47,7 +35,6 @@ export class ExportWalletKeyUseCase {
     return {
       type: "success",
       keyUrl,
-      isDevWallet: false,
     };
   }
 }

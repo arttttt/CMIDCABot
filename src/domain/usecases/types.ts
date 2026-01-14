@@ -48,34 +48,32 @@ export interface DcaWalletInfo {
   address: WalletAddress;
   balance: number | null;
   usdcBalance: number | null;
-  isDevWallet: boolean;
 }
 
 export interface GetWalletInfoResult {
-  type: "success" | "no_wallet" | "dev_mode";
+  type: "success" | "no_wallet";
   wallet?: DcaWalletInfo;
 }
 
 export interface CreateWalletResult {
-  type: "created" | "already_exists" | "dev_mode";
+  type: "created" | "already_exists";
   wallet?: DcaWalletInfo;
   /** One-time URL to view seed phrase securely - only returned when type="created" */
   seedUrl?: string;
 }
 
 export interface DeleteWalletResult {
-  type: "deleted" | "no_wallet" | "dev_mode";
+  type: "deleted" | "no_wallet";
 }
 
 export interface ExportKeyResult {
-  type: "success" | "no_wallet" | "dev_mode";
+  type: "success" | "no_wallet";
   /** One-time URL to view private key securely */
   keyUrl?: string;
-  isDevWallet?: boolean;
 }
 
 export interface ImportWalletResult {
-  type: "imported" | "already_exists" | "invalid_key" | "dev_mode";
+  type: "imported" | "already_exists" | "invalid_key";
   wallet?: DcaWalletInfo;
   error?: string;
 }

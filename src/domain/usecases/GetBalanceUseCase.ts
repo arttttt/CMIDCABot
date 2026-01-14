@@ -7,35 +7,17 @@ import { UserRepository } from "../repositories/UserRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { BalanceResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
-import { IsDevModeUseCase } from "./IsDevModeUseCase.js";
-import { GetDevWalletInfoUseCase } from "./GetDevWalletInfoUseCase.js";
 
 export class GetBalanceUseCase {
   constructor(
     private userRepository: UserRepository,
     private blockchainRepository: BlockchainRepository,
-    private isDevModeUseCase: IsDevModeUseCase,
-    private getDevWalletInfoUseCase: GetDevWalletInfoUseCase,
   ) {}
 
   async execute(telegramId: TelegramId): Promise<BalanceResult> {
     logger.info("GetBalance", "Checking balance", { telegramId });
 
     await this.userRepository.create(telegramId);
-
-    // Handle dev mode - use shared development wallet
-    if (this.isDevModeUseCase.execute()) {
-      logger.debug("GetBalance", "Using dev mode wallet");
-      const wallet = await this.getDevWalletInfoUseCase.execute();
-      logger.info("GetBalance", "Dev wallet balance retrieved", {
-        address: wallet.address,
-        balance: wallet.balance,
-      });
-      return {
-        type: "success",
-        wallet: { address: wallet.address, balance: wallet.balance ?? 0 },
-      };
-    }
 
     const user = await this.userRepository.getById(telegramId);
 
