@@ -6,6 +6,8 @@
  * Requires API key from https://portal.jup.ag
  */
 
+import { TokenMint } from "../../../domain/models/id/index.js";
+import type { SwapQuote } from "../../../domain/models/quote/SwapQuote.js";
 import { TOKEN_MINTS, TOKEN_DECIMALS } from "../../../infrastructure/shared/config/index.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 import { toRawAmount, toHumanAmountNumber } from "../../../infrastructure/shared/math/index.js";
@@ -58,24 +60,6 @@ export interface JupiterQuoteResponse {
   timeTaken?: number;
 }
 
-export interface SwapQuote {
-  inputMint: string;
-  inputSymbol: string;
-  inputAmount: number;
-  inputAmountRaw: string;
-  outputMint: string;
-  outputSymbol: string;
-  outputAmount: number;
-  outputAmountRaw: string;
-  priceImpactPct: number;
-  slippageBps: number;
-  minOutputAmount: number;
-  route: string[];
-  fetchedAt: Date;
-  // Raw response needed for building swap transaction
-  rawQuoteResponse: JupiterQuoteResponse;
-}
-
 export interface JupiterSwapResponse {
   swapTransaction: string; // Base64 encoded transaction
   lastValidBlockHeight: number;
@@ -105,8 +89,8 @@ export interface SwapTransaction {
 }
 
 export interface QuoteParams {
-  inputMint: string;
-  outputMint: string;
+  inputMint: TokenMint;
+  outputMint: TokenMint;
   amount: string; // Amount in smallest units (lamports for SOL)
   slippageBps?: number; // Default: 50 (0.5%)
 }
@@ -127,8 +111,8 @@ export class JupiterSwapClient {
     const slippageBps = params.slippageBps ?? DEFAULT_SLIPPAGE_BPS;
 
     const url = new URL(`${this.baseUrl}/quote`);
-    url.searchParams.set("inputMint", params.inputMint);
-    url.searchParams.set("outputMint", params.outputMint);
+    url.searchParams.set("inputMint", params.inputMint.value);
+    url.searchParams.set("outputMint", params.outputMint.value);
     url.searchParams.set("amount", params.amount);
     url.searchParams.set("slippageBps", slippageBps.toString());
 
@@ -185,11 +169,11 @@ export class JupiterSwapClient {
     const route = data.routePlan.map((step) => step.swapInfo.label);
 
     const quote = {
-      inputMint: data.inputMint,
+      inputMint: new TokenMint(data.inputMint),
       inputSymbol,
       inputAmount,
       inputAmountRaw: data.inAmount,
-      outputMint: data.outputMint,
+      outputMint: new TokenMint(data.outputMint),
       outputSymbol,
       outputAmount,
       outputAmountRaw: data.outAmount,
@@ -304,8 +288,8 @@ export class JupiterSwapClient {
     const amountLamports = toRawAmount(amountSol, TOKEN_DECIMALS.SOL);
 
     return this.getQuote({
-      inputMint: TOKEN_MINTS.SOL.value,
-      outputMint: TOKEN_MINTS.USDC.value,
+      inputMint: TOKEN_MINTS.SOL,
+      outputMint: TOKEN_MINTS.USDC,
       amount: amountLamports,
       slippageBps,
     });
@@ -316,13 +300,13 @@ export class JupiterSwapClient {
    */
   async getQuoteUsdcToToken(
     amountUsdc: number,
-    outputMint: string,
+    outputMint: TokenMint,
     slippageBps?: number,
   ): Promise<SwapQuote> {
     const amountRaw = toRawAmount(amountUsdc, TOKEN_DECIMALS.USDC);
 
     return this.getQuote({
-      inputMint: TOKEN_MINTS.USDC.value,
+      inputMint: TOKEN_MINTS.USDC,
       outputMint,
       amount: amountRaw,
       slippageBps,
