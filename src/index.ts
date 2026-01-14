@@ -31,8 +31,6 @@ import {
   ExecutePurchaseUseCase,
   GetPortfolioStatusUseCase,
   DetermineAssetToBuyUseCase,
-  IsDevModeUseCase,
-  GetDevWalletInfoUseCase,
   GetWalletBalancesUseCase,
   GetWalletInfoByAddressUseCase,
   GetWalletInfoByPrivateKeyUseCase,
@@ -202,14 +200,12 @@ async function main(): Promise<void> {
   const dcaScheduler = undefined;
 
   // Create wallet info use cases
-  const isDevMode = new IsDevModeUseCase(config.dcaWallet);
   const getWalletBalances = new GetWalletBalancesUseCase(balanceRepository);
   const getWalletInfoByPrivateKey = new GetWalletInfoByPrivateKeyUseCase(
     blockchainRepository,
     getWalletBalances,
   );
   const getWalletInfoByAddress = new GetWalletInfoByAddressUseCase(getWalletBalances);
-  const getDevWalletInfo = new GetDevWalletInfoUseCase(config.dcaWallet, getWalletInfoByPrivateKey);
 
   // Create ExecuteSwapUseCase first (used by ExecutePurchaseUseCase)
   const executeSwapUseCase = new ExecuteSwapUseCase(
@@ -218,22 +214,17 @@ async function main(): Promise<void> {
     userRepository,
     transactionRepository,
     balanceRepository,
-    config.dcaWallet.devPrivateKey,
   );
 
   // Create use cases
   const initUser = new InitUserUseCase(userRepository);
   const getWalletInfo = new GetWalletInfoUseCase(
     userRepository,
-    isDevMode,
-    getDevWalletInfo,
     getWalletInfoByAddress,
   );
   const createWallet = new CreateWalletUseCase(
     userRepository,
     blockchainRepository,
-    isDevMode,
-    getDevWalletInfo,
     getWalletInfoByAddress,
     getWalletInfoByPrivateKey,
     secretStore,
@@ -241,13 +232,11 @@ async function main(): Promise<void> {
   const importWallet = new ImportWalletUseCase(
     userRepository,
     blockchainRepository,
-    isDevMode,
-    getDevWalletInfo,
     getWalletInfoByAddress,
     getWalletInfoByPrivateKey,
   );
-  const deleteWallet = new DeleteWalletUseCase(userRepository, isDevMode);
-  const exportWalletKey = new ExportWalletKeyUseCase(userRepository, secretStore, config.dcaWallet);
+  const deleteWallet = new DeleteWalletUseCase(userRepository);
+  const exportWalletKey = new ExportWalletKeyUseCase(userRepository, secretStore);
   const startDca = new StartDcaUseCase(userRepository, dcaScheduler);
   const stopDca = new StopDcaUseCase(userRepository, dcaScheduler);
   const getDcaStatus = new GetDcaStatusUseCase(userRepository, dcaScheduler);
@@ -259,9 +248,7 @@ async function main(): Promise<void> {
     ? new DetermineAssetToBuyUseCase(
         userRepository,
         balanceRepository,
-        blockchainRepository,
         priceRepository,
-        config.dcaWallet.devPrivateKey,
       )
     : undefined;
 
@@ -276,9 +263,7 @@ async function main(): Promise<void> {
     ? new GetPortfolioStatusUseCase(
         userRepository,
         balanceRepository,
-        blockchainRepository,
         priceRepository,
-        config.dcaWallet.devPrivateKey,
       )
     : undefined;
 

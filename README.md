@@ -43,7 +43,6 @@ cp .env.example .env
 | `AUTH_DATABASE_PATH` | No | `./data/auth.db` | Path to authorization database |
 | `DCA_AMOUNT_USDC` | No | `6` | Purchase amount in USDC equivalent |
 | `DCA_INTERVAL_MS` | No | `86400000` | Interval between purchases in ms (24h) |
-| `DEV_WALLET_PRIVATE_KEY` | No | - | Base64-encoded private key (dev only) |
 | `PRICE_SOURCE` | No | `jupiter` | Price source (`jupiter` \| `mock`) |
 | `JUPITER_API_KEY` | Yes* | - | Jupiter API key from portal.jup.ag |
 | `BOT_TRANSPORT` | No | `polling` | Transport mode (`polling` \| `webhook`) |

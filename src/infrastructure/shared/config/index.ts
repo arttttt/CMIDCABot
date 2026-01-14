@@ -12,7 +12,6 @@ export {
   type DatabaseConfig,
   type HttpConfig,
   type DcaConfig,
-  type DcaWalletConfig,
   type EncryptionConfig,
   type AuthConfig,
   type PriceConfig,

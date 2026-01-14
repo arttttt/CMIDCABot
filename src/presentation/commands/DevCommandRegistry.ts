@@ -89,7 +89,7 @@ export class DevCommandRegistry implements CommandRegistry {
   getModeInfo(): ModeInfo {
     return {
       label: "Development",
-      description: "All features available. Using shared dev wallet.",
+      description: "All features available.",
     };
   }
 }

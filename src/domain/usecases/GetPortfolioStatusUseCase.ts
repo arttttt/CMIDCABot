@@ -5,7 +5,6 @@
 import type { TelegramId, WalletAddress } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BalanceRepository } from "../repositories/BalanceRepository.js";
-import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { PriceRepository } from "../repositories/PriceRepository.js";
 import { PortfolioStatusResult } from "./types.js";
 import { PortfolioStatus } from "../models/PortfolioTypes.js";
@@ -16,9 +15,7 @@ export class GetPortfolioStatusUseCase {
   constructor(
     private userRepository: UserRepository,
     private balanceRepository: BalanceRepository,
-    private blockchainRepository: BlockchainRepository,
     private priceRepository: PriceRepository,
-    private devPrivateKey?: string,
   ) {}
 
   async execute(telegramId: TelegramId): Promise<PortfolioStatusResult> {
@@ -27,13 +24,8 @@ export class GetPortfolioStatusUseCase {
     // Get user's wallet
     let walletAddr: WalletAddress | undefined;
 
-    if (this.devPrivateKey) {
-      // In dev mode, use dev wallet
-      walletAddr = await this.blockchainRepository.getAddressFromPrivateKey(this.devPrivateKey);
-    } else {
-      const user = await this.userRepository.getById(telegramId);
-      walletAddr = user?.walletAddress ?? undefined;
-    }
+    const user = await this.userRepository.getById(telegramId);
+    walletAddr = user?.walletAddress ?? undefined;
 
     if (!walletAddr) {
       return { type: "not_found" };

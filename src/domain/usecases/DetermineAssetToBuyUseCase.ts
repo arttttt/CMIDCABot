@@ -9,7 +9,6 @@
 import type { TelegramId, WalletAddress } from "../models/id/index.js";
 import type { UserRepository } from "../repositories/UserRepository.js";
 import type { BalanceRepository } from "../repositories/BalanceRepository.js";
-import type { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import type { PriceRepository } from "../repositories/PriceRepository.js";
 import { TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { AllocationPolicy } from "../policies/AllocationPolicy.js";
@@ -20,9 +19,7 @@ export class DetermineAssetToBuyUseCase {
   constructor(
     private userRepository: UserRepository,
     private balanceRepository: BalanceRepository,
-    private blockchainRepository: BlockchainRepository,
     private priceRepository: PriceRepository,
-    private devPrivateKey?: string,
   ) {}
 
   /**
@@ -35,14 +32,8 @@ export class DetermineAssetToBuyUseCase {
     // Get wallet address
     let walletAddr: WalletAddress | undefined;
 
-    if (this.devPrivateKey) {
-      walletAddr = await this.blockchainRepository.getAddressFromPrivateKey(
-        this.devPrivateKey,
-      );
-    } else {
-      const user = await this.userRepository.getById(telegramId);
-      walletAddr = user?.walletAddress ?? undefined;
-    }
+    const user = await this.userRepository.getById(telegramId);
+    walletAddr = user?.walletAddress ?? undefined;
 
     if (!walletAddr) {
       logger.warn("DetermineAssetToBuy", "No wallet connected", { telegramId });

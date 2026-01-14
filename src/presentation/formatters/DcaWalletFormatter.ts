@@ -31,17 +31,12 @@ export class DcaWalletFormatter {
       lines.push(`USDC Balance: Unable to fetch`);
     }
 
-    if (wallet.isDevWallet) {
-      lines.push(`\n[DEV MODE] Using shared development wallet`);
-    }
-
     return lines.join("\n");
   }
 
   formatGetWalletInfo(result: GetWalletInfoResult): ClientResponse {
     switch (result.type) {
       case "success":
-      case "dev_mode":
         return new ClientResponse(
           `**DCA Wallet**\n\n` +
             this.formatWalletInfo(result.wallet!) +
@@ -95,13 +90,6 @@ export class DcaWalletFormatter {
             `\n\nTo create a new wallet, first delete the existing one with /wallet delete.`,
         );
 
-      case "dev_mode":
-        return new ClientResponse(
-          `[DEV MODE] Cannot create wallets.\n\n` +
-            `Using shared development wallet:\n` +
-            this.formatWalletInfo(result.wallet!),
-        );
-
       default:
         return new ClientResponse("Unable to create wallet.");
     }
@@ -119,9 +107,6 @@ export class DcaWalletFormatter {
 
       case "no_wallet":
         return new ClientResponse(`No wallet to delete.`);
-
-      case "dev_mode":
-        return new ClientResponse(`[DEV MODE] Cannot delete shared development wallet.`);
 
       default:
         return new ClientResponse("Unable to delete wallet.");
@@ -142,15 +127,6 @@ export class DcaWalletFormatter {
             `- Never share this key with anyone\n` +
             `- Anyone with this key can access your funds\n` +
             `- Store it securely offline`,
-          [[{ text: "View Private Key", url: result.keyUrl! }]],
-        );
-
-      case "dev_mode":
-        return new ClientResponse(
-          `**Export Private Key (DEV MODE)**\n\n` +
-            `You are using a shared development wallet.\n` +
-            `This key is configured via DEV_WALLET_PRIVATE_KEY.\n\n` +
-            `Link expires in ${ttl} minutes and works only once.`,
           [[{ text: "View Private Key", url: result.keyUrl! }]],
         );
 
@@ -190,13 +166,6 @@ export class DcaWalletFormatter {
             `- Recovery phrase: 12 or 24 words\n` +
             `- Private key: base64-encoded (32 or 64 bytes)\n\n` +
             `**Note:** Only Solana wallets are supported. Ethereum and other chain keys will not work.`,
-        );
-
-      case "dev_mode":
-        return new ClientResponse(
-          `[DEV MODE] Cannot import wallets.\n\n` +
-            `Using shared development wallet:\n` +
-            this.formatWalletInfo(result.wallet!),
         );
 
       default:
