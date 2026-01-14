@@ -1,5 +1,5 @@
 /**
- * AllocationCalculator - calculates portfolio allocations and deviations
+ * AllocationPolicy - calculates portfolio allocations and deviations
  *
  * Implements Crypto Majors Index logic:
  * - SOL: 40%
@@ -26,9 +26,9 @@ export interface AssetPrices {
 }
 
 /**
- * Helper class for calculating portfolio allocations
+ * Policy class for calculating portfolio allocations
  */
-export class AllocationCalculator {
+export class AllocationPolicy {
   /**
    * Calculate allocations for given balances and prices
    *

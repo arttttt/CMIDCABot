@@ -1,7 +1,7 @@
 /**
  * DetermineAssetToBuyUseCase - determines which asset to buy for portfolio rebalancing
  *
- * Uses AllocationCalculator to determine which asset is furthest below target.
+ * Uses AllocationPolicy to determine which asset is furthest below target.
  * This is extracted from ExecutePurchaseUseCase to allow getting asset info
  * before executing the actual purchase (e.g., for quote preview).
  */
@@ -12,7 +12,7 @@ import type { BalanceRepository } from "../repositories/BalanceRepository.js";
 import type { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import type { PriceRepository } from "../repositories/PriceRepository.js";
 import { TARGET_ALLOCATIONS } from "../../types/portfolio.js";
-import { AllocationCalculator } from "../helpers/AllocationCalculator.js";
+import { AllocationPolicy } from "../policies/AllocationPolicy.js";
 import type { AssetAllocation } from "../models/PortfolioTypes.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
@@ -57,7 +57,7 @@ export class DetermineAssetToBuyUseCase {
       ]);
 
       // Calculate portfolio status
-      const status = AllocationCalculator.calculatePortfolioStatus(
+    const status = AllocationPolicy.calculatePortfolioStatus(
         {
           btcBalance: balances.btc,
           ethBalance: balances.eth,
