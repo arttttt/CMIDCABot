@@ -31,7 +31,10 @@ import {
   ExecutePurchaseUseCase,
   GetPortfolioStatusUseCase,
   DetermineAssetToBuyUseCase,
-  WalletInfoHelper,
+  IsDevModeUseCase,
+  GetDevWalletInfoUseCase,
+  GetWalletInfoByAddressUseCase,
+  GetWalletInfoByPrivateKeyUseCase,
   GetWalletInfoUseCase,
   CreateWalletUseCase,
   ImportWalletUseCase,
@@ -197,8 +200,14 @@ async function main(): Promise<void> {
   // TODO: restore DcaScheduler after refactoring
   const dcaScheduler = undefined;
 
-  // Create helpers
-  const walletHelper = new WalletInfoHelper(blockchainRepository, balanceRepository, config.dcaWallet);
+  // Create wallet info use cases
+  const isDevMode = new IsDevModeUseCase(config.dcaWallet);
+  const getWalletInfoByPrivateKey = new GetWalletInfoByPrivateKeyUseCase(
+    blockchainRepository,
+    balanceRepository,
+  );
+  const getWalletInfoByAddress = new GetWalletInfoByAddressUseCase(balanceRepository);
+  const getDevWalletInfo = new GetDevWalletInfoUseCase(config.dcaWallet, getWalletInfoByPrivateKey);
 
   // Create ExecuteSwapUseCase first (used by ExecutePurchaseUseCase)
   const executeSwapUseCase = new ExecuteSwapUseCase(
@@ -212,10 +221,30 @@ async function main(): Promise<void> {
 
   // Create use cases
   const initUser = new InitUserUseCase(userRepository);
-  const getWalletInfo = new GetWalletInfoUseCase(userRepository, walletHelper);
-  const createWallet = new CreateWalletUseCase(userRepository, blockchainRepository, walletHelper, secretStore);
-  const importWallet = new ImportWalletUseCase(userRepository, blockchainRepository, walletHelper);
-  const deleteWallet = new DeleteWalletUseCase(userRepository, walletHelper);
+  const getWalletInfo = new GetWalletInfoUseCase(
+    userRepository,
+    isDevMode,
+    getDevWalletInfo,
+    getWalletInfoByAddress,
+  );
+  const createWallet = new CreateWalletUseCase(
+    userRepository,
+    blockchainRepository,
+    isDevMode,
+    getDevWalletInfo,
+    getWalletInfoByAddress,
+    getWalletInfoByPrivateKey,
+    secretStore,
+  );
+  const importWallet = new ImportWalletUseCase(
+    userRepository,
+    blockchainRepository,
+    isDevMode,
+    getDevWalletInfo,
+    getWalletInfoByAddress,
+    getWalletInfoByPrivateKey,
+  );
+  const deleteWallet = new DeleteWalletUseCase(userRepository, isDevMode);
   const exportWalletKey = new ExportWalletKeyUseCase(userRepository, secretStore, config.dcaWallet);
   const startDca = new StartDcaUseCase(userRepository, dcaScheduler);
   const stopDca = new StopDcaUseCase(userRepository, dcaScheduler);

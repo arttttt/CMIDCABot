@@ -6,10 +6,13 @@ import type { TelegramId } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
 import { SecretStoreRepository } from "../repositories/SecretStoreRepository.js";
-import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
 import { CreateWalletResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { withRetry } from "../../infrastructure/shared/resilience/index.js";
+import { IsDevModeUseCase } from "./IsDevModeUseCase.js";
+import { GetDevWalletInfoUseCase } from "./GetDevWalletInfoUseCase.js";
+import { GetWalletInfoByAddressUseCase } from "./GetWalletInfoByAddressUseCase.js";
+import { GetWalletInfoByPrivateKeyUseCase } from "./GetWalletInfoByPrivateKeyUseCase.js";
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
@@ -18,7 +21,10 @@ export class CreateWalletUseCase {
   constructor(
     private userRepository: UserRepository,
     private blockchainRepository: BlockchainRepository,
-    private walletHelper: WalletInfoHelper,
+    private isDevModeUseCase: IsDevModeUseCase,
+    private getDevWalletInfoUseCase: GetDevWalletInfoUseCase,
+    private getWalletInfoByAddressUseCase: GetWalletInfoByAddressUseCase,
+    private getWalletInfoByPrivateKeyUseCase: GetWalletInfoByPrivateKeyUseCase,
     private secretStore: SecretStoreRepository,
   ) {}
 
@@ -27,9 +33,9 @@ export class CreateWalletUseCase {
 
     await this.userRepository.create(telegramId);
 
-    if (this.walletHelper.isDevMode()) {
+    if (this.isDevModeUseCase.execute()) {
       logger.debug("CreateWallet", "Dev mode - returning shared wallet");
-      const wallet = await this.walletHelper.getDevWalletInfo();
+      const wallet = await this.getDevWalletInfoUseCase.execute();
       return { type: "dev_mode", wallet };
     }
 
@@ -38,7 +44,7 @@ export class CreateWalletUseCase {
     if (user?.privateKey && user?.walletAddress) {
       logger.info("CreateWallet", "Wallet already exists", { telegramId });
       // Use walletAddress instead of decrypting privateKey
-      const wallet = await this.walletHelper.getWalletInfoByAddress(user.walletAddress, false);
+      const wallet = await this.getWalletInfoByAddressUseCase.execute(user.walletAddress, false);
       return { type: "already_exists", wallet };
     }
 
@@ -79,7 +85,7 @@ export class CreateWalletUseCase {
       address: keypair.address,
     });
 
-    const wallet = await this.walletHelper.getWalletInfo(keypair.privateKeyBase64, false);
+    const wallet = await this.getWalletInfoByPrivateKeyUseCase.execute(keypair.privateKeyBase64, false);
 
     return { type: "created", wallet, seedUrl: seedUrl! };
   }

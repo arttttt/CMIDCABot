@@ -6,9 +6,12 @@
 import type { TelegramId, WalletAddress } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
-import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
 import { ImportWalletResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
+import { IsDevModeUseCase } from "./IsDevModeUseCase.js";
+import { GetDevWalletInfoUseCase } from "./GetDevWalletInfoUseCase.js";
+import { GetWalletInfoByAddressUseCase } from "./GetWalletInfoByAddressUseCase.js";
+import { GetWalletInfoByPrivateKeyUseCase } from "./GetWalletInfoByPrivateKeyUseCase.js";
 
 // Maximum allowed input length to prevent DoS via large payloads
 const MAX_INPUT_LENGTH = 512;
@@ -17,7 +20,10 @@ export class ImportWalletUseCase {
   constructor(
     private userRepository: UserRepository,
     private blockchainRepository: BlockchainRepository,
-    private walletHelper: WalletInfoHelper,
+    private isDevModeUseCase: IsDevModeUseCase,
+    private getDevWalletInfoUseCase: GetDevWalletInfoUseCase,
+    private getWalletInfoByAddressUseCase: GetWalletInfoByAddressUseCase,
+    private getWalletInfoByPrivateKeyUseCase: GetWalletInfoByPrivateKeyUseCase,
   ) {}
 
   async execute(telegramId: TelegramId, privateKeyBase64: string): Promise<ImportWalletResult> {
@@ -32,9 +38,9 @@ export class ImportWalletUseCase {
     await this.userRepository.create(telegramId);
 
     // Check dev mode
-    if (this.walletHelper.isDevMode()) {
+    if (this.isDevModeUseCase.execute()) {
       logger.debug("ImportWallet", "Dev mode - cannot import wallets");
-      const wallet = await this.walletHelper.getDevWalletInfo();
+      const wallet = await this.getDevWalletInfoUseCase.execute();
       return { type: "dev_mode", wallet };
     }
 
@@ -43,7 +49,7 @@ export class ImportWalletUseCase {
     if (user?.privateKey && user?.walletAddress) {
       logger.info("ImportWallet", "Wallet already exists", { telegramId });
       // Use walletAddress instead of decrypting privateKey
-      const wallet = await this.walletHelper.getWalletInfoByAddress(user.walletAddress, false);
+      const wallet = await this.getWalletInfoByAddressUseCase.execute(user.walletAddress, false);
       return { type: "already_exists", wallet };
     }
 
@@ -90,7 +96,7 @@ export class ImportWalletUseCase {
       address: walletAddr,
     });
 
-    const wallet = await this.walletHelper.getWalletInfo(normalizedKey, false);
+    const wallet = await this.getWalletInfoByPrivateKeyUseCase.execute(normalizedKey, false);
     return { type: "imported", wallet };
   }
 }

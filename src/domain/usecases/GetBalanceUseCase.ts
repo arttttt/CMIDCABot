@@ -5,15 +5,17 @@
 import type { TelegramId } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
-import { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
 import { BalanceResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
+import { IsDevModeUseCase } from "./IsDevModeUseCase.js";
+import { GetDevWalletInfoUseCase } from "./GetDevWalletInfoUseCase.js";
 
 export class GetBalanceUseCase {
   constructor(
     private userRepository: UserRepository,
     private blockchainRepository: BlockchainRepository,
-    private walletHelper: WalletInfoHelper,
+    private isDevModeUseCase: IsDevModeUseCase,
+    private getDevWalletInfoUseCase: GetDevWalletInfoUseCase,
   ) {}
 
   async execute(telegramId: TelegramId): Promise<BalanceResult> {
@@ -22,9 +24,9 @@ export class GetBalanceUseCase {
     await this.userRepository.create(telegramId);
 
     // Handle dev mode - use shared development wallet
-    if (this.walletHelper.isDevMode()) {
+    if (this.isDevModeUseCase.execute()) {
       logger.debug("GetBalance", "Using dev mode wallet");
-      const wallet = await this.walletHelper.getDevWalletInfo();
+      const wallet = await this.getDevWalletInfoUseCase.execute();
       logger.info("GetBalance", "Dev wallet balance retrieved", {
         address: wallet.address,
         balance: wallet.balance,
