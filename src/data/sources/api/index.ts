@@ -21,7 +21,6 @@ export type {
 export { JupiterSwapClient } from "./JupiterSwapClient.js";
 export type {
   JupiterQuoteResponse,
-  SwapQuote,
   JupiterSwapResponse,
   SwapTransaction,
   QuoteParams as SwapQuoteParams,
