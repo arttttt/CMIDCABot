@@ -33,6 +33,7 @@ import {
   DetermineAssetToBuyUseCase,
   IsDevModeUseCase,
   GetDevWalletInfoUseCase,
+  GetWalletBalancesUseCase,
   GetWalletInfoByAddressUseCase,
   GetWalletInfoByPrivateKeyUseCase,
   GetWalletInfoUseCase,
@@ -202,11 +203,12 @@ async function main(): Promise<void> {
 
   // Create wallet info use cases
   const isDevMode = new IsDevModeUseCase(config.dcaWallet);
+  const getWalletBalances = new GetWalletBalancesUseCase(balanceRepository);
   const getWalletInfoByPrivateKey = new GetWalletInfoByPrivateKeyUseCase(
     blockchainRepository,
-    balanceRepository,
+    getWalletBalances,
   );
-  const getWalletInfoByAddress = new GetWalletInfoByAddressUseCase(balanceRepository);
+  const getWalletInfoByAddress = new GetWalletInfoByAddressUseCase(getWalletBalances);
   const getDevWalletInfo = new GetDevWalletInfoUseCase(config.dcaWallet, getWalletInfoByPrivateKey);
 
   // Create ExecuteSwapUseCase first (used by ExecutePurchaseUseCase)

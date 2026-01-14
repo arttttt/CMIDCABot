@@ -17,6 +17,7 @@ export { DetermineAssetToBuyUseCase } from "./DetermineAssetToBuyUseCase.js";
 // Wallet
 export { IsDevModeUseCase } from "./IsDevModeUseCase.js";
 export { GetDevWalletInfoUseCase } from "./GetDevWalletInfoUseCase.js";
+export { GetWalletBalancesUseCase } from "./GetWalletBalancesUseCase.js";
 export { GetWalletInfoByAddressUseCase } from "./GetWalletInfoByAddressUseCase.js";
 export { GetWalletInfoByPrivateKeyUseCase } from "./GetWalletInfoByPrivateKeyUseCase.js";
 export { GetWalletInfoUseCase } from "./GetWalletInfoUseCase.js";

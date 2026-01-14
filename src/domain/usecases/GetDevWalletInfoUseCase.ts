@@ -13,6 +13,9 @@ export class GetDevWalletInfoUseCase {
   ) {}
 
   async execute(): Promise<DcaWalletInfo> {
-    return this.getWalletInfoByPrivateKey.execute(this.config.devPrivateKey!, true);
+    if (!this.config.devPrivateKey) {
+      throw new Error("Dev wallet private key is not configured");
+    }
+    return this.getWalletInfoByPrivateKey.execute(this.config.devPrivateKey, true);
   }
 }
