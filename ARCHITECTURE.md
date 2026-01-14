@@ -64,6 +64,7 @@ infrastructure  → (nothing, except shared between own modules)
 
 - **Models are data-only.** No behavior or domain rules in `domain/models`.
 - **Policies contain rules.** Pure, stateless domain rules live in `domain/policies`.
+- **Use cases orchestrate.** Use cases coordinate repositories and policies to perform actions.
 
 ## Key Principles
 
