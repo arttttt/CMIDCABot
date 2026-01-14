@@ -47,9 +47,9 @@ presentation → domain ← data
 ```
 
 Additional rules:
-- **Domain models are data-only** (no behavior).
-- **Domain rules live in `src/domain/policies/`** (pure, stateless).
-- **Use cases orchestrate repositories and policies.**
+- Domain models are data-only (no validation, no rules, no calculations).
+- Domain policies are pure rules/calculations without I/O.
+- Use cases orchestrate repositories and policies.
 
 ## Security
 
