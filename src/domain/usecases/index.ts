@@ -15,7 +15,11 @@ export { GetPortfolioStatusUseCase } from "./GetPortfolioStatusUseCase.js";
 export { DetermineAssetToBuyUseCase } from "./DetermineAssetToBuyUseCase.js";
 
 // Wallet
-export { WalletInfoHelper } from "../helpers/WalletInfoHelper.js";
+export { IsDevModeUseCase } from "./IsDevModeUseCase.js";
+export { GetDevWalletInfoUseCase } from "./GetDevWalletInfoUseCase.js";
+export { GetWalletBalancesUseCase } from "./GetWalletBalancesUseCase.js";
+export { GetWalletInfoByAddressUseCase } from "./GetWalletInfoByAddressUseCase.js";
+export { GetWalletInfoByPrivateKeyUseCase } from "./GetWalletInfoByPrivateKeyUseCase.js";
 export { GetWalletInfoUseCase } from "./GetWalletInfoUseCase.js";
 export { CreateWalletUseCase } from "./CreateWalletUseCase.js";
 export { ImportWalletUseCase } from "./ImportWalletUseCase.js";
@@ -50,6 +54,3 @@ export { RemoveAuthorizedUserUseCase, type RemoveAuthorizedUserResult } from "./
 export { UpdateUserRoleUseCase, type UpdateUserRoleResult } from "./UpdateUserRoleUseCase.js";
 export { GetAllAuthorizedUsersUseCase, type GetAllAuthorizedUsersResult } from "./GetAllAuthorizedUsersUseCase.js";
 export { GetUserRoleUseCase } from "./GetUserRoleUseCase.js";
-
-// Helpers (re-export from domain/helpers)
-export * from "../helpers/index.js";
