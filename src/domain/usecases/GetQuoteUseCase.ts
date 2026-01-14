@@ -3,7 +3,8 @@
  * Dev-only use case for testing swap integration without executing
  */
 
-import { SwapRepository, SwapQuote } from "../repositories/SwapRepository.js";
+import { SwapRepository } from "../repositories/SwapRepository.js";
+import type { SwapQuote } from "../models/quote/SwapQuote.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";

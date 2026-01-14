@@ -12,3 +12,4 @@ export * from "./PurchaseStep.js";
 export * from "./PortfolioTypes.js";
 export * from "./UserIdentity.js";
 export * from "./ConfirmationSession.js";
+export * from "./quote/SwapQuote.js";

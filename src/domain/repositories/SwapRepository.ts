@@ -7,6 +7,7 @@
 
 import type { AssetSymbol } from "../../types/portfolio.js";
 import type { TokenMint, WalletAddress } from "../models/id/index.js";
+import type { SwapQuote } from "../models/quote/SwapQuote.js";
 
 /**
  * Quote parameters for swap
@@ -16,27 +17,6 @@ export interface SwapQuoteParams {
   outputMint: TokenMint;
   amount: string; // Amount in smallest units
   slippageBps?: number;
-}
-
-/**
- * Swap quote result
- */
-export interface SwapQuote {
-  inputMint: TokenMint;
-  inputSymbol: string;
-  inputAmount: number;
-  inputAmountRaw: string;
-  outputMint: TokenMint;
-  outputSymbol: string;
-  outputAmount: number;
-  outputAmountRaw: string;
-  priceImpactPct: number;
-  slippageBps: number;
-  minOutputAmount: number;
-  route: string[];
-  fetchedAt: Date;
-  // Raw response needed for building swap transaction (opaque to domain)
-  rawQuoteResponse: unknown;
 }
 
 /**

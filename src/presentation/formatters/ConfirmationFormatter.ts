@@ -8,10 +8,10 @@
  * - Cancelled operation
  */
 
-import type { SwapQuote } from "../../domain/repositories/SwapRepository.js";
+import type { SwapQuote } from "../../domain/models/quote/SwapQuote.js";
 import type { ConfirmationType } from "../../domain/repositories/ConfirmationRepository.js";
 import type { ConfirmationSessionId } from "../../domain/models/id/index.js";
-import { SlippageCalculator } from "../../domain/helpers/SlippageCalculator.js";
+import { SlippagePolicy } from "../../domain/policies/SlippagePolicy.js";
 import { ClientResponse, ClientButton } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 import { CallbackBuilder } from "../commands/CallbackBuilder.js";
@@ -104,7 +104,7 @@ export class ConfirmationFormatter {
     sessionId: ConfirmationSessionId,
     ttlSeconds: number,
   ): ClientResponse {
-    const slippageBps = SlippageCalculator.calculateBps(originalQuote, freshQuote);
+    const slippageBps = SlippagePolicy.calculateBps(originalQuote, freshQuote);
     const slippagePct = (slippageBps / 100).toFixed(2);
 
     const originalPrice = originalQuote.inputAmount / originalQuote.outputAmount;

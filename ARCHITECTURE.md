@@ -8,6 +8,7 @@
 src/
 ├── domain/
 │   ├── models/              # entities
+│   ├── policies/            # pure domain rules (no I/O)
 │   ├── usecases/            # business logic
 │   └── repositories/        # interfaces (ports)
 │
@@ -41,10 +42,15 @@ src/
 
 ```
 domain          → infrastructure/shared (logging, math, config)
+                → domain/policies
 data            → domain/repositories (interfaces)
+                → domain/models
+                → domain/policies
                 → infrastructure/internal
                 → infrastructure/shared
 presentation    → domain/usecases
+                → domain/models
+                → domain/policies
                 → infrastructure/shared
 infrastructure  → (nothing, except shared between own modules)
 ```
@@ -53,6 +59,12 @@ infrastructure  → (nothing, except shared between own modules)
 > Domain must NOT use `infrastructure/internal` — those are for data layer only.
 
 **Key rule:** Dependencies point inward only.
+
+## Domain Models & Policies
+
+- **Domain models** — only data and types. No validation, no calculations, no business rules.
+- **Domain policies** — pure business rules and calculations. No I/O, no repository calls.
+- **Use cases** — scenarios. They call repositories and policies to complete a flow.
 
 ## Key Principles
 

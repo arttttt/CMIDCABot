@@ -11,7 +11,7 @@
  */
 
 import type { TelegramId, ConfirmationSessionId } from "../models/id/index.js";
-import type { SwapQuote } from "./SwapRepository.js";
+import type { SwapQuote } from "../models/quote/SwapQuote.js";
 import type { ConfirmationType, ConfirmationSession } from "../models/ConfirmationSession.js";
 
 // Re-export ConfirmationSessionId for convenience

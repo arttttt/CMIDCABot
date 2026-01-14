@@ -46,6 +46,11 @@ presentation → domain ← data
            infrastructure
 ```
 
+Additional rules:
+- Domain models are data-only (no validation, no rules, no calculations).
+- Domain policies are pure rules/calculations without I/O.
+- Use cases orchestrate repositories and policies.
+
 ## Security
 
 - **Secrets** — never in code, only via environment variables
