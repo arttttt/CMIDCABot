@@ -23,6 +23,7 @@ export default [
         },
       },
       'boundaries/elements': [
+        { type: 'domain-policies', pattern: 'src/domain/policies/**', mode: 'file' },
         { type: 'domain', pattern: 'src/domain/**', mode: 'file' },
         { type: 'data', pattern: 'src/data/**', mode: 'file' },
         { type: 'presentation', pattern: 'src/presentation/**', mode: 'file' },
@@ -42,17 +43,22 @@ export default [
           // NOTE: 'wip' is temporarily allowed during migration period
           {
             from: 'domain',
-            allow: ['domain', 'infra-shared', 'types', 'wip'],
+            allow: ['domain', 'domain-policies', 'infra-shared', 'types', 'wip'],
+          },
+          // Domain policies: pure rules based on domain data
+          {
+            from: 'domain-policies',
+            allow: ['domain', 'domain-policies', 'infra-shared', 'types'],
           },
           // Data: domain interfaces + all infrastructure
           {
             from: 'data',
-            allow: ['domain', 'data', 'infra-internal', 'infra-shared', 'types'],
+            allow: ['domain', 'domain-policies', 'data', 'infra-internal', 'infra-shared', 'types'],
           },
           // Presentation: domain usecases + shared infra
           {
             from: 'presentation',
-            allow: ['domain', 'presentation', 'infra-shared', 'types'],
+            allow: ['domain', 'domain-policies', 'presentation', 'infra-shared', 'types'],
           },
           // Infrastructure internal: only shared + types
           {

@@ -7,7 +7,7 @@
  * The completed step contains the final result.
  */
 
-import type { SwapQuote } from "../repositories/SwapRepository.js";
+import type { SwapQuote } from "./quote/SwapQuote.js";
 import type { TxSignature } from "./id/index.js";
 
 /**

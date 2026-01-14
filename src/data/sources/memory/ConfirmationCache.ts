@@ -12,7 +12,7 @@
 
 import { randomBytes } from "node:crypto";
 import { TelegramId, ConfirmationSessionId } from "../../../domain/models/id/index.js";
-import type { SwapQuote } from "../../../domain/repositories/SwapRepository.js";
+import type { SwapQuote } from "../../../domain/models/quote/SwapQuote.js";
 import type { ConfirmationType, ConfirmationSession } from "../../../domain/models/ConfirmationSession.js";
 import type { CleanableStore } from "../../../infrastructure/shared/scheduling/CleanupScheduler.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";

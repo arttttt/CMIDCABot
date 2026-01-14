@@ -5,7 +5,7 @@
  */
 
 import type { TelegramId, ConfirmationSessionId } from "../../../domain/models/id/index.js";
-import type { SwapQuote } from "../../../domain/repositories/SwapRepository.js";
+import type { SwapQuote } from "../../../domain/models/quote/SwapQuote.js";
 import {
   ConfirmationRepository,
   ConfirmationType,

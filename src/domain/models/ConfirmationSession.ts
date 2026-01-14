@@ -6,7 +6,7 @@
  */
 
 import type { TelegramId } from "./id/index.js";
-import type { SwapQuote } from "../repositories/SwapRepository.js";
+import type { SwapQuote } from "./quote/SwapQuote.js";
 
 /**
  * Type of confirmation: portfolio buy or swap execute

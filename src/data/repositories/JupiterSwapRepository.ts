@@ -6,10 +6,10 @@
  */
 
 import { TokenMint, type WalletAddress } from "../../domain/models/id/index.js";
+import type { SwapQuote } from "../../domain/models/quote/SwapQuote.js";
 import type {
   SwapRepository,
   SwapQuoteParams,
-  SwapQuote,
   SwapTransaction,
 } from "../../domain/repositories/SwapRepository.js";
 import type { JupiterSwapClient, SwapQuote as ClientSwapQuote } from "../sources/api/JupiterSwapClient.js";

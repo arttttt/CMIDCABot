@@ -46,6 +46,10 @@ presentation → domain ← data
            infrastructure
 ```
 
+Additional rules:
+- **Domain models are data-only** (no behavior).
+- **Domain rules live in `src/domain/policies/`** (pure, stateless).
+
 ## Security
 
 - **Secrets** — never in code, only via environment variables
