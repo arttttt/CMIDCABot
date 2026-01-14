@@ -19,7 +19,7 @@ export class SlippagePolicy {
    * Check if slippage exceeds the threshold defined in original quote
    */
   static isExceeded(originalQuote: SwapQuote, freshQuote: SwapQuote): boolean {
-    const slippageBps = SlippagePolicy.calculateBps(originalQuote, freshQuote);
+    const slippageBps = this.calculateBps(originalQuote, freshQuote);
     return slippageBps > originalQuote.slippageBps;
   }
 }
