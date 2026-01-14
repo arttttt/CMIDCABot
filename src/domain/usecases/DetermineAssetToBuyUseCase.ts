@@ -57,7 +57,7 @@ export class DetermineAssetToBuyUseCase {
       ]);
 
       // Calculate portfolio status
-    const status = AllocationPolicy.calculatePortfolioStatus(
+      const status = AllocationPolicy.calculatePortfolioStatus(
         {
           btcBalance: balances.btc,
           ethBalance: balances.eth,
