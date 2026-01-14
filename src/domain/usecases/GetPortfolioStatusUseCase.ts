@@ -10,7 +10,7 @@ import { PriceRepository } from "../repositories/PriceRepository.js";
 import { PortfolioStatusResult } from "./types.js";
 import { PortfolioStatus } from "../models/PortfolioTypes.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
-import { AllocationCalculator } from "../helpers/AllocationCalculator.js";
+import { AllocationPolicy } from "../policies/AllocationPolicy.js";
 
 export class GetPortfolioStatusUseCase {
   constructor(
@@ -54,8 +54,8 @@ export class GetPortfolioStatusUseCase {
         ETH: ethBalance,
       });
 
-      // Calculate portfolio status using AllocationCalculator
-      const status: PortfolioStatus = AllocationCalculator.calculatePortfolioStatus(
+      // Calculate portfolio status using AllocationPolicy
+      const status: PortfolioStatus = AllocationPolicy.calculatePortfolioStatus(
         { btcBalance, ethBalance, solBalance },
         prices,
       );
