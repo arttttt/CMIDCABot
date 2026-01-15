@@ -251,7 +251,7 @@ async function handleCallbackStreamingResponse(
       case "edit": {
         if (statusMessageId) {
           const messageId = statusMessageId;
-          await tryWithRetry(
+          const edited = await tryWithRetry(
             () => ctx.api.editMessageText(chatId, messageId, item.response.text, {
               parse_mode: "Markdown",
               reply_markup: keyboard,
@@ -262,6 +262,28 @@ async function handleCallbackStreamingResponse(
               });
             },
           );
+          if (!edited) {
+            const msg = await tryWithRetry(
+              () => ctx.api.sendMessage(chatId, item.response.text, {
+                parse_mode: "Markdown",
+                reply_markup: keyboard,
+              }),
+              (error) => {
+                logger.error("TelegramBot", "Failed to send callback message", {
+                  error: error instanceof Error ? error.message : String(error),
+                });
+              },
+            );
+            if (msg) {
+              statusMessageId = msg.message_id;
+            } else {
+              try {
+                await ctx.api.sendMessage(chatId, ERROR_MESSAGE_SEND_FAILED);
+              } catch {
+                // Nothing more we can do
+              }
+            }
+          }
         } else {
           const msg = await tryWithRetry(
             () => ctx.api.sendMessage(chatId, item.response.text, {

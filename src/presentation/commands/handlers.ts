@@ -427,6 +427,10 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
       logger.error("PortfolioBuy", "Confirm callback failed", {
         error: error instanceof Error ? error.message : String(error),
       });
+      const sessionId = parseSessionId(sessionIdStr);
+      if (sessionId) {
+        confirmationRepository!.cancel(sessionId);
+      }
       return deps.purchaseFormatter.format({
         type: "quote_error",
         error: "Failed to execute purchase",
