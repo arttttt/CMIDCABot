@@ -68,6 +68,7 @@ import { SlippagePolicy } from "../../domain/policies/SlippagePolicy.js";
 
 // Protocol types
 import { StreamItem } from "../protocol/types.js";
+import { StreamUtils } from "../protocol/gateway/stream.js";
 
 // Domain types
 import type { PurchaseResult } from "../../domain/usecases/types.js";
@@ -325,82 +326,116 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
   }
 
   /**
-   * Handle confirm callback - check slippage and execute or show re-confirm
-   * Note: Current callback system doesn't support streaming, so we execute synchronously
-   * and return final result
+   * Handle confirm callback - check slippage and execute with streaming progress
    */
-  async function handleConfirm(
+  function handleConfirmStream(
     sessionIdStr: string,
     ctx: import("./types.js").CommandExecutionContext,
-  ): Promise<import("../protocol/types.js").ClientResponse> {
-    const sessionId = parseSessionId(sessionIdStr);
-    if (!sessionId) {
-      return confirmationFormatter!.formatSessionNotFound();
-    }
+  ): import("../protocol/types.js").ClientResponseStream {
+    return StreamUtils.catchAsync(async () => {
+      async function* stream(): import("../protocol/types.js").ClientResponseStream {
+        const sessionId = parseSessionId(sessionIdStr);
+        if (!sessionId) {
+          yield { response: confirmationFormatter!.formatSessionNotFound(), mode: "final" };
+          return;
+        }
 
-    const session = confirmationRepository!.get(sessionId);
+        const session = confirmationRepository!.get(sessionId);
+        if (!session) {
+          yield { response: confirmationFormatter!.formatSessionNotFound(), mode: "final" };
+          return;
+        }
 
-    if (!session) {
-      return confirmationFormatter!.formatSessionNotFound();
-    }
+        // Check if session belongs to this user
+        if (!session.telegramId.equals(ctx.telegramId)) {
+          logger.warn("PortfolioBuy", "Session user mismatch", {
+            sessionUser: session.telegramId.value,
+            requestUser: ctx.telegramId.value,
+          });
+          yield { response: confirmationFormatter!.formatSessionNotFound(), mode: "final" };
+          return;
+        }
 
-    // Check if session belongs to this user
-    if (!session.telegramId.equals(ctx.telegramId)) {
-      logger.warn("PortfolioBuy", "Session user mismatch", {
-        sessionUser: session.telegramId.value,
-        requestUser: ctx.telegramId.value,
-      });
-      return confirmationFormatter!.formatSessionNotFound();
-    }
+        // Get fresh quote to check slippage
+        let freshQuote;
+        try {
+          freshQuote = await swapRepository!.getQuoteUsdcToAsset(
+            session.amount,
+            session.asset as AssetSymbol,
+          );
+        } catch (error) {
+          logger.error("PortfolioBuy", "Failed to get fresh quote", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          confirmationRepository!.cancel(sessionId);
+          yield {
+            response: deps.purchaseFormatter.format({
+              type: "quote_error",
+              error: "Failed to refresh quote",
+            }),
+            mode: "final",
+          };
+          return;
+        }
 
-    // Get fresh quote to check slippage
-    let freshQuote;
-    try {
-      freshQuote = await swapRepository!.getQuoteUsdcToAsset(
-        session.amount,
-        session.asset as AssetSymbol,
-      );
-    } catch (error) {
-      logger.error("PortfolioBuy", "Failed to get fresh quote", {
+        // Check slippage
+        if (SlippagePolicy.isExceeded(session.quote, freshQuote)) {
+          // Can we re-confirm?
+          if (confirmationRepository!.updateQuote(sessionId, freshQuote)) {
+            // Show slippage warning with new price
+            yield {
+              response: confirmationFormatter!.formatSlippageWarning(
+                session.type,
+                session.quote,
+                freshQuote,
+                sessionId,
+                confirmationRepository!.getTtlSeconds(),
+              ),
+              mode: "final",
+            };
+            return;
+          } else {
+            // Max re-confirms exceeded
+            confirmationRepository!.cancel(sessionId);
+            yield {
+              response: confirmationFormatter!.formatMaxSlippageExceeded(session.type),
+              mode: "final",
+            };
+            return;
+          }
+        }
+
+        // Slippage OK - consume session and execute
+        confirmationRepository!.consume(sessionId);
+
+        // Execute purchase with progress streaming
+        for await (const step of deps.executePurchase!.execute(ctx.telegramId, session.amount)) {
+          if (step.step === "completed") {
+            yield {
+              response: deps.purchaseFormatter.format(step.result),
+              mode: "final",
+            };
+          } else {
+            const formatted = deps.progressFormatter.formatPurchaseStep(step);
+            yield { response: formatted.response, mode: formatted.mode };
+          }
+        }
+      }
+
+      return stream();
+    }, (error) => {
+      logger.error("PortfolioBuy", "Confirm callback failed", {
         error: error instanceof Error ? error.message : String(error),
       });
-      confirmationRepository!.cancel(sessionId);
+      const sessionId = parseSessionId(sessionIdStr);
+      if (sessionId) {
+        confirmationRepository!.cancel(sessionId);
+      }
       return deps.purchaseFormatter.format({
         type: "quote_error",
-        error: "Failed to refresh quote",
+        error: "Failed to execute purchase",
       });
-    }
-
-    // Check slippage
-    if (SlippagePolicy.isExceeded(session.quote, freshQuote)) {
-      // Can we re-confirm?
-      if (confirmationRepository!.updateQuote(sessionId, freshQuote)) {
-        // Show slippage warning with new price
-        return confirmationFormatter!.formatSlippageWarning(
-          session.type,
-          session.quote,
-          freshQuote,
-          sessionId,
-          confirmationRepository!.getTtlSeconds(),
-        );
-      } else {
-        // Max re-confirms exceeded
-        confirmationRepository!.cancel(sessionId);
-        return confirmationFormatter!.formatMaxSlippageExceeded(session.type);
-      }
-    }
-
-    // Slippage OK - consume session and execute
-    confirmationRepository!.consume(sessionId);
-
-    // Execute purchase (synchronously collect result)
-    let result: PurchaseResult = { type: "unavailable" };
-    for await (const step of deps.executePurchase!.execute(ctx.telegramId, session.amount)) {
-      if (step.step === "completed") {
-        result = step.result;
-      }
-    }
-    return deps.purchaseFormatter.format(result);
+    });
   }
 
   /**
@@ -581,11 +616,11 @@ function createPortfolioBuyCommand(deps: PortfolioCommandDeps): Command {
     callbacks: hasConfirmationFlow
       ? new Map([
           ["confirm", {
-            handler: async (ctx, params) => {
+            streamingHandler: (ctx, params) => {
               if (params.length === 0) {
-                return confirmationFormatter!.formatSessionNotFound();
+                return StreamUtils.final(confirmationFormatter!.formatSessionNotFound());
               }
-              return handleConfirm(params[0], ctx);
+              return handleConfirmStream(params[0], ctx);
             },
             params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
           }],

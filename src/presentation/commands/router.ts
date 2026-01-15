@@ -260,8 +260,13 @@ export function findCallbackByPath(
     }
   }
 
+  if (!definition.handler && !definition.streamingHandler) {
+    return undefined;
+  }
+
   return {
     handler: definition.handler,
+    streamingHandler: definition.streamingHandler,
     requiredRole: effectiveRole,
     params,
   };

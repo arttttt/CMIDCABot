@@ -226,6 +226,165 @@ async function handleStreamingResponse(
   }
 }
 
+/**
+ * Handle streaming responses from callback handler
+ * - 'edit' mode: Update the callback message
+ * - 'new' mode: Send a new message
+ * - 'final' mode: Final result, update or send based on context
+ */
+async function handleCallbackStreamingResponse(
+  ctx: Context,
+  stream: AsyncGenerator<StreamItem, void, undefined>,
+): Promise<void> {
+  const chatId = ctx.chat?.id;
+  if (!chatId) {
+    logger.warn("TelegramBot", "No chat ID for callback response");
+    return;
+  }
+
+  let statusMessageId = ctx.callbackQuery?.message?.message_id;
+
+  for await (const item of stream) {
+    const keyboard = toInlineKeyboard(item.response);
+
+    switch (item.mode) {
+      case "edit": {
+        if (statusMessageId) {
+          const messageId = statusMessageId;
+          const edited = await tryWithRetry(
+            () => ctx.api.editMessageText(chatId, messageId, item.response.text, {
+              parse_mode: "Markdown",
+              reply_markup: keyboard,
+            }),
+            (error) => {
+              logger.debug("TelegramBot", "Edit message failed", {
+                error: error instanceof Error ? error.message : String(error),
+              });
+            },
+          );
+          if (!edited) {
+            const msg = await tryWithRetry(
+              () => ctx.api.sendMessage(chatId, item.response.text, {
+                parse_mode: "Markdown",
+                reply_markup: keyboard,
+              }),
+              (error) => {
+                logger.error("TelegramBot", "Failed to send callback message", {
+                  error: error instanceof Error ? error.message : String(error),
+                });
+              },
+            );
+            if (msg) {
+              statusMessageId = msg.message_id;
+            } else {
+              try {
+                await ctx.api.sendMessage(chatId, ERROR_MESSAGE_SEND_FAILED);
+              } catch {
+                // Nothing more we can do
+              }
+            }
+          }
+        } else {
+          const msg = await tryWithRetry(
+            () => ctx.api.sendMessage(chatId, item.response.text, {
+              parse_mode: "Markdown",
+              reply_markup: keyboard,
+            }),
+            (error) => {
+              logger.error("TelegramBot", "Failed to send callback message", {
+                error: error instanceof Error ? error.message : String(error),
+              });
+            },
+          );
+          if (msg) {
+            statusMessageId = msg.message_id;
+          } else {
+            try {
+              await ctx.api.sendMessage(chatId, ERROR_MESSAGE_SEND_FAILED);
+            } catch {
+              // Nothing more we can do
+            }
+          }
+        }
+        break;
+      }
+      case "new": {
+        const sent = await tryWithRetry(
+          () => ctx.api.sendMessage(chatId, item.response.text, {
+            parse_mode: "Markdown",
+            reply_markup: keyboard,
+          }),
+          (error) => {
+            logger.error("TelegramBot", "Failed to send new callback message", {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          },
+        );
+        if (!sent) {
+          try {
+            await ctx.api.sendMessage(chatId, ERROR_MESSAGE_SEND_FAILED);
+          } catch {
+            // Nothing more we can do
+          }
+        }
+        break;
+      }
+      case "final": {
+        let finalSent = false;
+
+        if (statusMessageId) {
+          try {
+            await ctx.api.editMessageText(chatId, statusMessageId, item.response.text, {
+              parse_mode: "Markdown",
+              reply_markup: keyboard,
+            });
+            finalSent = true;
+          } catch (error) {
+            logger.debug("TelegramBot", "Final callback edit failed, sending new", {
+              error: error instanceof Error ? error.message : String(error),
+            });
+
+            const sent = await tryWithRetry(
+              () => ctx.api.sendMessage(chatId, item.response.text, {
+                parse_mode: "Markdown",
+                reply_markup: keyboard,
+              }),
+              (retryError) => {
+                logger.error("TelegramBot", "Failed to send final callback message", {
+                  error: retryError instanceof Error ? retryError.message : String(retryError),
+                });
+              },
+            );
+            finalSent = !!sent;
+          }
+        } else {
+          const sent = await tryWithRetry(
+            () => ctx.api.sendMessage(chatId, item.response.text, {
+              parse_mode: "Markdown",
+              reply_markup: keyboard,
+            }),
+            (error) => {
+              logger.error("TelegramBot", "Failed to send final callback message", {
+                error: error instanceof Error ? error.message : String(error),
+              });
+            },
+          );
+          finalSent = !!sent;
+        }
+
+        if (!finalSent) {
+          try {
+            await ctx.api.sendMessage(chatId, ERROR_MESSAGE_SEND_FAILED);
+          } catch {
+            // Nothing more we can do
+          }
+        }
+        break;
+      }
+    }
+  }
+}
+
 export function createTelegramBot(
   botToken: string,
   gateway: Gateway,
@@ -261,7 +420,7 @@ export function createTelegramBot(
     await handleStreamingResponse(ctx, stream);
   });
 
-  // Handle callback queries: Context -> Gateway -> Edit message
+  // Handle callback queries: Context -> Gateway -> Streaming Response
   bot.on("callback_query:data", async (ctx) => {
     const callbackData = ctx.callbackQuery.data;
 
@@ -276,26 +435,12 @@ export function createTelegramBot(
       return;
     }
 
+    await ctx.answerCallbackQuery().catch(() => {});
+
     // Handle callbacks via gateway
     const request = buildTelegramCallbackRequest(ctx);
     const stream = await gateway.handle(request);
-
-    // Callback returns single final response - extract it
-    let response: ClientResponse | undefined;
-    for await (const item of stream) {
-      response = item.response;
-    }
-
-    if (response) {
-      const keyboard = toInlineKeyboard(response);
-      await ctx.answerCallbackQuery();
-      await ctx.editMessageText(response.text, {
-        parse_mode: "Markdown",
-        reply_markup: keyboard,
-      });
-    } else {
-      await ctx.answerCallbackQuery();
-    }
+    await handleCallbackStreamingResponse(ctx, stream);
   });
 
   // Error handling with user notification
