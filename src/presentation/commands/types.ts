@@ -47,6 +47,14 @@ export type StreamingCommandHandler = (
 export type CallbackHandler = (ctx: CommandExecutionContext, params: string[]) => Promise<ClientResponse>;
 
 /**
+ * Streaming callback handler - returns AsyncGenerator for progress updates
+ */
+export type StreamingCallbackHandler = (
+  ctx: CommandExecutionContext,
+  params: string[],
+) => ClientResponseStream;
+
+/**
  * Callback parameter schema - describes expected parameter
  */
 export interface CallbackParamSchema {
@@ -60,7 +68,8 @@ export interface CallbackParamSchema {
  * Callback definition - handler with optional parameter schema
  */
 export interface CallbackDefinition {
-  handler: CallbackHandler;
+  handler?: CallbackHandler;
+  streamingHandler?: StreamingCallbackHandler;
   /** Parameter schemas for validation. If undefined, callback takes no parameters. */
   params?: CallbackParamSchema[];
 }
@@ -69,7 +78,8 @@ export interface CallbackDefinition {
  * Result of callback lookup - includes handler and required role
  */
 export interface CallbackLookupResult {
-  handler: CallbackHandler;
+  handler?: CallbackHandler;
+  streamingHandler?: StreamingCallbackHandler;
   requiredRole?: UserRole;
   /** Parameters extracted from callback data (format: action:param1:param2:...) */
   params: string[];
