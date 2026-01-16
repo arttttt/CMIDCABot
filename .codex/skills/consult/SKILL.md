@@ -5,6 +5,11 @@ description: "Technical consultation without implementation. Use when the user i
 
 # Consult Command
 
+## Behavior Profile
+
+Use the `planner` skill as the behavior profile for this command.
+Treat its rules as mandatory.
+
 Follow `CLAUDE.md`, `conventions.md`, and `ARCHITECTURE.md`.
 
 ## Task
