@@ -14,6 +14,7 @@
 - Small modules — single responsibility
 - Utility functions — class with static methods (not top-level exports)
 - Use cases expose a single public method: `execute`
+- Domain-level constants belong in `src/domain/constants/`
 
 ### Naming
 
@@ -58,6 +59,10 @@ Additional rules:
 - **Private keys** — encrypted only (AES-256-GCM)
 - **Logging** — no sensitive data in logs
 - **Input validation** — at presentation layer boundary
+
+## Concurrency
+
+- **Balance-changing operations** — must be guarded by a per-user lock at the use case level to prevent parallel execution.
 
 ## Environment
 

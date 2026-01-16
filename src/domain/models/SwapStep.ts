@@ -36,6 +36,7 @@ export type SwapResult =
   | { status: "unavailable" }
   | { status: "no_wallet" }
   | { status: "invalid_amount"; message: string }
+  | { status: "operation_in_progress" }
   | { status: "invalid_asset"; message: string }
   | { status: "insufficient_usdc_balance" }
   | { status: "insufficient_sol_balance" }

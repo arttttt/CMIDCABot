@@ -29,6 +29,13 @@ export class SwapFormatter {
       return new ClientResponse(`Invalid amount: ${Markdown.escape(result.message ?? "")}`);
     }
 
+    if (result.status === "operation_in_progress") {
+      return new ClientResponse(
+        "Another balance-changing operation is already in progress. " +
+          "Please finish it before starting a new one.",
+      );
+    }
+
     if (result.status === "invalid_asset") {
       return new ClientResponse(`Invalid asset: ${Markdown.escape(result.message ?? "")}`);
     }

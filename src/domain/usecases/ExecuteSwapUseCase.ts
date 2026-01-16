@@ -18,11 +18,13 @@ import { TransactionRepository } from "../repositories/TransactionRepository.js"
 import { BalanceRepository } from "../repositories/BalanceRepository.js";
 import { BlockchainRepository, SendTransactionResult } from "../repositories/BlockchainRepository.js";
 import { SwapRepository } from "../repositories/SwapRepository.js";
+import { OperationLockRepository } from "../repositories/OperationLockRepository.js";
 import type { SwapQuote } from "../models/quote/SwapQuote.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
 import { MIN_SOL_AMOUNT, MIN_USDC_AMOUNT, MAX_USDC_AMOUNT, MAX_PRICE_IMPACT_BPS } from "../constants.js";
+import { BalanceOperationLock } from "../constants/BalanceOperationLock.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
@@ -33,6 +35,7 @@ export class ExecuteSwapUseCase {
     private userRepository: UserRepository,
     private transactionRepository: TransactionRepository,
     private balanceRepository: BalanceRepository,
+    private operationLockRepository: OperationLockRepository,
   ) {}
 
   /**
@@ -46,6 +49,7 @@ export class ExecuteSwapUseCase {
     telegramId: TelegramId,
     amountUsdc: number,
     asset: string = "SOL",
+    options: { skipLock?: boolean } = {},
   ): AsyncGenerator<SwapStep> {
     logger.info("ExecuteSwap", "Starting swap execution", {
       telegramId,
@@ -53,12 +57,30 @@ export class ExecuteSwapUseCase {
       asset,
     });
 
-    // Check if swap repository is available
-    if (!this.swapRepository) {
-      logger.warn("ExecuteSwap", "Swap repository unavailable");
-      yield SwapSteps.completed({ status: "unavailable" });
-      return;
+    const shouldSkipLock = options.skipLock ?? false;
+    const lockKey = BalanceOperationLock.getKey(telegramId);
+    let lockAcquired = false;
+
+    if (!shouldSkipLock) {
+      lockAcquired = await this.operationLockRepository.acquire(
+        lockKey,
+        BalanceOperationLock.TTL_MS,
+        Date.now(),
+      );
+
+      if (!lockAcquired) {
+        yield SwapSteps.completed({ status: "operation_in_progress" });
+        return;
+      }
     }
+
+    // Check if swap repository is available
+    try {
+      if (!this.swapRepository) {
+        logger.warn("ExecuteSwap", "Swap repository unavailable");
+        yield SwapSteps.completed({ status: "unavailable" });
+        return;
+      }
 
     // Validate amount
     if (isNaN(amountUsdc) || amountUsdc <= 0) {
@@ -94,7 +116,19 @@ export class ExecuteSwapUseCase {
       });
       return;
     }
+      yield* this.executeInternal(telegramId, amountUsdc, assetUpper);
+    } finally {
+      if (!shouldSkipLock && lockAcquired) {
+        await this.operationLockRepository.release(lockKey);
+      }
+    }
+  }
 
+  private async *executeInternal(
+    telegramId: TelegramId,
+    amountUsdc: number,
+    assetUpper: AssetSymbol,
+  ): AsyncGenerator<SwapStep> {
     // Get user's wallet info
     let walletAddr: WalletAddress | undefined;
     let encryptedPrivateKey: string | undefined;
@@ -283,4 +317,5 @@ export class ExecuteSwapUseCase {
       confirmed: sendResult.confirmed,
     });
   }
+
 }

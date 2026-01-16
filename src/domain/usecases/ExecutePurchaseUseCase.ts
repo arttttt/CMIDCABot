@@ -14,11 +14,14 @@ import { logger } from "../../infrastructure/shared/logging/index.js";
 import { PurchaseStep, PurchaseSteps } from "../models/index.js";
 import type { DetermineAssetToBuyUseCase } from "./DetermineAssetToBuyUseCase.js";
 import { MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";
+import type { OperationLockRepository } from "../repositories/OperationLockRepository.js";
+import { BalanceOperationLock } from "../constants/BalanceOperationLock.js";
 
 export class ExecutePurchaseUseCase {
   constructor(
     private executeSwapUseCase: ExecuteSwapUseCase,
     private determineAssetToBuy: DetermineAssetToBuyUseCase,
+    private operationLockRepository: OperationLockRepository,
   ) {}
 
   /**
@@ -36,73 +39,90 @@ export class ExecutePurchaseUseCase {
       amountUsdc,
     });
 
-    // Validate amount
-    if (isNaN(amountUsdc) || amountUsdc <= 0) {
-      logger.warn("ExecutePurchase", "Invalid amount", { amountUsdc });
-      yield PurchaseSteps.completed({ type: "invalid_amount" });
+    const lockKey = BalanceOperationLock.getKey(telegramId);
+    const lockAcquired = await this.operationLockRepository.acquire(
+      lockKey,
+      BalanceOperationLock.TTL_MS,
+      Date.now(),
+    );
+
+    if (!lockAcquired) {
+      yield PurchaseSteps.completed({ type: "operation_in_progress" });
       return;
     }
 
-    // Defense-in-depth: validate amount here for fast feedback to user,
-    // even though ExecuteSwapUseCase will also validate.
-    // This prevents unnecessary asset selection when amount is clearly invalid.
-    if (amountUsdc < MIN_USDC_AMOUNT) {
-      yield PurchaseSteps.completed({
-        type: "invalid_amount",
-        error: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
-      });
-      return;
-    }
-
-    if (amountUsdc > MAX_USDC_AMOUNT) {
-      yield PurchaseSteps.completed({
-        type: "invalid_amount",
-        error: `Maximum amount is ${MAX_USDC_AMOUNT} USDC`,
-      });
-      return;
-    }
-
-    // Step: Selecting asset
-    yield PurchaseSteps.selectingAsset();
-
-    // Determine which asset to buy based on portfolio allocation
-    const selection = await this.determineAssetToBuy.execute(telegramId);
-
-    if (!selection) {
-      logger.warn("ExecutePurchase", "No wallet connected", { telegramId });
-      yield PurchaseSteps.completed({ type: "no_wallet" });
-      return;
-    }
-
-    logger.info("ExecutePurchase", "Selected asset to buy", {
-      symbol: selection.symbol,
-      currentAllocation: `${(selection.currentAllocation * 100).toFixed(1)}%`,
-      targetAllocation: `${(selection.targetAllocation * 100).toFixed(1)}%`,
-      deviation: `${(selection.deviation * 100).toFixed(1)}%`,
-    });
-
-    // Step: Asset selected with allocation info
-    yield PurchaseSteps.assetSelected(selection);
-
-    // Delegate to ExecuteSwapUseCase with progress forwarding
-    // Note: Balance checks (USDC, SOL) are performed by ExecuteSwapUseCase
-    for await (const swapStep of this.executeSwapUseCase.execute(
-      telegramId,
-      amountUsdc,
-      selection.symbol,
-    )) {
-      if (swapStep.step === "completed") {
-        // Map swap result to purchase result
-        const purchaseResult = this.mapSwapResultToPurchaseResult(
-          swapStep.result,
-          selection.symbol,
-          amountUsdc,
-        );
-        yield PurchaseSteps.completed(purchaseResult);
-      } else {
-        // Wrap swap step in purchase step
-        yield PurchaseSteps.swap(swapStep);
+    try {
+      // Validate amount
+      if (isNaN(amountUsdc) || amountUsdc <= 0) {
+        logger.warn("ExecutePurchase", "Invalid amount", { amountUsdc });
+        yield PurchaseSteps.completed({ type: "invalid_amount" });
+        return;
       }
+
+      // Defense-in-depth: validate amount here for fast feedback to user,
+      // even though ExecuteSwapUseCase will also validate.
+      // This prevents unnecessary asset selection when amount is clearly invalid.
+      if (amountUsdc < MIN_USDC_AMOUNT) {
+        yield PurchaseSteps.completed({
+          type: "invalid_amount",
+          error: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
+        });
+        return;
+      }
+
+      if (amountUsdc > MAX_USDC_AMOUNT) {
+        yield PurchaseSteps.completed({
+          type: "invalid_amount",
+          error: `Maximum amount is ${MAX_USDC_AMOUNT} USDC`,
+        });
+        return;
+      }
+
+      // Step: Selecting asset
+      yield PurchaseSteps.selectingAsset();
+
+      // Determine which asset to buy based on portfolio allocation
+      const selection = await this.determineAssetToBuy.execute(telegramId);
+
+      if (!selection) {
+        logger.warn("ExecutePurchase", "No wallet connected", { telegramId });
+        yield PurchaseSteps.completed({ type: "no_wallet" });
+        return;
+      }
+
+      logger.info("ExecutePurchase", "Selected asset to buy", {
+        symbol: selection.symbol,
+        currentAllocation: `${(selection.currentAllocation * 100).toFixed(1)}%`,
+        targetAllocation: `${(selection.targetAllocation * 100).toFixed(1)}%`,
+        deviation: `${(selection.deviation * 100).toFixed(1)}%`,
+      });
+
+      // Step: Asset selected with allocation info
+      yield PurchaseSteps.assetSelected(selection);
+
+      // Delegate to ExecuteSwapUseCase with progress forwarding
+      // Note: Balance checks (USDC, SOL) are performed by ExecuteSwapUseCase
+      for await (const swapStep of this.executeSwapUseCase.execute(
+        telegramId,
+        amountUsdc,
+        selection.symbol,
+        { skipLock: true },
+      )) {
+        if (swapStep.step === "completed") {
+          // Map swap result to purchase result
+          const purchaseResult = this.mapSwapResultToPurchaseResult(
+            swapStep.result,
+            selection.symbol,
+            amountUsdc,
+          );
+          yield PurchaseSteps.completed(purchaseResult);
+        } else {
+          // Wrap swap step in purchase step
+          yield PurchaseSteps.swap(swapStep);
+        }
+      }
+    } finally {
+      await this.operationLockRepository.release(lockKey);
     }
   }
 
@@ -141,6 +161,8 @@ export class ExecutePurchaseUseCase {
         return { type: "no_wallet" };
       case "invalid_amount":
         return { type: "invalid_amount", error: swapResult.message };
+      case "operation_in_progress":
+        return { type: "operation_in_progress" };
       case "invalid_asset":
         // This should not happen since we control the asset selection
         return { type: "invalid_amount", error: swapResult.message };
@@ -160,4 +182,5 @@ export class ExecutePurchaseUseCase {
         return { type: "high_price_impact", error: `Price impact too high: ${swapResult.priceImpactPct.toFixed(2)}%` };
     }
   }
+
 }

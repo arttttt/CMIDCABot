@@ -6,6 +6,7 @@ try {
 }
 
 import { createRequire } from "module";
+import { randomUUID } from "crypto";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
@@ -86,8 +87,8 @@ import {
   type TransportConfig as TelegramTransportConfig,
 } from "./presentation/telegram/index.js";
 import { HttpServer } from "./infrastructure/shared/http/index.js";
-import { SecretCache, ImportSessionCache, RateLimitCache, ConfirmationCache } from "./data/sources/memory/index.js";
-import { InMemorySecretRepository, InMemoryImportSessionRepository, InMemoryRateLimitRepository, InMemoryConfirmationRepository } from "./data/repositories/memory/index.js";
+import { SecretCache, ImportSessionCache, RateLimitCache, ConfirmationCache, OperationLockCache } from "./data/sources/memory/index.js";
+import { InMemorySecretRepository, InMemoryImportSessionRepository, InMemoryRateLimitRepository, InMemoryConfirmationRepository, InMemoryOperationLockRepository } from "./data/repositories/memory/index.js";
 import { CleanupScheduler } from "./infrastructure/shared/scheduling/index.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
 import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
@@ -157,6 +158,14 @@ async function main(): Promise<void> {
   });
   const rateLimitRepository = new InMemoryRateLimitRepository(rateLimitCache);
 
+  // Initialize OperationLockCache for balance-changing operations
+  const operationLockCache = new OperationLockCache();
+  const operationLockOwnerId = randomUUID();
+  const operationLockRepository = new InMemoryOperationLockRepository(
+    operationLockCache,
+    operationLockOwnerId,
+  );
+
   // Initialize ConfirmationCache for purchase/swap confirmation flow
   const confirmationCache = new ConfirmationCache();
   const confirmationRepository = new InMemoryConfirmationRepository(confirmationCache);
@@ -214,6 +223,7 @@ async function main(): Promise<void> {
     userRepository,
     transactionRepository,
     balanceRepository,
+    operationLockRepository,
   );
 
   // Create use cases
@@ -256,6 +266,7 @@ async function main(): Promise<void> {
     ? new ExecutePurchaseUseCase(
         executeSwapUseCase,
         determineAssetToBuy,
+        operationLockRepository,
       )
     : undefined;
 
