@@ -5,6 +5,11 @@ description: "Code review. Use when the user invokes /review or asks for a revie
 
 # Review Command
 
+## Behavior Profile
+
+Use the `reviewer` skill as the behavior profile for this command.
+Treat its rules as mandatory.
+
 Follow `CLAUDE.md`, `conventions.md`, and `ARCHITECTURE.md`.
 
 ## Task

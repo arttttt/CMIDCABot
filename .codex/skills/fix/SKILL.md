@@ -5,6 +5,11 @@ description: "Fix issues from code review. Use when the user invokes /fix or ask
 
 # Fix Command
 
+## Behavior Profile
+
+Use the `developer` skill as the behavior profile for this command.
+Treat its rules as mandatory.
+
 Follow `CLAUDE.md`, `conventions.md`, and `ARCHITECTURE.md`.
 
 ## Task

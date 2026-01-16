@@ -5,6 +5,11 @@ description: "Implement task from issue specification. Use when the user invokes
 
 # Implement Command
 
+## Behavior Profile
+
+Use the `developer` skill as the behavior profile for this command.
+Treat its rules as mandatory.
+
 Follow `CLAUDE.md`, `conventions.md`, and `ARCHITECTURE.md`.
 
 ## Task
