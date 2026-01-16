@@ -6,3 +6,4 @@ export * from "./InMemorySecretRepository.js";
 export * from "./InMemoryImportSessionRepository.js";
 export * from "./InMemoryRateLimitRepository.js";
 export * from "./InMemoryConfirmationRepository.js";
+export * from "./InMemoryOperationLockRepository.js";

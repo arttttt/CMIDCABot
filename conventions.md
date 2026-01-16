@@ -59,6 +59,10 @@ Additional rules:
 - **Logging** — no sensitive data in logs
 - **Input validation** — at presentation layer boundary
 
+## Concurrency
+
+- **Balance-changing operations** — must be guarded by a per-user lock at the use case level to prevent parallel execution.
+
 ## Environment
 
 - Keep `.env.example` up-to-date when adding variables

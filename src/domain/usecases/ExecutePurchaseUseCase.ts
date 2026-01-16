@@ -14,11 +14,15 @@ import { logger } from "../../infrastructure/shared/logging/index.js";
 import { PurchaseStep, PurchaseSteps } from "../models/index.js";
 import type { DetermineAssetToBuyUseCase } from "./DetermineAssetToBuyUseCase.js";
 import { MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";
+import type { OperationLockRepository } from "../repositories/OperationLockRepository.js";
+
+const OPERATION_LOCK_TTL_MS = 15 * 60 * 1000;
 
 export class ExecutePurchaseUseCase {
   constructor(
     private executeSwapUseCase: ExecuteSwapUseCase,
     private determineAssetToBuy: DetermineAssetToBuyUseCase,
+    private operationLockRepository: OperationLockRepository,
   ) {}
 
   /**
@@ -62,47 +66,64 @@ export class ExecutePurchaseUseCase {
       return;
     }
 
-    // Step: Selecting asset
-    yield PurchaseSteps.selectingAsset();
+    const lockKey = this.getLockKey(telegramId);
+    const lockAcquired = await this.operationLockRepository.acquire(
+      lockKey,
+      OPERATION_LOCK_TTL_MS,
+      Date.now(),
+    );
 
-    // Determine which asset to buy based on portfolio allocation
-    const selection = await this.determineAssetToBuy.execute(telegramId);
-
-    if (!selection) {
-      logger.warn("ExecutePurchase", "No wallet connected", { telegramId });
-      yield PurchaseSteps.completed({ type: "no_wallet" });
+    if (!lockAcquired) {
+      yield PurchaseSteps.completed({ type: "operation_in_progress" });
       return;
     }
 
-    logger.info("ExecutePurchase", "Selected asset to buy", {
-      symbol: selection.symbol,
-      currentAllocation: `${(selection.currentAllocation * 100).toFixed(1)}%`,
-      targetAllocation: `${(selection.targetAllocation * 100).toFixed(1)}%`,
-      deviation: `${(selection.deviation * 100).toFixed(1)}%`,
-    });
+    try {
+      // Step: Selecting asset
+      yield PurchaseSteps.selectingAsset();
 
-    // Step: Asset selected with allocation info
-    yield PurchaseSteps.assetSelected(selection);
+      // Determine which asset to buy based on portfolio allocation
+      const selection = await this.determineAssetToBuy.execute(telegramId);
 
-    // Delegate to ExecuteSwapUseCase with progress forwarding
-    // Note: Balance checks (USDC, SOL) are performed by ExecuteSwapUseCase
-    for await (const swapStep of this.executeSwapUseCase.execute(
-      telegramId,
-      amountUsdc,
-      selection.symbol,
-    )) {
-      if (swapStep.step === "completed") {
-        // Map swap result to purchase result
-        const purchaseResult = this.mapSwapResultToPurchaseResult(
-          swapStep.result,
-          selection.symbol,
-          amountUsdc,
-        );
-        yield PurchaseSteps.completed(purchaseResult);
-      } else {
-        // Wrap swap step in purchase step
-        yield PurchaseSteps.swap(swapStep);
+      if (!selection) {
+        logger.warn("ExecutePurchase", "No wallet connected", { telegramId });
+        yield PurchaseSteps.completed({ type: "no_wallet" });
+        return;
       }
+
+      logger.info("ExecutePurchase", "Selected asset to buy", {
+        symbol: selection.symbol,
+        currentAllocation: `${(selection.currentAllocation * 100).toFixed(1)}%`,
+        targetAllocation: `${(selection.targetAllocation * 100).toFixed(1)}%`,
+        deviation: `${(selection.deviation * 100).toFixed(1)}%`,
+      });
+
+      // Step: Asset selected with allocation info
+      yield PurchaseSteps.assetSelected(selection);
+
+      // Delegate to ExecuteSwapUseCase with progress forwarding
+      // Note: Balance checks (USDC, SOL) are performed by ExecuteSwapUseCase
+      for await (const swapStep of this.executeSwapUseCase.execute(
+        telegramId,
+        amountUsdc,
+        selection.symbol,
+        { skipLock: true },
+      )) {
+        if (swapStep.step === "completed") {
+          // Map swap result to purchase result
+          const purchaseResult = this.mapSwapResultToPurchaseResult(
+            swapStep.result,
+            selection.symbol,
+            amountUsdc,
+          );
+          yield PurchaseSteps.completed(purchaseResult);
+        } else {
+          // Wrap swap step in purchase step
+          yield PurchaseSteps.swap(swapStep);
+        }
+      }
+    } finally {
+      await this.operationLockRepository.release(lockKey);
     }
   }
 
@@ -141,6 +162,8 @@ export class ExecutePurchaseUseCase {
         return { type: "no_wallet" };
       case "invalid_amount":
         return { type: "invalid_amount", error: swapResult.message };
+      case "operation_in_progress":
+        return { type: "operation_in_progress" };
       case "invalid_asset":
         // This should not happen since we control the asset selection
         return { type: "invalid_amount", error: swapResult.message };
@@ -159,5 +182,9 @@ export class ExecutePurchaseUseCase {
       case "high_price_impact":
         return { type: "high_price_impact", error: `Price impact too high: ${swapResult.priceImpactPct.toFixed(2)}%` };
     }
+  }
+
+  private getLockKey(telegramId: TelegramId): string {
+    return `tg:${telegramId.value}:balance_mutation`;
   }
 }

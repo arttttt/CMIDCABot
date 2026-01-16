@@ -21,6 +21,12 @@ export class PurchaseFormatter {
             : "Invalid amount. Please provide a positive number.\n\nExample: /portfolio buy 10",
         );
 
+      case "operation_in_progress":
+        return new ClientResponse(
+          "Another balance-changing operation is already in progress. " +
+            "Please finish it before starting a new one.",
+        );
+
       case "no_wallet":
         return new ClientResponse(
           "No wallet connected.\n\n" +
