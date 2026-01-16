@@ -15,8 +15,7 @@ import { PurchaseStep, PurchaseSteps } from "../models/index.js";
 import type { DetermineAssetToBuyUseCase } from "./DetermineAssetToBuyUseCase.js";
 import { MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";
 import type { OperationLockRepository } from "../repositories/OperationLockRepository.js";
-
-const OPERATION_LOCK_TTL_MS = 15 * 60 * 1000;
+import { BalanceOperationLock } from "./BalanceOperationLock.js";
 
 export class ExecutePurchaseUseCase {
   constructor(
@@ -66,10 +65,10 @@ export class ExecutePurchaseUseCase {
       return;
     }
 
-    const lockKey = this.getLockKey(telegramId);
+    const lockKey = BalanceOperationLock.getKey(telegramId);
     const lockAcquired = await this.operationLockRepository.acquire(
       lockKey,
-      OPERATION_LOCK_TTL_MS,
+      BalanceOperationLock.TTL_MS,
       Date.now(),
     );
 
@@ -184,7 +183,4 @@ export class ExecutePurchaseUseCase {
     }
   }
 
-  private getLockKey(telegramId: TelegramId): string {
-    return `tg:${telegramId.value}:balance_mutation`;
-  }
 }

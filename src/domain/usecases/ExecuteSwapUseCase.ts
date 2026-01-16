@@ -24,9 +24,9 @@ import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
 import { MIN_SOL_AMOUNT, MIN_USDC_AMOUNT, MAX_USDC_AMOUNT, MAX_PRICE_IMPACT_BPS } from "../constants.js";
+import { BalanceOperationLock } from "./BalanceOperationLock.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
-const OPERATION_LOCK_TTL_MS = 15 * 60 * 1000;
 
 export class ExecuteSwapUseCase {
   constructor(
@@ -99,13 +99,13 @@ export class ExecuteSwapUseCase {
       return;
     }
     const shouldSkipLock = options.skipLock ?? false;
-    const lockKey = this.getLockKey(telegramId);
+    const lockKey = BalanceOperationLock.getKey(telegramId);
     let lockAcquired = false;
 
     if (!shouldSkipLock) {
       lockAcquired = await this.operationLockRepository.acquire(
         lockKey,
-        OPERATION_LOCK_TTL_MS,
+        BalanceOperationLock.TTL_MS,
         Date.now(),
       );
 
@@ -318,7 +318,4 @@ export class ExecuteSwapUseCase {
     });
   }
 
-  private getLockKey(telegramId: TelegramId): string {
-    return `tg:${telegramId.value}:balance_mutation`;
-  }
 }
