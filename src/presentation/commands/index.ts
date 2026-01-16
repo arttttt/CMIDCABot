@@ -23,28 +23,31 @@ export { routeCommand, prefixCallbacks, findCallbackByPath } from "./router.js";
 // Definitions
 export { Definitions, type DefinitionKey } from "./definitions.js";
 
-// Command factories
+// Command factories (exporting types from dependencies)
+export type {
+  WalletCommandDeps,
+  DcaCommandDeps,
+  PortfolioCommandDeps,
+  PricesCommandDeps,
+  SwapCommandDeps,
+  AdminCommandDeps,
+  StartCommandDeps,
+  VersionCommandDeps,
+  HelpCommandDeps,
+  HelpCommandExternalDeps,
+} from "./dependencies.js";
+
 export {
-  createWalletCommand,
-  createDcaCommand,
-  createPortfolioCommand,
-  createPricesCommand,
-  createSwapCommand,
-  createAdminCommand,
-  createStartCommand,
-  createVersionCommand,
-  createHelpCommand,
-  type WalletCommandDeps,
-  type DcaCommandDeps,
-  type PortfolioCommandDeps,
-  type PricesCommandDeps,
-  type SwapCommandDeps,
-  type AdminCommandDeps,
-  type StartCommandDeps,
-  type VersionCommandDeps,
-  type HelpCommandDeps,
-  type HelpCommandExternalDeps,
-} from "./handlers.js";
+  WalletCommand,
+  DcaCommand,
+  PortfolioCommand,
+  PricesCommand,
+  SwapCommand,
+  AdminCommand,
+  StartCommand,
+  VersionCommand,
+  HelpCommand,
+} from "./handlers/index.js";
 
 // Registries
 export { DevCommandRegistry, type DevCommandRegistryDeps } from "./DevCommandRegistry.js";

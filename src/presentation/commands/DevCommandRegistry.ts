@@ -7,15 +7,6 @@
 
 import { CommandRegistry, Command, ModeInfo } from "./types.js";
 import {
-  createWalletCommand,
-  createDcaCommand,
-  createPortfolioCommand,
-  createPricesCommand,
-  createSwapCommand,
-  createAdminCommand,
-  createStartCommand,
-  createVersionCommand,
-  createHelpCommand,
   WalletCommandDeps,
   DcaCommandDeps,
   PortfolioCommandDeps,
@@ -25,7 +16,18 @@ import {
   StartCommandDeps,
   VersionCommandDeps,
   HelpCommandExternalDeps,
-} from "./handlers.js";
+} from "./dependencies.js";
+import {
+  WalletCommand,
+  DcaCommand,
+  PortfolioCommand,
+  PricesCommand,
+  SwapCommand,
+  AdminCommand,
+  StartCommand,
+  VersionCommand,
+  HelpCommand,
+} from "./handlers/index.js";
 import { prefixCallbacks } from "./router.js";
 
 /**
@@ -59,20 +61,20 @@ export class DevCommandRegistry implements CommandRegistry {
 
   constructor(deps: DevCommandRegistryDeps) {
     // Create help command with lazy registry reference to break circular dependency
-    const helpCommand = createHelpCommand({
+    const helpCommand = new HelpCommand({
       ...deps.help,
       getRegistry: () => this,
     });
 
-    this.commands = new Map([
-      ["start", createStartCommand(deps.start)],
-      ["wallet", createWalletCommand(deps.wallet)],
-      ["portfolio", createPortfolioCommand(deps.portfolio)],
-      ["dca", createDcaCommand(deps.dca)],
-      ["prices", createPricesCommand(deps.prices)],
-      ["swap", createSwapCommand(deps.swap)],
-      ["admin", createAdminCommand(deps.admin)],
-      ["version", createVersionCommand(deps.version)],
+    this.commands = new Map<string, Command>([
+      ["start", new StartCommand(deps.start)],
+      ["wallet", new WalletCommand(deps.wallet)],
+      ["portfolio", new PortfolioCommand(deps.portfolio)],
+      ["dca", new DcaCommand(deps.dca)],
+      ["prices", new PricesCommand(deps.prices)],
+      ["swap", new SwapCommand(deps.swap)],
+      ["admin", new AdminCommand(deps.admin)],
+      ["version", new VersionCommand(deps.version)],
       ["help", helpCommand],
     ]);
     prefixCallbacks(this.commands);
