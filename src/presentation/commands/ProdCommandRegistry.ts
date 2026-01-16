@@ -7,19 +7,21 @@
 
 import { CommandRegistry, Command } from "./types.js";
 import {
-  createWalletCommand,
-  createAdminCommand,
-  createStartCommand,
-  createPortfolioCommand,
-  createVersionCommand,
-  createHelpCommand,
   WalletCommandDeps,
   AdminCommandDeps,
   StartCommandDeps,
   PortfolioCommandDeps,
   VersionCommandDeps,
   HelpCommandExternalDeps,
-} from "./handlers.js";
+} from "./dependencies.js";
+import {
+  WalletCommand,
+  AdminCommand,
+  StartCommand,
+  PortfolioCommand,
+  VersionCommand,
+  HelpCommand,
+} from "./handlers/index.js";
 import { prefixCallbacks } from "./router.js";
 
 /**
@@ -49,17 +51,17 @@ export class ProdCommandRegistry implements CommandRegistry {
 
   constructor(deps: ProdCommandRegistryDeps) {
     // Create help command with lazy registry reference to break circular dependency
-    const helpCommand = createHelpCommand({
+    const helpCommand = new HelpCommand({
       ...deps.help,
       getRegistry: () => this,
     });
 
-    this.commands = new Map([
-      ["start", createStartCommand(deps.start)],
-      ["wallet", createWalletCommand(deps.wallet)],
-      ["portfolio", createPortfolioCommand(deps.portfolio)],
-      ["admin", createAdminCommand(deps.admin)],
-      ["version", createVersionCommand(deps.version)],
+    this.commands = new Map<string, Command>([
+      ["start", new StartCommand(deps.start)],
+      ["wallet", new WalletCommand(deps.wallet)],
+      ["portfolio", new PortfolioCommand(deps.portfolio)],
+      ["admin", new AdminCommand(deps.admin)],
+      ["version", new VersionCommand(deps.version)],
       ["help", helpCommand],
     ]);
     prefixCallbacks(this.commands);
