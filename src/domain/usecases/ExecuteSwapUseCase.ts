@@ -57,12 +57,30 @@ export class ExecuteSwapUseCase {
       asset,
     });
 
-    // Check if swap repository is available
-    if (!this.swapRepository) {
-      logger.warn("ExecuteSwap", "Swap repository unavailable");
-      yield SwapSteps.completed({ status: "unavailable" });
-      return;
+    const shouldSkipLock = options.skipLock ?? false;
+    const lockKey = BalanceOperationLock.getKey(telegramId);
+    let lockAcquired = false;
+
+    if (!shouldSkipLock) {
+      lockAcquired = await this.operationLockRepository.acquire(
+        lockKey,
+        BalanceOperationLock.TTL_MS,
+        Date.now(),
+      );
+
+      if (!lockAcquired) {
+        yield SwapSteps.completed({ status: "operation_in_progress" });
+        return;
+      }
     }
+
+    // Check if swap repository is available
+    try {
+      if (!this.swapRepository) {
+        logger.warn("ExecuteSwap", "Swap repository unavailable");
+        yield SwapSteps.completed({ status: "unavailable" });
+        return;
+      }
 
     // Validate amount
     if (isNaN(amountUsdc) || amountUsdc <= 0) {
@@ -98,24 +116,6 @@ export class ExecuteSwapUseCase {
       });
       return;
     }
-    const shouldSkipLock = options.skipLock ?? false;
-    const lockKey = BalanceOperationLock.getKey(telegramId);
-    let lockAcquired = false;
-
-    if (!shouldSkipLock) {
-      lockAcquired = await this.operationLockRepository.acquire(
-        lockKey,
-        BalanceOperationLock.TTL_MS,
-        Date.now(),
-      );
-
-      if (!lockAcquired) {
-        yield SwapSteps.completed({ status: "operation_in_progress" });
-        return;
-      }
-    }
-
-    try {
       yield* this.executeInternal(telegramId, amountUsdc, assetUpper);
     } finally {
       if (!shouldSkipLock && lockAcquired) {

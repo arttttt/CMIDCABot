@@ -39,32 +39,6 @@ export class ExecutePurchaseUseCase {
       amountUsdc,
     });
 
-    // Validate amount
-    if (isNaN(amountUsdc) || amountUsdc <= 0) {
-      logger.warn("ExecutePurchase", "Invalid amount", { amountUsdc });
-      yield PurchaseSteps.completed({ type: "invalid_amount" });
-      return;
-    }
-
-    // Defense-in-depth: validate amount here for fast feedback to user,
-    // even though ExecuteSwapUseCase will also validate.
-    // This prevents unnecessary asset selection when amount is clearly invalid.
-    if (amountUsdc < MIN_USDC_AMOUNT) {
-      yield PurchaseSteps.completed({
-        type: "invalid_amount",
-        error: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
-      });
-      return;
-    }
-
-    if (amountUsdc > MAX_USDC_AMOUNT) {
-      yield PurchaseSteps.completed({
-        type: "invalid_amount",
-        error: `Maximum amount is ${MAX_USDC_AMOUNT} USDC`,
-      });
-      return;
-    }
-
     const lockKey = BalanceOperationLock.getKey(telegramId);
     const lockAcquired = await this.operationLockRepository.acquire(
       lockKey,
@@ -78,6 +52,32 @@ export class ExecutePurchaseUseCase {
     }
 
     try {
+      // Validate amount
+      if (isNaN(amountUsdc) || amountUsdc <= 0) {
+        logger.warn("ExecutePurchase", "Invalid amount", { amountUsdc });
+        yield PurchaseSteps.completed({ type: "invalid_amount" });
+        return;
+      }
+
+      // Defense-in-depth: validate amount here for fast feedback to user,
+      // even though ExecuteSwapUseCase will also validate.
+      // This prevents unnecessary asset selection when amount is clearly invalid.
+      if (amountUsdc < MIN_USDC_AMOUNT) {
+        yield PurchaseSteps.completed({
+          type: "invalid_amount",
+          error: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
+        });
+        return;
+      }
+
+      if (amountUsdc > MAX_USDC_AMOUNT) {
+        yield PurchaseSteps.completed({
+          type: "invalid_amount",
+          error: `Maximum amount is ${MAX_USDC_AMOUNT} USDC`,
+        });
+        return;
+      }
+
       // Step: Selecting asset
       yield PurchaseSteps.selectingAsset();
 
