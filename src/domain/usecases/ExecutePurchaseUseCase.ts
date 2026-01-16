@@ -15,7 +15,7 @@ import { PurchaseStep, PurchaseSteps } from "../models/index.js";
 import type { DetermineAssetToBuyUseCase } from "./DetermineAssetToBuyUseCase.js";
 import { MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";
 import type { OperationLockRepository } from "../repositories/OperationLockRepository.js";
-import { BalanceOperationLock } from "./BalanceOperationLock.js";
+import { BalanceOperationLock } from "../constants/BalanceOperationLock.js";
 
 export class ExecutePurchaseUseCase {
   constructor(

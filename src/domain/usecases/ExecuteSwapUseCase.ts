@@ -24,7 +24,7 @@ import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
 import { MIN_SOL_AMOUNT, MIN_USDC_AMOUNT, MAX_USDC_AMOUNT, MAX_PRICE_IMPACT_BPS } from "../constants.js";
-import { BalanceOperationLock } from "./BalanceOperationLock.js";
+import { BalanceOperationLock } from "../constants/BalanceOperationLock.js";
 
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 

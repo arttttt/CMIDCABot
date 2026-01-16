@@ -8,6 +8,7 @@
 src/
 ├── domain/
 │   ├── models/              # entities
+│   ├── constants/           # shared domain constants
 │   ├── policies/            # pure domain rules (no I/O)
 │   ├── usecases/            # business logic
 │   └── repositories/        # interfaces (ports)

@@ -14,6 +14,7 @@
 - Small modules — single responsibility
 - Utility functions — class with static methods (not top-level exports)
 - Use cases expose a single public method: `execute`
+- Domain-level constants belong in `src/domain/constants/`
 
 ### Naming
 
