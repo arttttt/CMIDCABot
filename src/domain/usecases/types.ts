@@ -56,7 +56,7 @@ export interface GetWalletInfoResult {
 }
 
 export interface CreateWalletResult {
-  type: "created" | "already_exists";
+  type: "created" | "already_exists" | "operation_in_progress";
   wallet?: DcaWalletInfo;
   /** One-time URL to view seed phrase securely - only returned when type="created" */
   seedUrl?: string;

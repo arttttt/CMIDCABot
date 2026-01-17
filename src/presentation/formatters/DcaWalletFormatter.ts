@@ -90,6 +90,12 @@ export class DcaWalletFormatter {
             `\n\nTo create a new wallet, first delete the existing one with /wallet delete.`,
         );
 
+      case "operation_in_progress":
+        return new ClientResponse(
+          `Wallet creation is already in progress.\n\n` +
+            `Please try again in about a minute.`,
+        );
+
       default:
         return new ClientResponse("Unable to create wallet.");
     }
