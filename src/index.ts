@@ -237,6 +237,7 @@ async function main(): Promise<void> {
     blockchainRepository,
     getWalletInfoByAddress,
     getWalletInfoByPrivateKey,
+    operationLockRepository,
     secretStore,
   );
   const importWallet = new ImportWalletUseCase(
