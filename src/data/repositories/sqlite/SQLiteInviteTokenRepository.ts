@@ -1,6 +1,10 @@
 /**
  * SQLite implementation of InviteToken repository using Kysely
+ *
+ * Tokens are stored as SHA-256 hashes: a leaked auth.db must not
+ * expose usable invite links. Lookups hash the incoming plaintext.
  */
+import { createHash } from "node:crypto";
 import { Kysely, sql, Selectable } from "kysely";
 import { InviteTokenRepository } from "../../../domain/repositories/InviteTokenRepository.js";
 import { InviteToken } from "../../../domain/models/InviteToken.js";
@@ -19,7 +23,7 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository, Clean
    */
   private rowToModel(row: InviteTokenRow): InviteToken {
     return {
-      token: row.token,
+      tokenHash: row.token,
       role: row.role as UserRole,
       createdBy: new TelegramId(row.created_by),
       createdAt: new Date(row.created_at),
@@ -33,7 +37,7 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository, Clean
     await this.db
       .insertInto("invite_tokens")
       .values({
-        token,
+        token: this.hashToken(token),
         role,
         created_by: createdBy.value,
         expires_at: expiresAt.toISOString(),
@@ -45,7 +49,7 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository, Clean
     const row = await this.db
       .selectFrom("invite_tokens")
       .selectAll()
-      .where("token", "=", token)
+      .where("token", "=", this.hashToken(token))
       .executeTakeFirst();
 
     if (!row) return undefined;
@@ -59,7 +63,7 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository, Clean
         used_by: usedBy.value,
         used_at: sql`CURRENT_TIMESTAMP`,
       })
-      .where("token", "=", token)
+      .where("token", "=", this.hashToken(token))
       .where("used_by", "is", null)
       .executeTakeFirst();
 
@@ -85,5 +89,9 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository, Clean
       .execute();
 
     return rows.map((row) => this.rowToModel(row));
+  }
+
+  private hashToken(token: string): string {
+    return createHash("sha256").update(token).digest("hex");
   }
 }

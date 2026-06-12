@@ -26,7 +26,7 @@ export interface AuthorizedUsersTable {
  * Invite tokens table
  */
 export interface InviteTokensTable {
-  token: string;
+  token: string; // SHA-256 hex of the token; plaintext is never stored
   role: string; // 'admin' | 'user'
   created_by: number;
   created_at: Generated<string>;
