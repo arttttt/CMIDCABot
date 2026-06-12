@@ -8,8 +8,8 @@ import type { TelegramId } from "./id/index.js";
  * Invite token - represents a one-time authorization link
  */
 export interface InviteToken {
-  /** Unique token string (base64url, 16+ characters) */
-  token: string;
+  /** SHA-256 hex of the token. The plaintext token lives only in the invite link. */
+  tokenHash: string;
   /** Role to assign when activated */
   role: UserRole;
   /** Telegram ID of the user who created the invite */
