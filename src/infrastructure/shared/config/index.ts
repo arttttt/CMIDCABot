@@ -12,7 +12,6 @@ export {
   type EncryptionConfig,
   type AuthConfig,
   type PriceConfig,
-  type PriceSource,
   type RateLimitConfig,
   type MarketConfig,
   type MarketBackfillSource,

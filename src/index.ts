@@ -564,7 +564,7 @@ async function main(): Promise<void> {
     console.log(`Bot: @${botInfo.username}`);
     console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
     console.log(`Mode: ${transportModeLabel}`);
-    console.log(`Prices: ${config.price.source === "jupiter" ? "Jupiter API (real-time)" : "Mock (static)"}`);
+    console.log("Prices: Jupiter API (real-time)");
     console.log(`Secret links: ${config.http.publicUrl}/secret/{token}`);
     console.log(`Import links: ${config.http.publicUrl}/import/{token}`);
     console.log("─".repeat(50));

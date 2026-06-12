@@ -40,8 +40,7 @@ const envSchema = z
     WEBHOOK_SECRET: z.string().optional(),
 
     // Price
-    PRICE_SOURCE: z.enum(["jupiter", "mock"]).default("jupiter"),
-    JUPITER_API_KEY: z.string().optional(),
+    JUPITER_API_KEY: z.string().min(1, "JUPITER_API_KEY is required"),
 
     // Rate limiting
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
@@ -55,15 +54,6 @@ const envSchema = z
   })
   .superRefine((data, ctx) => {
     const isDev = data.NODE_ENV !== "production";
-
-    // JUPITER_API_KEY required when PRICE_SOURCE=jupiter
-    if (data.PRICE_SOURCE === "jupiter" && !data.JUPITER_API_KEY) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "JUPITER_API_KEY is required when PRICE_SOURCE is 'jupiter'",
-        path: ["JUPITER_API_KEY"],
-      });
-    }
 
     // WEBHOOK_URL required and must be HTTPS when BOT_TRANSPORT=webhook
     if (data.BOT_TRANSPORT === "webhook") {
@@ -104,7 +94,6 @@ type ValidatedEnv = z.infer<typeof envSchema>;
  * The transformation happens in envToConfig().
  */
 export type TransportMode = "polling" | "webhook";
-export type PriceSource = "jupiter" | "mock";
 
 export interface TelegramConfig {
   botToken: string;
@@ -140,8 +129,7 @@ export interface AuthConfig {
 }
 
 export interface PriceConfig {
-  source: PriceSource;
-  jupiterApiKey?: string;
+  jupiterApiKey: string;
 }
 
 export interface RateLimitConfig {
@@ -190,7 +178,6 @@ function envToConfig(env: ValidatedEnv): Config {
       masterKey: env.MASTER_ENCRYPTION_KEY,
     },
     price: {
-      source: env.PRICE_SOURCE,
       jupiterApiKey: env.JUPITER_API_KEY,
     },
     auth: {

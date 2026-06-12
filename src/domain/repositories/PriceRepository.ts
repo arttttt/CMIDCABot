@@ -18,13 +18,8 @@ export interface AssetPrices {
 }
 
 /**
- * Price source type
- */
-export type PriceSource = "jupiter" | "mock";
-
-/**
  * Port for fetching asset prices.
- * Domain layer depends on this interface, not on concrete Jupiter/mock implementation.
+ * Domain layer depends on this interface, not on the concrete Jupiter implementation.
  */
 export interface PriceRepository {
   /**
@@ -43,11 +38,6 @@ export interface PriceRepository {
    * Convenient for use cases that need just the numbers
    */
   getPricesRecord(): Promise<Record<AssetSymbol, number>>;
-
-  /**
-   * Get the price source type (jupiter or mock)
-   */
-  getPriceSource(): PriceSource;
 
   /**
    * Clear price cache (if any)

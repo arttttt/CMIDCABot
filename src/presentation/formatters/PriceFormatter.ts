@@ -16,9 +16,8 @@ export class PriceFormatter {
       return new ClientResponse(`❌ Failed to fetch prices: ${Markdown.escape(result.message ?? "")}`);
     }
 
-    const { prices, source, fetchedAt } = result;
+    const { prices, fetchedAt } = result;
 
-    const sourceLabel = source === "jupiter" ? "🌐 Jupiter API" : "📊 Mock (static)";
     const timeStr = fetchedAt.toLocaleTimeString();
 
     const lines = [
@@ -26,7 +25,6 @@ export class PriceFormatter {
       "",
       ...prices.map((p) => `• *${Markdown.escape(p.symbol)}*: $${this.formatPrice(p.priceUsd)}`),
       "",
-      `Source: ${sourceLabel}`,
       `Updated: ${timeStr}`,
     ];
 
