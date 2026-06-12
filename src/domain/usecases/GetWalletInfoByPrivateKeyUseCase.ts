@@ -3,7 +3,7 @@
  */
 
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
-import type { DcaWalletInfo } from "./types.js";
+import type { WalletInfo } from "./types.js";
 import { GetWalletBalancesUseCase } from "./GetWalletBalancesUseCase.js";
 
 export class GetWalletInfoByPrivateKeyUseCase {
@@ -16,7 +16,7 @@ export class GetWalletInfoByPrivateKeyUseCase {
    * Get wallet info from plaintext private key.
    * Used for newly created/imported wallets before encryption.
    */
-  async execute(privateKeyBase64: string): Promise<DcaWalletInfo> {
+  async execute(privateKeyBase64: string): Promise<WalletInfo> {
     const address = await this.blockchainRepository.getAddressFromPrivateKey(privateKeyBase64);
     const { balance, usdcBalance } = await this.getWalletBalancesUseCase.execute(address);
 

@@ -70,7 +70,7 @@ import {
   type CommandRegistry,
 } from "./presentation/commands/index.js";
 import {
-  DcaWalletFormatter,
+  WalletFormatter,
   PortfolioFormatter,
   PurchaseFormatter,
   PriceFormatter,
@@ -287,7 +287,7 @@ async function main(): Promise<void> {
   const activateInvite = new ActivateInviteUseCase(inviteTokenRepository, authRepository);
 
   // Create formatters
-  const dcaWalletFormatter = new DcaWalletFormatter();
+  const walletFormatter = new WalletFormatter();
   const portfolioFormatter = new PortfolioFormatter();
   const purchaseFormatter = new PurchaseFormatter();
   const priceFormatter = new PriceFormatter();
@@ -350,7 +350,7 @@ async function main(): Promise<void> {
           importWallet,
           deleteWallet,
           exportWalletKey,
-          formatter: dcaWalletFormatter,
+          formatter: walletFormatter,
           importSessionStore: withImportSession,
         },
         portfolio: {
@@ -396,7 +396,7 @@ async function main(): Promise<void> {
           importWallet,
           deleteWallet,
           exportWalletKey,
-          formatter: dcaWalletFormatter,
+          formatter: walletFormatter,
           importSessionStore: withImportSession,
         },
         portfolio: {

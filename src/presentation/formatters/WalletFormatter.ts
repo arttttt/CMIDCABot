@@ -1,5 +1,5 @@
 /**
- * DCA Wallet formatter - domain objects to UI response
+ * Wallet formatter - domain objects to UI response
  */
 
 import {
@@ -8,13 +8,13 @@ import {
   ImportWalletResult,
   DeleteWalletResult,
   ExportKeyResult,
-  DcaWalletInfo,
+  WalletInfo,
 } from "../../domain/usecases/types.js";
 import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 
-export class DcaWalletFormatter {
-  private formatWalletInfo(wallet: DcaWalletInfo): string {
+export class WalletFormatter {
+  private formatWalletInfo(wallet: WalletInfo): string {
     const lines: string[] = [];
 
     lines.push(`Address: ${Markdown.code(wallet.address.value)}`);

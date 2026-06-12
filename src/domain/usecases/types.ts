@@ -31,8 +31,8 @@ export interface InitUserResult {
   type: "success";
 }
 
-// DCA Wallet types
-export interface DcaWalletInfo {
+// Wallet types
+export interface WalletInfo {
   address: WalletAddress;
   balance: number | null;
   usdcBalance: number | null;
@@ -40,12 +40,12 @@ export interface DcaWalletInfo {
 
 export interface GetWalletInfoResult {
   type: "success" | "no_wallet";
-  wallet?: DcaWalletInfo;
+  wallet?: WalletInfo;
 }
 
 export interface CreateWalletResult {
   type: "created" | "already_exists" | "operation_in_progress";
-  wallet?: DcaWalletInfo;
+  wallet?: WalletInfo;
   /** One-time URL to view seed phrase securely - only returned when type="created" */
   seedUrl?: string;
 }
@@ -62,7 +62,7 @@ export interface ExportKeyResult {
 
 export interface ImportWalletResult {
   type: "imported" | "already_exists" | "invalid_key";
-  wallet?: DcaWalletInfo;
+  wallet?: WalletInfo;
   error?: string;
 }
 

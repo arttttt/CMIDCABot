@@ -28,7 +28,7 @@ import type {
 } from "../../domain/repositories/index.js";
 
 import {
-    DcaWalletFormatter,
+    WalletFormatter,
     PortfolioFormatter,
     PurchaseFormatter,
     PriceFormatter,
@@ -54,7 +54,7 @@ export interface WalletCommandDeps {
     importWallet: ImportWalletUseCase;
     deleteWallet: DeleteWalletUseCase;
     exportWalletKey: ExportWalletKeyUseCase;
-    formatter: DcaWalletFormatter;
+    formatter: WalletFormatter;
     importSessionStore: ImportSessionRepository;
 }
 
