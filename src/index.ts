@@ -63,6 +63,7 @@ import {
   CollectMarketDataUseCase,
   AnalyzeMarketUseCase,
   GetMarketDigestUseCase,
+  GetMarketStatusUseCase,
   BackfillPriceHistoryUseCase,
 } from "./domain/usecases/index.js";
 import type { ImportSessionRepository } from "./domain/repositories/index.js";
@@ -314,6 +315,10 @@ async function main(): Promise<void> {
   const adminFormatter = new AdminFormatter();
   const progressFormatter = new ProgressFormatter();
   const helpFormatter = new HelpFormatter();
+  const marketFormatter = new MarketFormatter();
+
+  // Create market status use case (read-only, works with or without price source)
+  const getMarketStatus = new GetMarketStatusUseCase(priceRepository, priceHistoryRepository);
 
   // Helper function to build registry and handler
   function createRegistryAndHandler(withImportSession: ImportSessionRepository, botUsername?: string) {
@@ -388,6 +393,10 @@ async function main(): Promise<void> {
           getPrices,
           formatter: priceFormatter,
         },
+        market: {
+          getMarketStatus,
+          formatter: marketFormatter,
+        },
         swap: {
           getQuote,
           executeSwap: executeSwapUseCase,
@@ -425,6 +434,10 @@ async function main(): Promise<void> {
           confirmationRepository,
           confirmationFormatter,
           swapRepository,
+        },
+        market: {
+          getMarketStatus,
+          formatter: marketFormatter,
         },
         admin: adminDeps,
         version: versionDeps,
@@ -482,7 +495,7 @@ async function main(): Promise<void> {
       getMarketDigest: new GetMarketDigestUseCase(priceHistoryRepository),
       getAllAuthorizedUsers,
       messageSender,
-      marketFormatter: new MarketFormatter(),
+      marketFormatter,
       digestHourUtc: config.market.digestHourUtc,
     });
 

@@ -11,6 +11,7 @@ import {
   AdminCommandDeps,
   StartCommandDeps,
   PortfolioCommandDeps,
+  MarketCommandDeps,
   VersionCommandDeps,
   HelpCommandExternalDeps,
 } from "./dependencies.js";
@@ -19,6 +20,7 @@ import {
   AdminCommand,
   StartCommand,
   PortfolioCommand,
+  MarketCommand,
   VersionCommand,
   HelpCommand,
 } from "./handlers/index.js";
@@ -31,6 +33,7 @@ export interface ProdCommandRegistryDeps {
   start: StartCommandDeps;
   wallet: WalletCommandDeps;
   portfolio: PortfolioCommandDeps;
+  market: MarketCommandDeps;
   admin: AdminCommandDeps;
   version: VersionCommandDeps;
   help: HelpCommandExternalDeps;
@@ -42,6 +45,7 @@ export interface ProdCommandRegistryDeps {
  * Command set:
  * - wallet: Wallet management
  * - portfolio: Portfolio status and buy operations
+ * - market: Market status and active buy signals
  * - admin: User management (requires admin privileges)
  *
  * Other commands (dca, prices, swap) require dev mode.
@@ -60,6 +64,7 @@ export class ProdCommandRegistry implements CommandRegistry {
       ["start", new StartCommand(deps.start)],
       ["wallet", new WalletCommand(deps.wallet)],
       ["portfolio", new PortfolioCommand(deps.portfolio)],
+      ["market", new MarketCommand(deps.market)],
       ["admin", new AdminCommand(deps.admin)],
       ["version", new VersionCommand(deps.version)],
       ["help", helpCommand],

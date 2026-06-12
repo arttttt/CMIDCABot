@@ -38,6 +38,11 @@ export const Definitions = {
     description: "Current prices for BTC, ETH, SOL",
   },
 
+  market: {
+    name: "market",
+    description: "Current market status and active buy signals",
+  },
+
   swap: {
     name: "swap",
     description: "Swap USDC to assets (quote/execute)",

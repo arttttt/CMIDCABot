@@ -11,6 +11,7 @@ import {
   DcaCommandDeps,
   PortfolioCommandDeps,
   PricesCommandDeps,
+  MarketCommandDeps,
   SwapCommandDeps,
   AdminCommandDeps,
   StartCommandDeps,
@@ -22,6 +23,7 @@ import {
   DcaCommand,
   PortfolioCommand,
   PricesCommand,
+  MarketCommand,
   SwapCommand,
   AdminCommand,
   StartCommand,
@@ -39,6 +41,7 @@ export interface DevCommandRegistryDeps {
   dca: DcaCommandDeps;
   portfolio: PortfolioCommandDeps;
   prices: PricesCommandDeps;
+  market: MarketCommandDeps;
   swap: SwapCommandDeps;
   admin: AdminCommandDeps;
   version: VersionCommandDeps;
@@ -53,6 +56,7 @@ export interface DevCommandRegistryDeps {
  * - portfolio: Portfolio status and buy operations
  * - dca: Automatic purchases scheduling
  * - prices: Current asset prices
+ * - market: Market status and active buy signals
  * - swap: Quote/simulate/execute swaps
  * - admin: User management (requires admin privileges)
  */
@@ -72,6 +76,7 @@ export class DevCommandRegistry implements CommandRegistry {
       ["portfolio", new PortfolioCommand(deps.portfolio)],
       ["dca", new DcaCommand(deps.dca)],
       ["prices", new PricesCommand(deps.prices)],
+      ["market", new MarketCommand(deps.market)],
       ["swap", new SwapCommand(deps.swap)],
       ["admin", new AdminCommand(deps.admin)],
       ["version", new VersionCommand(deps.version)],

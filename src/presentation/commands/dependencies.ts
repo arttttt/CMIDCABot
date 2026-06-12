@@ -12,6 +12,7 @@ import {
     ExecutePurchaseUseCase,
     DetermineAssetToBuyUseCase,
     GetPricesUseCase,
+    GetMarketStatusUseCase,
     GetQuoteUseCase,
     ExecuteSwapUseCase,
     GenerateInviteUseCase,
@@ -42,6 +43,7 @@ import {
     ProgressFormatter,
     ConfirmationFormatter,
     HelpFormatter,
+    MarketFormatter,
 } from "../formatters/index.js";
 
 import { CommandRegistry } from "./types.js";
@@ -83,6 +85,11 @@ export interface PortfolioCommandDeps {
 export interface PricesCommandDeps {
     getPrices: GetPricesUseCase;
     formatter: PriceFormatter;
+}
+
+export interface MarketCommandDeps {
+    getMarketStatus: GetMarketStatusUseCase;
+    formatter: MarketFormatter;
 }
 
 export interface SwapCommandDeps {

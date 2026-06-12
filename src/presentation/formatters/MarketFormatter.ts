@@ -3,7 +3,8 @@
  */
 
 import type { MarketSignal } from "../../domain/models/MarketSignal.js";
-import type { MarketDigest } from "../../domain/models/MarketDigest.js";
+import type { AssetMarketStats, MarketDigest } from "../../domain/models/MarketDigest.js";
+import type { GetMarketStatusResult } from "../../domain/usecases/GetMarketStatusUseCase.js";
 import { ClientResponse } from "../protocol/types.js";
 
 export class MarketFormatter {
@@ -30,14 +31,55 @@ export class MarketFormatter {
     const lines = ["📊 *Daily market digest*", ""];
 
     for (const asset of digest.assets) {
-      const parts = [`• *${asset.symbol}*: $${this.formatPrice(asset.price)}`];
-      if (asset.change24hPct !== null) parts.push(`24h ${this.formatChange(asset.change24hPct)}`);
-      if (asset.change7dPct !== null) parts.push(`7d ${this.formatChange(asset.change7dPct)}`);
-      if (asset.rsi !== null) parts.push(`RSI ${asset.rsi.toFixed(0)}`);
-      lines.push(parts.join(" | "));
+      lines.push(this.formatAssetLine(asset));
     }
 
     return new ClientResponse(lines.join("\n"));
+  }
+
+  /**
+   * Format the on-demand market status (/market command)
+   */
+  formatStatus(result: GetMarketStatusResult): ClientResponse {
+    if (result.status === "unavailable") {
+      return new ClientResponse("❌ Market status is not available (price source is not configured)");
+    }
+
+    if (result.status === "error") {
+      return new ClientResponse(`❌ Failed to fetch market status: ${result.message}`);
+    }
+
+    const { assets, activeSignals } = result.market;
+    const lines = ["📈 *Market status*", ""];
+
+    for (const asset of assets) {
+      lines.push(this.formatAssetLine(asset));
+    }
+
+    if (assets.some((a) => a.change24hPct === null || a.change7dPct === null || a.rsi === null)) {
+      lines.push("");
+      lines.push("_Some stats are still collecting history._");
+    }
+
+    lines.push("");
+    if (activeSignals.length > 0) {
+      lines.push("🔔 *Active signals:*");
+      for (const signal of activeSignals) {
+        lines.push(this.formatSignalLine(signal));
+      }
+    } else {
+      lines.push("No active buy signals.");
+    }
+
+    return new ClientResponse(lines.join("\n"));
+  }
+
+  private formatAssetLine(asset: AssetMarketStats): string {
+    const parts = [`• *${asset.symbol}*: $${this.formatPrice(asset.price)}`];
+    if (asset.change24hPct !== null) parts.push(`24h ${this.formatChange(asset.change24hPct)}`);
+    if (asset.change7dPct !== null) parts.push(`7d ${this.formatChange(asset.change7dPct)}`);
+    if (asset.rsi !== null) parts.push(`RSI ${asset.rsi.toFixed(0)}`);
+    return parts.join(" | ");
   }
 
   private formatSignalLine(signal: MarketSignal): string {

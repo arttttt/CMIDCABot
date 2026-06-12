@@ -2,6 +2,7 @@ export * from "./WalletCommand.js";
 export * from "./DcaCommand.js";
 export * from "./PortfolioCommand.js";
 export * from "./PricesCommand.js";
+export * from "./MarketCommand.js";
 export * from "./SwapCommand.js";
 export * from "./AdminCommand.js";
 export * from "./StartCommand.js";
