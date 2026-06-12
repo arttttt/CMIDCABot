@@ -57,4 +57,18 @@ function initMainSchema(db: Kysely<MainDatabase>): void {
   sql`
     CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(telegram_id)
   `.execute(db);
+
+  sql`
+    CREATE TABLE IF NOT EXISTS price_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      asset_symbol TEXT NOT NULL,
+      price_usdc REAL NOT NULL,
+      timestamp_ms INTEGER NOT NULL,
+      source TEXT NOT NULL
+    )
+  `.execute(db);
+
+  sql`
+    CREATE INDEX IF NOT EXISTS idx_price_history_asset_ts ON price_history(asset_symbol, timestamp_ms)
+  `.execute(db);
 }

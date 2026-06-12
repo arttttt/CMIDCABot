@@ -52,3 +52,9 @@ export { RemoveAuthorizedUserUseCase, type RemoveAuthorizedUserResult } from "./
 export { UpdateUserRoleUseCase, type UpdateUserRoleResult } from "./UpdateUserRoleUseCase.js";
 export { GetAllAuthorizedUsersUseCase, type GetAllAuthorizedUsersResult } from "./GetAllAuthorizedUsersUseCase.js";
 export { GetUserRoleUseCase } from "./GetUserRoleUseCase.js";
+
+// Market monitor
+export { CollectMarketDataUseCase } from "./CollectMarketDataUseCase.js";
+export { AnalyzeMarketUseCase } from "./AnalyzeMarketUseCase.js";
+export { GetMarketDigestUseCase } from "./GetMarketDigestUseCase.js";
+export { BackfillPriceHistoryUseCase } from "./BackfillPriceHistoryUseCase.js";

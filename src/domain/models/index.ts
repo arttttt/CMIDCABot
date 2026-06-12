@@ -14,3 +14,6 @@ export * from "./UserIdentity.js";
 export * from "./OwnerConfig.js";
 export * from "./ConfirmationSession.js";
 export * from "./quote/SwapQuote.js";
+export * from "./PricePoint.js";
+export * from "./MarketSignal.js";
+export * from "./MarketDigest.js";

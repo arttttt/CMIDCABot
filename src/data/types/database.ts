@@ -9,6 +9,7 @@ import type { Generated } from "kysely";
 export interface MainDatabase {
   users: UsersTable;
   transactions: TransactionsTable;
+  price_history: PriceHistoryTable;
 }
 
 /**
@@ -34,4 +35,15 @@ export interface TransactionsTable {
   amount_usdc: number;
   amount_asset: number;
   created_at: Generated<string>;
+}
+
+/**
+ * Price history table (market monitor)
+ */
+export interface PriceHistoryTable {
+  id: Generated<number>;
+  asset_symbol: string;
+  price_usdc: number;
+  timestamp_ms: number;
+  source: string; // 'live' | 'backfill'
 }

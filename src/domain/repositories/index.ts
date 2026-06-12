@@ -14,3 +14,5 @@ export * from "./ImportSessionRepository.js";
 export * from "./RateLimitRepository.js";
 export * from "./ConfirmationRepository.js";
 export * from "./OperationLockRepository.js";
+export * from "./PriceHistoryRepository.js";
+export * from "./HistoricalPriceRepository.js";

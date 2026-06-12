@@ -21,3 +21,8 @@ export const TARGET_ALLOCATIONS: Record<AssetSymbol, number> = {
   BTC: 0.3,
   ETH: 0.3,
 } as const;
+
+/**
+ * All portfolio assets (single source of truth for iteration)
+ */
+export const PORTFOLIO_ASSETS = Object.keys(TARGET_ALLOCATIONS) as AssetSymbol[];
