@@ -17,3 +17,4 @@ export * from "./quote/SwapQuote.js";
 export * from "./PricePoint.js";
 export * from "./MarketSignal.js";
 export * from "./MarketDigest.js";
+export * from "./MarketStatus.js";
