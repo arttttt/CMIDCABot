@@ -38,7 +38,7 @@ cp .env.example .env
 | `TELEGRAM_BOT_TOKEN` | Yes | - | Telegram bot token from @BotFather |
 | `OWNER_TELEGRAM_ID` | Yes | - | Telegram ID of the bot owner (super admin) |
 | `MASTER_ENCRYPTION_KEY` | Yes | - | Master key for private key encryption (base64, 32 bytes) |
-| `SOLANA_RPC_URL` | No | `https://api.devnet.solana.com` | Solana RPC endpoint |
+| `SOLANA_RPC_URL` | No | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint |
 | `DATABASE_PATH` | No | `./data/bot.db` | Path to SQLite database |
 | `AUTH_DATABASE_PATH` | No | `./data/auth.db` | Path to authorization database |
 | `DCA_AMOUNT_USDC` | No | `6` | Purchase amount in USDC equivalent |

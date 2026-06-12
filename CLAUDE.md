@@ -49,7 +49,7 @@ Claude must follow these documents.
 ## Scope & Boundaries
 
 **Do:**
-- Solana devnet only
+- Solana mainnet (real funds — extra care with wallet/swap code)
 - TypeScript, Node.js
 - Telegram bot (grammY)
 - Jupiter API for swaps
@@ -58,7 +58,6 @@ Claude must follow these documents.
 - Keep `.env.example` up-to-date when adding/changing environment variables
 
 **Don't:**
-- Mainnet configurations
 - Complex optimizations upfront
 - Over-engineered abstractions
 
@@ -112,44 +111,8 @@ Next step (single actionable line)
 
 Correctness over completeness. A compact, accurate patch beats a broad, speculative answer.
 
-## Commands
-
-Slash commands for project workflow:
-
-| Command | Purpose | Agent |
-|---------|---------|-------|
-| `/spec [id\|description]` | Create or enrich issue | planner |
-| `/consult` | Technical consultation | planner |
-| `/implement <id>` | Implement from issue | developer |
-| `/fix <id>` | Fix review findings | developer |
-| `/review <id>` | Code review | reviewer |
-| `/close <id>` | Close issue | — |
-| `/status [id]` | Show status | — |
-
-Argument is optional — if not provided, command will ask interactively.
-
-## Workflow
-
-Standard development flow:
-
-```
-/spec → /implement → /review → /close
-         ↑            ↓
-         └── /fix ←───┘
-```
-
-## Agents
-
-Agents in `.claude/agents/`:
-- `planner` — task planning, specifications, consultations
-- `developer` — implementation
-- `reviewer` — code review
-
-Agents are invoked automatically via commands.
-
 ## Useful Links
 
 - [grammY](https://grammy.dev/)
 - [@solana/kit](https://github.com/anza-xyz/solana-web3.js)
 - [Jupiter API](https://station.jup.ag/docs/apis/swap-api)
-- [Solana Devnet Faucet](https://faucet.solana.com/)

@@ -67,7 +67,7 @@ Additional rules:
 ## Environment
 
 - Keep `.env.example` up-to-date when adding variables
-- Solana: devnet only (mainnet prohibited)
+- Solana: mainnet (real funds — double-check wallet/swap changes)
 
 ## Git Conventions
 
@@ -81,6 +81,4 @@ Additional rules:
 |----------|---------|
 | `ARCHITECTURE.md` | Layer structure, dependency rules |
 | `conventions.md` | Code style, project rules |
-| `CLAUDE.md` | Instructions for AI assistant |
-| `docs/drafts/` | Briefs and task specifications |
-| `docs/reviews/` | Code review results |
+| `CLAUDE.md` | Instructions for AI assistants |
