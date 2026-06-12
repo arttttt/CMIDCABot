@@ -25,9 +25,6 @@ export { DeleteWalletUseCase } from "./DeleteWalletUseCase.js";
 export { ExportWalletKeyUseCase } from "./ExportWalletKeyUseCase.js";
 
 // DCA
-export { StartDcaUseCase } from "./StartDcaUseCase.js";
-export { StopDcaUseCase } from "./StopDcaUseCase.js";
-export { GetDcaStatusUseCase } from "./GetDcaStatusUseCase.js";
 
 // Prices
 export { GetPricesUseCase } from "./GetPricesUseCase.js";

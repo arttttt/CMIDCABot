@@ -2,13 +2,12 @@
  * Development mode command registry
  *
  * Composes all available commands for development mode.
- * Includes: wallet, portfolio, dca, prices, swap, admin
+ * Includes: wallet, portfolio, prices, market, swap, admin
  */
 
 import { CommandRegistry, Command, ModeInfo } from "./types.js";
 import {
   WalletCommandDeps,
-  DcaCommandDeps,
   PortfolioCommandDeps,
   PricesCommandDeps,
   MarketCommandDeps,
@@ -20,7 +19,6 @@ import {
 } from "./dependencies.js";
 import {
   WalletCommand,
-  DcaCommand,
   PortfolioCommand,
   PricesCommand,
   MarketCommand,
@@ -38,7 +36,6 @@ import { prefixCallbacks } from "./router.js";
 export interface DevCommandRegistryDeps {
   start: StartCommandDeps;
   wallet: WalletCommandDeps;
-  dca: DcaCommandDeps;
   portfolio: PortfolioCommandDeps;
   prices: PricesCommandDeps;
   market: MarketCommandDeps;
@@ -54,7 +51,6 @@ export interface DevCommandRegistryDeps {
  * All commands available:
  * - wallet: Wallet management
  * - portfolio: Portfolio status and buy operations
- * - dca: Automatic purchases scheduling
  * - prices: Current asset prices
  * - market: Market status and active buy signals
  * - swap: Quote/simulate/execute swaps
@@ -74,7 +70,6 @@ export class DevCommandRegistry implements CommandRegistry {
       ["start", new StartCommand(deps.start)],
       ["wallet", new WalletCommand(deps.wallet)],
       ["portfolio", new PortfolioCommand(deps.portfolio)],
-      ["dca", new DcaCommand(deps.dca)],
       ["prices", new PricesCommand(deps.prices)],
       ["market", new MarketCommand(deps.market)],
       ["swap", new SwapCommand(deps.swap)],

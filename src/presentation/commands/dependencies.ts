@@ -5,9 +5,6 @@ import {
     ImportWalletUseCase,
     DeleteWalletUseCase,
     ExportWalletKeyUseCase,
-    StartDcaUseCase,
-    StopDcaUseCase,
-    GetDcaStatusUseCase,
     GetPortfolioStatusUseCase,
     ExecutePurchaseUseCase,
     DetermineAssetToBuyUseCase,
@@ -32,7 +29,6 @@ import type {
 
 import {
     DcaWalletFormatter,
-    DcaFormatter,
     PortfolioFormatter,
     PurchaseFormatter,
     PriceFormatter,
@@ -60,13 +56,6 @@ export interface WalletCommandDeps {
     exportWalletKey: ExportWalletKeyUseCase;
     formatter: DcaWalletFormatter;
     importSessionStore: ImportSessionRepository;
-}
-
-export interface DcaCommandDeps {
-    startDca: StartDcaUseCase;
-    stopDca: StopDcaUseCase;
-    getDcaStatus: GetDcaStatusUseCase;
-    formatter: DcaFormatter;
 }
 
 export interface PortfolioCommandDeps {

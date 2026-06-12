@@ -39,11 +39,6 @@ const envSchema = z
     WEBHOOK_URL: z.string().url().optional(),
     WEBHOOK_SECRET: z.string().optional(),
 
-    // DCA
-    // Upper bound (MAX_USDC_AMOUNT) is a domain rule, checked in the composition root
-    DCA_AMOUNT_USDC: z.coerce.number().positive().min(1).default(6),
-    DCA_INTERVAL_MS: z.coerce.number().int().positive().default(86400000),
-
     // Price
     PRICE_SOURCE: z.enum(["jupiter", "mock"]).default("jupiter"),
     JUPITER_API_KEY: z.string().optional(),
@@ -135,12 +130,6 @@ export interface HttpConfig {
   publicUrl: string;
 }
 
-export interface DcaConfig {
-  amountUsdc: number;
-  intervalMs: number;
-}
-
-
 export interface EncryptionConfig {
   masterKey: string;
 }
@@ -173,7 +162,6 @@ export interface Config {
   telegram: TelegramConfig;
   solana: SolanaConfig;
   database: DatabaseConfig;
-  dca: DcaConfig;
   encryption: EncryptionConfig;
   price: PriceConfig;
   auth: AuthConfig;
@@ -197,10 +185,6 @@ function envToConfig(env: ValidatedEnv): Config {
     },
     database: {
       path: env.DATABASE_PATH,
-    },
-    dca: {
-      amountUsdc: env.DCA_AMOUNT_USDC,
-      intervalMs: env.DCA_INTERVAL_MS,
     },
     encryption: {
       masterKey: env.MASTER_ENCRYPTION_KEY,

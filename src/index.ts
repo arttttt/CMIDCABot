@@ -12,7 +12,6 @@ const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
 import { loadConfig } from "./infrastructure/shared/config/index.js";
 import { OwnerConfig } from "./domain/models/OwnerConfig.js";
-import { MAX_USDC_AMOUNT } from "./domain/constants.js";
 import { setLogger, DebugLogger, NoOpLogger } from "./infrastructure/shared/logging/index.js";
 import { createMainDatabase, createAuthDatabase } from "./data/sources/database/index.js";
 import { createMainRepositories } from "./data/factories/RepositoryFactory.js";
@@ -30,8 +29,6 @@ import { JupiterPriceClient } from "./data/sources/api/JupiterPriceClient.js";
 import { JupiterSwapClient } from "./data/sources/api/JupiterSwapClient.js";
 import { KeyEncryptionService } from "./infrastructure/internal/crypto/index.js";
 import { TelegramUserResolver } from "./presentation/telegram/UserResolver.js";
-// TODO: restore after DcaScheduler refactoring
-// import { DcaScheduler } from "./_wip/dca-scheduling/index.js";
 import {
   InitUserUseCase,
   ExecutePurchaseUseCase,
@@ -45,9 +42,6 @@ import {
   ImportWalletUseCase,
   DeleteWalletUseCase,
   ExportWalletKeyUseCase,
-  StartDcaUseCase,
-  StopDcaUseCase,
-  GetDcaStatusUseCase,
   GetPricesUseCase,
   GetQuoteUseCase,
   ExecuteSwapUseCase,
@@ -77,7 +71,6 @@ import {
 } from "./presentation/commands/index.js";
 import {
   DcaWalletFormatter,
-  DcaFormatter,
   PortfolioFormatter,
   PurchaseFormatter,
   PriceFormatter,
@@ -110,11 +103,6 @@ async function main(): Promise<void> {
   console.log(`CMI DCA Bot v${pkg.version}`);
 
   const config = loadConfig();
-
-  // Domain limit is enforced here (composition root): envSchema must not depend on domain
-  if (config.dca.amountUsdc > MAX_USDC_AMOUNT) {
-    throw new Error(`DCA_AMOUNT_USDC must not exceed ${MAX_USDC_AMOUNT} USDC`);
-  }
 
   // Initialize logger based on environment
   setLogger(config.isDev ? new DebugLogger() : new NoOpLogger());
@@ -226,9 +214,6 @@ async function main(): Promise<void> {
     transactionRepository,
   );
 
-  // TODO: restore DcaScheduler after refactoring
-  const dcaScheduler = undefined;
-
   // Create wallet info use cases
   const getWalletBalances = new GetWalletBalancesUseCase(balanceRepository);
   const getWalletInfoByPrivateKey = new GetWalletInfoByPrivateKeyUseCase(
@@ -269,9 +254,6 @@ async function main(): Promise<void> {
   );
   const deleteWallet = new DeleteWalletUseCase(userRepository);
   const exportWalletKey = new ExportWalletKeyUseCase(userRepository, secretStore);
-  const startDca = new StartDcaUseCase(userRepository, dcaScheduler);
-  const stopDca = new StopDcaUseCase(userRepository, dcaScheduler);
-  const getDcaStatus = new GetDcaStatusUseCase(userRepository, dcaScheduler);
   const getPrices = new GetPricesUseCase(priceRepository);
   const getQuote = new GetQuoteUseCase(swapRepository);
 
@@ -306,7 +288,6 @@ async function main(): Promise<void> {
 
   // Create formatters
   const dcaWalletFormatter = new DcaWalletFormatter();
-  const dcaFormatter = new DcaFormatter();
   const portfolioFormatter = new PortfolioFormatter();
   const purchaseFormatter = new PurchaseFormatter();
   const priceFormatter = new PriceFormatter();
@@ -371,12 +352,6 @@ async function main(): Promise<void> {
           exportWalletKey,
           formatter: dcaWalletFormatter,
           importSessionStore: withImportSession,
-        },
-        dca: {
-          startDca,
-          stopDca,
-          getDcaStatus,
-          formatter: dcaFormatter,
         },
         portfolio: {
           getPortfolioStatus,

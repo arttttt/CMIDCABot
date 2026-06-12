@@ -35,9 +35,6 @@ src/
 │   ├── formatters/
 │   ├── notifications/       # push notifications (market monitor)
 │   └── protocol/
-│
-└── _wip/
-    └── dca-scheduling/      # DcaScheduler (deferred)
 ```
 
 ## Layer Access Rules

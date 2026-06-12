@@ -29,7 +29,6 @@ export default [
         { type: 'presentation', pattern: 'src/presentation/**', mode: 'file' },
         { type: 'infra-internal', pattern: 'src/infrastructure/internal/**', mode: 'file' },
         { type: 'infra-shared', pattern: 'src/infrastructure/shared/**', mode: 'file' },
-        { type: 'wip', pattern: 'src/_wip/**', mode: 'file' },
         { type: 'types', pattern: 'src/types/**', mode: 'file' },
       ],
       'boundaries/ignore': ['**/*.test.ts', '**/*.spec.ts'],
@@ -40,10 +39,9 @@ export default [
         default: 'disallow',
         rules: [
           // Domain: only own interfaces + infra-shared + types
-          // NOTE: 'wip' is temporarily allowed during migration period
           {
             from: 'domain',
-            allow: ['domain', 'domain-policies', 'infra-shared', 'types', 'wip'],
+            allow: ['domain', 'domain-policies', 'infra-shared', 'types'],
           },
           // Domain policies: pure rules based on domain data
           {
@@ -69,11 +67,6 @@ export default [
           {
             from: 'infra-shared',
             allow: ['infra-shared', 'types'],
-          },
-          // WIP: temporary, more permissive
-          {
-            from: 'wip',
-            allow: ['domain', 'data', 'infra-shared', 'types', 'wip'],
           },
         ],
       }],

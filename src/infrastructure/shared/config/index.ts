@@ -9,7 +9,6 @@ export {
   type SolanaConfig,
   type DatabaseConfig,
   type HttpConfig,
-  type DcaConfig,
   type EncryptionConfig,
   type AuthConfig,
   type PriceConfig,

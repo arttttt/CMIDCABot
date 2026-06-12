@@ -26,7 +26,6 @@ export { Definitions, type DefinitionKey } from "./definitions.js";
 // Command factories (exporting types from dependencies)
 export type {
   WalletCommandDeps,
-  DcaCommandDeps,
   PortfolioCommandDeps,
   PricesCommandDeps,
   SwapCommandDeps,
@@ -39,7 +38,6 @@ export type {
 
 export {
   WalletCommand,
-  DcaCommand,
   PortfolioCommand,
   PricesCommand,
   SwapCommand,
