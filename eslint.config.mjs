@@ -23,6 +23,7 @@ export default [
         },
       },
       'boundaries/elements': [
+        { type: 'app', pattern: ['src/app/**', 'src/index.ts'], mode: 'file' },
         { type: 'domain-policies', pattern: 'src/domain/policies/**', mode: 'file' },
         { type: 'domain', pattern: 'src/domain/**', mode: 'file' },
         { type: 'data', pattern: 'src/data/**', mode: 'file' },
@@ -38,6 +39,11 @@ export default [
       'boundaries/element-types': ['error', {
         default: 'disallow',
         rules: [
+          // App: composition root, wires all layers together
+          {
+            from: 'app',
+            allow: ['app', 'domain', 'domain-policies', 'data', 'presentation', 'infra-internal', 'infra-shared', 'types'],
+          },
           // Domain: only own interfaces + infra-shared + types
           {
             from: 'domain',

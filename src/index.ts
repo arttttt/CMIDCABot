@@ -6,491 +6,76 @@ try {
 }
 
 import { createRequire } from "module";
-import { randomUUID } from "crypto";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
 import { loadConfig } from "./infrastructure/shared/config/index.js";
-import { OwnerConfig } from "./domain/models/OwnerConfig.js";
 import { setLogger, DebugLogger, NoOpLogger } from "./infrastructure/shared/logging/index.js";
-import { createMainDatabase, createAuthDatabase } from "./data/sources/database/index.js";
-import { createMainRepositories } from "./data/factories/RepositoryFactory.js";
-import { SQLiteAuthRepository } from "./data/repositories/sqlite/SQLiteAuthRepository.js";
-import { SQLiteInviteTokenRepository } from "./data/repositories/sqlite/SQLiteInviteTokenRepository.js";
-import { CachedBalanceRepository } from "./data/repositories/memory/CachedBalanceRepository.js";
-import { SolanaBlockchainRepository } from "./data/repositories/SolanaBlockchainRepository.js";
-import { JupiterPriceRepository } from "./data/repositories/JupiterPriceRepository.js";
-import { JupiterSwapRepository } from "./data/repositories/JupiterSwapRepository.js";
-import { SQLitePriceHistoryRepository } from "./data/repositories/sqlite/SQLitePriceHistoryRepository.js";
-import { BinanceHistoricalPriceRepository } from "./data/repositories/BinanceHistoricalPriceRepository.js";
-import { BinanceKlinesClient } from "./data/sources/api/BinanceKlinesClient.js";
-import { SolanaRpcClient } from "./data/sources/api/SolanaRpcClient.js";
-import { JupiterPriceClient } from "./data/sources/api/JupiterPriceClient.js";
-import { JupiterSwapClient } from "./data/sources/api/JupiterSwapClient.js";
-import { KeyEncryptionService } from "./infrastructure/internal/crypto/index.js";
-import { TelegramUserResolver } from "./presentation/telegram/UserResolver.js";
-import {
-  InitUserUseCase,
-  ExecutePurchaseUseCase,
-  GetPortfolioStatusUseCase,
-  DetermineAssetToBuyUseCase,
-  GetWalletBalancesUseCase,
-  GetWalletInfoByAddressUseCase,
-  GetWalletInfoByPrivateKeyUseCase,
-  GetWalletInfoUseCase,
-  CreateWalletUseCase,
-  ImportWalletUseCase,
-  DeleteWalletUseCase,
-  ExportWalletKeyUseCase,
-  GetPricesUseCase,
-  GetQuoteUseCase,
-  ExecuteSwapUseCase,
-  GenerateInviteUseCase,
-  ActivateInviteUseCase,
-  DeleteUserDataUseCase,
-  InitializeAuthorizationUseCase,
-  AddAuthorizedUserUseCase,
-  RemoveAuthorizedUserUseCase,
-  GetAllAuthorizedUsersUseCase,
-  UpdateUserRoleUseCase,
-  GetUserRoleUseCase,
-  CollectMarketDataUseCase,
-  AnalyzeMarketUseCase,
-  GetMarketDigestUseCase,
-  GetMarketStatusUseCase,
-  BackfillPriceHistoryUseCase,
-} from "./domain/usecases/index.js";
-import type { ImportSessionRepository } from "./domain/repositories/index.js";
-import { GatewayFactory } from "./presentation/protocol/gateway/index.js";
-import {
-  DevCommandRegistry,
-  ProdCommandRegistry,
-  type DevCommandRegistryDeps,
-  type ProdCommandRegistryDeps,
-  type CommandRegistry,
-} from "./presentation/commands/index.js";
-import {
-  WalletFormatter,
-  PortfolioFormatter,
-  PurchaseFormatter,
-  PriceFormatter,
-  QuoteFormatter,
-  SwapFormatter,
-  AdminFormatter,
-  InviteFormatter,
-  ProgressFormatter,
-  ConfirmationFormatter,
-  HelpFormatter,
-  MarketFormatter,
-} from "./presentation/formatters/index.js";
+import { HttpServer } from "./infrastructure/shared/http/index.js";
+import { OwnerConfig } from "./domain/models/OwnerConfig.js";
 import {
   createTelegramBot,
   createTransport,
   validateTransportConfig,
-  type BotTransport,
   type TransportConfig as TelegramTransportConfig,
 } from "./presentation/telegram/index.js";
-import { HttpServer } from "./infrastructure/shared/http/index.js";
-import { SecretCache, ImportSessionCache, RateLimitCache, ConfirmationCache, OperationLockCache } from "./data/sources/memory/index.js";
-import { InMemorySecretRepository, InMemoryImportSessionRepository, InMemoryRateLimitRepository, InMemoryConfirmationRepository, InMemoryOperationLockRepository } from "./data/repositories/memory/index.js";
-import { CleanupScheduler, MarketMonitorScheduler } from "./infrastructure/shared/scheduling/index.js";
-import { MarketNotifier } from "./presentation/notifications/MarketNotifier.js";
+import { TelegramMessageSender } from "./presentation/telegram/TelegramMessageSender.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
 import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
-import { TelegramMessageSender } from "./presentation/telegram/TelegramMessageSender.js";
+import { createStorage } from "./app/createStorage.js";
+import { createBlockchain } from "./app/createBlockchain.js";
+import { createUseCases } from "./app/createUseCases.js";
+import { createPresentation } from "./app/createPresentation.js";
+import { startMarketMonitor } from "./app/createMarketMonitor.js";
 
 async function main(): Promise<void> {
   console.log(`CMI DCA Bot v${pkg.version}`);
 
   const config = loadConfig();
-
-  // Initialize logger based on environment
   setLogger(config.isDev ? new DebugLogger() : new NoOpLogger());
 
-  // Initialize encryption service (required for private key protection)
-  const encryptionService = new KeyEncryptionService();
-  await encryptionService.initialize(config.encryption.masterKey);
-
-  // Initialize database connections
-  const mainDb = createMainDatabase(config.database.path);
-  const authDb = createAuthDatabase(config.auth.dbPath);
-
-  // Create repositories
-  const { userRepository, transactionRepository } = createMainRepositories(mainDb, encryptionService);
-
-  // Create auth repository
-  const authRepository = new SQLiteAuthRepository(authDb);
-
-  // Create invite token repository
-  const inviteTokenRepository = new SQLiteInviteTokenRepository(authDb);
-
-  // Initialize owner configuration (single source of truth)
+  // Compose the application
+  const storage = await createStorage(config);
   const ownerConfig = new OwnerConfig(config.auth.ownerTelegramId);
-
-  // Initialize owner authorization
-  const initializeAuth = new InitializeAuthorizationUseCase(authRepository, ownerConfig);
-  await initializeAuth.execute();
-
-  // Create GetUserRoleUseCase for Gateway and use cases
-  const getUserRole = new GetUserRoleUseCase(authRepository, ownerConfig);
-
-  // Create user resolver (will be connected to bot API later)
-  const userResolver = new TelegramUserResolver();
-
-  // Initialize Solana RPC client and blockchain repository
-  const solanaRpcClient = new SolanaRpcClient(config.solana, encryptionService);
-  const blockchainRepository = new SolanaBlockchainRepository(solanaRpcClient);
-
-  // Initialize balance repository with caching (still uses RPC client internally)
-  const balanceRepository = new CachedBalanceRepository(solanaRpcClient);
-
-  // Initialize SecretCache for one-time secret links
-  const secretCache = new SecretCache(encryptionService, {
-    publicUrl: config.http.publicUrl,
+  const blockchain = createBlockchain(config, storage.encryptionService);
+  const useCases = createUseCases(storage, blockchain, ownerConfig);
+  const presentation = createPresentation({
+    config,
+    version: pkg.version,
+    ownerConfig,
+    storage,
+    blockchain,
+    useCases,
   });
-  const secretStore = new InMemorySecretRepository(secretCache);
 
-  // Initialize ImportSessionCache for secure wallet import
-  const importSessionCache = new ImportSessionCache({
-    publicUrl: config.http.publicUrl,
-  });
-  const importSessionStore = new InMemoryImportSessionRepository(importSessionCache);
+  await useCases.initializeAuthorization.execute();
 
-  // Initialize RateLimitCache for rate limiting
-  const rateLimitCache = new RateLimitCache({
-    windowMs: config.rateLimit.windowMs,
-    maxRequests: config.rateLimit.maxRequests,
-  });
-  const rateLimitRepository = new InMemoryRateLimitRepository(rateLimitCache);
-
-  // Initialize OperationLockCache for balance-changing operations
-  const operationLockCache = new OperationLockCache();
-  const operationLockOwnerId = randomUUID();
-  const operationLockRepository = new InMemoryOperationLockRepository(
-    operationLockCache,
-    operationLockOwnerId,
-  );
-
-  // Initialize ConfirmationCache for purchase/swap confirmation flow
-  const confirmationCache = new ConfirmationCache();
-  const confirmationRepository = new InMemoryConfirmationRepository(confirmationCache);
-  const confirmationFormatter = new ConfirmationFormatter();
-
-  // Price history storage for the market monitor
-  const priceHistoryRepository = new SQLitePriceHistoryRepository(mainDb);
-
-  // Start cleanup scheduler for expired secrets, import sessions, and invite tokens
-  const cleanupScheduler = new CleanupScheduler([
-    { store: secretCache, intervalMs: 60_000, name: "secretCache" },
-    { store: importSessionCache, intervalMs: 60_000, name: "importSessionCache" },
-    { store: inviteTokenRepository, intervalMs: 3_600_000, name: "inviteTokenRepository" },
-    { store: confirmationCache, intervalMs: 60_000, name: "confirmationCache" },
-    { store: priceHistoryRepository, intervalMs: 3_600_000, name: "priceHistoryRepository" },
-  ]);
-  cleanupScheduler.start();
-
-  // Initialize Price and Swap repositories (require API key)
-  let priceRepository: JupiterPriceRepository | undefined;
-  let swapRepository: JupiterSwapRepository | undefined;
-
-  if (config.price.jupiterApiKey) {
-    const jupiterPriceClient = new JupiterPriceClient(config.price.jupiterApiKey);
-    priceRepository = new JupiterPriceRepository(jupiterPriceClient);
-
-    const jupiterSwapClient = new JupiterSwapClient(config.price.jupiterApiKey);
-    swapRepository = new JupiterSwapRepository(jupiterSwapClient);
-  }
-
-  // Create authorization use cases
-  const addAuthorizedUser = new AddAuthorizedUserUseCase(authRepository, getUserRole);
-  const removeAuthorizedUser = new RemoveAuthorizedUserUseCase(authRepository, getUserRole, ownerConfig);
-  const getAllAuthorizedUsers = new GetAllAuthorizedUsersUseCase(authRepository);
-  const updateUserRole = new UpdateUserRoleUseCase(authRepository, getUserRole, ownerConfig);
-
-  // Create delete user data use case
-  const deleteUserData = new DeleteUserDataUseCase(
-    removeAuthorizedUser,
-    userRepository,
-    transactionRepository,
-  );
-
-  // Create wallet info use cases
-  const getWalletBalances = new GetWalletBalancesUseCase(balanceRepository);
-  const getWalletInfoByPrivateKey = new GetWalletInfoByPrivateKeyUseCase(
-    blockchainRepository,
-    getWalletBalances,
-  );
-  const getWalletInfoByAddress = new GetWalletInfoByAddressUseCase(getWalletBalances);
-
-  // Create ExecuteSwapUseCase first (used by ExecutePurchaseUseCase)
-  const executeSwapUseCase = new ExecuteSwapUseCase(
-    swapRepository,
-    blockchainRepository,
-    userRepository,
-    transactionRepository,
-    balanceRepository,
-    operationLockRepository,
-  );
-
-  // Create use cases
-  const initUser = new InitUserUseCase(userRepository);
-  const getWalletInfo = new GetWalletInfoUseCase(
-    userRepository,
-    getWalletInfoByAddress,
-  );
-  const createWallet = new CreateWalletUseCase(
-    userRepository,
-    blockchainRepository,
-    getWalletInfoByAddress,
-    getWalletInfoByPrivateKey,
-    operationLockRepository,
-    secretStore,
-  );
-  const importWallet = new ImportWalletUseCase(
-    userRepository,
-    blockchainRepository,
-    getWalletInfoByAddress,
-    getWalletInfoByPrivateKey,
-  );
-  const deleteWallet = new DeleteWalletUseCase(userRepository);
-  const exportWalletKey = new ExportWalletKeyUseCase(userRepository, secretStore);
-  const getPrices = new GetPricesUseCase(priceRepository);
-  const getQuote = new GetQuoteUseCase(swapRepository);
-
-  // Create use cases that require Jupiter repositories
-  const determineAssetToBuy = priceRepository
-    ? new DetermineAssetToBuyUseCase(
-        userRepository,
-        balanceRepository,
-        priceRepository,
-      )
-    : undefined;
-
-  const executePurchase = swapRepository && determineAssetToBuy
-    ? new ExecutePurchaseUseCase(
-        executeSwapUseCase,
-        determineAssetToBuy,
-        operationLockRepository,
-      )
-    : undefined;
-
-  const getPortfolioStatus = priceRepository
-    ? new GetPortfolioStatusUseCase(
-        userRepository,
-        balanceRepository,
-        priceRepository,
-      )
-    : undefined;
-
-  // Create invite use cases
-  const generateInvite = new GenerateInviteUseCase(inviteTokenRepository, authRepository);
-  const activateInvite = new ActivateInviteUseCase(inviteTokenRepository, authRepository);
-
-  // Create formatters
-  const walletFormatter = new WalletFormatter();
-  const portfolioFormatter = new PortfolioFormatter();
-  const purchaseFormatter = new PurchaseFormatter();
-  const priceFormatter = new PriceFormatter();
-  const quoteFormatter = new QuoteFormatter();
-  const swapFormatter = new SwapFormatter();
-  const adminFormatter = new AdminFormatter();
-  const progressFormatter = new ProgressFormatter();
-  const helpFormatter = new HelpFormatter();
-  const marketFormatter = new MarketFormatter();
-
-  // Create market status use case (read-only, works with or without price source)
-  const getMarketStatus = new GetMarketStatusUseCase(priceRepository, priceHistoryRepository);
-
-  // Helper function to build registry and handler
-  function createRegistryAndHandler(withImportSession: ImportSessionRepository, botUsername?: string) {
-    // Create invite formatter if botUsername is available
-    const inviteFormatter = botUsername ? new InviteFormatter(botUsername) : undefined;
-
-    // Start command deps (shared between dev and prod)
-    const startDeps = {
-      initUser,
-      activateInvite: inviteFormatter ? activateInvite : undefined,
-      inviteFormatter,
-    };
-
-    // Admin command deps (shared between dev and prod)
-    const adminDeps = {
-      addAuthorizedUser,
-      getAllAuthorizedUsers,
-      updateUserRole,
-      formatter: adminFormatter,
-      userResolver,
-      deleteUserData,
-      version: pkg.version,
-      generateInvite: inviteFormatter ? generateInvite : undefined,
-      inviteFormatter,
-    };
-
-    // Version command deps (shared between dev and prod)
-    const versionDeps = {
-      version: pkg.version,
-      formatter: adminFormatter,
-    };
-
-    // Help command deps (shared between dev and prod)
-    // Note: getRegistry is added in registry constructor to break circular dependency
-    const helpDeps = {
-      helpFormatter,
-    };
-
-    // Build command registry based on mode
-    let registry: CommandRegistry;
-
-    if (config.isDev) {
-      const deps: DevCommandRegistryDeps = {
-        start: startDeps,
-        wallet: {
-          getWalletInfo,
-          createWallet,
-          importWallet,
-          deleteWallet,
-          exportWalletKey,
-          formatter: walletFormatter,
-          importSessionStore: withImportSession,
-        },
-        portfolio: {
-          getPortfolioStatus,
-          executePurchase,
-          determineAssetToBuy,
-          portfolioFormatter,
-          purchaseFormatter,
-          progressFormatter,
-          confirmationRepository,
-          confirmationFormatter,
-          swapRepository,
-        },
-        prices: {
-          getPrices,
-          formatter: priceFormatter,
-        },
-        market: {
-          getMarketStatus,
-          formatter: marketFormatter,
-        },
-        swap: {
-          getQuote,
-          executeSwap: executeSwapUseCase,
-          quoteFormatter,
-          swapFormatter,
-          progressFormatter,
-          confirmationRepository,
-          confirmationFormatter,
-          swapRepository,
-        },
-        admin: adminDeps,
-        version: versionDeps,
-        help: helpDeps,
-      };
-      registry = new DevCommandRegistry(deps);
-    } else {
-      const deps: ProdCommandRegistryDeps = {
-        start: startDeps,
-        wallet: {
-          getWalletInfo,
-          createWallet,
-          importWallet,
-          deleteWallet,
-          exportWalletKey,
-          formatter: walletFormatter,
-          importSessionStore: withImportSession,
-        },
-        portfolio: {
-          getPortfolioStatus,
-          executePurchase,
-          determineAssetToBuy,
-          portfolioFormatter,
-          purchaseFormatter,
-          progressFormatter,
-          confirmationRepository,
-          confirmationFormatter,
-          swapRepository,
-        },
-        market: {
-          getMarketStatus,
-          formatter: marketFormatter,
-        },
-        admin: adminDeps,
-        version: versionDeps,
-        help: helpDeps,
-      };
-      registry = new ProdCommandRegistry(deps);
-    }
-
-    // Create gateway
-    const gateway = GatewayFactory.create({
-      getUserRole,
-      commandRegistry: registry,
-      rateLimitRepository,
-      ownerConfig,
-    });
-
-    return { registry, gateway };
-  }
-
-  // Market monitor scheduler, created after the message sender is available
-  let marketMonitorScheduler: MarketMonitorScheduler | undefined;
-
-  // Cleanup function
-  const cleanup = async (): Promise<void> => {
-    marketMonitorScheduler?.stop();
-    cleanupScheduler.stop();
-    await mainDb?.destroy();
-    await authDb?.destroy();
-  };
-
-  // Start Telegram bot
   console.log("Starting DCA Telegram Bot...");
 
   // Get bot info first to have botUsername for invite links and API for message sending
   const { Bot } = await import("grammy");
   const tempBot = new Bot(config.telegram.botToken);
   const botInfo = await tempBot.api.getMe();
-
-  // Create message sender for notifications from HTTP handlers
   const messageSender = new TelegramMessageSender(tempBot.api);
 
-  // Create HTTP page handlers (shared between polling and webhook modes)
-  const secretPageHandler = new SecretPageHandler(secretStore);
+  // HTTP page handlers (shared between polling and webhook modes)
+  const secretPageHandler = new SecretPageHandler(storage.secretStore);
   const importPageHandler = new ImportPageHandler(
-    importSessionStore,
-    importWallet,
+    storage.importSessionStore,
+    useCases.importWallet,
     messageSender,
   );
 
-  // Market monitor: collect prices -> analyze -> notify (requires live price source)
-  if (priceRepository) {
-    const marketNotifier = new MarketNotifier({
-      collectMarketData: new CollectMarketDataUseCase(priceRepository, priceHistoryRepository),
-      analyzeMarket: new AnalyzeMarketUseCase(priceHistoryRepository, operationLockRepository),
-      getMarketDigest: new GetMarketDigestUseCase(priceHistoryRepository),
-      getAllAuthorizedUsers,
-      messageSender,
-      marketFormatter,
-      digestHourUtc: config.market.digestHourUtc,
-    });
+  const marketMonitorScheduler = await startMarketMonitor({
+    config,
+    storage,
+    blockchain,
+    useCases,
+    messageSender,
+    marketFormatter: presentation.marketFormatter,
+  });
 
-    // Warm up price history on cold start before the first tick
-    if (config.market.backfill === "binance") {
-      const backfillPriceHistory = new BackfillPriceHistoryUseCase(
-        priceHistoryRepository,
-        new BinanceHistoricalPriceRepository(new BinanceKlinesClient()),
-      );
-      await backfillPriceHistory.execute(Date.now());
-    }
-
-    marketMonitorScheduler = new MarketMonitorScheduler(
-      () => marketNotifier.tick(),
-      config.market.pollIntervalMs,
-    );
-    marketMonitorScheduler.start();
-  }
-
-  // Build transport configuration
+  // Transport configuration
   const transportConfig: TelegramTransportConfig = {
     mode: config.transport.mode,
     webhook: config.transport.mode === "webhook" && config.transport.webhookUrl
@@ -503,13 +88,10 @@ async function main(): Promise<void> {
         }
       : undefined,
   };
-
-  // Validate transport configuration
   validateTransportConfig(transportConfig);
 
-  // Start HTTP server for polling mode (webhook mode has its own server with handlers)
+  // HTTP server for polling mode (webhook mode has its own server with handlers)
   let httpServer: HttpServer | undefined;
-
   if (config.transport.mode === "polling") {
     httpServer = new HttpServer(config.http);
     httpServer.addHandler(secretPageHandler);
@@ -517,22 +99,13 @@ async function main(): Promise<void> {
     httpServer.start();
   }
 
-  // Create gateway with importSessionStore and botUsername
-  const { registry, gateway } = createRegistryAndHandler(importSessionStore, botInfo.username);
+  const { registry, gateway } = presentation.createRegistryAndGateway(botInfo.username);
+  console.log(`Command mode: ${registry.getModeInfo()?.label ?? "Production"}`);
 
-  const modeInfo = registry.getModeInfo();
-  const modeLabel = modeInfo?.label ?? "Production";
-  console.log(`Command mode: ${modeLabel}`);
-
-  // Create the bot with the gateway
   const bot = createTelegramBot(config.telegram.botToken, gateway, config.isDev);
+  presentation.userResolver.setApi(bot.api);
 
-  // Connect user resolver to bot API for username resolution
-  userResolver.setApi(bot.api);
-
-  // Create transport based on configuration
-  let transport: BotTransport;
-  transport = createTransport(transportConfig, {
+  const transport = createTransport(transportConfig, {
     bot,
     isDev: config.isDev,
     onStart: (info) => {
@@ -547,21 +120,29 @@ async function main(): Promise<void> {
     console.log("\nShutting down...");
     httpServer?.stop();
     await transport.stop();
-    await cleanup();
+    marketMonitorScheduler.stop();
+    storage.cleanupScheduler.stop();
+    await storage.mainDb.destroy();
+    await storage.authDb.destroy();
     process.exit(0);
   };
-
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
-  // Log startup info
+  logStartupInfo(config, botInfo.username);
+
+  // Start transport (handles both polling and webhook modes)
+  await transport.start();
+}
+
+function logStartupInfo(config: ReturnType<typeof loadConfig>, botUsername: string): void {
   const transportModeLabel = config.transport.mode === "webhook" ? "Webhook" : "Long Polling";
 
   if (config.isDev) {
     console.log("─".repeat(50));
     console.log("DEVELOPMENT MODE");
     console.log("─".repeat(50));
-    console.log(`Bot: @${botInfo.username}`);
+    console.log(`Bot: @${botUsername}`);
     console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
     console.log(`Mode: ${transportModeLabel}`);
     console.log("Prices: Jupiter API (real-time)");
@@ -571,13 +152,10 @@ async function main(): Promise<void> {
     console.log("Bot is ready! Send /start in Telegram to test.");
     console.log("Press Ctrl+C to stop.\n");
   } else {
-    console.log(`Bot @${botInfo.username} starting...`);
+    console.log(`Bot @${botUsername} starting...`);
     console.log(`RPC: ${maskUrl(config.solana.rpcUrl)}`);
     console.log(`Transport: ${transportModeLabel}`);
   }
-
-  // Start transport (handles both polling and webhook modes)
-  await transport.start();
 }
 
 function maskUrl(url: string): string {
