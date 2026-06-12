@@ -6,7 +6,7 @@
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
 import type { Bot, Context } from "grammy";
-import type { Update } from "@grammyjs/types";
+import type { Update } from "grammy/types";
 import type { BotTransport, TransportDeps, WebhookConfig } from "./types.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 
