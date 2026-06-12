@@ -57,4 +57,5 @@ export { GetUserRoleUseCase } from "./GetUserRoleUseCase.js";
 export { CollectMarketDataUseCase } from "./CollectMarketDataUseCase.js";
 export { AnalyzeMarketUseCase } from "./AnalyzeMarketUseCase.js";
 export { GetMarketDigestUseCase } from "./GetMarketDigestUseCase.js";
+export { GetMarketStatusUseCase, type GetMarketStatusResult } from "./GetMarketStatusUseCase.js";
 export { BackfillPriceHistoryUseCase } from "./BackfillPriceHistoryUseCase.js";
