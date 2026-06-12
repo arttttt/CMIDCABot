@@ -22,6 +22,9 @@ import { CachedBalanceRepository } from "./data/repositories/memory/CachedBalanc
 import { SolanaBlockchainRepository } from "./data/repositories/SolanaBlockchainRepository.js";
 import { JupiterPriceRepository } from "./data/repositories/JupiterPriceRepository.js";
 import { JupiterSwapRepository } from "./data/repositories/JupiterSwapRepository.js";
+import { SQLitePriceHistoryRepository } from "./data/repositories/sqlite/SQLitePriceHistoryRepository.js";
+import { BinanceHistoricalPriceRepository } from "./data/repositories/BinanceHistoricalPriceRepository.js";
+import { BinanceKlinesClient } from "./data/sources/api/BinanceKlinesClient.js";
 import { SolanaRpcClient } from "./data/sources/api/SolanaRpcClient.js";
 import { JupiterPriceClient } from "./data/sources/api/JupiterPriceClient.js";
 import { JupiterSwapClient } from "./data/sources/api/JupiterSwapClient.js";
@@ -57,6 +60,10 @@ import {
   GetAllAuthorizedUsersUseCase,
   UpdateUserRoleUseCase,
   GetUserRoleUseCase,
+  CollectMarketDataUseCase,
+  AnalyzeMarketUseCase,
+  GetMarketDigestUseCase,
+  BackfillPriceHistoryUseCase,
 } from "./domain/usecases/index.js";
 import type { ImportSessionRepository } from "./domain/repositories/index.js";
 import { GatewayFactory } from "./presentation/protocol/gateway/index.js";
@@ -80,6 +87,7 @@ import {
   ProgressFormatter,
   ConfirmationFormatter,
   HelpFormatter,
+  MarketFormatter,
 } from "./presentation/formatters/index.js";
 import {
   createTelegramBot,
@@ -91,7 +99,8 @@ import {
 import { HttpServer } from "./infrastructure/shared/http/index.js";
 import { SecretCache, ImportSessionCache, RateLimitCache, ConfirmationCache, OperationLockCache } from "./data/sources/memory/index.js";
 import { InMemorySecretRepository, InMemoryImportSessionRepository, InMemoryRateLimitRepository, InMemoryConfirmationRepository, InMemoryOperationLockRepository } from "./data/repositories/memory/index.js";
-import { CleanupScheduler } from "./infrastructure/shared/scheduling/index.js";
+import { CleanupScheduler, MarketMonitorScheduler } from "./infrastructure/shared/scheduling/index.js";
+import { MarketNotifier } from "./presentation/notifications/MarketNotifier.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
 import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
 import { TelegramMessageSender } from "./presentation/telegram/TelegramMessageSender.js";
@@ -178,12 +187,16 @@ async function main(): Promise<void> {
   const confirmationRepository = new InMemoryConfirmationRepository(confirmationCache);
   const confirmationFormatter = new ConfirmationFormatter();
 
+  // Price history storage for the market monitor
+  const priceHistoryRepository = new SQLitePriceHistoryRepository(mainDb);
+
   // Start cleanup scheduler for expired secrets, import sessions, and invite tokens
   const cleanupScheduler = new CleanupScheduler([
     { store: secretCache, intervalMs: 60_000, name: "secretCache" },
     { store: importSessionCache, intervalMs: 60_000, name: "importSessionCache" },
     { store: inviteTokenRepository, intervalMs: 3_600_000, name: "inviteTokenRepository" },
     { store: confirmationCache, intervalMs: 60_000, name: "confirmationCache" },
+    { store: priceHistoryRepository, intervalMs: 3_600_000, name: "priceHistoryRepository" },
   ]);
   cleanupScheduler.start();
 
@@ -431,8 +444,12 @@ async function main(): Promise<void> {
     return { registry, gateway };
   }
 
+  // Market monitor scheduler, created after the message sender is available
+  let marketMonitorScheduler: MarketMonitorScheduler | undefined;
+
   // Cleanup function
   const cleanup = async (): Promise<void> => {
+    marketMonitorScheduler?.stop();
     cleanupScheduler.stop();
     await mainDb?.destroy();
     await authDb?.destroy();
@@ -456,6 +473,34 @@ async function main(): Promise<void> {
     importWallet,
     messageSender,
   );
+
+  // Market monitor: collect prices -> analyze -> notify (requires live price source)
+  if (priceRepository) {
+    const marketNotifier = new MarketNotifier({
+      collectMarketData: new CollectMarketDataUseCase(priceRepository, priceHistoryRepository),
+      analyzeMarket: new AnalyzeMarketUseCase(priceHistoryRepository, operationLockRepository),
+      getMarketDigest: new GetMarketDigestUseCase(priceHistoryRepository),
+      getAllAuthorizedUsers,
+      messageSender,
+      marketFormatter: new MarketFormatter(),
+      digestHourUtc: config.market.digestHourUtc,
+    });
+
+    // Warm up price history on cold start before the first tick
+    if (config.market.backfill === "binance") {
+      const backfillPriceHistory = new BackfillPriceHistoryUseCase(
+        priceHistoryRepository,
+        new BinanceHistoricalPriceRepository(new BinanceKlinesClient()),
+      );
+      await backfillPriceHistory.execute(Date.now());
+    }
+
+    marketMonitorScheduler = new MarketMonitorScheduler(
+      () => marketNotifier.tick(),
+      config.market.pollIntervalMs,
+    );
+    marketMonitorScheduler.start();
+  }
 
   // Build transport configuration
   const transportConfig: TelegramTransportConfig = {

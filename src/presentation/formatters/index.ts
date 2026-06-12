@@ -14,4 +14,5 @@ export { AdminFormatter, parseRole } from "./AdminFormatter.js";
 export { InviteFormatter } from "./InviteFormatter.js";
 export { ProgressFormatter, type FormattedProgress } from "./ProgressFormatter.js";
 export { ConfirmationFormatter } from "./ConfirmationFormatter.js";
+export { MarketFormatter } from "./MarketFormatter.js";
 export { Markdown } from "./markdown.js";

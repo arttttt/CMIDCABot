@@ -15,4 +15,6 @@ export {
   type PriceConfig,
   type PriceSource,
   type RateLimitConfig,
+  type MarketConfig,
+  type MarketBackfillSource,
 } from "./envSchema.js";

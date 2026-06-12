@@ -52,6 +52,11 @@ const envSchema = z
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
     RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(30),
 
+    // Market monitor
+    MARKET_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(300000),
+    MARKET_BACKFILL: z.enum(["binance", "off"]).default("binance"),
+    MARKET_DIGEST_HOUR_UTC: z.coerce.number().int().min(0).max(23).default(9),
+
   })
   .superRefine((data, ctx) => {
     const isDev = data.NODE_ENV !== "production";
@@ -155,6 +160,15 @@ export interface RateLimitConfig {
   maxRequests: number;
 }
 
+export type MarketBackfillSource = "binance" | "off";
+
+export interface MarketConfig {
+  pollIntervalMs: number;
+  backfill: MarketBackfillSource;
+  /** UTC hour (0-23) after which the daily digest is sent */
+  digestHourUtc: number;
+}
+
 export interface Config {
   telegram: TelegramConfig;
   solana: SolanaConfig;
@@ -166,6 +180,7 @@ export interface Config {
   http: HttpConfig;
   transport: TransportConfig;
   rateLimit: RateLimitConfig;
+  market: MarketConfig;
   isDev: boolean;
 }
 
@@ -211,6 +226,11 @@ function envToConfig(env: ValidatedEnv): Config {
     rateLimit: {
       windowMs: env.RATE_LIMIT_WINDOW_MS,
       maxRequests: env.RATE_LIMIT_MAX_REQUESTS,
+    },
+    market: {
+      pollIntervalMs: env.MARKET_POLL_INTERVAL_MS,
+      backfill: env.MARKET_BACKFILL,
+      digestHourUtc: env.MARKET_DIGEST_HOUR_UTC,
     },
     isDev,
   };

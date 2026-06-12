@@ -33,6 +33,7 @@ src/
 │   ├── web/
 │   ├── commands/
 │   ├── formatters/
+│   ├── notifications/       # push notifications (market monitor)
 │   └── protocol/
 │
 └── _wip/
