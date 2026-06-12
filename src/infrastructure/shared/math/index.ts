@@ -1,6 +1,5 @@
 export {
   toRawAmount,
-  toHumanAmount,
   toHumanAmountNumber,
   divideAmount,
   multiplyAmount,
