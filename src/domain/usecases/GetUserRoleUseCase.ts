@@ -5,7 +5,7 @@
  * Returns "guest" for unknown users (never undefined).
  */
 
-import type { OwnerConfig } from "../../infrastructure/shared/config/index.js";
+import type { OwnerConfig } from "../models/OwnerConfig.js";
 import type { AuthRepository } from "../repositories/AuthRepository.js";
 import type { UserIdentity } from "../models/UserIdentity.js";
 import type { UserRole } from "../models/AuthorizedUser.js";

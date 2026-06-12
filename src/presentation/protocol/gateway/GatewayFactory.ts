@@ -7,7 +7,7 @@
 
 import type { GetUserRoleUseCase } from "../../../domain/usecases/GetUserRoleUseCase.js";
 import type { RateLimitRepository } from "../../../domain/repositories/RateLimitRepository.js";
-import type { OwnerConfig } from "../../../infrastructure/shared/config/index.js";
+import type { OwnerConfig } from "../../../domain/models/OwnerConfig.js";
 import type { CommandRegistry } from "../../commands/types.js";
 import { Gateway } from "./Gateway.js";
 import { GatewayCore } from "./GatewayCore.js";

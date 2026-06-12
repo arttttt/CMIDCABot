@@ -5,7 +5,7 @@
  * through the application layers.
  */
 
-import { TelegramId } from "../../../domain/models/id/index.js";
+import { TelegramId } from "./id/index.js";
 
 export class OwnerConfig {
   readonly telegramId: TelegramId;

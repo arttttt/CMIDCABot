@@ -8,7 +8,7 @@
 
 import { AssetSymbol } from "../../../types/portfolio.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
-import { TOKEN_MINTS } from "../../../infrastructure/shared/config/index.js";
+import { TOKEN_MINTS } from "../../../domain/constants/tokens.js";
 
 // Jupiter Price API v3 endpoint (requires API key from https://portal.jup.ag)
 const JUPITER_PRICE_API = "https://api.jup.ag/price/v3";

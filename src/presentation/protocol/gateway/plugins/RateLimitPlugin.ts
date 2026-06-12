@@ -14,7 +14,7 @@ import type { GatewayPlugin, GatewayHandler, GatewayRequest } from "../types.js"
 import type { GatewayContext } from "../GatewayContext.js";
 import type { ClientResponseStream } from "../../types.js";
 import type { RateLimitRepository } from "../../../../domain/repositories/RateLimitRepository.js";
-import type { OwnerConfig } from "../../../../infrastructure/shared/config/index.js";
+import type { OwnerConfig } from "../../../../domain/models/OwnerConfig.js";
 import type { UserIdentity } from "../../../../domain/models/UserIdentity.js";
 import { ClientResponse } from "../../types.js";
 import { StreamUtils } from "../stream.js";

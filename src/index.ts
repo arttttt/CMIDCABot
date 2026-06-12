@@ -10,7 +10,9 @@ import { randomUUID } from "crypto";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
-import { loadConfig, OwnerConfig } from "./infrastructure/shared/config/index.js";
+import { loadConfig } from "./infrastructure/shared/config/index.js";
+import { OwnerConfig } from "./domain/models/OwnerConfig.js";
+import { MAX_USDC_AMOUNT } from "./domain/constants.js";
 import { setLogger, DebugLogger, NoOpLogger } from "./infrastructure/shared/logging/index.js";
 import { createMainDatabase, createAuthDatabase } from "./data/sources/database/index.js";
 import { createMainRepositories } from "./data/factories/RepositoryFactory.js";
@@ -98,6 +100,11 @@ async function main(): Promise<void> {
   console.log(`CMI DCA Bot v${pkg.version}`);
 
   const config = loadConfig();
+
+  // Domain limit is enforced here (composition root): envSchema must not depend on domain
+  if (config.dca.amountUsdc > MAX_USDC_AMOUNT) {
+    throw new Error(`DCA_AMOUNT_USDC must not exceed ${MAX_USDC_AMOUNT} USDC`);
+  }
 
   // Initialize logger based on environment
   setLogger(config.isDev ? new DebugLogger() : new NoOpLogger());

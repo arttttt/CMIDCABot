@@ -8,7 +8,7 @@
 
 import { TokenMint } from "../../../domain/models/id/index.js";
 import type { SwapQuote } from "../../../domain/models/quote/SwapQuote.js";
-import { TOKEN_MINTS, TOKEN_DECIMALS } from "../../../infrastructure/shared/config/index.js";
+import { TOKEN_MINTS, TOKEN_DECIMALS } from "../../../domain/constants/tokens.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 import { toRawAmount, toHumanAmountNumber } from "../../../infrastructure/shared/math/index.js";
 

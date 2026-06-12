@@ -15,7 +15,7 @@
 import { BalanceRepository, WalletBalances } from "../../../domain/repositories/BalanceRepository.js";
 import type { WalletAddress } from "../../../domain/models/id/index.js";
 import { SolanaRpcClient } from "../../sources/api/index.js";
-import { TOKENS } from "../../../infrastructure/shared/config/index.js";
+import { TOKENS } from "../../../domain/constants/tokens.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 /**
