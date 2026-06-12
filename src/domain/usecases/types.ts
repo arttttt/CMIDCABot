@@ -7,18 +7,6 @@ import { AssetSymbol } from "../../types/portfolio.js";
 import type { TxSignature, WalletAddress } from "../models/id/index.js";
 import { PortfolioStatus } from "../models/PortfolioTypes.js";
 
-// Wallet info (used by balance)
-export interface WalletInfo {
-  address: WalletAddress;
-  balance: number | null; // null if fetch failed
-}
-
-// Balance result
-export interface BalanceResult {
-  type: "success" | "no_wallet" | "fetch_error";
-  wallet?: WalletInfo;
-}
-
 // Purchase result (real swap via Jupiter)
 export interface PurchaseResult {
   type: "success" | "invalid_amount" | "no_wallet" | "insufficient_usdc_balance" | "insufficient_sol_balance" | "rpc_error" | "quote_error" | "build_error" | "send_error" | "unavailable" | "high_price_impact" | "operation_in_progress";
