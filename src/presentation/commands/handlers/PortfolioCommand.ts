@@ -242,7 +242,6 @@ export class PortfolioCommand implements Command {
         const { confirmationRepository, confirmationFormatter, swapRepository } = this.deps;
 
         return StreamUtils.catchAsync(async () => {
-            // eslint-disable-next-line @typescript-eslint/no-this-alias
             const self = this;
             async function* stream(): import("../../protocol/types.js").ClientResponseStream {
                 const sessionId = self.parseSessionId(sessionIdStr);

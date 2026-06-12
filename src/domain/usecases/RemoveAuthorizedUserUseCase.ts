@@ -3,7 +3,7 @@
  */
 
 import type { TelegramId } from "../models/id/index.js";
-import type { OwnerConfig } from "../../infrastructure/shared/config/index.js";
+import type { OwnerConfig } from "../models/OwnerConfig.js";
 import { UserIdentity } from "../models/UserIdentity.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { canManageRole, isAdminRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
