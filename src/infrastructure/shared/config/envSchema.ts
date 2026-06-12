@@ -24,7 +24,7 @@ const envSchema = z
       .regex(/^[A-Za-z0-9+/=]{43,44}$/, "Must be base64-encoded 32 bytes"),
 
     // Solana
-    SOLANA_RPC_URL: z.string().url().default("https://api.devnet.solana.com"),
+    SOLANA_RPC_URL: z.string().url().default("https://api.mainnet-beta.solana.com"),
 
     // Database
     DATABASE_PATH: z.string().default("./data/bot.db"),

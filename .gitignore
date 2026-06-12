@@ -32,10 +32,5 @@ npm-debug.log*
 !package.json
 !package-lock.json
 !tsconfig.json
-!.refs.json
-
-# Perles
-.perles/
-!docs/drafts/.refs.json
 
 .worktrees
