@@ -8,10 +8,6 @@ import { Markdown } from "./markdown.js";
 
 export class PriceFormatter {
   format(result: GetPricesResult): ClientResponse {
-    if (result.status === "unavailable") {
-      return new ClientResponse("❌ Prices are not available (dev mode only)");
-    }
-
     if (result.status === "error") {
       return new ClientResponse(`❌ Failed to fetch prices: ${Markdown.escape(result.message ?? "")}`);
     }

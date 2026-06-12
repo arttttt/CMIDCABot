@@ -53,7 +53,6 @@ export class SwapCommand implements Command {
     private createExecuteCommand(): Command {
         const deps = this.deps;
         const { confirmationRepository, confirmationFormatter, swapRepository } = deps;
-        const hasConfirmationFlow = confirmationRepository && confirmationFormatter && swapRepository;
 
         const cmd: Command = {
             definition: { name: "execute", description: "Execute real swap", usage: "<amount> [asset]" },
@@ -69,47 +68,36 @@ export class SwapCommand implements Command {
                 }
                 const asset = args[1] || "SOL";
 
-                // With confirmation flow: show preview
-                if (hasConfirmationFlow) {
-                    try {
-                        const quote = await swapRepository!.getQuoteUsdcToAsset(
-                            amount,
-                            asset.toUpperCase() as AssetSymbol,
-                        );
-                        const sessionId = confirmationRepository!.store(
-                            ctx.telegramId,
-                            "swap_execute",
-                            amount,
-                            asset.toUpperCase(),
-                            quote,
-                        );
-                        return confirmationFormatter!.formatPreview(
-                            "swap_execute",
-                            amount,
-                            asset.toUpperCase(),
-                            quote,
-                            sessionId,
-                            confirmationRepository!.getTtlSeconds(),
-                        );
-                    } catch (error) {
-                        logger.error("SwapExecute", "Failed to get quote for preview", {
-                            error: error instanceof Error ? error.message : String(error),
-                        });
-                        return deps.swapFormatter.format({
-                            status: "quote_error",
-                            message: "Failed to get quote",
-                        });
-                    }
+                // Show confirmation preview; the swap itself runs via the confirm callback
+                try {
+                    const quote = await swapRepository.getQuoteUsdcToAsset(
+                        amount,
+                        asset.toUpperCase() as AssetSymbol,
+                    );
+                    const sessionId = confirmationRepository.store(
+                        ctx.telegramId,
+                        "swap_execute",
+                        amount,
+                        asset.toUpperCase(),
+                        quote,
+                    );
+                    return confirmationFormatter.formatPreview(
+                        "swap_execute",
+                        amount,
+                        asset.toUpperCase(),
+                        quote,
+                        sessionId,
+                        confirmationRepository.getTtlSeconds(),
+                    );
+                } catch (error) {
+                    logger.error("SwapExecute", "Failed to get quote for preview", {
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                    return deps.swapFormatter.format({
+                        status: "quote_error",
+                        message: "Failed to get quote",
+                    });
                 }
-
-                // Without confirmation flow: execute directly
-                let result: SwapResult = { status: "unavailable" };
-                for await (const step of deps.executeSwap.execute(ctx.telegramId, amount, asset)) {
-                    if (step.step === "completed") {
-                        result = step.result;
-                    }
-                }
-                return deps.swapFormatter.format(result);
             },
             // Streaming handler for progress updates
             streamingHandler: async function* (args, ctx): AsyncGenerator<StreamItem> {
@@ -125,84 +113,65 @@ export class SwapCommand implements Command {
                 }
                 const asset = args[1] || "SOL";
 
-                // With confirmation flow: show preview (no streaming needed for preview)
-                if (hasConfirmationFlow) {
-                    try {
-                        const quote = await swapRepository!.getQuoteUsdcToAsset(
-                            amount,
-                            asset.toUpperCase() as AssetSymbol,
-                        );
-                        const sessionId = confirmationRepository!.store(
-                            ctx.telegramId,
+                // Show confirmation preview; the swap itself streams via the confirm callback
+                try {
+                    const quote = await swapRepository.getQuoteUsdcToAsset(
+                        amount,
+                        asset.toUpperCase() as AssetSymbol,
+                    );
+                    const sessionId = confirmationRepository.store(
+                        ctx.telegramId,
+                        "swap_execute",
+                        amount,
+                        asset.toUpperCase(),
+                        quote,
+                    );
+                    yield {
+                        response: confirmationFormatter.formatPreview(
                             "swap_execute",
                             amount,
                             asset.toUpperCase(),
                             quote,
-                        );
-                        yield {
-                            response: confirmationFormatter!.formatPreview(
-                                "swap_execute",
-                                amount,
-                                asset.toUpperCase(),
-                                quote,
-                                sessionId,
-                                confirmationRepository!.getTtlSeconds(),
-                            ),
-                            mode: "final",
-                        };
-                        return;
-                    } catch (error) {
-                        logger.error("SwapExecute", "Failed to get quote for preview", {
-                            error: error instanceof Error ? error.message : String(error),
-                        });
-                        yield {
-                            response: deps.swapFormatter.format({
-                                status: "quote_error",
-                                message: "Failed to get quote",
-                            }),
-                            mode: "final",
-                        };
-                        return;
-                    }
-                }
-
-                // Without confirmation flow: stream progress from use case
-                for await (const step of deps.executeSwap.execute(ctx.telegramId, amount, asset)) {
-                    if (step.step === "completed") {
-                        yield {
-                            response: deps.swapFormatter.format(step.result),
-                            mode: "final",
-                        };
-                    } else {
-                        const formatted = deps.progressFormatter.formatSwapStep(step);
-                        yield { response: formatted.response, mode: formatted.mode };
-                    }
+                            sessionId,
+                            confirmationRepository.getTtlSeconds(),
+                        ),
+                        mode: "final",
+                    };
+                } catch (error) {
+                    logger.error("SwapExecute", "Failed to get quote for preview", {
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                    yield {
+                        response: deps.swapFormatter.format({
+                            status: "quote_error",
+                            message: "Failed to get quote",
+                        }),
+                        mode: "final",
+                    };
                 }
             },
         };
 
-        if (hasConfirmationFlow) {
-            cmd.callbacks = new Map([
-                ["confirm", {
-                    handler: async (ctx, params) => {
-                        if (params.length === 0) {
-                            return confirmationFormatter!.formatSessionNotFound();
-                        }
-                        return this.handleConfirm(params[0], ctx);
-                    },
-                    params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
-                }],
-                ["cancel", {
-                    handler: async (ctx, params) => {
-                        if (params.length === 0) {
-                            return confirmationFormatter!.formatSessionNotFound();
-                        }
-                        return this.handleCancel(params[0], ctx);
-                    },
-                    params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
-                }],
-            ]);
-        }
+        cmd.callbacks = new Map([
+            ["confirm", {
+                handler: async (ctx, params) => {
+                    if (params.length === 0) {
+                        return confirmationFormatter.formatSessionNotFound();
+                    }
+                    return this.handleConfirm(params[0], ctx);
+                },
+                params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
+            }],
+            ["cancel", {
+                handler: async (ctx, params) => {
+                    if (params.length === 0) {
+                        return confirmationFormatter.formatSessionNotFound();
+                    }
+                    return this.handleCancel(params[0], ctx);
+                },
+                params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
+            }],
+        ]);
 
         return cmd;
     }
@@ -222,13 +191,13 @@ export class SwapCommand implements Command {
         const { confirmationRepository, confirmationFormatter, swapRepository } = this.deps;
         const sessionId = this.parseSessionId(sessionIdStr);
         if (!sessionId) {
-            return confirmationFormatter!.formatSessionNotFound();
+            return confirmationFormatter.formatSessionNotFound();
         }
 
-        const session = confirmationRepository!.get(sessionId);
+        const session = confirmationRepository.get(sessionId);
 
         if (!session) {
-            return confirmationFormatter!.formatSessionNotFound();
+            return confirmationFormatter.formatSessionNotFound();
         }
 
         // Check if session belongs to this user
@@ -237,13 +206,13 @@ export class SwapCommand implements Command {
                 sessionUser: session.telegramId.value,
                 requestUser: ctx.telegramId.value,
             });
-            return confirmationFormatter!.formatSessionNotFound();
+            return confirmationFormatter.formatSessionNotFound();
         }
 
         // Get fresh quote to check slippage
         let freshQuote;
         try {
-            freshQuote = await swapRepository!.getQuoteUsdcToAsset(
+            freshQuote = await swapRepository.getQuoteUsdcToAsset(
                 session.amount,
                 session.asset as AssetSymbol,
             );
@@ -251,7 +220,7 @@ export class SwapCommand implements Command {
             logger.error("SwapExecute", "Failed to get fresh quote", {
                 error: error instanceof Error ? error.message : String(error),
             });
-            confirmationRepository!.cancel(sessionId);
+            confirmationRepository.cancel(sessionId);
             return this.deps.swapFormatter.format({
                 status: "quote_error",
                 message: "Failed to refresh quote",
@@ -261,27 +230,27 @@ export class SwapCommand implements Command {
         // Check slippage
         if (SlippagePolicy.isExceeded(session.quote, freshQuote)) {
             // Can we re-confirm?
-            if (confirmationRepository!.updateQuote(sessionId, freshQuote)) {
+            if (confirmationRepository.updateQuote(sessionId, freshQuote)) {
                 // Show slippage warning with new price
-                return confirmationFormatter!.formatSlippageWarning(
+                return confirmationFormatter.formatSlippageWarning(
                     session.type,
                     session.quote,
                     freshQuote,
                     sessionId,
-                    confirmationRepository!.getTtlSeconds(),
+                    confirmationRepository.getTtlSeconds(),
                 );
             } else {
                 // Max re-confirms exceeded
-                confirmationRepository!.cancel(sessionId);
-                return confirmationFormatter!.formatMaxSlippageExceeded(session.type);
+                confirmationRepository.cancel(sessionId);
+                return confirmationFormatter.formatMaxSlippageExceeded(session.type);
             }
         }
 
         // Slippage OK - consume session and execute
-        confirmationRepository!.consume(sessionId);
+        confirmationRepository.consume(sessionId);
 
         // Execute swap (synchronously collect result)
-        let result: SwapResult = { status: "unavailable" };
+        let result: SwapResult = { status: "send_error", message: "Swap did not complete" };
         for await (const step of this.deps.executeSwap.execute(ctx.telegramId, session.amount, session.asset)) {
             if (step.step === "completed") {
                 result = step.result;
@@ -297,13 +266,13 @@ export class SwapCommand implements Command {
         const { confirmationRepository, confirmationFormatter } = this.deps;
         const sessionId = this.parseSessionId(sessionIdStr);
         if (!sessionId) {
-            return confirmationFormatter!.formatSessionNotFound();
+            return confirmationFormatter.formatSessionNotFound();
         }
 
-        const session = confirmationRepository!.get(sessionId);
+        const session = confirmationRepository.get(sessionId);
 
         if (!session) {
-            return confirmationFormatter!.formatSessionNotFound();
+            return confirmationFormatter.formatSessionNotFound();
         }
 
         // Check if session belongs to this user
@@ -312,10 +281,10 @@ export class SwapCommand implements Command {
                 sessionUser: session.telegramId.value,
                 requestUser: ctx.telegramId.value,
             });
-            return confirmationFormatter!.formatSessionNotFound();
+            return confirmationFormatter.formatSessionNotFound();
         }
 
-        confirmationRepository!.cancel(sessionId);
-        return confirmationFormatter!.formatCancelled(session.type);
+        confirmationRepository.cancel(sessionId);
+        return confirmationFormatter.formatCancelled(session.type);
     }
 }

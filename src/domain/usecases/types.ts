@@ -9,7 +9,7 @@ import { PortfolioStatus } from "../models/PortfolioTypes.js";
 
 // Purchase result (real swap via Jupiter)
 export interface PurchaseResult {
-  type: "success" | "invalid_amount" | "no_wallet" | "insufficient_usdc_balance" | "insufficient_sol_balance" | "rpc_error" | "quote_error" | "build_error" | "send_error" | "unavailable" | "high_price_impact" | "operation_in_progress";
+  type: "success" | "invalid_amount" | "no_wallet" | "insufficient_usdc_balance" | "insufficient_sol_balance" | "rpc_error" | "quote_error" | "build_error" | "send_error" | "high_price_impact" | "operation_in_progress";
   asset?: AssetSymbol;
   amountAsset?: number;
   amountUsdc?: number;
@@ -21,7 +21,7 @@ export interface PurchaseResult {
 
 // Portfolio status result
 export interface PortfolioStatusResult {
-  type: "success" | "empty" | "not_found" | "unavailable" | "error";
+  type: "success" | "empty" | "not_found" | "error";
   status?: PortfolioStatus;
   error?: string;
 }

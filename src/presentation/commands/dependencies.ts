@@ -59,16 +59,16 @@ export interface WalletCommandDeps {
 }
 
 export interface PortfolioCommandDeps {
-    getPortfolioStatus: GetPortfolioStatusUseCase | undefined;
-    executePurchase: ExecutePurchaseUseCase | undefined;
-    determineAssetToBuy: DetermineAssetToBuyUseCase | undefined;
+    getPortfolioStatus: GetPortfolioStatusUseCase;
+    executePurchase: ExecutePurchaseUseCase;
+    determineAssetToBuy: DetermineAssetToBuyUseCase;
     portfolioFormatter: PortfolioFormatter;
     purchaseFormatter: PurchaseFormatter;
     progressFormatter: ProgressFormatter;
     // Confirmation flow dependencies
-    confirmationRepository: ConfirmationRepository | undefined;
-    confirmationFormatter: ConfirmationFormatter | undefined;
-    swapRepository: SwapRepository | undefined;
+    confirmationRepository: ConfirmationRepository;
+    confirmationFormatter: ConfirmationFormatter;
+    swapRepository: SwapRepository;
 }
 
 export interface PricesCommandDeps {
@@ -88,9 +88,9 @@ export interface SwapCommandDeps {
     swapFormatter: SwapFormatter;
     progressFormatter: ProgressFormatter;
     // Confirmation flow dependencies
-    confirmationRepository: ConfirmationRepository | undefined;
-    confirmationFormatter: ConfirmationFormatter | undefined;
-    swapRepository: SwapRepository | undefined;
+    confirmationRepository: ConfirmationRepository;
+    confirmationFormatter: ConfirmationFormatter;
+    swapRepository: SwapRepository;
 }
 
 export interface AdminCommandDeps {

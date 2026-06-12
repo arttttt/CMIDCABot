@@ -14,19 +14,13 @@ export interface PriceInfo {
 
 export type GetPricesResult =
   | { status: "success"; prices: PriceInfo[]; fetchedAt: Date }
-  | { status: "unavailable" }
   | { status: "error"; message: string };
 
 export class GetPricesUseCase {
-  constructor(private priceRepository: PriceRepository | undefined) {}
+  constructor(private priceRepository: PriceRepository) {}
 
   async execute(): Promise<GetPricesResult> {
     logger.info("GetPrices", "Fetching current prices");
-
-    if (!this.priceRepository) {
-      logger.warn("GetPrices", "Price repository unavailable");
-      return { status: "unavailable" };
-    }
 
     try {
       const pricesRecord = await this.priceRepository.getPricesRecord();

@@ -9,10 +9,6 @@ import { Markdown } from "./markdown.js";
 
 export class SwapFormatter {
   format(result: SwapResult): ClientResponse {
-    if (result.status === "unavailable") {
-      return new ClientResponse(`Swap unavailable (requires ${Markdown.code("JUPITER_API_KEY")})`);
-    }
-
     if (result.status === "no_wallet") {
       return new ClientResponse(`No wallet found. Create one with ${Markdown.code("/wallet create")}`);
     }
