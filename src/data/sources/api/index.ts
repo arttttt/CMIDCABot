@@ -26,12 +26,6 @@ export type {
   QuoteParams as SwapQuoteParams,
 } from "./JupiterSwapClient.js";
 
-export { JupiterQuoteClient } from "./JupiterQuoteClient.js";
-export type {
-  Quote,
-  QuoteParams as BasicQuoteParams,
-} from "./JupiterQuoteClient.js";
-
 // Batch RPC
 export { BatchRpcClient } from "./BatchRpcClient.js";
 export type { JsonRpcError, RpcCall, BatchCallResult } from "./BatchRpcClient.js";
