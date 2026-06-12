@@ -10,7 +10,7 @@ import type { MainDatabase } from "../../types/database.js";
 /**
  * Create a Kysely instance for the main database
  */
-export function createMainDatabase(dbPath: string): Kysely<MainDatabase> {
+export async function createMainDatabase(dbPath: string): Promise<Kysely<MainDatabase>> {
   const dir = dirname(dbPath);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
@@ -22,15 +22,15 @@ export function createMainDatabase(dbPath: string): Kysely<MainDatabase> {
     }),
   });
 
-  initMainSchema(db);
+  await initMainSchema(db);
   return db;
 }
 
 /**
  * Initialize main database schema
  */
-function initMainSchema(db: Kysely<MainDatabase>): void {
-  sql`
+async function initMainSchema(db: Kysely<MainDatabase>): Promise<void> {
+  await sql`
     CREATE TABLE IF NOT EXISTS users (
       telegram_id INTEGER PRIMARY KEY,
       wallet_address TEXT,
@@ -40,7 +40,7 @@ function initMainSchema(db: Kysely<MainDatabase>): void {
     )
   `.execute(db);
 
-  sql`
+  await sql`
     CREATE TABLE IF NOT EXISTS transactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       telegram_id INTEGER NOT NULL,
@@ -53,11 +53,11 @@ function initMainSchema(db: Kysely<MainDatabase>): void {
     )
   `.execute(db);
 
-  sql`
+  await sql`
     CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(telegram_id)
   `.execute(db);
 
-  sql`
+  await sql`
     CREATE TABLE IF NOT EXISTS price_history (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       asset_symbol TEXT NOT NULL,
@@ -67,7 +67,7 @@ function initMainSchema(db: Kysely<MainDatabase>): void {
     )
   `.execute(db);
 
-  sql`
+  await sql`
     CREATE INDEX IF NOT EXISTS idx_price_history_asset_ts ON price_history(asset_symbol, timestamp_ms)
   `.execute(db);
 }

@@ -66,8 +66,8 @@ export async function createStorage(config: Config): Promise<Storage> {
   const encryptionService = new KeyEncryptionService();
   await encryptionService.initialize(config.encryption.masterKey);
 
-  const mainDb = createMainDatabase(config.database.path);
-  const authDb = createAuthDatabase(config.auth.dbPath);
+  const mainDb = await createMainDatabase(config.database.path);
+  const authDb = await createAuthDatabase(config.auth.dbPath);
 
   const { userRepository, transactionRepository } = createMainRepositories(mainDb, encryptionService);
   const authRepository = new SQLiteAuthRepository(authDb);
