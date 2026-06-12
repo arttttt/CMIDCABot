@@ -155,8 +155,6 @@ export class ExecutePurchaseUseCase {
           confirmed: swapResult.confirmed,
         };
       }
-      case "unavailable":
-        return { type: "unavailable" };
       case "no_wallet":
         return { type: "no_wallet" };
       case "invalid_amount":

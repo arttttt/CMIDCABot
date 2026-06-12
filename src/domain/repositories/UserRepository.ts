@@ -2,7 +2,7 @@
  * User repository interface
  */
 import type { TelegramId, WalletAddress } from "../models/id/index.js";
-import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../models/User.js";
+import { User, UserWithWallet } from "../models/User.js";
 
 export interface UserRepository {
   /**
@@ -51,27 +51,7 @@ export interface UserRepository {
   clearPrivateKey(telegramId: TelegramId): Promise<void>;
 
   /**
-   * Get all users that have a DCA wallet (private key) set
-   */
-  getAllWithDcaWallet(): Promise<UserWithDcaWallet[]>;
-
-  /**
-   * Set user's DCA active status
-   */
-  setDcaActive(telegramId: TelegramId, active: boolean): Promise<void>;
-
-  /**
-   * Get all active DCA users (have wallet AND DCA is enabled)
-   */
-  getAllActiveDcaUsers(): Promise<ActiveDcaUser[]>;
-
-  /**
-   * Check if there are any active DCA users
-   */
-  hasActiveDcaUsers(): Promise<boolean>;
-
-  /**
-   * Delete a user and all their data (wallet, DCA settings)
+   * Delete a user and all their data (wallet, settings)
    */
   delete(telegramId: TelegramId): Promise<void>;
 }

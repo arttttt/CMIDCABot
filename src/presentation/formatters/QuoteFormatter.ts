@@ -8,10 +8,6 @@ import { Markdown } from "./markdown.js";
 
 export class QuoteFormatter {
   format(result: GetQuoteResult): ClientResponse {
-    if (result.status === "unavailable") {
-      return new ClientResponse(`❌ Quote service is not available (requires ${Markdown.code("JUPITER_API_KEY")})`);
-    }
-
     if (result.status === "invalid_amount") {
       return new ClientResponse(`❌ Invalid amount: ${Markdown.escape(result.message ?? "")}`);
     }

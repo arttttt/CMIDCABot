@@ -33,7 +33,6 @@ export type SwapResult =
       signature: TxSignature;
       confirmed: boolean;
     }
-  | { status: "unavailable" }
   | { status: "no_wallet" }
   | { status: "invalid_amount"; message: string }
   | { status: "operation_in_progress" }

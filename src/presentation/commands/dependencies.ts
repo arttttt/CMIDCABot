@@ -5,9 +5,6 @@ import {
     ImportWalletUseCase,
     DeleteWalletUseCase,
     ExportWalletKeyUseCase,
-    StartDcaUseCase,
-    StopDcaUseCase,
-    GetDcaStatusUseCase,
     GetPortfolioStatusUseCase,
     ExecutePurchaseUseCase,
     DetermineAssetToBuyUseCase,
@@ -31,8 +28,7 @@ import type {
 } from "../../domain/repositories/index.js";
 
 import {
-    DcaWalletFormatter,
-    DcaFormatter,
+    WalletFormatter,
     PortfolioFormatter,
     PurchaseFormatter,
     PriceFormatter,
@@ -58,28 +54,21 @@ export interface WalletCommandDeps {
     importWallet: ImportWalletUseCase;
     deleteWallet: DeleteWalletUseCase;
     exportWalletKey: ExportWalletKeyUseCase;
-    formatter: DcaWalletFormatter;
+    formatter: WalletFormatter;
     importSessionStore: ImportSessionRepository;
 }
 
-export interface DcaCommandDeps {
-    startDca: StartDcaUseCase;
-    stopDca: StopDcaUseCase;
-    getDcaStatus: GetDcaStatusUseCase;
-    formatter: DcaFormatter;
-}
-
 export interface PortfolioCommandDeps {
-    getPortfolioStatus: GetPortfolioStatusUseCase | undefined;
-    executePurchase: ExecutePurchaseUseCase | undefined;
-    determineAssetToBuy: DetermineAssetToBuyUseCase | undefined;
+    getPortfolioStatus: GetPortfolioStatusUseCase;
+    executePurchase: ExecutePurchaseUseCase;
+    determineAssetToBuy: DetermineAssetToBuyUseCase;
     portfolioFormatter: PortfolioFormatter;
     purchaseFormatter: PurchaseFormatter;
     progressFormatter: ProgressFormatter;
     // Confirmation flow dependencies
-    confirmationRepository: ConfirmationRepository | undefined;
-    confirmationFormatter: ConfirmationFormatter | undefined;
-    swapRepository: SwapRepository | undefined;
+    confirmationRepository: ConfirmationRepository;
+    confirmationFormatter: ConfirmationFormatter;
+    swapRepository: SwapRepository;
 }
 
 export interface PricesCommandDeps {
@@ -99,9 +88,9 @@ export interface SwapCommandDeps {
     swapFormatter: SwapFormatter;
     progressFormatter: ProgressFormatter;
     // Confirmation flow dependencies
-    confirmationRepository: ConfirmationRepository | undefined;
-    confirmationFormatter: ConfirmationFormatter | undefined;
-    swapRepository: SwapRepository | undefined;
+    confirmationRepository: ConfirmationRepository;
+    confirmationFormatter: ConfirmationFormatter;
+    swapRepository: SwapRepository;
 }
 
 export interface AdminCommandDeps {

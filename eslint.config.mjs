@@ -23,13 +23,13 @@ export default [
         },
       },
       'boundaries/elements': [
+        { type: 'app', pattern: ['src/app/**', 'src/index.ts'], mode: 'file' },
         { type: 'domain-policies', pattern: 'src/domain/policies/**', mode: 'file' },
         { type: 'domain', pattern: 'src/domain/**', mode: 'file' },
         { type: 'data', pattern: 'src/data/**', mode: 'file' },
         { type: 'presentation', pattern: 'src/presentation/**', mode: 'file' },
         { type: 'infra-internal', pattern: 'src/infrastructure/internal/**', mode: 'file' },
         { type: 'infra-shared', pattern: 'src/infrastructure/shared/**', mode: 'file' },
-        { type: 'wip', pattern: 'src/_wip/**', mode: 'file' },
         { type: 'types', pattern: 'src/types/**', mode: 'file' },
       ],
       'boundaries/ignore': ['**/*.test.ts', '**/*.spec.ts'],
@@ -39,11 +39,15 @@ export default [
       'boundaries/element-types': ['error', {
         default: 'disallow',
         rules: [
+          // App: composition root, wires all layers together
+          {
+            from: 'app',
+            allow: ['app', 'domain', 'domain-policies', 'data', 'presentation', 'infra-internal', 'infra-shared', 'types'],
+          },
           // Domain: only own interfaces + infra-shared + types
-          // NOTE: 'wip' is temporarily allowed during migration period
           {
             from: 'domain',
-            allow: ['domain', 'domain-policies', 'infra-shared', 'types', 'wip'],
+            allow: ['domain', 'domain-policies', 'infra-shared', 'types'],
           },
           // Domain policies: pure rules based on domain data
           {
@@ -69,11 +73,6 @@ export default [
           {
             from: 'infra-shared',
             allow: ['infra-shared', 'types'],
-          },
-          // WIP: temporary, more permissive
-          {
-            from: 'wip',
-            allow: ['domain', 'data', 'infra-shared', 'types', 'wip'],
           },
         ],
       }],

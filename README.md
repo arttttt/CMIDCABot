@@ -1,6 +1,6 @@
 # CMI DCA Bot
 
-Telegram bot for automated DCA (Dollar Cost Averaging) investing in cryptocurrencies on Solana.
+Telegram bot for DCA (Dollar Cost Averaging) investing in cryptocurrencies on Solana. A built-in market monitor watches prices and notifies about good buy moments (dips, oversold RSI) plus a daily digest; purchases are manual decisions on those signals.
 
 Implements the "Crypto Majors Index" strategy — a basket of three assets:
 - **SOL** — 40%
@@ -41,10 +41,7 @@ cp .env.example .env
 | `SOLANA_RPC_URL` | No | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint |
 | `DATABASE_PATH` | No | `./data/bot.db` | Path to SQLite database |
 | `AUTH_DATABASE_PATH` | No | `./data/auth.db` | Path to authorization database |
-| `DCA_AMOUNT_USDC` | No | `6` | Purchase amount in USDC equivalent |
-| `DCA_INTERVAL_MS` | No | `86400000` | Interval between purchases in ms (24h) |
-| `PRICE_SOURCE` | No | `jupiter` | Price source (`jupiter` \| `mock`) |
-| `JUPITER_API_KEY` | Yes* | - | Jupiter API key from portal.jup.ag |
+| `JUPITER_API_KEY` | Yes | - | Jupiter API key from portal.jup.ag |
 | `BOT_TRANSPORT` | No | `polling` | Transport mode (`polling` \| `webhook`) |
 | `WEBHOOK_URL` | Yes** | - | Public HTTPS URL for webhook |
 | `WEBHOOK_SECRET` | No | - | Secret token for webhook validation |
@@ -53,8 +50,10 @@ cp .env.example .env
 | `PUBLIC_URL` | Yes | - | Public URL for one-time secret links |
 | `RATE_LIMIT_WINDOW_MS` | No | `60000` | Rate limit window in ms (1 minute) |
 | `RATE_LIMIT_MAX_REQUESTS` | No | `30` | Maximum requests per window |
+| `MARKET_POLL_INTERVAL_MS` | No | `300000` | Market monitor polling interval in ms (5 minutes) |
+| `MARKET_BACKFILL` | No | `binance` | Historical backfill source on cold start (`binance` \| `off`) |
+| `MARKET_DIGEST_HOUR_UTC` | No | `9` | UTC hour (0-23) after which the daily digest is sent |
 
-\* Required when `PRICE_SOURCE=jupiter`
 \** Required when `BOT_TRANSPORT=webhook`
 
 ### Encryption Setup
@@ -224,6 +223,7 @@ npx tsc --noEmit
 | `/admin invite [role]` | admin | Create invite link (default role: user) |
 | `/portfolio` | user | Portfolio status |
 | `/portfolio buy <amount>` | user | Purchase asset using DCA strategy |
+| `/market` | user | Current market status and active buy signals |
 | `/version` | admin | Show bot version |
 | `/help` | guest | Show available commands |
 
@@ -231,9 +231,6 @@ npx tsc --noEmit
 
 | Command | Role | Description |
 |---------|------|-------------|
-| `/dca` | user | Show DCA status |
-| `/dca start` | user | Start DCA automation |
-| `/dca stop` | user | Stop DCA automation |
 | `/prices` | user | Show current asset prices |
 | `/swap` | user | Show swap usage |
 | `/swap quote <amount> [asset]` | user | Get swap quote (default: SOL) |

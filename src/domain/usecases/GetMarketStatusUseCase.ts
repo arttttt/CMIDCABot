@@ -20,21 +20,15 @@ import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export type GetMarketStatusResult =
   | { status: "success"; market: MarketStatus }
-  | { status: "unavailable" }
   | { status: "error"; message: string };
 
 export class GetMarketStatusUseCase {
   constructor(
-    private priceRepository: PriceRepository | undefined,
+    private priceRepository: PriceRepository,
     private priceHistoryRepository: PriceHistoryRepository,
   ) {}
 
   async execute(nowMs: number): Promise<GetMarketStatusResult> {
-    if (!this.priceRepository) {
-      logger.warn("GetMarketStatus", "Price repository unavailable");
-      return { status: "unavailable" };
-    }
-
     try {
       const prices = await this.priceRepository.getPricesRecord();
 

@@ -41,10 +41,6 @@ export class MarketFormatter {
    * Format the on-demand market status (/market command)
    */
   formatStatus(result: GetMarketStatusResult): ClientResponse {
-    if (result.status === "unavailable") {
-      return new ClientResponse("❌ Market status is not available (price source is not configured)");
-    }
-
     if (result.status === "error") {
       return new ClientResponse(`❌ Failed to fetch market status: ${result.message}`);
     }

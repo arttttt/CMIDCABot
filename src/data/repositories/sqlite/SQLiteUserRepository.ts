@@ -7,7 +7,7 @@
  */
 import { Kysely, sql, Selectable } from "kysely";
 import { UserRepository } from "../../../domain/repositories/UserRepository.js";
-import { User, UserWithWallet, UserWithDcaWallet, ActiveDcaUser } from "../../../domain/models/User.js";
+import { User, UserWithWallet } from "../../../domain/models/User.js";
 import { TelegramId, WalletAddress } from "../../../domain/models/id/index.js";
 import { UserNotFoundError } from "../../../domain/errors/index.js";
 import type { MainDatabase, UsersTable } from "../../types/database.js";
@@ -30,7 +30,6 @@ export class SQLiteUserRepository implements UserRepository {
       telegramId: new TelegramId(row.telegram_id),
       walletAddress: row.wallet_address ? new WalletAddress(row.wallet_address) : null,
       privateKey: row.private_key, // Encrypted
-      isDcaActive: row.is_dca_active === 1,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -150,63 +149,6 @@ export class SQLiteUserRepository implements UserRepository {
       return null;
     }
     return this.encryptionService.decrypt(row.private_key);
-  }
-
-  /**
-   * Get all users with DCA wallets.
-   * Note: privateKey is returned ENCRYPTED for security.
-   */
-  async getAllWithDcaWallet(): Promise<UserWithDcaWallet[]> {
-    const rows = await this.db
-      .selectFrom("users")
-      .select(["telegram_id", "private_key"])
-      .where("private_key", "is not", null)
-      .where("private_key", "!=", "")
-      .execute();
-
-    return rows.map((row) => ({
-      telegramId: new TelegramId(row.telegram_id),
-      privateKey: row.private_key!, // Encrypted
-    }));
-  }
-
-  async setDcaActive(id: TelegramId, active: boolean): Promise<void> {
-    await this.db
-      .updateTable("users")
-      .set({
-        is_dca_active: active ? 1 : 0,
-        updated_at: sql`CURRENT_TIMESTAMP`,
-      })
-      .where("telegram_id", "=", id.value)
-      .execute();
-  }
-
-  async getAllActiveDcaUsers(): Promise<ActiveDcaUser[]> {
-    const rows = await this.db
-      .selectFrom("users")
-      .select(["telegram_id", "wallet_address"])
-      .where("wallet_address", "is not", null)
-      .where("wallet_address", "!=", "")
-      .where("is_dca_active", "=", 1)
-      .execute();
-
-    return rows.map((row) => ({
-      telegramId: new TelegramId(row.telegram_id),
-      walletAddress: new WalletAddress(row.wallet_address!),
-    }));
-  }
-
-  async hasActiveDcaUsers(): Promise<boolean> {
-    const result = await this.db
-      .selectFrom("users")
-      .select("telegram_id")
-      .where("wallet_address", "is not", null)
-      .where("wallet_address", "!=", "")
-      .where("is_dca_active", "=", 1)
-      .limit(1)
-      .executeTakeFirst();
-
-    return result !== undefined;
   }
 
   async delete(id: TelegramId): Promise<void> {

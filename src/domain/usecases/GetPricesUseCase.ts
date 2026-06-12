@@ -3,7 +3,7 @@
  * Dev-only use case for debugging and monitoring
  */
 
-import { PriceRepository, PriceSource } from "../repositories/PriceRepository.js";
+import { PriceRepository } from "../repositories/PriceRepository.js";
 import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
@@ -13,24 +13,17 @@ export interface PriceInfo {
 }
 
 export type GetPricesResult =
-  | { status: "success"; prices: PriceInfo[]; source: PriceSource; fetchedAt: Date }
-  | { status: "unavailable" }
+  | { status: "success"; prices: PriceInfo[]; fetchedAt: Date }
   | { status: "error"; message: string };
 
 export class GetPricesUseCase {
-  constructor(private priceRepository: PriceRepository | undefined) {}
+  constructor(private priceRepository: PriceRepository) {}
 
   async execute(): Promise<GetPricesResult> {
     logger.info("GetPrices", "Fetching current prices");
 
-    if (!this.priceRepository) {
-      logger.warn("GetPrices", "Price repository unavailable");
-      return { status: "unavailable" };
-    }
-
     try {
       const pricesRecord = await this.priceRepository.getPricesRecord();
-      const source = this.priceRepository.getPriceSource();
 
       const prices: PriceInfo[] = [
         { symbol: "BTC", priceUsd: pricesRecord.BTC },
@@ -39,7 +32,6 @@ export class GetPricesUseCase {
       ];
 
       logger.debug("GetPrices", "Prices fetched", {
-        source,
         BTC: pricesRecord.BTC,
         ETH: pricesRecord.ETH,
         SOL: pricesRecord.SOL,
@@ -48,7 +40,6 @@ export class GetPricesUseCase {
       return {
         status: "success",
         prices,
-        source,
         fetchedAt: new Date(),
       };
     } catch (error) {

@@ -3,7 +3,7 @@
  */
 
 import type { WalletAddress } from "../models/id/index.js";
-import type { DcaWalletInfo } from "./types.js";
+import type { WalletInfo } from "./types.js";
 import { GetWalletBalancesUseCase } from "./GetWalletBalancesUseCase.js";
 
 export class GetWalletInfoByAddressUseCase {
@@ -15,7 +15,7 @@ export class GetWalletInfoByAddressUseCase {
    * Get wallet info from address only.
    * Used for existing wallets where we don't want to decrypt the key.
    */
-  async execute(address: WalletAddress): Promise<DcaWalletInfo> {
+  async execute(address: WalletAddress): Promise<WalletInfo> {
     const { balance, usdcBalance } = await this.getWalletBalancesUseCase.execute(address);
 
     return { address, balance, usdcBalance };

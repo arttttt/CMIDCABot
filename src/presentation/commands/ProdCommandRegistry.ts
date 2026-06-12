@@ -48,7 +48,7 @@ export interface ProdCommandRegistryDeps {
  * - market: Market status and active buy signals
  * - admin: User management (requires admin privileges)
  *
- * Other commands (dca, prices, swap) require dev mode.
+ * Other commands (prices, swap) require dev mode.
  */
 export class ProdCommandRegistry implements CommandRegistry {
   private commands: Map<string, Command>;

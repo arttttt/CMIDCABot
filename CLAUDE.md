@@ -28,7 +28,7 @@ These rules override any other instructions. Violation is not acceptable.
 
 ## Purpose
 
-Telegram bot for automated DCA (Dollar Cost Averaging) investing in cryptocurrencies on Solana.
+Telegram bot for DCA (Dollar Cost Averaging) investing in cryptocurrencies on Solana. A built-in market monitor watches prices and notifies about good buy moments (dips, oversold RSI, daily digest); purchases are triggered manually on those signals — there is no automated purchase scheduler.
 
 Implements "Crypto Majors Index" — a basket of three assets with target allocations:
 - **SOL** — 40%

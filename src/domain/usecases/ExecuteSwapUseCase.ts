@@ -30,7 +30,7 @@ const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
 export class ExecuteSwapUseCase {
   constructor(
-    private swapRepository: SwapRepository | undefined,
+    private swapRepository: SwapRepository,
     private blockchainRepository: BlockchainRepository,
     private userRepository: UserRepository,
     private transactionRepository: TransactionRepository,
@@ -74,14 +74,7 @@ export class ExecuteSwapUseCase {
       }
     }
 
-    // Check if swap repository is available
     try {
-      if (!this.swapRepository) {
-        logger.warn("ExecuteSwap", "Swap repository unavailable");
-        yield SwapSteps.completed({ status: "unavailable" });
-        return;
-      }
-
     // Validate amount
     if (isNaN(amountUsdc) || amountUsdc <= 0) {
       yield SwapSteps.completed({

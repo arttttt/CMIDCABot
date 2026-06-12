@@ -11,7 +11,7 @@ import { logger } from "../../../infrastructure/shared/logging/index.js";
 /**
  * Create a Kysely instance for the authorization database
  */
-export function createAuthDatabase(dbPath: string): Kysely<AuthDatabase> {
+export async function createAuthDatabase(dbPath: string): Promise<Kysely<AuthDatabase>> {
   const dir = dirname(dbPath);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
@@ -23,7 +23,7 @@ export function createAuthDatabase(dbPath: string): Kysely<AuthDatabase> {
     }),
   });
 
-  initAuthSchema(db);
+  await initAuthSchema(db);
   logger.info("AuthDatabase", "Authorization database initialized", { path: dbPath });
   return db;
 }
@@ -31,8 +31,8 @@ export function createAuthDatabase(dbPath: string): Kysely<AuthDatabase> {
 /**
  * Initialize authorization database schema
  */
-function initAuthSchema(db: Kysely<AuthDatabase>): void {
-  sql`
+async function initAuthSchema(db: Kysely<AuthDatabase>): Promise<void> {
+  await sql`
     CREATE TABLE IF NOT EXISTS authorized_users (
       telegram_id INTEGER PRIMARY KEY,
       role TEXT NOT NULL DEFAULT 'user',
@@ -42,11 +42,11 @@ function initAuthSchema(db: Kysely<AuthDatabase>): void {
     )
   `.execute(db);
 
-  sql`
+  await sql`
     CREATE INDEX IF NOT EXISTS idx_auth_users_role ON authorized_users(role)
   `.execute(db);
 
-  sql`
+  await sql`
     CREATE TABLE IF NOT EXISTS invite_tokens (
       token TEXT PRIMARY KEY,
       role TEXT NOT NULL,
@@ -58,11 +58,11 @@ function initAuthSchema(db: Kysely<AuthDatabase>): void {
     )
   `.execute(db);
 
-  sql`
+  await sql`
     CREATE INDEX IF NOT EXISTS idx_invite_tokens_created_by ON invite_tokens(created_by)
   `.execute(db);
 
-  sql`
+  await sql`
     CREATE INDEX IF NOT EXISTS idx_invite_tokens_expires_at ON invite_tokens(expires_at)
   `.execute(db);
 }

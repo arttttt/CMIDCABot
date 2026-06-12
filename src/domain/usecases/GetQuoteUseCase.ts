@@ -11,7 +11,6 @@ import { MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";
 
 export type GetQuoteResult =
   | { status: "success"; quote: SwapQuote }
-  | { status: "unavailable" }
   | { status: "invalid_amount"; message: string }
   | { status: "invalid_asset"; message: string }
   | { status: "error"; message: string };
@@ -19,7 +18,7 @@ export type GetQuoteResult =
 const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
 export class GetQuoteUseCase {
-  constructor(private swapRepository: SwapRepository | undefined) {}
+  constructor(private swapRepository: SwapRepository) {}
 
   /**
    * Get quote for USDC → asset swap
@@ -28,11 +27,6 @@ export class GetQuoteUseCase {
    */
   async execute(amountUsdc: number, asset: string = "SOL"): Promise<GetQuoteResult> {
     logger.info("GetQuote", "Getting swap quote", { amountUsdc, asset });
-
-    if (!this.swapRepository) {
-      logger.warn("GetQuote", "Swap repository unavailable");
-      return { status: "unavailable" };
-    }
 
     // Validate amount
     if (isNaN(amountUsdc) || amountUsdc <= 0) {

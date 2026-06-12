@@ -28,11 +28,6 @@ export const Definitions = {
     description: "Portfolio status and manual buy",
   },
 
-  dca: {
-    name: "dca",
-    description: "Automatic purchases (status/start/stop)",
-  },
-
   prices: {
     name: "prices",
     description: "Current prices for BTC, ETH, SOL",

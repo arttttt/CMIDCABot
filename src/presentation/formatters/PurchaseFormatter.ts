@@ -9,11 +9,6 @@ import { Markdown } from "./markdown.js";
 export class PurchaseFormatter {
   format(result: PurchaseResult): ClientResponse {
     switch (result.type) {
-      case "unavailable":
-        return new ClientResponse(
-          `Portfolio purchases are not available. ${Markdown.code("JUPITER_API_KEY")} is required.`,
-        );
-
       case "invalid_amount":
         return new ClientResponse(
           result.error

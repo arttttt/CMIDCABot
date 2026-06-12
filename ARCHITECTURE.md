@@ -6,6 +6,8 @@
 
 ```
 src/
+├── app/                     # composition root: wires all layers (createStorage, createUseCases, ...)
+│
 ├── domain/
 │   ├── models/              # entities
 │   ├── constants/           # shared domain constants
@@ -35,14 +37,12 @@ src/
 │   ├── formatters/
 │   ├── notifications/       # push notifications (market monitor)
 │   └── protocol/
-│
-└── _wip/
-    └── dca-scheduling/      # DcaScheduler (deferred)
 ```
 
 ## Layer Access Rules
 
 ```
+app             → all layers (composition root: src/app/ + src/index.ts)
 domain          → infrastructure/shared (logging, math, config)
                 → domain/policies
 data            → domain/repositories (interfaces)

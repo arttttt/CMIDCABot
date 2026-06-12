@@ -20,11 +20,6 @@ export class PortfolioFormatter {
 
   formatStatus(result: PortfolioStatusResult): ClientResponse {
     switch (result.type) {
-      case "unavailable":
-        return new ClientResponse(
-          `Portfolio tracking is not available. ${Markdown.code("JUPITER_API_KEY")} is required.`,
-        );
-
       case "error":
         return new ClientResponse("Failed to fetch portfolio. Please try again later.");
 
