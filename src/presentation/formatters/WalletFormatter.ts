@@ -38,7 +38,7 @@ export class WalletFormatter {
     switch (result.type) {
       case "success":
         return new ClientResponse(
-          `**DCA Wallet**\n\n` +
+          `*DCA Wallet*\n\n` +
             this.formatWalletInfo(result.wallet!) +
             `\n\nDeposit SOL to this address to fund your DCA purchases.\n\n` +
             `_Commands: /wallet export | /wallet delete_`,
@@ -62,11 +62,11 @@ export class WalletFormatter {
         if (result.seedUrl) {
           const ttl = seedTtlMinutes ?? 5;
           return new ClientResponse(
-            `**Wallet Created!**\n\n` +
+            `*Wallet Created!*\n\n` +
               this.formatWalletInfo(result.wallet!) +
-              `\n\n**Recovery Phrase:**\n` +
+              `\n\n*Recovery Phrase:*\n` +
               `Your seed phrase is available via secure one-time link.\n\n` +
-              `**IMPORTANT:**\n` +
+              `*IMPORTANT:*\n` +
               `- Link expires in ${ttl} minutes\n` +
               `- Link works only ONCE\n` +
               `- Write down the phrase and store offline\n` +
@@ -76,10 +76,10 @@ export class WalletFormatter {
         }
 
         return new ClientResponse(
-          `**Wallet Created!**\n\n` +
+          `*Wallet Created!*\n\n` +
             this.formatWalletInfo(result.wallet!) +
             `\n\nDeposit SOL to this address to fund your DCA purchases.\n\n` +
-            `**Important:** Use /wallet export to backup your private key.`,
+            `*Important:* Use /wallet export to backup your private key.`,
         );
       }
 
@@ -125,9 +125,9 @@ export class WalletFormatter {
     switch (result.type) {
       case "success":
         return new ClientResponse(
-          `**Export Private Key**\n\n` +
+          `*Export Private Key*\n\n` +
             `Your private key is available via secure one-time link.\n\n` +
-            `**IMPORTANT:**\n` +
+            `*IMPORTANT:*\n` +
             `- Link expires in ${ttl} minutes\n` +
             `- Link works only ONCE\n` +
             `- Never share this key with anyone\n` +
@@ -151,10 +151,10 @@ export class WalletFormatter {
     switch (result.type) {
       case "imported":
         return new ClientResponse(
-          `**Wallet Imported!**\n\n` +
+          `*Wallet Imported!*\n\n` +
             this.formatWalletInfo(result.wallet!) +
             `\n\nYour wallet has been successfully imported.\n\n` +
-            `**Note:** Your private key is stored securely for DCA operations.`,
+            `*Note:* Your private key is stored securely for DCA operations.`,
         );
 
       case "already_exists":
@@ -166,12 +166,12 @@ export class WalletFormatter {
 
       case "invalid_key":
         return new ClientResponse(
-          `**Invalid Key or Mnemonic**\n\n` +
+          `*Invalid Key or Mnemonic*\n\n` +
             `${Markdown.escape(result.error || "The provided input is not a valid Solana private key or mnemonic.")}\n\n` +
-            `**Supported formats:**\n` +
+            `*Supported formats:*\n` +
             `- Recovery phrase: 12 or 24 words\n` +
             `- Private key: base64-encoded (32 or 64 bytes)\n\n` +
-            `**Note:** Only Solana wallets are supported. Ethereum and other chain keys will not work.`,
+            `*Note:* Only Solana wallets are supported. Ethereum and other chain keys will not work.`,
         );
 
       default:
@@ -181,9 +181,9 @@ export class WalletFormatter {
 
   formatImportLink(url: string, ttlMinutes: number): ClientResponse {
     return new ClientResponse(
-      `**Import Wallet**\n\n` +
+      `*Import Wallet*\n\n` +
         `For secure import, use the link below to enter your seed phrase or private key.\n\n` +
-        `**Security:**\n` +
+        `*Security:*\n` +
         `- Link expires in ${ttlMinutes} minutes\n` +
         `- Link works only ONCE\n` +
         `- Data is sent directly via HTTPS (not through Telegram)`,
@@ -193,12 +193,12 @@ export class WalletFormatter {
 
   formatImportUsage(): ClientResponse {
     return new ClientResponse(
-      `**Import Wallet**\n\n` +
+      `*Import Wallet*\n\n` +
         `Use /wallet import to get a secure link for importing your wallet.\n\n` +
-        `**Supported formats:**\n` +
+        `*Supported formats:*\n` +
         `- Recovery phrase (12 or 24 words) - compatible with Phantom, Solflare\n` +
         `- Base64-encoded private key\n\n` +
-        `**Security:**\n` +
+        `*Security:*\n` +
         `- Your key is entered via secure web form\n` +
         `- Data is sent directly via HTTPS (not through Telegram)\n` +
         `- The key will be stored securely for DCA operations`,

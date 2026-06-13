@@ -39,7 +39,7 @@ export class PortfolioFormatter {
 
       case "success": {
         const status = result.status!;
-        let text = "**Portfolio Status**\n";
+        let text = "*Portfolio Status*\n";
         text += "─".repeat(25) + "\n\n";
 
         for (const alloc of status.allocations) {
