@@ -13,13 +13,11 @@ import { logger } from "../../../infrastructure/shared/logging/index.js";
 export class WebhookTransport implements BotTransport {
   private readonly bot: Bot<Context>;
   private readonly config: WebhookConfig;
-  private readonly isDev: boolean;
   private readonly onStart?: (botInfo: { username: string }) => void;
   private server: Server | null = null;
 
   constructor(deps: TransportDeps, config: WebhookConfig) {
     this.bot = deps.bot;
-    this.isDev = deps.isDev;
     this.onStart = deps.onStart;
     this.config = config;
   }
@@ -44,22 +42,24 @@ export class WebhookTransport implements BotTransport {
       throw error;
     }
 
-    // Notify startup
+    // Notify startup (the operator-facing banner is printed by the composition root)
     this.onStart?.({ username: botInfo.username });
 
-    if (!this.isDev) {
-      console.log(`Bot @${botInfo.username} is running (webhook mode)`);
-      console.log(`Webhook URL: ${this.config.url}`);
-    }
+    logger.info("WebhookTransport", "Running (webhook mode)", {
+      username: botInfo.username,
+      webhookUrl: this.config.url,
+    });
   }
 
   async stop(): Promise<void> {
     // Remove webhook from Telegram
     try {
       await this.bot.api.deleteWebhook();
-      console.log("Webhook removed");
+      logger.info("WebhookTransport", "Webhook removed");
     } catch (error) {
-      console.error("Failed to remove webhook:", error);
+      logger.error("WebhookTransport", "Failed to remove webhook", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     // Stop HTTP server
@@ -77,7 +77,7 @@ export class WebhookTransport implements BotTransport {
     await new Promise<void>((resolve, reject) => {
       // Set a timeout for graceful shutdown (5 seconds)
       const timeout = setTimeout(() => {
-        console.warn("Server close timeout, forcing shutdown");
+        logger.warn("WebhookTransport", "Server close timeout, forcing shutdown");
         resolve();
       }, 5000);
 
@@ -115,7 +115,9 @@ export class WebhookTransport implements BotTransport {
             return;
           }
         } catch (error) {
-          console.error("HTTP handler error:", error);
+          logger.error("WebhookTransport", "HTTP handler error", {
+            error: error instanceof Error ? error.message : String(error),
+          });
           if (!res.headersSent) {
             res.writeHead(500);
             res.end();
@@ -131,7 +133,7 @@ export class WebhookTransport implements BotTransport {
 
     await new Promise<void>((resolve) => {
       this.server!.listen(this.config.port, this.config.host, () => {
-        console.log(`Webhook server listening on port ${this.config.port}`);
+        logger.info("WebhookTransport", "Webhook server listening", { port: this.config.port });
         resolve();
       });
     });
@@ -150,7 +152,7 @@ export class WebhookTransport implements BotTransport {
     }
 
     await this.bot.api.setWebhook(this.config.url, options);
-    console.log("Webhook registered with Telegram");
+    logger.info("WebhookTransport", "Webhook registered with Telegram");
   }
 
   private async handleWebhookRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -169,7 +171,9 @@ export class WebhookTransport implements BotTransport {
     try {
       body = await this.readRequestBody(req);
     } catch (error) {
-      console.error("Failed to read webhook request body:", error);
+      logger.error("WebhookTransport", "Failed to read webhook request body", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       res.writeHead(400);
       res.end("Bad Request");
       return;
@@ -180,7 +184,9 @@ export class WebhookTransport implements BotTransport {
     try {
       update = JSON.parse(body) as Update;
     } catch (error) {
-      console.error("Failed to parse webhook update:", error);
+      logger.error("WebhookTransport", "Failed to parse webhook update", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       res.writeHead(400);
       res.end("Bad Request");
       return;

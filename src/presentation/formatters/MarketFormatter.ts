@@ -6,6 +6,7 @@ import type { MarketSignal } from "../../domain/models/MarketSignal.js";
 import type { AssetMarketStats, MarketDigest } from "../../domain/models/MarketDigest.js";
 import type { GetMarketStatusResult } from "../../domain/usecases/GetMarketStatusUseCase.js";
 import { ClientResponse } from "../protocol/types.js";
+import { NumberFormatter } from "./NumberFormatter.js";
 
 export class MarketFormatter {
   /**
@@ -71,7 +72,7 @@ export class MarketFormatter {
   }
 
   private formatAssetLine(asset: AssetMarketStats): string {
-    const parts = [`• *${asset.symbol}*: $${this.formatPrice(asset.price)}`];
+    const parts = [`• *${asset.symbol}*: $${NumberFormatter.formatPrice(asset.price)}`];
     if (asset.change24hPct !== null) parts.push(`24h ${this.formatChange(asset.change24hPct)}`);
     if (asset.change7dPct !== null) parts.push(`7d ${this.formatChange(asset.change7dPct)}`);
     if (asset.rsi !== null) parts.push(`RSI ${asset.rsi.toFixed(0)}`);
@@ -81,19 +82,12 @@ export class MarketFormatter {
   private formatSignalLine(signal: MarketSignal): string {
     switch (signal.type) {
       case "dip24h":
-        return `• *${signal.symbol}* is ${signal.drawdownPct.toFixed(1)}% below its 24h high ($${this.formatPrice(signal.periodHigh)} → $${this.formatPrice(signal.currentPrice)})`;
+        return `• *${signal.symbol}* is ${signal.drawdownPct.toFixed(1)}% below its 24h high ($${NumberFormatter.formatPrice(signal.periodHigh)} → $${NumberFormatter.formatPrice(signal.currentPrice)})`;
       case "dip7d":
-        return `• *${signal.symbol}* is ${signal.drawdownPct.toFixed(1)}% below its 7d high ($${this.formatPrice(signal.periodHigh)} → $${this.formatPrice(signal.currentPrice)})`;
+        return `• *${signal.symbol}* is ${signal.drawdownPct.toFixed(1)}% below its 7d high ($${NumberFormatter.formatPrice(signal.periodHigh)} → $${NumberFormatter.formatPrice(signal.currentPrice)})`;
       case "rsiOversold":
-        return `• *${signal.symbol}* RSI is ${signal.rsi.toFixed(0)} (oversold) at $${this.formatPrice(signal.currentPrice)}`;
+        return `• *${signal.symbol}* RSI is ${signal.rsi.toFixed(0)} (oversold) at $${NumberFormatter.formatPrice(signal.currentPrice)}`;
     }
-  }
-
-  private formatPrice(price: number): string {
-    if (price >= 1000) {
-      return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    return price.toFixed(2);
   }
 
   private formatChange(pct: number): string {

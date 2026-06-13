@@ -99,7 +99,11 @@ export class IndicatorPolicy {
       avgLoss = avgLoss.times(period - 1).plus(loss).div(period);
     }
 
-    if (avgLoss.isZero()) return 100;
+    if (avgLoss.isZero()) {
+      // No losses: all-gains saturates to 100, but a fully flat series
+      // (no gains either) has no momentum — report undefined, not overbought.
+      return avgGain.isZero() ? null : 100;
+    }
     const rs = avgGain.div(avgLoss);
     return toDecimal(100).minus(toDecimal(100).div(rs.plus(1))).toNumber();
   }

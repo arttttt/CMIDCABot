@@ -15,6 +15,7 @@ import { HttpServer } from "./infrastructure/shared/http/index.js";
 import { OwnerConfig } from "./domain/models/OwnerConfig.js";
 import {
   createTelegramBot,
+  attachGateway,
   createTransport,
   validateTransportConfig,
   type TransportConfig as TelegramTransportConfig,
@@ -52,11 +53,12 @@ async function main(): Promise<void> {
 
   console.log("Starting DCA Telegram Bot...");
 
-  // Get bot info first to have botUsername for invite links and API for message sending
-  const { Bot } = await import("grammy");
-  const tempBot = new Bot(config.telegram.botToken);
-  const botInfo = await tempBot.api.getMe();
-  const messageSender = new TelegramMessageSender(tempBot.api);
+  // Single bot instance: init() fetches botInfo (needed for invite links)
+  // before the gateway is built; the same api drives both updates and notifications.
+  const bot = createTelegramBot(config.telegram.botToken, config.isDev);
+  await bot.init();
+  const botInfo = bot.botInfo;
+  const messageSender = new TelegramMessageSender(bot.api);
 
   // HTTP page handlers (shared between polling and webhook modes)
   const secretPageHandler = new SecretPageHandler(storage.secretStore);
@@ -102,7 +104,7 @@ async function main(): Promise<void> {
   const { registry, gateway } = presentation.createRegistryAndGateway(botInfo.username);
   console.log(`Command mode: ${registry.getModeInfo()?.label ?? "Production"}`);
 
-  const bot = createTelegramBot(config.telegram.botToken, gateway, config.isDev);
+  attachGateway(bot, gateway);
   presentation.userResolver.setApi(bot.api);
 
   const transport = createTransport(transportConfig, {

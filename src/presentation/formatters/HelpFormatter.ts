@@ -11,7 +11,7 @@ export class HelpFormatter {
    * Format full help message from Command structure
    */
   formatHelp(commands: Map<string, Command>, modeInfo: ModeInfo | null): string {
-    let text = "**Commands**\n\n";
+    let text = "*Commands*\n\n";
 
     for (const cmd of commands.values()) {
       text += this.formatCommandHelp(cmd, `/${cmd.definition.name}`);
@@ -28,7 +28,7 @@ export class HelpFormatter {
    * Format help for a single command (recursive)
    */
   private formatCommandHelp(cmd: Command, prefix: string): string {
-    let text = `**${prefix}** - ${cmd.definition.description}\n`;
+    let text = `*${prefix}* - ${cmd.definition.description}\n`;
 
     if (cmd.subcommands && cmd.subcommands.size > 0) {
       for (const [name, sub] of cmd.subcommands) {
@@ -47,9 +47,9 @@ export class HelpFormatter {
   formatStartMessage(modeInfo: ModeInfo | null): string {
     const isDev = modeInfo !== null;
 
-    let text = "**CMI DCA Bot**\n\n";
+    let text = "*CMI DCA Bot*\n\n";
     text += "Automated Crypto Majors Index DCA on Solana.\n\n";
-    text += "**Quick Start:**\n";
+    text += "*Quick Start:*\n";
     text += "1. `/wallet create` - Create your wallet\n";
     text += "2. Deposit SOL to fund transactions\n";
     if (isDev) {

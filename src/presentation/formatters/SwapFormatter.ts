@@ -6,6 +6,7 @@ import { SwapResult } from "../../domain/models/SwapStep.js";
 import { MAX_PRICE_IMPACT_BPS } from "../../domain/constants.js";
 import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
+import { NumberFormatter } from "./NumberFormatter.js";
 
 export class SwapFormatter {
   format(result: SwapResult): ClientResponse {
@@ -75,9 +76,9 @@ export class SwapFormatter {
       `*Swap ${statusIcon}*`,
       "",
       "*Trade:*",
-      `  Spent: ${this.formatAmount(quote.inputAmount)} ${Markdown.escape(quote.inputSymbol)}`,
-      `  Received: ${this.formatAmount(quote.outputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
-      `  Price: 1 ${Markdown.escape(quote.outputSymbol)} = ${this.formatPrice(pricePerUnit)} USDC`,
+      `  Spent: ${NumberFormatter.formatAmount(quote.inputAmount)} ${Markdown.escape(quote.inputSymbol)}`,
+      `  Received: ${NumberFormatter.formatAmount(quote.outputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
+      `  Price: 1 ${Markdown.escape(quote.outputSymbol)} = ${NumberFormatter.formatPrice(pricePerUnit)} USDC`,
       "",
       "*Transaction:*",
       `  Signature: ${Markdown.code(this.truncateSignature(sigStr))}`,
@@ -134,32 +135,6 @@ export class SwapFormatter {
         "  `/swap execute 1 BTC` - execute 1 USDC → BTC",
       ].join("\n"),
     );
-  }
-
-  private formatAmount(amount: number): string {
-    if (amount >= 1000) {
-      return amount.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-    }
-    if (amount >= 1) {
-      return amount.toFixed(4);
-    }
-    if (amount >= 0.0001) {
-      return amount.toFixed(6);
-    }
-    return amount.toFixed(8);
-  }
-
-  private formatPrice(price: number): string {
-    if (price >= 1000) {
-      return price.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-    }
-    return price.toFixed(2);
   }
 
   private truncateSignature(signature: string): string {

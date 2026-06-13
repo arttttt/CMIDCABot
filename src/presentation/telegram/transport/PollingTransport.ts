@@ -5,6 +5,7 @@
  */
 
 import type { BotTransport, TransportDeps } from "./types.js";
+import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 export class PollingTransport implements BotTransport {
   private readonly deps: TransportDeps;
@@ -16,7 +17,7 @@ export class PollingTransport implements BotTransport {
   }
 
   async start(): Promise<void> {
-    const { bot, isDev, onStart } = this.deps;
+    const { bot, onStart } = this.deps;
 
     // Delete any existing webhook to ensure polling works
     await bot.api.deleteWebhook({ drop_pending_updates: true });
@@ -29,9 +30,9 @@ export class PollingTransport implements BotTransport {
         await bot.start({
           onStart: (botInfo) => {
             onStart?.({ username: botInfo.username });
-            if (!isDev) {
-              console.log(`Bot @${botInfo.username} is running (polling mode)`);
-            }
+            logger.info("PollingTransport", "Running (polling mode)", {
+              username: botInfo.username,
+            });
           },
         });
         break; // Success, exit retry loop
@@ -42,10 +43,11 @@ export class PollingTransport implements BotTransport {
 
         if (is409 && attempt < this.maxRetries) {
           const delayMs = this.baseDelayMs * Math.pow(2, attempt - 1);
-          console.log(
-            `Bot instance conflict detected (attempt ${attempt}/${this.maxRetries}), ` +
-            `waiting ${delayMs / 1000}s for old instance to stop...`
-          );
+          logger.warn("PollingTransport", "Instance conflict, waiting for old instance to stop", {
+            attempt,
+            maxRetries: this.maxRetries,
+            delayMs,
+          });
 
           await new Promise((resolve) => setTimeout(resolve, delayMs));
         } else {
