@@ -387,7 +387,6 @@ async function handleCallbackStreamingResponse(
 
 export function createTelegramBot(
   botToken: string,
-  gateway: Gateway,
   isDev: boolean,
 ): Bot<Context> {
   const bot = new Bot<Context>(botToken);
@@ -412,36 +411,6 @@ export function createTelegramBot(
       logger.debug("TelegramBot", "Response sent", { responseTimeMs: ms });
     });
   }
-
-  // Handle text messages: Context -> Gateway -> Streaming Response
-  bot.on("message:text", async (ctx) => {
-    const request = buildTelegramMessageRequest(ctx);
-    const stream = await gateway.handle(request);
-    await handleStreamingResponse(ctx, stream);
-  });
-
-  // Handle callback queries: Context -> Gateway -> Streaming Response
-  bot.on("callback_query:data", async (ctx) => {
-    const callbackData = ctx.callbackQuery.data;
-
-    // Validate callback data length (SEC-03)
-    // Length check prevents DoS; format validation is done declaratively at registration
-    if (callbackData.length > CALLBACK_MAX_LENGTH) {
-      logger.warn("TelegramBot", "Invalid callback data: too long", {
-        userId: ctx.from.id,
-        length: callbackData.length,
-      });
-      await ctx.answerCallbackQuery().catch(() => {});
-      return;
-    }
-
-    await ctx.answerCallbackQuery().catch(() => {});
-
-    // Handle callbacks via gateway
-    const request = buildTelegramCallbackRequest(ctx);
-    const stream = await gateway.handle(request);
-    await handleCallbackStreamingResponse(ctx, stream);
-  });
 
   // Error handling with user notification
   bot.catch(async (err: BotError<Context>) => {
@@ -481,4 +450,42 @@ export function createTelegramBot(
   });
 
   return bot;
+}
+
+/**
+ * Attach gateway-backed update handlers to an already-created bot.
+ *
+ * Split from createTelegramBot so the bot can be initialized (botInfo
+ * fetched) before the gateway is built, avoiding a second Bot instance.
+ */
+export function attachGateway(bot: Bot<Context>, gateway: Gateway): void {
+  // Handle text messages: Context -> Gateway -> Streaming Response
+  bot.on("message:text", async (ctx) => {
+    const request = buildTelegramMessageRequest(ctx);
+    const stream = await gateway.handle(request);
+    await handleStreamingResponse(ctx, stream);
+  });
+
+  // Handle callback queries: Context -> Gateway -> Streaming Response
+  bot.on("callback_query:data", async (ctx) => {
+    const callbackData = ctx.callbackQuery.data;
+
+    // Validate callback data length (SEC-03)
+    // Length check prevents DoS; format validation is done declaratively at registration
+    if (callbackData.length > CALLBACK_MAX_LENGTH) {
+      logger.warn("TelegramBot", "Invalid callback data: too long", {
+        userId: ctx.from.id,
+        length: callbackData.length,
+      });
+      await ctx.answerCallbackQuery().catch(() => {});
+      return;
+    }
+
+    await ctx.answerCallbackQuery().catch(() => {});
+
+    // Handle callbacks via gateway
+    const request = buildTelegramCallbackRequest(ctx);
+    const stream = await gateway.handle(request);
+    await handleCallbackStreamingResponse(ctx, stream);
+  });
 }
