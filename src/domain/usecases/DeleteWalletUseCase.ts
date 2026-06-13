@@ -22,7 +22,7 @@ export class DeleteWalletUseCase {
       return { type: "no_wallet" };
     }
 
-    await this.userRepository.clearPrivateKey(telegramId);
+    await this.userRepository.clearWallet(telegramId);
     logger.info("DeleteWallet", "Wallet deleted", { telegramId });
     return { type: "deleted" };
   }

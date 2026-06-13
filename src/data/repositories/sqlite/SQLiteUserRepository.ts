@@ -127,11 +127,12 @@ export class SQLiteUserRepository implements UserRepository {
       .execute();
   }
 
-  async clearPrivateKey(id: TelegramId): Promise<void> {
+  async clearWallet(id: TelegramId): Promise<void> {
     await this.db
       .updateTable("users")
       .set({
         private_key: null,
+        wallet_address: null,
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
       .where("telegram_id", "=", id.value)

@@ -46,9 +46,10 @@ export interface UserRepository {
   getDecryptedPrivateKey(telegramId: TelegramId): Promise<string | null>;
 
   /**
-   * Clear user's DCA wallet private key
+   * Remove the user's wallet: clears both the private key and the address.
+   * The user row itself is kept (auth, transaction history).
    */
-  clearPrivateKey(telegramId: TelegramId): Promise<void>;
+  clearWallet(telegramId: TelegramId): Promise<void>;
 
   /**
    * Delete a user and all their data (wallet, settings)
