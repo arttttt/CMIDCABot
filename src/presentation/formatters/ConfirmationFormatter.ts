@@ -14,35 +14,10 @@ import type { ConfirmationSessionId } from "../../domain/models/id/index.js";
 import { SlippagePolicy } from "../../domain/policies/SlippagePolicy.js";
 import { ClientResponse, ClientButton } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
+import { NumberFormatter } from "./NumberFormatter.js";
 import { CallbackBuilder } from "../commands/CallbackBuilder.js";
 
 export class ConfirmationFormatter {
-  /**
-   * Format amount with appropriate precision
-   */
-  private static formatAmount(amount: number): string {
-    if (amount >= 1000) {
-      return amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    if (amount >= 1) {
-      return amount.toFixed(4);
-    }
-    if (amount >= 0.0001) {
-      return amount.toFixed(6);
-    }
-    return amount.toFixed(8);
-  }
-
-  /**
-   * Format price with appropriate precision
-   */
-  private static formatPrice(price: number): string {
-    if (price >= 1000) {
-      return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    return price.toFixed(2);
-  }
-
   /**
    * Format preview message with Confirm/Cancel buttons
    */
@@ -63,11 +38,11 @@ export class ConfirmationFormatter {
     const lines = [
       `*${typeLabel} Preview*`,
       "",
-      `*Spend:* ${ConfirmationFormatter.formatAmount(quote.inputAmount)} ${Markdown.escape(quote.inputSymbol)}`,
-      `*Receive:* ~${ConfirmationFormatter.formatAmount(quote.outputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
+      `*Spend:* ${NumberFormatter.formatAmount(quote.inputAmount)} ${Markdown.escape(quote.inputSymbol)}`,
+      `*Receive:* ~${NumberFormatter.formatAmount(quote.outputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
       "",
-      `*Price:* 1 ${Markdown.escape(quote.outputSymbol)} = ${ConfirmationFormatter.formatPrice(pricePerUnit)} USDC`,
-      `*Min Receive:* ${ConfirmationFormatter.formatAmount(quote.minOutputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
+      `*Price:* 1 ${Markdown.escape(quote.outputSymbol)} = ${NumberFormatter.formatPrice(pricePerUnit)} USDC`,
+      `*Min Receive:* ${NumberFormatter.formatAmount(quote.minOutputAmount)} ${Markdown.escape(quote.outputSymbol)}`,
       `*Slippage:* ${slippagePct}%`,
       "",
       `_Confirm within ${ttlSeconds} seconds_`,
@@ -120,8 +95,8 @@ export class ConfirmationFormatter {
       "",
       `The price has ${priceDirection} since your quote.`,
       "",
-      `*Original:* ~${ConfirmationFormatter.formatAmount(originalQuote.outputAmount)} ${Markdown.escape(originalQuote.outputSymbol)}`,
-      `*New:* ~${ConfirmationFormatter.formatAmount(freshQuote.outputAmount)} ${Markdown.escape(freshQuote.outputSymbol)}`,
+      `*Original:* ~${NumberFormatter.formatAmount(originalQuote.outputAmount)} ${Markdown.escape(originalQuote.outputSymbol)}`,
+      `*New:* ~${NumberFormatter.formatAmount(freshQuote.outputAmount)} ${Markdown.escape(freshQuote.outputSymbol)}`,
       "",
       `*Price change:* ${slippagePct}% (${outputDirection} ${Markdown.escape(freshQuote.outputSymbol)})`,
       "",

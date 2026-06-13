@@ -5,6 +5,7 @@
 import { GetPricesResult } from "../../domain/usecases/GetPricesUseCase.js";
 import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
+import { NumberFormatter } from "./NumberFormatter.js";
 
 export class PriceFormatter {
   format(result: GetPricesResult): ClientResponse {
@@ -19,18 +20,11 @@ export class PriceFormatter {
     const lines = [
       "💰 *Current Prices*",
       "",
-      ...prices.map((p) => `• *${Markdown.escape(p.symbol)}*: $${this.formatPrice(p.priceUsd)}`),
+      ...prices.map((p) => `• *${Markdown.escape(p.symbol)}*: $${NumberFormatter.formatPrice(p.priceUsd)}`),
       "",
       `Updated: ${timeStr}`,
     ];
 
     return new ClientResponse(lines.join("\n"));
-  }
-
-  private formatPrice(price: number): string {
-    if (price >= 1000) {
-      return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    return price.toFixed(2);
   }
 }
