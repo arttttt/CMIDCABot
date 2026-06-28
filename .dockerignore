@@ -1,0 +1,30 @@
+# Keep the build context tiny and free of secrets. Only package*.json,
+# tsconfig.json and src/ are needed to build (see Dockerfile).
+node_modules
+dist
+.git
+.github
+.gitignore
+.gitattributes
+
+# Secrets / local state — must never enter the image
+.env
+.env.*
+data
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs, IDE, OS, docs — not needed to build
+*.log
+.dev.log
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+docs
+*.md
+LICENSE
+eslint.config.mjs
+.worktrees
+.worktreeinclude
