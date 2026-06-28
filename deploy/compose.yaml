@@ -1,0 +1,37 @@
+# CMI DCA bot — example Docker Compose deployment.
+#
+# Pulls the prebuilt image from GHCR and runs it. Secrets are supplied as
+# environment variables at deploy time and are never baked into the image.
+#
+# Security: BOT_TRANSPORT=polling (outbound only, no inbound webhook); the HTTP
+# server (health + one-time secret links) is published on 127.0.0.1 only — put
+# it behind your own reverse proxy / VPN to serve the PUBLIC_URL links.
+name: cmidcabot
+
+services:
+  bot:
+    image: ghcr.io/arttttt/cmidcabot:latest   # or pin :sha-xxxx / :vX.Y.Z
+    container_name: cmidcabot
+    restart: always
+    environment:
+      NODE_ENV: production
+      BOT_TRANSPORT: polling
+      HTTP_HOST: 0.0.0.0          # bind inside the container; published on host below
+      HTTP_PORT: "8000"
+      DATABASE_PATH: /app/data/bot.db
+      AUTH_DATABASE_PATH: /app/data/auth.db
+      MARKET_BACKFILL: binance
+      # ----- supply these at deploy time (secrets / per-host) ---------------
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      OWNER_TELEGRAM_ID: ${OWNER_TELEGRAM_ID}
+      MASTER_ENCRYPTION_KEY: ${MASTER_ENCRYPTION_KEY}   # back this up!
+      SOLANA_RPC_URL: ${SOLANA_RPC_URL}
+      JUPITER_API_KEY: ${JUPITER_API_KEY}
+      PUBLIC_URL: ${PUBLIC_URL}                         # public HTTPS URL for /secret links
+    ports:
+      - "127.0.0.1:8000:8000"      # host localhost only
+    volumes:
+      - cmidcabot_data:/app/data   # SQLite (bot.db, auth.db) persists here
+
+volumes:
+  cmidcabot_data:
