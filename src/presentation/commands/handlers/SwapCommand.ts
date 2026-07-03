@@ -2,6 +2,8 @@ import { Command, CommandDefinition } from "../types.js";
 import { SwapCommandDeps } from "../dependencies.js";
 import { Definitions } from "../definitions.js";
 import { ConfirmationSessionId } from "../../../domain/models/id/index.js";
+import { StreamUtils } from "../../protocol/gateway/stream.js";
+import type { ClientResponseStream } from "../../protocol/types.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 import { SlippagePolicy } from "../../../domain/policies/SlippagePolicy.js";
 import type { SwapResult } from "../../../domain/models/SwapStep.js";
@@ -27,14 +29,14 @@ export class SwapCommand implements Command {
         this.subcommands.set("execute", this.createExecuteCommand());
     }
 
-    public async handler(_args: string[], _ctx: import("../types.js").CommandExecutionContext) {
-        return this.deps.swapFormatter.formatUnifiedUsage();
+    public handler(_args: string[], _ctx: import("../types.js").CommandExecutionContext): ClientResponseStream {
+        return StreamUtils.final(this.deps.swapFormatter.formatUnifiedUsage());
     }
 
     private createQuoteCommand(): Command {
         return {
             definition: { name: "quote", description: "Get quote for swap", usage: "<amount> [asset]" },
-            handler: async (args, _ctx) => {
+            handler: (args, _ctx) => StreamUtils.finalFrom(async () => {
                 const amountStr = args[0];
                 if (!amountStr) {
                     return this.deps.quoteFormatter.formatUsage();
@@ -46,7 +48,7 @@ export class SwapCommand implements Command {
                 const asset = args[1] || "SOL";
                 const result = await this.deps.getQuote.execute(amount, asset);
                 return this.deps.quoteFormatter.format(result);
-            },
+            }),
         };
     }
 
@@ -56,7 +58,7 @@ export class SwapCommand implements Command {
 
         const cmd: Command = {
             definition: { name: "execute", description: "Execute real swap", usage: "<amount> [asset]" },
-            streamingHandler: async function* (args, ctx): AsyncGenerator<StreamItem> {
+            handler: async function* (args, ctx): AsyncGenerator<StreamItem> {
                 const amountStr = args[0];
                 if (!amountStr) {
                     yield { response: deps.swapFormatter.formatUsage(), mode: "final" };
@@ -110,20 +112,20 @@ export class SwapCommand implements Command {
 
         cmd.callbacks = new Map([
             ["confirm", {
-                handler: async (ctx, params) => {
+                handler: (ctx, params) => {
                     if (params.length === 0) {
-                        return confirmationFormatter.formatSessionNotFound();
+                        return StreamUtils.final(confirmationFormatter.formatSessionNotFound());
                     }
-                    return this.handleConfirm(params[0], ctx);
+                    return StreamUtils.finalFrom(() => this.handleConfirm(params[0], ctx));
                 },
                 params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
             }],
             ["cancel", {
-                handler: async (ctx, params) => {
+                handler: (ctx, params) => {
                     if (params.length === 0) {
-                        return confirmationFormatter.formatSessionNotFound();
+                        return StreamUtils.final(confirmationFormatter.formatSessionNotFound());
                     }
-                    return this.handleCancel(params[0], ctx);
+                    return StreamUtils.final(this.handleCancel(params[0], ctx));
                 },
                 params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
             }],

@@ -2,6 +2,8 @@ import { Command, CommandDefinition } from "../types.js";
 import { HelpCommandDeps } from "../dependencies.js";
 import { Definitions } from "../definitions.js";
 import { RoleGuard } from "../../protocol/gateway/RoleGuard.js";
+import { StreamUtils } from "../../protocol/gateway/stream.js";
+import type { ClientResponseStream } from "../../protocol/types.js";
 import type { UserRole } from "../../../domain/models/AuthorizedUser.js";
 
 /**
@@ -27,10 +29,10 @@ export class HelpCommand implements Command {
 
     constructor(private readonly deps: HelpCommandDeps) { }
 
-    public async handler(_args: string[], ctx: import("../types.js").CommandExecutionContext) {
+    public handler(_args: string[], ctx: import("../types.js").CommandExecutionContext): ClientResponseStream {
         const allCommands = this.deps.getRegistry().getCommands();
         const filtered = filterCommandsByRole(allCommands, ctx.role);
         const modeInfo = this.deps.getRegistry().getModeInfo();
-        return { text: this.deps.helpFormatter.formatHelp(filtered, modeInfo) };
+        return StreamUtils.final({ text: this.deps.helpFormatter.formatHelp(filtered, modeInfo) });
     }
 }

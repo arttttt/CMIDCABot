@@ -27,18 +27,20 @@ export class PortfolioCommand implements Command {
         this.subcommands.set("buy", this.createBuyCommand());
     }
 
-    public async handler(_args: string[], ctx: import("../types.js").CommandExecutionContext) {
-        const result = await this.deps.getPortfolioStatus.execute(ctx.telegramId);
-        return this.deps.portfolioFormatter.formatStatus(result);
+    public handler(_args: string[], ctx: import("../types.js").CommandExecutionContext): import("../../protocol/types.js").ClientResponseStream {
+        return StreamUtils.finalFrom(async () => {
+            const result = await this.deps.getPortfolioStatus.execute(ctx.telegramId);
+            return this.deps.portfolioFormatter.formatStatus(result);
+        });
     }
 
     private createStatusCommand(): Command {
         return {
             definition: { name: "status", description: "Show portfolio status" },
-            handler: async (_args, ctx) => {
+            handler: (_args, ctx) => StreamUtils.finalFrom(async () => {
                 const result = await this.deps.getPortfolioStatus.execute(ctx.telegramId);
                 return this.deps.portfolioFormatter.formatStatus(result);
-            },
+            }),
         };
     }
 
@@ -48,7 +50,7 @@ export class PortfolioCommand implements Command {
 
         const cmd: Command = {
             definition: { name: "buy", description: "Buy asset for USDC amount", usage: "<amount>" },
-            streamingHandler: async function* (args, ctx): AsyncGenerator<StreamItem> {
+            handler: async function* (args, ctx): AsyncGenerator<StreamItem> {
                 const amountStr = args[0];
                 if (!amountStr) {
                     yield { response: deps.purchaseFormatter.formatUsage(), mode: "final" };
@@ -109,7 +111,7 @@ export class PortfolioCommand implements Command {
 
         cmd.callbacks = new Map([
             ["confirm", {
-                streamingHandler: (ctx, params) => {
+                handler: (ctx, params) => {
                     if (params.length === 0) {
                         return StreamUtils.final(confirmationFormatter.formatSessionNotFound());
                     }
@@ -118,11 +120,11 @@ export class PortfolioCommand implements Command {
                 params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
             }],
             ["cancel", {
-                handler: async (ctx, params) => {
+                handler: (ctx, params) => {
                     if (params.length === 0) {
-                        return confirmationFormatter.formatSessionNotFound();
+                        return StreamUtils.final(confirmationFormatter.formatSessionNotFound());
                     }
-                    return this.handleCancel(params[0], ctx);
+                    return StreamUtils.final(this.handleCancel(params[0], ctx));
                 },
                 params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
             }],

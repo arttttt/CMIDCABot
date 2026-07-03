@@ -12,7 +12,7 @@ import { ClientResponse, type ClientResponseStream } from "../../types.js";
 import { StreamUtils } from "../stream.js";
 import { GatewayMessages } from "../messages.js";
 import { RoleGuard } from "../RoleGuard.js";
-import { routeCommandStreaming } from "../../../commands/router.js";
+import { routeCommand } from "../../../commands/router.js";
 import { CommandExecutionContext } from "../../../commands/CommandExecutionContext.js";
 
 export class TelegramMessageHandler implements RequestHandler<"telegram-message"> {
@@ -45,6 +45,6 @@ export class TelegramMessageHandler implements RequestHandler<"telegram-message"
     }
 
     const execCtx = new CommandExecutionContext(ctx.requestId, req.identity, ctx.getRole());
-    return routeCommandStreaming(cmd, args, execCtx);
+    return routeCommand(cmd, args, execCtx);
   }
 }

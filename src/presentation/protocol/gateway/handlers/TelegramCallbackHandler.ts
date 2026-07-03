@@ -35,15 +35,6 @@ export class TelegramCallbackHandler implements RequestHandler<"telegram-callbac
     }
 
     const execCtx = new CommandExecutionContext(ctx.requestId, req.identity, ctx.getRole());
-    if (result.streamingHandler) {
-      return result.streamingHandler(execCtx, result.params);
-    }
-
-    if (result.handler) {
-      const response = await result.handler(execCtx, result.params);
-      return StreamUtils.final(response);
-    }
-
-    return StreamUtils.final(new ClientResponse(GatewayMessages.UNKNOWN_ACTION));
+    return result.handler(execCtx, result.params);
   }
 }

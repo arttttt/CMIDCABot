@@ -38,33 +38,22 @@ export function findTargetCommand(cmd: Command, args: string[]): RoutedCommand {
 }
 
 /**
- * Route command with streaming support
- *
- * If the target command has a streamingHandler, uses it.
- * Otherwise falls back to regular handler wrapped in a single-item stream.
+ * Route command execution through the command tree
  *
  * @param cmd - Command to execute
  * @param args - Remaining arguments
  * @param ctx - Command execution context
  * @returns ClientResponseStream for progress and final result
  */
-export async function* routeCommandStreaming(
+export async function* routeCommand(
   cmd: Command,
   args: string[],
   ctx: CommandExecutionContext,
 ): ClientResponseStream {
   const { command, args: finalArgs } = findTargetCommand(cmd, args);
 
-  // Prefer streaming handler if available
-  if (command.streamingHandler) {
-    yield* command.streamingHandler(finalArgs, ctx);
-    return;
-  }
-
-  // Fall back to regular handler
   if (command.handler) {
-    const response = await command.handler(finalArgs, ctx);
-    yield { response, mode: "final" };
+    yield* command.handler(finalArgs, ctx);
     return;
   }
 
@@ -236,13 +225,8 @@ export function findCallbackByPath(
     }
   }
 
-  if (!definition.handler && !definition.streamingHandler) {
-    return undefined;
-  }
-
   return {
     handler: definition.handler,
-    streamingHandler: definition.streamingHandler,
     requiredRole: effectiveRole,
     params,
   };

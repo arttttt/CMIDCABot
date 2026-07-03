@@ -91,4 +91,14 @@ export class StreamUtils {
     }
     return gen();
   }
+
+  /**
+   * Wrap an async response factory as final stream
+   *
+   * Like final(), but for one-shot handlers that need to await
+   * before producing the response.
+   */
+  static async *finalFrom(factory: () => Promise<ClientResponse>): ClientResponseStream {
+    yield { response: await factory(), mode: "final" };
+  }
 }
