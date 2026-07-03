@@ -15,7 +15,7 @@ import {
   PRIORITY_FEE_LEVEL,
 } from "../../../domain/constants.js";
 import { logger, LogSanitizer } from "../../../infrastructure/shared/logging/index.js";
-import { toRawAmount, toHumanAmountNumber } from "../../../infrastructure/shared/math/index.js";
+import { Precision } from "../../../infrastructure/shared/math/index.js";
 
 // Jupiter Swap API v1 endpoint
 const JUPITER_SWAP_API = "https://api.jup.ag/swap/v1";
@@ -149,9 +149,9 @@ export class JupiterSwapClient {
     const inputDecimals = this.getDecimalsForMint(data.inputMint);
     const outputDecimals = this.getDecimalsForMint(data.outputMint);
 
-    const inputAmount = toHumanAmountNumber(data.inAmount, inputDecimals);
-    const outputAmount = toHumanAmountNumber(data.outAmount, outputDecimals);
-    const minOutputAmount = toHumanAmountNumber(data.otherAmountThreshold, outputDecimals);
+    const inputAmount = Precision.toHumanAmountNumber(data.inAmount, inputDecimals);
+    const outputAmount = Precision.toHumanAmountNumber(data.outAmount, outputDecimals);
+    const minOutputAmount = Precision.toHumanAmountNumber(data.otherAmountThreshold, outputDecimals);
 
     // Extract route labels
     const route = data.routePlan.map((step) => step.swapInfo.label);
@@ -271,7 +271,7 @@ export class JupiterSwapClient {
     outputMint: TokenMint,
     slippageBps?: number,
   ): Promise<SwapQuote> {
-    const amountRaw = toRawAmount(amountUsdc, TOKEN_DECIMALS.USDC);
+    const amountRaw = Precision.toRawAmount(amountUsdc, TOKEN_DECIMALS.USDC);
 
     return this.getQuote({
       inputMint: TOKEN_MINTS.USDC,

@@ -1,52 +1,44 @@
 /**
  * MarketMonitorScheduler - periodic runner for the market monitor tick
  *
- * Mirrors CleanupScheduler: plain setInterval with error isolation.
- * The task itself (collect/analyze/notify) is injected from the composition root.
+ * Timer plumbing lives in IntervalRunner; the task itself
+ * (collect/analyze/notify) is injected from the composition root.
  */
 
 import { logger } from "../logging/index.js";
+import { IntervalRunner } from "./IntervalRunner.js";
 
 export class MarketMonitorScheduler {
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private readonly runner: IntervalRunner;
+  private running = false;
 
   constructor(
-    private readonly task: () => Promise<void>,
+    task: () => Promise<void>,
     private readonly intervalMs: number,
-  ) {}
+  ) {
+    this.runner = new IntervalRunner(task, intervalMs, (error) => {
+      logger.error("MarketMonitorScheduler", "Tick failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+  }
 
   /**
    * Start periodic execution. Runs the task once immediately.
    */
   start(): void {
-    if (this.timer) return;
+    if (this.running) return;
+    this.running = true;
 
-    void this.runSafely();
-
-    this.timer = setInterval(() => {
-      void this.runSafely();
-    }, this.intervalMs);
-
-    // Don't prevent process exit
-    this.timer.unref();
-
+    this.runner.start({ immediate: true });
     logger.info("MarketMonitorScheduler", "Started", { intervalMs: this.intervalMs });
   }
 
   stop(): void {
-    if (!this.timer) return;
-    clearInterval(this.timer);
-    this.timer = null;
-    logger.info("MarketMonitorScheduler", "Stopped");
-  }
+    if (!this.running) return;
+    this.running = false;
 
-  private async runSafely(): Promise<void> {
-    try {
-      await this.task();
-    } catch (error) {
-      logger.error("MarketMonitorScheduler", "Tick failed", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
+    this.runner.stop();
+    logger.info("MarketMonitorScheduler", "Stopped");
   }
 }

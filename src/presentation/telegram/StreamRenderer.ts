@@ -15,7 +15,7 @@ import type { Context, InlineKeyboard } from "grammy";
 import type { StreamItem } from "../protocol/types.js";
 import { TelegramKeyboard } from "./keyboard.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
-import { tryWithRetry, withRetry } from "../../infrastructure/shared/resilience/index.js";
+import { Retry } from "../../infrastructure/shared/resilience/index.js";
 
 const ERROR_MESSAGE_SEND_FAILED = "Failed to send message. Please try the command again.";
 
@@ -91,7 +91,7 @@ export class StreamRenderer {
     keyboard: InlineKeyboard | undefined,
   ): Promise<boolean> {
     try {
-      await withRetry(
+      await Retry.withRetry(
         () => ctx.api.editMessageText(chatId, messageId, text, {
           parse_mode: "Markdown",
           reply_markup: keyboard,
@@ -122,7 +122,7 @@ export class StreamRenderer {
     text: string,
     keyboard: InlineKeyboard | undefined,
   ): Promise<number | undefined> {
-    const sent = await tryWithRetry(
+    const sent = await Retry.tryWithRetry(
       () => ctx.api.sendMessage(chatId, text, {
         parse_mode: "Markdown",
         reply_markup: keyboard,

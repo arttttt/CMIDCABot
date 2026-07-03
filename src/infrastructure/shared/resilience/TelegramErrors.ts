@@ -3,7 +3,7 @@
  * Classifies errors for user-friendly messaging without direct grammy dependency
  */
 
-import { isRateLimitError } from "./Retry.js";
+import { Retry } from "./Retry.js";
 
 /**
  * Classified error types for Telegram bot errors
@@ -125,7 +125,7 @@ export class TelegramErrorClassifier {
     }
 
     // Reuse existing rate limit check for consistency
-    if (isRateLimitError(error)) {
+    if (Retry.isRateLimitError(error)) {
       return TelegramErrorType.RateLimit;
     }
 

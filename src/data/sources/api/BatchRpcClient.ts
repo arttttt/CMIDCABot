@@ -13,7 +13,7 @@
  */
 
 import { logger } from "../../../infrastructure/shared/logging/index.js";
-import { withRetry, isRateLimitError } from "../../../infrastructure/shared/resilience/index.js";
+import { Retry } from "../../../infrastructure/shared/resilience/index.js";
 
 /**
  * JSON-RPC 2.0 request structure
@@ -116,7 +116,7 @@ export class BatchRpcClient {
     let results: BatchCallResult<unknown>[] | null = null;
 
     // Use withRetry with custom shouldRetry: retry if there are failed calls
-    await withRetry(
+    await Retry.withRetry(
       async () => {
         // Determine which calls to execute
         const failedIndices = results ? this.getFailedIndices(results) : null;
@@ -153,7 +153,7 @@ export class BatchRpcClient {
       500, // Shorter delay for RPC retries
       (error) => {
         // Retry on rate limit (HTTP 429) or batch partial failure
-        return isRateLimitError(error) || (error as BatchRetryError).isBatchRetry === true;
+        return Retry.isRateLimitError(error) || (error as BatchRetryError).isBatchRetry === true;
       },
     );
 

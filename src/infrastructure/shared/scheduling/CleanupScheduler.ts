@@ -8,6 +8,7 @@
  */
 
 import { logger } from "../logging/index.js";
+import { IntervalRunner } from "./IntervalRunner.js";
 
 /** Interface for stores that support expiration cleanup */
 export interface CleanableStore {
@@ -22,7 +23,7 @@ export interface CleanableEntry {
 }
 
 export class CleanupScheduler {
-  private timers: Map<CleanableStore, ReturnType<typeof setInterval>> = new Map();
+  private runners: Map<CleanableStore, IntervalRunner> = new Map();
 
   constructor(private readonly entries: CleanableEntry[]) {}
 
@@ -31,12 +32,12 @@ export class CleanupScheduler {
    */
   start(): void {
     for (const entry of this.entries) {
-      if (this.timers.has(entry.store)) {
+      if (this.runners.has(entry.store)) {
         continue;
       }
 
-      const timer = setInterval(async () => {
-        try {
+      const runner = new IntervalRunner(
+        async () => {
           const deletedCount = await entry.store.deleteExpired();
           if (deletedCount > 0) {
             logger.debug("CleanupScheduler", "Cleanup completed", {
@@ -45,18 +46,18 @@ export class CleanupScheduler {
               intervalMs: entry.intervalMs,
             });
           }
-        } catch (error) {
+        },
+        entry.intervalMs,
+        (error) => {
           logger.error("CleanupScheduler", "Store cleanup failed", {
             store: entry.name,
             error,
           });
-        }
-      }, entry.intervalMs);
+        },
+      );
 
-      // Don't prevent process exit
-      timer.unref();
-
-      this.timers.set(entry.store, timer);
+      runner.start();
+      this.runners.set(entry.store, runner);
     }
   }
 
@@ -64,9 +65,9 @@ export class CleanupScheduler {
    * Stop periodic cleanup for all stores
    */
   stop(): void {
-    for (const timer of this.timers.values()) {
-      clearInterval(timer);
+    for (const runner of this.runners.values()) {
+      runner.stop();
     }
-    this.timers.clear();
+    this.runners.clear();
   }
 }

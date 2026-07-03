@@ -9,7 +9,7 @@ import { SecretStoreRepository } from "../repositories/SecretStoreRepository.js"
 import type { OperationLockRepository } from "../repositories/OperationLockRepository.js";
 import { CreateWalletResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
-import { withRetry } from "../../infrastructure/shared/resilience/index.js";
+import { Retry } from "../../infrastructure/shared/resilience/index.js";
 import { GetWalletInfoByAddressUseCase } from "./GetWalletInfoByAddressUseCase.js";
 import { GetWalletInfoByPrivateKeyUseCase } from "./GetWalletInfoByPrivateKeyUseCase.js";
 import { WalletCreationLock } from "../constants/WalletCreationLock.js";
@@ -70,7 +70,7 @@ export class CreateWalletUseCase {
     let seedUrl: string | undefined;
 
     // Retry only I/O operations (secret store + database)
-    await withRetry(
+    await Retry.withRetry(
       async () => {
         // 1. Store seed phrase only on first attempt
         if (!seedUrl) {

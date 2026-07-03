@@ -14,8 +14,8 @@ import { SolanaConfig } from "../../../infrastructure/shared/config/index.js";
 import { logger, LogSanitizer } from "../../../infrastructure/shared/logging/index.js";
 import type { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 import { BatchRpcClient } from "./BatchRpcClient.js";
-import { withRetry, pollWithBackoff, type PollResult } from "../../../infrastructure/shared/resilience/index.js";
-import { toHumanAmountNumber } from "../../../infrastructure/shared/math/index.js";
+import { Retry, type PollResult } from "../../../infrastructure/shared/resilience/index.js";
+import { Precision } from "../../../infrastructure/shared/math/index.js";
 
 /**
  * Transaction confirmation status after sending
@@ -89,8 +89,8 @@ export class SolanaRpcClient {
   async getBalance(walletAddress: string): Promise<number> {
     const addr = address(walletAddress);
     // Use retry with exponential backoff for rate-limited requests
-    const { value } = await withRetry(() => this.rpc.getBalance(addr).send());
-    return toHumanAmountNumber(value.toString(), 9); // SOL has 9 decimals
+    const { value } = await Retry.withRetry(() => this.rpc.getBalance(addr).send());
+    return Precision.toHumanAmountNumber(value.toString(), 9); // SOL has 9 decimals
   }
 
   /**
@@ -105,7 +105,7 @@ export class SolanaRpcClient {
     const mint = address(tokenMint);
 
     // Use retry with exponential backoff for rate-limited requests
-    const result = await withRetry(() =>
+    const result = await Retry.withRetry(() =>
       this.rpc
         .getTokenAccountsByOwner(
           owner,
@@ -204,7 +204,7 @@ export class SolanaRpcClient {
     ]);
 
     // Parse results
-    const sol = toHumanAmountNumber(solResult.value.toString(), 9); // SOL has 9 decimals
+    const sol = Precision.toHumanAmountNumber(solResult.value.toString(), 9); // SOL has 9 decimals
     const btc = this.parseTokenAccountBalance(btcResult.value);
     const eth = this.parseTokenAccountBalance(ethResult.value);
     const usdc = this.parseTokenAccountBalance(usdcResult.value);
@@ -253,7 +253,7 @@ export class SolanaRpcClient {
 
       // Fallback: calculate from raw amount and decimals
       if (tokenAmount.amount && tokenAmount.decimals !== undefined) {
-        return toHumanAmountNumber(tokenAmount.amount, tokenAmount.decimals);
+        return Precision.toHumanAmountNumber(tokenAmount.amount, tokenAmount.decimals);
       }
 
       // Last resort: use uiAmount if available
@@ -441,7 +441,7 @@ export class SolanaRpcClient {
       return { status: "timeout" };
     };
 
-    const result = await pollWithBackoff(checkStatus, {
+    const result = await Retry.pollWithBackoff(checkStatus, {
       timeoutMs,
       baseDelayMs: 1000,
       maxDelayMs: 4000,
