@@ -13,7 +13,7 @@ import type { SwapResult } from "../models/SwapStep.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { PurchaseStep, PurchaseSteps } from "../models/index.js";
 import type { DetermineAssetToBuyUseCase } from "./DetermineAssetToBuyUseCase.js";
-import { MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";
+import { SwapValidationPolicy } from "../policies/SwapValidationPolicy.js";
 import type { OperationLockRepository } from "../repositories/OperationLockRepository.js";
 import { BalanceOperationLock } from "../constants/BalanceOperationLock.js";
 
@@ -52,29 +52,13 @@ export class ExecutePurchaseUseCase {
     }
 
     try {
-      // Validate amount
-      if (isNaN(amountUsdc) || amountUsdc <= 0) {
-        logger.warn("ExecutePurchase", "Invalid amount", { amountUsdc });
-        yield PurchaseSteps.completed({ type: "invalid_amount" });
-        return;
-      }
-
       // Defense-in-depth: validate amount here for fast feedback to user,
       // even though ExecuteSwapUseCase will also validate.
       // This prevents unnecessary asset selection when amount is clearly invalid.
-      if (amountUsdc < MIN_USDC_AMOUNT) {
-        yield PurchaseSteps.completed({
-          type: "invalid_amount",
-          error: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
-        });
-        return;
-      }
-
-      if (amountUsdc > MAX_USDC_AMOUNT) {
-        yield PurchaseSteps.completed({
-          type: "invalid_amount",
-          error: `Maximum amount is ${MAX_USDC_AMOUNT} USDC`,
-        });
+      const amountCheck = SwapValidationPolicy.validateUsdcAmount(amountUsdc);
+      if (!amountCheck.valid) {
+        logger.warn("ExecutePurchase", "Invalid amount", { amountUsdc });
+        yield PurchaseSteps.completed({ type: "invalid_amount", error: amountCheck.message });
         return;
       }
 

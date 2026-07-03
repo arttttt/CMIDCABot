@@ -6,16 +6,9 @@
  */
 
 import type { UserRole } from "../../../domain/models/AuthorizedUser.js";
+import { AuthorizationPolicy } from "../../../domain/policies/AuthorizationPolicy.js";
 
 export class RoleGuard {
-  /** Role hierarchy levels (higher = more privileges) */
-  private static readonly ROLE_LEVELS: Record<UserRole, number> = {
-    owner: 3,
-    admin: 2,
-    user: 1,
-    guest: 0,
-  };
-
   /**
    * Check if user has access to resource with required role.
    *
@@ -25,6 +18,6 @@ export class RoleGuard {
    */
   static canAccess(role: UserRole, requiredRole: UserRole | undefined): boolean {
     if (!requiredRole) return true;
-    return this.ROLE_LEVELS[role] >= this.ROLE_LEVELS[requiredRole];
+    return AuthorizationPolicy.hasRequiredRole(role, requiredRole);
   }
 }

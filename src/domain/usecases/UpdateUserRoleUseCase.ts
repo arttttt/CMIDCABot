@@ -6,7 +6,8 @@ import type { TelegramId } from "../models/id/index.js";
 import type { OwnerConfig } from "../models/OwnerConfig.js";
 import { UserIdentity } from "../models/UserIdentity.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
-import { UserRole, canManageRole, isAdminRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
+import { UserRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
+import { AuthorizationPolicy } from "../policies/AuthorizationPolicy.js";
 import type { GetUserRoleUseCase } from "./GetUserRoleUseCase.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
@@ -42,27 +43,25 @@ export class UpdateUserRoleUseCase {
       return { success: false, error: "Cannot assign owner role" };
     }
 
+    // Check admin permissions before touching the target
+    // (do not reveal user existence to unauthorized callers)
+    const adminRole = await this.getUserRole.execute(UserIdentity.telegram(adminTelegramId));
+    const denied = AuthorizationPolicy.checkAdminAccess(adminRole);
+    if (denied) {
+      return { success: false, error: denied };
+    }
+
     // Get target user
     const target = await this.authRepository.getById(targetTelegramId);
     if (!target) {
       return { success: false, error: `User ${targetTelegramId} is not authorized` };
     }
 
-    // Check admin permissions
-    const adminRole = await this.getUserRole.execute(UserIdentity.telegram(adminTelegramId));
-    if (adminRole === "guest") {
-      return { success: false, error: "Admin not found" };
-    }
-
-    if (!isAdminRole(adminRole)) {
-      return { success: false, error: "Admin privileges required" };
-    }
-
-    if (!canManageRole(adminRole, target.role)) {
+    if (!AuthorizationPolicy.canManageRole(adminRole, target.role)) {
       return { success: false, error: `Cannot modify ${ROLE_LABELS[target.role]} users` };
     }
 
-    if (!canManageRole(adminRole, newRole)) {
+    if (!AuthorizationPolicy.canManageRole(adminRole, newRole)) {
       return { success: false, error: `Cannot assign ${ROLE_LABELS[newRole]} role` };
     }
 
