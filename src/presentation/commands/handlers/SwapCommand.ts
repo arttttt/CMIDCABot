@@ -56,50 +56,6 @@ export class SwapCommand implements Command {
 
         const cmd: Command = {
             definition: { name: "execute", description: "Execute real swap", usage: "<amount> [asset]" },
-            // Fallback handler for non-streaming contexts
-            handler: async (args, ctx) => {
-                const amountStr = args[0];
-                if (!amountStr) {
-                    return deps.swapFormatter.formatUsage();
-                }
-                const amount = parseAmount(amountStr);
-                if (amount === null) {
-                    return deps.swapFormatter.formatUsage();
-                }
-                const asset = args[1] || "SOL";
-
-                // Show confirmation preview; the swap itself runs via the confirm callback
-                try {
-                    const quote = await swapRepository.getQuoteUsdcToAsset(
-                        amount,
-                        asset.toUpperCase() as AssetSymbol,
-                    );
-                    const sessionId = confirmationRepository.store(
-                        ctx.telegramId,
-                        "swap_execute",
-                        amount,
-                        asset.toUpperCase(),
-                        quote,
-                    );
-                    return confirmationFormatter.formatPreview(
-                        "swap_execute",
-                        amount,
-                        asset.toUpperCase(),
-                        quote,
-                        sessionId,
-                        confirmationRepository.getTtlSeconds(),
-                    );
-                } catch (error) {
-                    logger.error("SwapExecute", "Failed to get quote for preview", {
-                        error: error instanceof Error ? error.message : String(error),
-                    });
-                    return deps.swapFormatter.format({
-                        status: "quote_error",
-                        message: "Failed to get quote",
-                    });
-                }
-            },
-            // Streaming handler for progress updates
             streamingHandler: async function* (args, ctx): AsyncGenerator<StreamItem> {
                 const amountStr = args[0];
                 if (!amountStr) {

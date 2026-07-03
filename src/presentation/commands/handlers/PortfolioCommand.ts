@@ -48,53 +48,6 @@ export class PortfolioCommand implements Command {
 
         const cmd: Command = {
             definition: { name: "buy", description: "Buy asset for USDC amount", usage: "<amount>" },
-            // Fallback handler for non-streaming contexts
-            handler: async (args, ctx) => {
-                const amountStr = args[0];
-                if (!amountStr) {
-                    return deps.purchaseFormatter.formatUsage();
-                }
-                const amount = parseAmount(amountStr);
-                if (amount === null) {
-                    return deps.purchaseFormatter.formatUsage();
-                }
-
-                // Show confirmation preview; the purchase itself runs via the confirm callback
-                try {
-                    // Determine which asset to buy based on portfolio allocation
-                    const assetInfo = await determineAssetToBuy.execute(ctx.telegramId);
-                    if (!assetInfo) {
-                        return deps.purchaseFormatter.format({ type: "no_wallet" });
-                    }
-                    const asset = assetInfo.symbol;
-
-                    const quote = await swapRepository.getQuoteUsdcToAsset(amount, asset);
-                    const sessionId = confirmationRepository.store(
-                        ctx.telegramId,
-                        "portfolio_buy",
-                        amount,
-                        asset,
-                        quote,
-                    );
-                    return confirmationFormatter.formatPreview(
-                        "portfolio_buy",
-                        amount,
-                        asset,
-                        quote,
-                        sessionId,
-                        confirmationRepository.getTtlSeconds(),
-                    );
-                } catch (error) {
-                    logger.error("PortfolioBuy", "Failed to get quote for preview", {
-                        error: error instanceof Error ? error.message : String(error),
-                    });
-                    return deps.purchaseFormatter.format({
-                        type: "quote_error",
-                        error: "Failed to get quote",
-                    });
-                }
-            },
-            // Streaming handler for progress updates
             streamingHandler: async function* (args, ctx): AsyncGenerator<StreamItem> {
                 const amountStr = args[0];
                 if (!amountStr) {

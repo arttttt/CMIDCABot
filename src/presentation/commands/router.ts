@@ -38,30 +38,6 @@ export function findTargetCommand(cmd: Command, args: string[]): RoutedCommand {
 }
 
 /**
- * Route command execution through the command tree
- *
- * @param cmd - Command to execute
- * @param args - Remaining arguments
- * @param ctx - Command execution context
- * @returns ClientResponse from the matched handler
- */
-export async function routeCommand(
-  cmd: Command,
-  args: string[],
-  ctx: CommandExecutionContext,
-): Promise<ClientResponse> {
-  const { command, args: finalArgs } = findTargetCommand(cmd, args);
-
-  // Execute this command's handler
-  if (command.handler) {
-    return command.handler(finalArgs, ctx);
-  }
-
-  // No handler - return unknown subcommand message
-  return new ClientResponse(`Unknown subcommand. Use /help for available commands.`);
-}
-
-/**
  * Route command with streaming support
  *
  * If the target command has a streamingHandler, uses it.
