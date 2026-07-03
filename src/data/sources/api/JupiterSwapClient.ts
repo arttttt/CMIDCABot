@@ -9,7 +9,7 @@
 import { TokenMint } from "../../../domain/models/id/index.js";
 import type { SwapQuote } from "../../../domain/models/quote/SwapQuote.js";
 import { TOKEN_MINTS, TOKEN_DECIMALS } from "../../../domain/constants/tokens.js";
-import { logger } from "../../../infrastructure/shared/logging/index.js";
+import { logger, LogSanitizer } from "../../../infrastructure/shared/logging/index.js";
 import { toRawAmount, toHumanAmountNumber } from "../../../infrastructure/shared/math/index.js";
 
 // Jupiter Swap API v1 endpoint
@@ -17,18 +17,6 @@ const JUPITER_SWAP_API = "https://api.jup.ag/swap/v1";
 
 /** Default slippage tolerance in basis points (0.5%) */
 const DEFAULT_SLIPPAGE_BPS = 50;
-
-/**
- * Sanitize error messages to prevent leaking sensitive data (LOW-003).
- * Removes URLs, API keys, and other potentially sensitive information.
- */
-function sanitizeErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : "Unknown error";
-  return message
-    .replace(/https?:\/\/[^\s]+/g, "[URL]")
-    .replace(/x-api-key[^\s]*/gi, "[API_KEY]")
-    .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]"); // Long base64 strings
-}
 
 export interface JupiterQuoteResponse {
   inputMint: string;
@@ -128,7 +116,7 @@ export class JupiterSwapClient {
       });
     } catch (error) {
       // Sanitize network errors to prevent leaking sensitive data (LOW-003)
-      const sanitizedMessage = sanitizeErrorMessage(error);
+      const sanitizedMessage = LogSanitizer.sanitizeApiError(error);
       logger.error("Jupiter", "Quote fetch failed", { error: sanitizedMessage });
       throw new Error(`Jupiter API error: ${sanitizedMessage}`);
     }
@@ -138,9 +126,7 @@ export class JupiterSwapClient {
     if (!response.ok) {
       const errorText = await response.text();
       // Sanitize error response
-      const sanitizedError = errorText
-        .replace(/https?:\/\/[^\s]+/g, "[URL]")
-        .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]");
+      const sanitizedError = LogSanitizer.sanitizeApiError(errorText);
       logger.error("Jupiter", "Quote API error", {
         status: response.status,
         statusText: response.statusText,
@@ -239,7 +225,7 @@ export class JupiterSwapClient {
       });
     } catch (error) {
       // Sanitize network errors to prevent leaking sensitive data (LOW-003)
-      const sanitizedMessage = sanitizeErrorMessage(error);
+      const sanitizedMessage = LogSanitizer.sanitizeApiError(error);
       logger.error("Jupiter", "Swap build fetch failed", { error: sanitizedMessage });
       throw new Error(`Jupiter API error: ${sanitizedMessage}`);
     }
@@ -249,9 +235,7 @@ export class JupiterSwapClient {
     if (!response.ok) {
       const errorText = await response.text();
       // Sanitize error response
-      const sanitizedError = errorText
-        .replace(/https?:\/\/[^\s]+/g, "[URL]")
-        .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]");
+      const sanitizedError = LogSanitizer.sanitizeApiError(errorText);
       logger.error("Jupiter", "Swap build API error", {
         status: response.status,
         statusText: response.statusText,

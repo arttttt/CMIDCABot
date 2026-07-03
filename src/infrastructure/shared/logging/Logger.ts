@@ -10,6 +10,19 @@ export class LogSanitizer {
   private static readonly SENSITIVE_COMMANDS = ["/wallet import"];
 
   /**
+   * Sanitize an API/RPC error to prevent leaking sensitive data:
+   * URLs (may embed API keys), explicit API-key headers, and long
+   * base64 runs (keys, transactions).
+   */
+  static sanitizeApiError(error: unknown): string {
+    const message = error instanceof Error ? error.message : String(error);
+    return message
+      .replace(/https?:\/\/[^\s]+/g, "[URL]")
+      .replace(/x-api-key[^\s]*/gi, "[API_KEY]")
+      .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]"); // Long base64 strings (keys, transactions)
+  }
+
+  /**
    * Redacts sensitive data from log messages
    * Protects: mnemonics, private keys, and arguments to sensitive commands
    */

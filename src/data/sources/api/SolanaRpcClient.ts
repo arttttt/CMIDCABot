@@ -11,7 +11,7 @@ import {
   signTransaction,
 } from "@solana/kit";
 import { SolanaConfig } from "../../../infrastructure/shared/config/index.js";
-import { logger } from "../../../infrastructure/shared/logging/index.js";
+import { logger, LogSanitizer } from "../../../infrastructure/shared/logging/index.js";
 import type { KeyEncryptionService } from "../../../infrastructure/internal/crypto/index.js";
 import { BatchRpcClient } from "./BatchRpcClient.js";
 import { withRetry, pollWithBackoff, type PollResult } from "../../../infrastructure/shared/resilience/index.js";
@@ -21,17 +21,6 @@ import { toHumanAmountNumber } from "../../../infrastructure/shared/math/index.j
  * Transaction confirmation status after sending
  */
 type ConfirmationStatus = "confirmed" | "timeout" | "failed";
-
-/**
- * Sanitize error messages to prevent leaking sensitive data (LOW-003).
- * Removes RPC URLs, base64 strings (potential keys/transactions), and other sensitive info.
- */
-function sanitizeErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error);
-  return message
-    .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]") // Long base64 strings (keys, transactions)
-    .replace(/https?:\/\/[^\s]+/g, "[RPC_URL]"); // RPC URLs
-}
 
 import { TxSignature, type TokenMint } from "../../../domain/models/id/index.js";
 import type { SendTransactionResult } from "../../../domain/repositories/BlockchainRepository.js";
@@ -126,45 +115,7 @@ export class SolanaRpcClient {
         .send()
     );
 
-    // No token account = balance is legitimately 0
-    if (result.value.length === 0) {
-      return 0;
-    }
-
-    // Get the first token account (there should only be one per mint)
-    const accountData = result.value[0].account.data;
-
-    // Type guard for parsed data
-    if (typeof accountData === "object" && "parsed" in accountData) {
-      const parsed = accountData.parsed as {
-        info: {
-          tokenAmount: {
-            amount: string;
-            decimals: number;
-            uiAmount: number | null;
-            uiAmountString: string;
-          };
-        };
-      };
-      const tokenAmount = parsed.info.tokenAmount;
-
-      // Use uiAmountString (more reliable) or fallback to calculating from raw amount
-      // uiAmount can be null in some edge cases, so we avoid relying on it
-      if (tokenAmount.uiAmountString) {
-        return parseFloat(tokenAmount.uiAmountString);
-      }
-
-      // Fallback: calculate from raw amount and decimals
-      if (tokenAmount.amount && tokenAmount.decimals !== undefined) {
-        return toHumanAmountNumber(tokenAmount.amount, tokenAmount.decimals);
-      }
-
-      // Last resort: use uiAmount if available
-      return tokenAmount.uiAmount ?? 0;
-    }
-
-    // Unexpected data format
-    throw new Error("Unexpected token account data format");
+    return this.parseTokenAccountBalance(result.value as unknown as TokenAccountResult[]);
   }
 
   /**
@@ -309,7 +260,8 @@ export class SolanaRpcClient {
       return tokenAmount.uiAmount ?? 0;
     }
 
-    return 0;
+    // Unexpected data format: fail loudly rather than treat as zero balance
+    throw new Error("Unexpected token account data format");
   }
 
   /**
@@ -394,7 +346,7 @@ export class SolanaRpcClient {
       return this.buildConfirmationResult(confirmationStatus, signature, confirmDuration);
     } catch (error) {
       // Sanitize error to prevent leaking sensitive data (LOW-003)
-      const sanitizedMessage = sanitizeErrorMessage(error);
+      const sanitizedMessage = LogSanitizer.sanitizeApiError(error);
       logger.error("Solana", "Transaction failed", { error: sanitizedMessage });
       return {
         success: false,
