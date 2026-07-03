@@ -11,12 +11,11 @@ import { RequestId } from "../../../domain/models/id/index.js";
 export class GatewayContext {
   readonly requestId: RequestId;
   readonly nowMs: number;
-  private readonly state: Map<string, unknown>;
+  private userRole: UserRole = "guest";
 
   constructor(requestId: RequestId) {
     this.requestId = requestId;
     this.nowMs = Date.now();
-    this.state = new Map();
   }
 
   /**
@@ -24,7 +23,7 @@ export class GatewayContext {
    * Called by LoadRolePlugin after loading from repository
    */
   setRole(role: UserRole): void {
-    this.state.set("userRole", role);
+    this.userRole = role;
   }
 
   /**
@@ -32,6 +31,6 @@ export class GatewayContext {
    * Returns "guest" if not set
    */
   getRole(): UserRole {
-    return (this.state.get("userRole") as UserRole | undefined) ?? "guest";
+    return this.userRole;
   }
 }
