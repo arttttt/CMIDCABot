@@ -4,7 +4,7 @@
 import { Kysely, Selectable } from "kysely";
 import { TransactionRepository } from "../../../domain/repositories/TransactionRepository.js";
 import { Transaction, CreateTransactionData } from "../../../domain/models/Transaction.js";
-import { TelegramId, TxSignature } from "../../../domain/models/id/index.js";
+import { TelegramId, TransactionId, TxSignature } from "../../../domain/models/id/index.js";
 import { AssetSymbol } from "../../../domain/constants/portfolio.js";
 import type { MainDatabase, TransactionsTable } from "../../types/database.js";
 
@@ -15,7 +15,7 @@ export class SQLiteTransactionRepository implements TransactionRepository {
 
   private rowToModel(row: TransactionRow): Transaction {
     return {
-      id: row.id,
+      id: new TransactionId(row.id),
       telegramId: new TelegramId(row.telegram_id),
       txSignature: new TxSignature(row.tx_signature),
       assetSymbol: row.asset_symbol as AssetSymbol,
@@ -23,18 +23,6 @@ export class SQLiteTransactionRepository implements TransactionRepository {
       amountAsset: row.amount_asset,
       createdAt: new Date(row.created_at),
     };
-  }
-
-  async getById(id: number): Promise<Transaction | undefined> {
-    const row = await this.db
-      .selectFrom("transactions")
-      .selectAll()
-      .where("id", "=", id)
-      .executeTakeFirst();
-
-    if (!row) return undefined;
-
-    return this.rowToModel(row);
   }
 
   async getByUserId(id: TelegramId): Promise<Transaction[]> {

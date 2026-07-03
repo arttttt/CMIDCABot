@@ -1,28 +1,16 @@
 /**
  * Kysely database factory for authorization SQLite database
  */
-import { Kysely, SqliteDialect, sql } from "kysely";
-import SQLite from "better-sqlite3";
-import { mkdirSync, existsSync } from "fs";
-import { dirname } from "path";
+import { Kysely, sql } from "kysely";
 import type { AuthDatabase } from "../../types/authDatabase.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
+import { openSqliteDatabase } from "./openSqliteDatabase.js";
 
 /**
  * Create a Kysely instance for the authorization database
  */
 export async function createAuthDatabase(dbPath: string): Promise<Kysely<AuthDatabase>> {
-  const dir = dirname(dbPath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-
-  const db = new Kysely<AuthDatabase>({
-    dialect: new SqliteDialect({
-      database: new SQLite(dbPath),
-    }),
-  });
-
+  const db = openSqliteDatabase<AuthDatabase>(dbPath);
   await initAuthSchema(db);
   logger.info("AuthDatabase", "Authorization database initialized", { path: dbPath });
   return db;

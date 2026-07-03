@@ -1,27 +1,15 @@
 /**
  * Kysely database factory for SQLite
  */
-import { Kysely, SqliteDialect, sql } from "kysely";
-import SQLite from "better-sqlite3";
-import { mkdirSync, existsSync } from "fs";
-import { dirname } from "path";
+import { Kysely, sql } from "kysely";
 import type { MainDatabase } from "../../types/database.js";
+import { openSqliteDatabase } from "./openSqliteDatabase.js";
 
 /**
  * Create a Kysely instance for the main database
  */
 export async function createMainDatabase(dbPath: string): Promise<Kysely<MainDatabase>> {
-  const dir = dirname(dbPath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-
-  const db = new Kysely<MainDatabase>({
-    dialect: new SqliteDialect({
-      database: new SQLite(dbPath),
-    }),
-  });
-
+  const db = openSqliteDatabase<MainDatabase>(dbPath);
   await initMainSchema(db);
   return db;
 }

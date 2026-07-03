@@ -4,7 +4,7 @@
  * Tokens are stored as SHA-256 hashes: a leaked auth.db must not
  * expose usable invite links. Lookups hash the incoming plaintext.
  */
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { Kysely, sql, Selectable } from "kysely";
 import { InviteTokenRepository } from "../../../domain/repositories/InviteTokenRepository.js";
 import { InviteToken } from "../../../domain/models/InviteToken.js";
@@ -33,7 +33,10 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository, Clean
     };
   }
 
-  async create(token: string, role: UserRole, createdBy: TelegramId, expiresAt: Date): Promise<void> {
+  async create(role: UserRole, createdBy: TelegramId, expiresAt: Date): Promise<string> {
+    // Cryptographically secure token (16 bytes = 22 base64url chars)
+    const token = randomBytes(16).toString("base64url");
+
     await this.db
       .insertInto("invite_tokens")
       .values({
@@ -43,6 +46,8 @@ export class SQLiteInviteTokenRepository implements InviteTokenRepository, Clean
         expires_at: expiresAt.toISOString(),
       })
       .execute();
+
+    return token;
   }
 
   async getByToken(token: string): Promise<InviteToken | undefined> {
