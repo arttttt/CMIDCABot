@@ -31,6 +31,12 @@ import {
   UpdateUserRoleUseCase,
   GetUserRoleUseCase,
   GetMarketStatusUseCase,
+  ResolveConfirmationSessionUseCase,
+  CancelConfirmationUseCase,
+  ConfirmSwapUseCase,
+  ConfirmPurchaseUseCase,
+  PrepareSwapConfirmationUseCase,
+  PreparePurchaseConfirmationUseCase,
 } from "../domain/usecases/index.js";
 
 export interface UseCases {
@@ -55,6 +61,11 @@ export interface UseCases {
   executePurchase: ExecutePurchaseUseCase;
   getPortfolioStatus: GetPortfolioStatusUseCase;
   getMarketStatus: GetMarketStatusUseCase;
+  cancelConfirmation: CancelConfirmationUseCase;
+  confirmSwap: ConfirmSwapUseCase;
+  confirmPurchase: ConfirmPurchaseUseCase;
+  prepareSwapConfirmation: PrepareSwapConfirmationUseCase;
+  preparePurchaseConfirmation: PreparePurchaseConfirmationUseCase;
 }
 
 export function createUseCases(
@@ -70,6 +81,7 @@ export function createUseCases(
     priceHistoryRepository,
     secretStore,
     operationLockRepository,
+    confirmationRepository,
   } = storage;
   const { blockchainRepository, balanceRepository, priceRepository, swapRepository } = blockchain;
 
@@ -134,6 +146,24 @@ export function createUseCases(
   const executePurchase = new ExecutePurchaseUseCase(executeSwap, determineAssetToBuy, operationLockRepository);
   const getPortfolioStatus = new GetPortfolioStatusUseCase(userRepository, balanceRepository, priceRepository);
 
+  // Confirmation flow (preview -> confirm/cancel)
+  const resolveConfirmationSession = new ResolveConfirmationSessionUseCase(
+    confirmationRepository,
+    swapRepository,
+  );
+  const cancelConfirmation = new CancelConfirmationUseCase(confirmationRepository);
+  const confirmSwap = new ConfirmSwapUseCase(resolveConfirmationSession, executeSwap);
+  const confirmPurchase = new ConfirmPurchaseUseCase(resolveConfirmationSession, executePurchase);
+  const prepareSwapConfirmation = new PrepareSwapConfirmationUseCase(
+    confirmationRepository,
+    swapRepository,
+  );
+  const preparePurchaseConfirmation = new PreparePurchaseConfirmationUseCase(
+    confirmationRepository,
+    swapRepository,
+    determineAssetToBuy,
+  );
+
   // Market
   const getMarketStatus = new GetMarketStatusUseCase(priceRepository, priceHistoryRepository);
 
@@ -159,5 +189,10 @@ export function createUseCases(
     executePurchase,
     getPortfolioStatus,
     getMarketStatus,
+    cancelConfirmation,
+    confirmSwap,
+    confirmPurchase,
+    prepareSwapConfirmation,
+    preparePurchaseConfirmation,
   };
 }

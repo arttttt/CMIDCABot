@@ -34,6 +34,25 @@ export { GetQuoteUseCase } from "./GetQuoteUseCase.js";
 
 // Swap
 export { ExecuteSwapUseCase } from "./ExecuteSwapUseCase.js";
+export {
+  ResolveConfirmationSessionUseCase,
+  type ResolveConfirmationResult,
+} from "./ResolveConfirmationSessionUseCase.js";
+export {
+  CancelConfirmationUseCase,
+  type CancelConfirmationResult,
+} from "./CancelConfirmationUseCase.js";
+export { ConfirmSwapUseCase, type ConfirmSwapResult } from "./ConfirmSwapUseCase.js";
+export { ConfirmPurchaseUseCase, type ConfirmPurchaseStep } from "./ConfirmPurchaseUseCase.js";
+export {
+  PrepareSwapConfirmationUseCase,
+  type PrepareSwapConfirmationResult,
+  type ConfirmationPreview,
+} from "./PrepareSwapConfirmationUseCase.js";
+export {
+  PreparePurchaseConfirmationUseCase,
+  type PreparePurchaseConfirmationResult,
+} from "./PreparePurchaseConfirmationUseCase.js";
 
 // Invite
 export { GenerateInviteUseCase } from "./GenerateInviteUseCase.js";

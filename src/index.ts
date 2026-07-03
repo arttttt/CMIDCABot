@@ -46,7 +46,6 @@ async function main(): Promise<void> {
     version: pkg.version,
     ownerConfig,
     storage,
-    blockchain,
     useCases,
   });
 

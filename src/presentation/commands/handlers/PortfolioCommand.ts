@@ -3,10 +3,8 @@ import { PortfolioCommandDeps } from "../dependencies.js";
 import { Definitions } from "../definitions.js";
 import { ConfirmationSessionId } from "../../../domain/models/id/index.js";
 import { StreamUtils } from "../../protocol/gateway/stream.js";
-import { logger } from "../../../infrastructure/shared/logging/index.js";
-import { SlippagePolicy } from "../../../domain/policies/SlippagePolicy.js";
-import type { StreamItem } from "../../protocol/types.js";
-import type { AssetSymbol } from "../../../domain/constants/portfolio.js";
+import type { ResolveConfirmationResult } from "../../../domain/usecases/index.js";
+import type { ClientResponse, ClientResponseStream } from "../../protocol/types.js";
 
 // Helper function from original handlers.ts
 function parseAmount(amountStr: string): number | null {
@@ -27,7 +25,7 @@ export class PortfolioCommand implements Command {
         this.subcommands.set("buy", this.createBuyCommand());
     }
 
-    public handler(_args: string[], ctx: import("../types.js").CommandExecutionContext): import("../../protocol/types.js").ClientResponseStream {
+    public handler(_args: string[], ctx: import("../types.js").CommandExecutionContext): ClientResponseStream {
         return StreamUtils.finalFrom(async () => {
             const result = await this.deps.getPortfolioStatus.execute(ctx.telegramId);
             return this.deps.portfolioFormatter.formatStatus(result);
@@ -46,86 +44,54 @@ export class PortfolioCommand implements Command {
 
     private createBuyCommand(): Command {
         const deps = this.deps;
-        const { confirmationRepository, confirmationFormatter, swapRepository, determineAssetToBuy } = deps;
 
         const cmd: Command = {
             definition: { name: "buy", description: "Buy asset for USDC amount", usage: "<amount>" },
-            handler: async function* (args, ctx): AsyncGenerator<StreamItem> {
+            handler: (args, ctx) => StreamUtils.finalFrom(async () => {
                 const amountStr = args[0];
                 if (!amountStr) {
-                    yield { response: deps.purchaseFormatter.formatUsage(), mode: "final" };
-                    return;
+                    return deps.purchaseFormatter.formatUsage();
                 }
                 const amount = parseAmount(amountStr);
                 if (amount === null) {
-                    yield { response: deps.purchaseFormatter.formatUsage(), mode: "final" };
-                    return;
+                    return deps.purchaseFormatter.formatUsage();
                 }
 
                 // Show confirmation preview; the purchase itself streams via the confirm callback
-                try {
-                    // Determine which asset to buy based on portfolio allocation
-                    const assetInfo = await determineAssetToBuy.execute(ctx.telegramId);
-                    if (!assetInfo) {
-                        yield {
-                            response: deps.purchaseFormatter.format({ status: "no_wallet" }),
-                            mode: "final",
-                        };
-                        return;
-                    }
-                    const asset = assetInfo.symbol;
-
-                    const quote = await swapRepository.getQuoteUsdcToAsset(amount, asset);
-                    const sessionId = confirmationRepository.store(
-                        ctx.telegramId,
-                        "portfolio_buy",
-                        amount,
-                        asset,
-                        quote,
-                    );
-                    yield {
-                        response: confirmationFormatter.formatPreview(
-                            "portfolio_buy",
-                            amount,
-                            asset,
-                            quote,
-                            sessionId,
-                            confirmationRepository.getTtlSeconds(),
-                        ),
-                        mode: "final",
-                    };
-                } catch (error) {
-                    logger.error("PortfolioBuy", "Failed to get quote for preview", {
-                        error: error instanceof Error ? error.message : String(error),
-                    });
-                    yield {
-                        response: deps.purchaseFormatter.format({
+                const prepared = await deps.preparePurchaseConfirmation.execute(ctx.telegramId, amount);
+                switch (prepared.kind) {
+                    case "invalid_amount":
+                        return deps.purchaseFormatter.format({
+                            status: "invalid_amount",
+                            message: prepared.message,
+                        });
+                    case "no_wallet":
+                        return deps.purchaseFormatter.format({ status: "no_wallet" });
+                    case "quote_error":
+                        return deps.purchaseFormatter.format({
                             status: "quote_error",
                             message: "Failed to get quote",
-                        }),
-                        mode: "final",
-                    };
+                        });
+                    case "ready":
+                        return deps.confirmationFormatter.formatPreview(
+                            prepared.preview.confirmationType,
+                            prepared.preview.amount,
+                            prepared.preview.asset,
+                            prepared.preview.quote,
+                            prepared.preview.sessionId,
+                            prepared.preview.ttlSeconds,
+                        );
                 }
-            },
+            }),
         };
 
         cmd.callbacks = new Map([
             ["confirm", {
-                handler: (ctx, params) => {
-                    if (params.length === 0) {
-                        return StreamUtils.final(confirmationFormatter.formatSessionNotFound());
-                    }
-                    return this.handleConfirmStream(params[0], ctx);
-                },
+                handler: (ctx, params) => this.handleConfirm(params, ctx),
                 params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
             }],
             ["cancel", {
-                handler: (ctx, params) => {
-                    if (params.length === 0) {
-                        return StreamUtils.final(confirmationFormatter.formatSessionNotFound());
-                    }
-                    return StreamUtils.final(this.handleCancel(params[0], ctx));
-                },
+                handler: (ctx, params) => StreamUtils.finalFrom(() => this.handleCancel(params, ctx)),
                 params: [{ name: "sessionId", maxLength: ConfirmationSessionId.MAX_LENGTH }],
             }],
         ]);
@@ -133,153 +99,91 @@ export class PortfolioCommand implements Command {
         return cmd;
     }
 
-    private parseSessionId(sessionIdStr: string): ConfirmationSessionId | null {
+    private parseSessionId(params: string[]): ConfirmationSessionId | null {
+        if (params.length === 0) {
+            return null;
+        }
         try {
-            return new ConfirmationSessionId(sessionIdStr);
+            return new ConfirmationSessionId(params[0]);
         } catch {
             return null;
         }
     }
 
-    private handleConfirmStream(
-        sessionIdStr: string,
+    private handleConfirm(
+        params: string[],
         ctx: import("../types.js").CommandExecutionContext,
-    ): import("../../protocol/types.js").ClientResponseStream {
-        const { confirmationRepository, confirmationFormatter, swapRepository } = this.deps;
+    ): ClientResponseStream {
+        const deps = this.deps;
+        const sessionId = this.parseSessionId(params);
+        if (!sessionId) {
+            return StreamUtils.final(deps.confirmationFormatter.formatSessionNotFound());
+        }
 
-        return StreamUtils.catchAsync(async () => {
-            const self = this;
-            async function* stream(): import("../../protocol/types.js").ClientResponseStream {
-                const sessionId = self.parseSessionId(sessionIdStr);
-                if (!sessionId) {
-                    yield { response: confirmationFormatter.formatSessionNotFound(), mode: "final" };
+        const formatResolution = this.formatResolution.bind(this);
+
+        return (async function* (): ClientResponseStream {
+            for await (const step of deps.confirmPurchase.execute(sessionId, ctx.telegramId)) {
+                if (step.step === "resolution") {
+                    yield { response: formatResolution(step.outcome), mode: "final" };
                     return;
                 }
 
-                const session = confirmationRepository.get(sessionId);
-                if (!session) {
-                    yield { response: confirmationFormatter.formatSessionNotFound(), mode: "final" };
-                    return;
-                }
-
-                // Check if session belongs to this user
-                if (!session.telegramId.equals(ctx.telegramId)) {
-                    logger.warn("PortfolioBuy", "Session user mismatch", {
-                        sessionUser: session.telegramId.value,
-                        requestUser: ctx.telegramId.value,
-                    });
-                    yield { response: confirmationFormatter.formatSessionNotFound(), mode: "final" };
-                    return;
-                }
-
-                // Get fresh quote to check slippage
-                let freshQuote;
-                try {
-                    freshQuote = await swapRepository.getQuoteUsdcToAsset(
-                        session.amount,
-                        session.asset as AssetSymbol,
-                    );
-                } catch (error) {
-                    logger.error("PortfolioBuy", "Failed to get fresh quote", {
-                        error: error instanceof Error ? error.message : String(error),
-                    });
-                    confirmationRepository.cancel(sessionId);
+                const purchaseStep = step.purchaseStep;
+                if (purchaseStep.step === "completed") {
                     yield {
-                        response: self.deps.purchaseFormatter.format({
-                            status: "quote_error",
-                            message: "Failed to refresh quote",
-                        }),
+                        response: deps.purchaseFormatter.format(purchaseStep.result),
                         mode: "final",
                     };
-                    return;
-                }
-
-                // Check slippage
-                if (SlippagePolicy.isExceeded(session.quote, freshQuote)) {
-                    // Can we re-confirm?
-                    if (confirmationRepository.updateQuote(sessionId, freshQuote)) {
-                        // Show slippage warning with new price
-                        yield {
-                            response: confirmationFormatter.formatSlippageWarning(
-                                session.type,
-                                session.quote,
-                                freshQuote,
-                                sessionId,
-                                confirmationRepository.getTtlSeconds(),
-                            ),
-                            mode: "final",
-                        };
-                        return;
-                    } else {
-                        // Max re-confirms exceeded
-                        confirmationRepository.cancel(sessionId);
-                        yield {
-                            response: confirmationFormatter.formatMaxSlippageExceeded(session.type),
-                            mode: "final",
-                        };
-                        return;
-                    }
-                }
-
-                // Slippage OK - consume session and execute
-                confirmationRepository.consume(sessionId);
-
-                // Execute purchase with progress streaming
-                for await (const step of self.deps.executePurchase!.execute(ctx.telegramId, session.amount)) {
-                    if (step.step === "completed") {
-                        yield {
-                            response: self.deps.purchaseFormatter.format(step.result),
-                            mode: "final",
-                        };
-                    } else {
-                        const formatted = self.deps.progressFormatter.formatPurchaseStep(step);
-                        yield { response: formatted.response, mode: formatted.mode };
-                    }
+                } else {
+                    const formatted = deps.progressFormatter.formatPurchaseStep(purchaseStep);
+                    yield { response: formatted.response, mode: formatted.mode };
                 }
             }
-
-            return stream();
-        }, (error) => {
-            logger.error("PortfolioBuy", "Confirm callback failed", {
-                error: error instanceof Error ? error.message : String(error),
-            });
-            const sessionId = this.parseSessionId(sessionIdStr);
-            if (sessionId) {
-                confirmationRepository.cancel(sessionId);
-            }
-            return this.deps.purchaseFormatter.format({
-                status: "quote_error",
-                message: "Failed to execute purchase",
-            });
-        });
+        })();
     }
 
-    private handleCancel(
-        sessionIdStr: string,
+    private formatResolution(
+        outcome: Exclude<ResolveConfirmationResult, { kind: "confirmed" }>,
+    ): ClientResponse {
+        const { confirmationFormatter, purchaseFormatter } = this.deps;
+
+        switch (outcome.kind) {
+            case "session_not_found":
+                return confirmationFormatter.formatSessionNotFound();
+            case "quote_refresh_failed":
+                return purchaseFormatter.format({
+                    status: "quote_error",
+                    message: "Failed to refresh quote",
+                });
+            case "slippage_warning":
+                return confirmationFormatter.formatSlippageWarning(
+                    outcome.confirmationType,
+                    outcome.originalQuote,
+                    outcome.freshQuote,
+                    outcome.sessionId,
+                    outcome.ttlSeconds,
+                );
+            case "max_slippage_exceeded":
+                return confirmationFormatter.formatMaxSlippageExceeded(outcome.confirmationType);
+        }
+    }
+
+    private async handleCancel(
+        params: string[],
         ctx: import("../types.js").CommandExecutionContext,
-    ): import("../../protocol/types.js").ClientResponse {
-        const { confirmationRepository, confirmationFormatter } = this.deps;
-        const sessionId = this.parseSessionId(sessionIdStr);
+    ): Promise<ClientResponse> {
+        const { confirmationFormatter } = this.deps;
+
+        const sessionId = this.parseSessionId(params);
         if (!sessionId) {
             return confirmationFormatter.formatSessionNotFound();
         }
 
-        const session = confirmationRepository.get(sessionId);
-
-        if (!session) {
+        const result = await this.deps.cancelConfirmation.execute(sessionId, ctx.telegramId);
+        if (result.kind === "session_not_found") {
             return confirmationFormatter.formatSessionNotFound();
         }
-
-        // Check if session belongs to this user
-        if (!session.telegramId.equals(ctx.telegramId)) {
-            logger.warn("PortfolioBuy", "Cancel session user mismatch", {
-                sessionUser: session.telegramId.value,
-                requestUser: ctx.telegramId.value,
-            });
-            return confirmationFormatter.formatSessionNotFound();
-        }
-
-        confirmationRepository.cancel(sessionId);
-        return confirmationFormatter.formatCancelled(session.type);
+        return confirmationFormatter.formatCancelled(result.confirmationType);
     }
 }
