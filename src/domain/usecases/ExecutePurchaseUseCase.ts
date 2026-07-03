@@ -6,10 +6,7 @@
  */
 
 import type { TelegramId } from "../models/id/index.js";
-import type { AssetSymbol } from "../constants/portfolio.js";
-import type { PurchaseResult } from "./types.js";
 import type { ExecuteSwapUseCase } from "./ExecuteSwapUseCase.js";
-import type { SwapResult } from "../models/SwapStep.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { PurchaseStep, PurchaseSteps } from "../models/index.js";
 import type { DetermineAssetToBuyUseCase } from "./DetermineAssetToBuyUseCase.js";
@@ -47,7 +44,7 @@ export class ExecutePurchaseUseCase {
     );
 
     if (!lockAcquired) {
-      yield PurchaseSteps.completed({ type: "operation_in_progress" });
+      yield PurchaseSteps.completed({ status: "operation_in_progress" });
       return;
     }
 
@@ -58,7 +55,7 @@ export class ExecutePurchaseUseCase {
       const amountCheck = SwapValidationPolicy.validateUsdcAmount(amountUsdc);
       if (!amountCheck.valid) {
         logger.warn("ExecutePurchase", "Invalid amount", { amountUsdc });
-        yield PurchaseSteps.completed({ type: "invalid_amount", error: amountCheck.message });
+        yield PurchaseSteps.completed({ status: "invalid_amount", message: amountCheck.message });
         return;
       }
 
@@ -76,15 +73,15 @@ export class ExecutePurchaseUseCase {
           error: error instanceof Error ? error.message : String(error),
         });
         yield PurchaseSteps.completed({
-          type: "quote_error",
-          error: "Failed to fetch balances or prices",
+          status: "quote_error",
+          message: "Failed to fetch balances or prices",
         });
         return;
       }
 
       if (!selection) {
         logger.warn("ExecutePurchase", "No wallet connected", { telegramId });
-        yield PurchaseSteps.completed({ type: "no_wallet" });
+        yield PurchaseSteps.completed({ status: "no_wallet" });
         return;
       }
 
@@ -107,13 +104,16 @@ export class ExecutePurchaseUseCase {
         { skipLock: true },
       )) {
         if (swapStep.step === "completed") {
-          // Map swap result to purchase result
-          const purchaseResult = this.mapSwapResultToPurchaseResult(
-            swapStep.result,
-            selection.symbol,
-            amountUsdc,
-          );
-          yield PurchaseSteps.completed(purchaseResult);
+          if (swapStep.result.status === "success") {
+            logger.info("ExecutePurchase", "Purchase completed", {
+              signature: swapStep.result.signature,
+              confirmed: swapStep.result.confirmed,
+              asset: selection.symbol,
+              amount: swapStep.result.quote.outputAmount,
+              amountUsdc,
+            });
+          }
+          yield PurchaseSteps.completed(swapStep.result);
         } else {
           // Wrap swap step in purchase step
           yield PurchaseSteps.swap(swapStep);
@@ -123,60 +123,4 @@ export class ExecutePurchaseUseCase {
       await this.operationLockRepository.release(lockKey);
     }
   }
-
-  /**
-   * Map SwapResult to PurchaseResult
-   */
-  private mapSwapResultToPurchaseResult(
-    swapResult: SwapResult,
-    asset: AssetSymbol,
-    amountUsdc: number,
-  ): PurchaseResult {
-    switch (swapResult.status) {
-      case "success": {
-        const priceUsd = amountUsdc / swapResult.quote.outputAmount;
-        logger.info("ExecutePurchase", "Purchase completed", {
-          signature: swapResult.signature,
-          confirmed: swapResult.confirmed,
-          asset,
-          amount: swapResult.quote.outputAmount,
-          amountUsdc,
-          priceUsd,
-        });
-        return {
-          type: "success",
-          asset,
-          amountAsset: swapResult.quote.outputAmount,
-          amountUsdc,
-          priceUsd,
-          signature: swapResult.signature,
-          confirmed: swapResult.confirmed,
-        };
-      }
-      case "no_wallet":
-        return { type: "no_wallet" };
-      case "invalid_amount":
-        return { type: "invalid_amount", error: swapResult.message };
-      case "operation_in_progress":
-        return { type: "operation_in_progress" };
-      case "invalid_asset":
-        // This should not happen since we control the asset selection
-        return { type: "invalid_amount", error: swapResult.message };
-      case "insufficient_usdc_balance":
-        return { type: "insufficient_usdc_balance" };
-      case "insufficient_sol_balance":
-        return { type: "insufficient_sol_balance" };
-      case "quote_error":
-        return { type: "quote_error", error: swapResult.message };
-      case "build_error":
-        return { type: "build_error", error: swapResult.message };
-      case "send_error":
-        return { type: "send_error", error: swapResult.message, signature: swapResult.signature };
-      case "rpc_error":
-        return { type: "rpc_error", error: swapResult.message };
-      case "high_price_impact":
-        return { type: "high_price_impact", error: `Price impact too high: ${swapResult.priceImpactPct.toFixed(2)}%` };
-    }
-  }
-
 }

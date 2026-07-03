@@ -68,7 +68,7 @@ export class PortfolioCommand implements Command {
                     const assetInfo = await determineAssetToBuy.execute(ctx.telegramId);
                     if (!assetInfo) {
                         yield {
-                            response: deps.purchaseFormatter.format({ type: "no_wallet" }),
+                            response: deps.purchaseFormatter.format({ status: "no_wallet" }),
                             mode: "final",
                         };
                         return;
@@ -100,8 +100,8 @@ export class PortfolioCommand implements Command {
                     });
                     yield {
                         response: deps.purchaseFormatter.format({
-                            type: "quote_error",
-                            error: "Failed to get quote",
+                            status: "quote_error",
+                            message: "Failed to get quote",
                         }),
                         mode: "final",
                     };
@@ -186,8 +186,8 @@ export class PortfolioCommand implements Command {
                     confirmationRepository.cancel(sessionId);
                     yield {
                         response: self.deps.purchaseFormatter.format({
-                            type: "quote_error",
-                            error: "Failed to refresh quote",
+                            status: "quote_error",
+                            message: "Failed to refresh quote",
                         }),
                         mode: "final",
                     };
@@ -248,8 +248,8 @@ export class PortfolioCommand implements Command {
                 confirmationRepository.cancel(sessionId);
             }
             return this.deps.purchaseFormatter.format({
-                type: "quote_error",
-                error: "Failed to execute purchase",
+                status: "quote_error",
+                message: "Failed to execute purchase",
             });
         });
     }
