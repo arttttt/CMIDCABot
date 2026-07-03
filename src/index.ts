@@ -10,24 +10,15 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
 import { loadConfig } from "./infrastructure/shared/config/index.js";
-import { setLogger, DebugLogger, NoOpLogger } from "./infrastructure/shared/logging/index.js";
-import { HttpServer } from "./infrastructure/shared/http/index.js";
+import { setLogger, DebugLogger, NoOpLogger, logger } from "./infrastructure/shared/logging/index.js";
 import { OwnerConfig } from "./domain/models/OwnerConfig.js";
-import {
-  createTelegramBot,
-  attachGateway,
-  createTransport,
-  validateTransportConfig,
-  type TransportConfig as TelegramTransportConfig,
-} from "./presentation/telegram/index.js";
+import { createTelegramBot, attachGateway } from "./presentation/telegram/index.js";
 import { TelegramMessageSender } from "./presentation/telegram/TelegramMessageSender.js";
-import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
-import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
-import { WalletFormatter } from "./presentation/formatters/index.js";
 import { createStorage } from "./app/createStorage.js";
 import { createBlockchain } from "./app/createBlockchain.js";
 import { createUseCases } from "./app/createUseCases.js";
 import { createPresentation } from "./app/createPresentation.js";
+import { createBotTransport } from "./app/createTransport.js";
 import { startMarketMonitor } from "./app/createMarketMonitor.js";
 
 async function main(): Promise<void> {
@@ -60,15 +51,6 @@ async function main(): Promise<void> {
   const botInfo = bot.botInfo;
   const messageSender = new TelegramMessageSender(bot.api);
 
-  // HTTP page handlers (shared between polling and webhook modes)
-  const secretPageHandler = new SecretPageHandler(storage.secretStore);
-  const importPageHandler = new ImportPageHandler(
-    storage.importSessionStore,
-    useCases.importWallet,
-    messageSender,
-    new WalletFormatter(),
-  );
-
   const marketMonitorScheduler = await startMarketMonitor({
     config,
     storage,
@@ -78,39 +60,18 @@ async function main(): Promise<void> {
     marketFormatter: presentation.marketFormatter,
   });
 
-  // Transport configuration
-  const transportConfig: TelegramTransportConfig = {
-    mode: config.transport.mode,
-    webhook: config.transport.mode === "webhook" && config.transport.webhookUrl
-      ? {
-          url: config.transport.webhookUrl,
-          secret: config.transport.webhookSecret,
-          port: config.http.port,
-          host: config.http.host,
-          handlers: [secretPageHandler, importPageHandler],
-        }
-      : undefined,
-  };
-  validateTransportConfig(transportConfig);
-
-  // HTTP server for polling mode (webhook mode has its own server with handlers)
-  let httpServer: HttpServer | undefined;
-  if (config.transport.mode === "polling") {
-    httpServer = new HttpServer(config.http);
-    httpServer.addHandler(secretPageHandler);
-    httpServer.addHandler(importPageHandler);
-    httpServer.start();
-  }
-
   const { registry, gateway } = presentation.createRegistryAndGateway(botInfo.username);
   console.log(`Command mode: ${registry.getModeInfo()?.label ?? "Production"}`);
 
   attachGateway(bot, gateway);
   presentation.userResolver.setApi(bot.api);
 
-  const transport = createTransport(transportConfig, {
+  const { transport, httpServer } = createBotTransport({
+    config,
     bot,
-    isDev: config.isDev,
+    storage,
+    useCases,
+    messageSender,
     onStart: (info) => {
       if (!config.isDev) {
         console.log(`Bot @${info.username} is running`);
@@ -118,15 +79,36 @@ async function main(): Promise<void> {
     },
   });
 
-  // Graceful shutdown
+  // Graceful shutdown: guard against re-entry (double Ctrl+C / SIGINT
+  // after SIGTERM) and keep going if a step fails - the DBs must get
+  // their destroy() attempt even when the transport hangs on stop.
+  let shuttingDown = false;
   const shutdown = async (): Promise<void> => {
+    if (shuttingDown) {
+      return;
+    }
+    shuttingDown = true;
     console.log("\nShutting down...");
-    httpServer?.stop();
-    await transport.stop();
-    marketMonitorScheduler.stop();
-    storage.cleanupScheduler.stop();
-    await storage.mainDb.destroy();
-    await storage.authDb.destroy();
+
+    const steps: Array<[string, () => void | Promise<unknown>]> = [
+      ["http server", () => httpServer?.stop()],
+      ["transport", () => transport.stop()],
+      ["market monitor", () => marketMonitorScheduler.stop()],
+      ["cleanup scheduler", () => storage.cleanupScheduler.stop()],
+      ["main db", () => storage.mainDb.destroy()],
+      ["auth db", () => storage.authDb.destroy()],
+    ];
+
+    for (const [name, step] of steps) {
+      try {
+        await step();
+      } catch (error) {
+        logger.error("Shutdown", `Failed to stop ${name}`, {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
     process.exit(0);
   };
   process.on("SIGINT", shutdown);
