@@ -5,7 +5,6 @@
 import type { Config } from "../infrastructure/shared/config/envSchema.js";
 import type { OwnerConfig } from "../domain/models/OwnerConfig.js";
 import type { Storage } from "./createStorage.js";
-import type { Blockchain } from "./createBlockchain.js";
 import type { UseCases } from "./createUseCases.js";
 import { TelegramUserResolver } from "../presentation/telegram/UserResolver.js";
 import { GatewayFactory } from "../presentation/protocol/gateway/index.js";
@@ -36,7 +35,6 @@ export interface PresentationDeps {
   version: string;
   ownerConfig: OwnerConfig;
   storage: Storage;
-  blockchain: Blockchain;
   useCases: UseCases;
 }
 
@@ -50,7 +48,7 @@ export interface Presentation {
 }
 
 export function createPresentation(deps: PresentationDeps): Presentation {
-  const { config, version, ownerConfig, storage, blockchain, useCases } = deps;
+  const { config, version, ownerConfig, storage, useCases } = deps;
 
   // User resolver is connected to the bot API later (setApi)
   const userResolver = new TelegramUserResolver();
@@ -111,14 +109,13 @@ export function createPresentation(deps: PresentationDeps): Presentation {
 
     const portfolioDeps = {
       getPortfolioStatus: useCases.getPortfolioStatus,
-      executePurchase: useCases.executePurchase,
-      determineAssetToBuy: useCases.determineAssetToBuy,
       portfolioFormatter,
       purchaseFormatter,
       progressFormatter,
-      confirmationRepository: storage.confirmationRepository,
+      preparePurchaseConfirmation: useCases.preparePurchaseConfirmation,
+      confirmPurchase: useCases.confirmPurchase,
+      cancelConfirmation: useCases.cancelConfirmation,
       confirmationFormatter,
-      swapRepository: blockchain.swapRepository,
     };
 
     const marketDeps = {
@@ -140,13 +137,12 @@ export function createPresentation(deps: PresentationDeps): Presentation {
         market: marketDeps,
         swap: {
           getQuote: useCases.getQuote,
-          executeSwap: useCases.executeSwap,
           quoteFormatter,
           swapFormatter,
-          progressFormatter,
-          confirmationRepository: storage.confirmationRepository,
+          prepareSwapConfirmation: useCases.prepareSwapConfirmation,
+          confirmSwap: useCases.confirmSwap,
+          cancelConfirmation: useCases.cancelConfirmation,
           confirmationFormatter,
-          swapRepository: blockchain.swapRepository,
         },
         admin: adminDeps,
         version: versionDeps,

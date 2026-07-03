@@ -5,7 +5,7 @@
  * Used only to warm up price history on cold start; not a live price source.
  */
 
-import type { AssetSymbol } from "../../types/portfolio.js";
+import type { AssetSymbol } from "../constants/portfolio.js";
 import type { PricePoint } from "../models/PricePoint.js";
 
 export interface HistoricalPriceRepository {

@@ -9,60 +9,17 @@
 export class LogSanitizer {
   private static readonly SENSITIVE_COMMANDS = ["/wallet import"];
 
-  private static readonly SENSITIVE_FIELDS = new Set([
-    "telegramId",
-    "telegram_id",
-    "userId",
-    "user_id",
-    "ownerId",
-    "owner_id",
-    "ownerTelegramId",
-    "targetTelegramId",
-    "addedBy",
-    "added_by",
-  ]);
-
   /**
-   * Masks a numeric ID, showing only first 2 and last 2 digits
-   * Example: 123456789 -> "12***89"
+   * Sanitize an API/RPC error to prevent leaking sensitive data:
+   * URLs (may embed API keys), explicit API-key headers, and long
+   * base64 runs (keys, transactions).
    */
-  private static maskNumericId(value: number | string): string {
-    const str = String(value);
-    if (str.length <= 4) {
-      return "***";
-    }
-    return `${str.slice(0, 2)}***${str.slice(-2)}`;
-  }
-
-  /**
-   * Recursively masks sensitive fields in a data object
-   */
-  static maskFields(data: Record<string, unknown>): Record<string, unknown> {
-    const masked: Record<string, unknown> = {};
-
-    for (const [key, value] of Object.entries(data)) {
-      if (this.SENSITIVE_FIELDS.has(key)) {
-        if (typeof value === "number" || typeof value === "string") {
-          masked[key] = this.maskNumericId(value);
-        } else if (value === null || value === undefined) {
-          masked[key] = value;
-        } else {
-          masked[key] = "[REDACTED]";
-        }
-      } else if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-        masked[key] = this.maskFields(value as Record<string, unknown>);
-      } else if (Array.isArray(value)) {
-        masked[key] = value.map((item) =>
-          item !== null && typeof item === "object"
-            ? this.maskFields(item as Record<string, unknown>)
-            : item,
-        );
-      } else {
-        masked[key] = value;
-      }
-    }
-
-    return masked;
+  static sanitizeApiError(error: unknown): string {
+    const message = error instanceof Error ? error.message : String(error);
+    return message
+      .replace(/https?:\/\/[^\s]+/g, "[URL]")
+      .replace(/x-api-key[^\s]*/gi, "[API_KEY]")
+      .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]"); // Long base64 strings (keys, transactions)
   }
 
   /**
@@ -193,10 +150,6 @@ let globalLogger: Logger = new NoOpLogger();
 
 export function setLogger(logger: Logger): void {
   globalLogger = logger;
-}
-
-export function getLogger(): Logger {
-  return globalLogger;
 }
 
 /**

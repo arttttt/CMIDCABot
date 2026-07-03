@@ -5,7 +5,7 @@
  * Abstracts price source (Jupiter, mock, etc.) from domain layer.
  */
 
-import type { AssetSymbol } from "../../types/portfolio.js";
+import type { AssetSymbol } from "../constants/portfolio.js";
 
 /**
  * Asset prices in USD
@@ -38,9 +38,4 @@ export interface PriceRepository {
    * Convenient for use cases that need just the numbers
    */
   getPricesRecord(): Promise<Record<AssetSymbol, number>>;
-
-  /**
-   * Clear price cache (if any)
-   */
-  clearCache(): void;
 }

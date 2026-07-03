@@ -8,7 +8,7 @@
 
 import type { PriceHistoryRepository } from "../repositories/PriceHistoryRepository.js";
 import type { HistoricalPriceRepository } from "../repositories/HistoricalPriceRepository.js";
-import { PORTFOLIO_ASSETS } from "../../types/portfolio.js";
+import { PORTFOLIO_ASSETS } from "../constants/portfolio.js";
 import { BACKFILL_HOURS, BACKFILL_TRIGGER_GAP_MS, HOUR_MS } from "../constants/market.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 

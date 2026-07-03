@@ -10,7 +10,6 @@ import type { TelegramId, WalletAddress } from "../models/id/index.js";
 import type { UserRepository } from "../repositories/UserRepository.js";
 import type { BalanceRepository } from "../repositories/BalanceRepository.js";
 import type { PriceRepository } from "../repositories/PriceRepository.js";
-import { TARGET_ALLOCATIONS } from "../../types/portfolio.js";
 import { AllocationPolicy } from "../policies/AllocationPolicy.js";
 import type { AssetAllocation } from "../models/PortfolioTypes.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
@@ -26,76 +25,51 @@ export class DetermineAssetToBuyUseCase {
    * Determine which asset to buy based on portfolio allocation
    *
    * @param telegramId - User's Telegram ID
-   * @returns AssetAllocation with full info, or null if unable to determine
+   * @returns AssetAllocation with full info, or null if no wallet is connected
+   * @throws when balances or prices cannot be fetched — the caller must not
+   *         make a purchase decision on incomplete data
    */
   async execute(telegramId: TelegramId): Promise<AssetAllocation | null> {
-    // Get wallet address
-    let walletAddr: WalletAddress | undefined;
-
     const user = await this.userRepository.getById(telegramId);
-    walletAddr = user?.walletAddress ?? undefined;
+    const walletAddr: WalletAddress | undefined = user?.walletAddress ?? undefined;
 
     if (!walletAddr) {
       logger.warn("DetermineAssetToBuy", "No wallet connected", { telegramId });
       return null;
     }
 
-    try {
-      // Fetch balances and prices in parallel
-      const [balances, prices] = await Promise.all([
-        this.balanceRepository.getBalances(walletAddr),
-        this.priceRepository.getPricesRecord(),
-      ]);
+    // Fetch balances and prices in parallel
+    const [balances, prices] = await Promise.all([
+      this.balanceRepository.getBalances(walletAddr),
+      this.priceRepository.getPricesRecord(),
+    ]);
 
-      // Calculate portfolio status
-      const status = AllocationPolicy.calculatePortfolioStatus(
-        {
-          btcBalance: balances.btc,
-          ethBalance: balances.eth,
-          solBalance: balances.sol,
-        },
-        prices,
-      );
+    // Calculate portfolio status
+    const status = AllocationPolicy.calculatePortfolioStatus(
+      {
+        btcBalance: balances.btc,
+        ethBalance: balances.eth,
+        solBalance: balances.sol,
+      },
+      prices,
+    );
 
-      // Find the allocation info for the asset to buy
-      const selectedAllocation = status.allocations.find(
-        (a) => a.symbol === status.assetToBuy,
-      );
+    // Find the allocation info for the asset to buy
+    const selectedAllocation = status.allocations.find(
+      (a) => a.symbol === status.assetToBuy,
+    );
 
-      logger.info("DetermineAssetToBuy", "Asset determined", {
-        symbol: selectedAllocation?.symbol ?? "SOL",
-        currentAllocation: selectedAllocation
-          ? `${(selectedAllocation.currentAllocation * 100).toFixed(1)}%`
-          : "0%",
-        targetAllocation: selectedAllocation
-          ? `${(selectedAllocation.targetAllocation * 100).toFixed(1)}%`
-          : `${(TARGET_ALLOCATIONS.SOL * 100).toFixed(1)}%`,
-      });
-
-      return selectedAllocation ?? this.getDefaultAllocation();
-    } catch (error) {
-      logger.warn(
-        "DetermineAssetToBuy",
-        "Failed to calculate allocations, defaulting to SOL",
-        {
-          error: error instanceof Error ? error.message : String(error),
-        },
-      );
-      return this.getDefaultAllocation();
+    if (!selectedAllocation) {
+      // calculatePortfolioStatus always picks assetToBuy from its own allocations
+      throw new Error(`Allocation for selected asset ${status.assetToBuy} not found`);
     }
-  }
 
-  /**
-   * Get default allocation info for SOL (used when calculation fails)
-   */
-  private getDefaultAllocation(): AssetAllocation {
-    return {
-      symbol: "SOL",
-      balance: 0,
-      valueInUsdc: 0,
-      currentAllocation: 0,
-      targetAllocation: TARGET_ALLOCATIONS.SOL,
-      deviation: -TARGET_ALLOCATIONS.SOL,
-    };
+    logger.info("DetermineAssetToBuy", "Asset determined", {
+      symbol: selectedAllocation.symbol,
+      currentAllocation: `${(selectedAllocation.currentAllocation * 100).toFixed(1)}%`,
+      targetAllocation: `${(selectedAllocation.targetAllocation * 100).toFixed(1)}%`,
+    });
+
+    return selectedAllocation;
   }
 }

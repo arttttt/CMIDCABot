@@ -16,6 +16,12 @@
 - Use cases expose a single public method: `execute`
 - Domain-level constants belong in `src/domain/constants/`
 
+### Global state
+- Explicit dependencies via constructor injection; no global state.
+- **Sanctioned exception:** the ambient `logger` (set once via `setLogger()`
+  at startup). Injecting it into every class is not worth the ceremony;
+  no other global singletons are allowed.
+
 ### Naming
 
 | Type | Pattern | Example |

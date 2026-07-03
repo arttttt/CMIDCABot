@@ -2,6 +2,8 @@ import { Command, CommandDefinition } from "../types.js";
 import { AdminCommandDeps } from "../dependencies.js";
 import { Definitions } from "../definitions.js";
 import { parseRole } from "../../formatters/index.js";
+import { StreamUtils } from "../../protocol/gateway/stream.js";
+import type { ClientResponseStream } from "../../protocol/types.js";
 
 export class AdminCommand implements Command {
     public readonly definition: CommandDefinition = Definitions.admin;
@@ -20,14 +22,14 @@ export class AdminCommand implements Command {
         }
     }
 
-    public async handler(_args: string[], _ctx: import("../types.js").CommandExecutionContext) {
-        return this.deps.formatter.formatHelp(this.subcommands.has("invite"));
+    public handler(_args: string[], _ctx: import("../types.js").CommandExecutionContext): ClientResponseStream {
+        return StreamUtils.final(this.deps.formatter.formatHelp(this.subcommands.has("invite")));
     }
 
     private createAddCommand(): Command {
         return {
             definition: { name: "add", description: "Add authorized user", usage: "<user_id> [role]" },
-            handler: async (args, ctx) => {
+            handler: (args, ctx) => StreamUtils.finalFrom(async () => {
                 const idStr = args[0];
                 if (!idStr) {
                     return this.deps.formatter.formatAddUsage();
@@ -47,14 +49,14 @@ export class AdminCommand implements Command {
 
                 const result = await this.deps.addAuthorizedUser.execute(ctx.telegramId, targetId, role);
                 return this.deps.formatter.formatResult(result);
-            },
+            }),
         };
     }
 
     private createRemoveCommand(): Command {
         return {
             definition: { name: "remove", description: "Remove authorized user", usage: "<user_id>" },
-            handler: async (args, ctx) => {
+            handler: (args, ctx) => StreamUtils.finalFrom(async () => {
                 const idStr = args[0];
                 if (!idStr) {
                     return this.deps.formatter.formatRemoveUsage();
@@ -68,24 +70,24 @@ export class AdminCommand implements Command {
 
                 const result = await this.deps.deleteUserData.execute(ctx.telegramId, targetId);
                 return this.deps.formatter.formatResult(result);
-            },
+            }),
         };
     }
 
     private createListCommand(): Command {
         return {
             definition: { name: "list", description: "List all authorized users" },
-            handler: async (_args, _ctx) => {
+            handler: (_args, _ctx) => StreamUtils.finalFrom(async () => {
                 const result = await this.deps.getAllAuthorizedUsers.execute();
                 return this.deps.formatter.formatUserList(result.users);
-            },
+            }),
         };
     }
 
     private createRoleCommand(): Command {
         return {
             definition: { name: "role", description: "Change user role", usage: "<user_id> <role>" },
-            handler: async (args, ctx) => {
+            handler: (args, ctx) => StreamUtils.finalFrom(async () => {
                 const idStr = args[0];
                 const roleStr = args[1];
 
@@ -106,7 +108,7 @@ export class AdminCommand implements Command {
 
                 const result = await this.deps.updateUserRole.execute(ctx.telegramId, targetId, role);
                 return this.deps.formatter.formatResult(result);
-            },
+            }),
         };
     }
 
@@ -119,7 +121,7 @@ export class AdminCommand implements Command {
 
         return {
             definition: { name: "invite", description: "Create invite link", usage: "[role]" },
-            handler: async (args, ctx) => {
+            handler: (args, ctx) => StreamUtils.finalFrom(async () => {
                 const roleStr = args[0] || "user";
                 const role = parseRole(roleStr);
                 if (!role) {
@@ -128,7 +130,7 @@ export class AdminCommand implements Command {
 
                 const result = await generateInvite.execute(ctx.telegramId, role);
                 return inviteFormatter.formatGenerateResult(result);
-            },
+            }),
         };
     }
 }

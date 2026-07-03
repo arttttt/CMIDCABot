@@ -6,10 +6,12 @@
 import type { TelegramId, WalletAddress } from "../models/id/index.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { BlockchainRepository } from "../repositories/BlockchainRepository.js";
+import type { OperationLockRepository } from "../repositories/OperationLockRepository.js";
 import { ImportWalletResult } from "./types.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { GetWalletInfoByAddressUseCase } from "./GetWalletInfoByAddressUseCase.js";
 import { GetWalletInfoByPrivateKeyUseCase } from "./GetWalletInfoByPrivateKeyUseCase.js";
+import { WalletCreationLock } from "../constants/WalletCreationLock.js";
 
 // Maximum allowed input length to prevent DoS via large payloads
 const MAX_INPUT_LENGTH = 512;
@@ -20,6 +22,7 @@ export class ImportWalletUseCase {
     private blockchainRepository: BlockchainRepository,
     private getWalletInfoByAddressUseCase: GetWalletInfoByAddressUseCase,
     private getWalletInfoByPrivateKeyUseCase: GetWalletInfoByPrivateKeyUseCase,
+    private operationLockRepository: OperationLockRepository,
   ) {}
 
   async execute(telegramId: TelegramId, privateKeyBase64: string): Promise<ImportWalletResult> {
@@ -30,6 +33,32 @@ export class ImportWalletUseCase {
 
     logger.info("ImportWallet", "Importing wallet", { telegramId });
 
+    // Same lock as CreateWalletUseCase: create and import contend for the
+    // same wallet slot, so a parallel create/import must not slip through
+    // the exists-check below.
+    const lockKey = WalletCreationLock.getKey(telegramId);
+    const lockAcquired = await this.operationLockRepository.acquire(
+      lockKey,
+      WalletCreationLock.TTL_MS,
+      Date.now(),
+    );
+
+    if (!lockAcquired) {
+      logger.info("ImportWallet", "Wallet operation already in progress", { telegramId });
+      return { type: "operation_in_progress" };
+    }
+
+    try {
+      return await this.importLocked(telegramId, privateKeyBase64);
+    } finally {
+      await this.operationLockRepository.release(lockKey);
+    }
+  }
+
+  private async importLocked(
+    telegramId: TelegramId,
+    privateKeyBase64: string,
+  ): Promise<ImportWalletResult> {
     // Ensure user exists
     await this.userRepository.create(telegramId);
 
@@ -76,9 +105,8 @@ export class ImportWalletUseCase {
       walletAddr = validation.address!;
     }
 
-    // Store the wallet
-    await this.userRepository.setPrivateKey(telegramId, normalizedKey);
-    await this.userRepository.setWalletAddress(telegramId, walletAddr);
+    // Store the wallet atomically (key without address must never persist)
+    await this.userRepository.setWalletData(telegramId, normalizedKey, walletAddr);
 
     logger.info("ImportWallet", "Wallet imported", {
       telegramId,

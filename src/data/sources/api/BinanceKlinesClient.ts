@@ -7,7 +7,7 @@
  * for live prices and swaps).
  */
 
-import { AssetSymbol } from "../../../types/portfolio.js";
+import { AssetSymbol } from "../../../domain/constants/portfolio.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 
 const BINANCE_API = "https://api.binance.com/api/v3";

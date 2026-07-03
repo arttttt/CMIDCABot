@@ -5,7 +5,8 @@
 import type { TelegramId } from "../models/id/index.js";
 import { UserIdentity } from "../models/UserIdentity.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
-import { UserRole, canManageRole, isAdminRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
+import { UserRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
+import { AuthorizationPolicy } from "../policies/AuthorizationPolicy.js";
 import type { GetUserRoleUseCase } from "./GetUserRoleUseCase.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
@@ -32,15 +33,12 @@ export class AddAuthorizedUserUseCase {
 
     // Check admin permissions
     const adminRole = await this.getUserRole.execute(UserIdentity.telegram(adminTelegramId));
-    if (adminRole === "guest") {
-      return { success: false, error: "Not authorized" };
+    const denied = AuthorizationPolicy.checkAdminAccess(adminRole);
+    if (denied) {
+      return { success: false, error: denied };
     }
 
-    if (!isAdminRole(adminRole)) {
-      return { success: false, error: "Admin privileges required" };
-    }
-
-    if (!canManageRole(adminRole, role)) {
+    if (!AuthorizationPolicy.canManageRole(adminRole, role)) {
       return { success: false, error: `Cannot assign ${ROLE_LABELS[role]} role` };
     }
 

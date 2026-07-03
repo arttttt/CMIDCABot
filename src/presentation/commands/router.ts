@@ -43,52 +43,17 @@ export function findTargetCommand(cmd: Command, args: string[]): RoutedCommand {
  * @param cmd - Command to execute
  * @param args - Remaining arguments
  * @param ctx - Command execution context
- * @returns ClientResponse from the matched handler
- */
-export async function routeCommand(
-  cmd: Command,
-  args: string[],
-  ctx: CommandExecutionContext,
-): Promise<ClientResponse> {
-  const { command, args: finalArgs } = findTargetCommand(cmd, args);
-
-  // Execute this command's handler
-  if (command.handler) {
-    return command.handler(finalArgs, ctx);
-  }
-
-  // No handler - return unknown subcommand message
-  return new ClientResponse(`Unknown subcommand. Use /help for available commands.`);
-}
-
-/**
- * Route command with streaming support
- *
- * If the target command has a streamingHandler, uses it.
- * Otherwise falls back to regular handler wrapped in a single-item stream.
- *
- * @param cmd - Command to execute
- * @param args - Remaining arguments
- * @param ctx - Command execution context
  * @returns ClientResponseStream for progress and final result
  */
-export async function* routeCommandStreaming(
+export async function* routeCommand(
   cmd: Command,
   args: string[],
   ctx: CommandExecutionContext,
 ): ClientResponseStream {
   const { command, args: finalArgs } = findTargetCommand(cmd, args);
 
-  // Prefer streaming handler if available
-  if (command.streamingHandler) {
-    yield* command.streamingHandler(finalArgs, ctx);
-    return;
-  }
-
-  // Fall back to regular handler
   if (command.handler) {
-    const response = await command.handler(finalArgs, ctx);
-    yield { response, mode: "final" };
+    yield* command.handler(finalArgs, ctx);
     return;
   }
 
@@ -260,13 +225,8 @@ export function findCallbackByPath(
     }
   }
 
-  if (!definition.handler && !definition.streamingHandler) {
-    return undefined;
-  }
-
   return {
     handler: definition.handler,
-    streamingHandler: definition.streamingHandler,
     requiredRole: effectiveRole,
     params,
   };

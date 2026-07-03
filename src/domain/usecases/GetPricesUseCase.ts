@@ -4,7 +4,7 @@
  */
 
 import { PriceRepository } from "../repositories/PriceRepository.js";
-import { AssetSymbol } from "../../types/portfolio.js";
+import { AssetSymbol } from "../constants/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export interface PriceInfo {

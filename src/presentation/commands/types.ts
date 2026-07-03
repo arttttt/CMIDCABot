@@ -7,7 +7,7 @@
  * - Routing is done by traversing the command tree
  */
 
-import { ClientResponse, ClientResponseStream } from "../protocol/types.js";
+import { ClientResponseStream } from "../protocol/types.js";
 import type { UserRole } from "../../domain/models/AuthorizedUser.js";
 import type { CommandExecutionContext } from "./CommandExecutionContext.js";
 
@@ -25,16 +25,12 @@ export interface CommandDefinition {
 
 /**
  * Command handler function signature
+ *
+ * Every handler is reactive: it returns a stream of StreamItems.
+ * One-shot commands yield a single item with mode "final"
+ * (see StreamUtils.final / StreamUtils.finalFrom).
  */
 export type CommandHandler = (
-  args: string[],
-  ctx: CommandExecutionContext,
-) => Promise<ClientResponse>;
-
-/**
- * Streaming command handler - returns AsyncGenerator for progress updates
- */
-export type StreamingCommandHandler = (
   args: string[],
   ctx: CommandExecutionContext,
 ) => ClientResponseStream;
@@ -44,12 +40,7 @@ export type StreamingCommandHandler = (
  * @param ctx - Command execution context
  * @param params - Parameters extracted from callback data (format: action:param1:param2:...)
  */
-export type CallbackHandler = (ctx: CommandExecutionContext, params: string[]) => Promise<ClientResponse>;
-
-/**
- * Streaming callback handler - returns AsyncGenerator for progress updates
- */
-export type StreamingCallbackHandler = (
+export type CallbackHandler = (
   ctx: CommandExecutionContext,
   params: string[],
 ) => ClientResponseStream;
@@ -68,8 +59,7 @@ export interface CallbackParamSchema {
  * Callback definition - handler with optional parameter schema
  */
 export interface CallbackDefinition {
-  handler?: CallbackHandler;
-  streamingHandler?: StreamingCallbackHandler;
+  handler: CallbackHandler;
   /** Parameter schemas for validation. If undefined, callback takes no parameters. */
   params?: CallbackParamSchema[];
 }
@@ -78,8 +68,7 @@ export interface CallbackDefinition {
  * Result of callback lookup - includes handler and required role
  */
 export interface CallbackLookupResult {
-  handler?: CallbackHandler;
-  streamingHandler?: StreamingCallbackHandler;
+  handler: CallbackHandler;
   requiredRole?: UserRole;
   /** Parameters extracted from callback data (format: action:param1:param2:...) */
   params: string[];
@@ -91,8 +80,8 @@ export interface CallbackLookupResult {
  * Can contain:
  * - definition: metadata for help/registration
  * - requiredRole: minimum role required to access this command
- * - handler: executes when command is called (with remaining args)
- * - streamingHandler: alternative to handler that yields progress updates
+ * - handler: executes when command is called (with remaining args),
+ *   yielding StreamItems for progress updates and the final result
  * - subcommands: nested commands (recursive structure)
  * - callbacks: inline button handlers for this command
  */
@@ -105,12 +94,6 @@ export interface Command {
    */
   requiredRole?: UserRole;
   handler?: CommandHandler;
-  /**
-   * Streaming handler for operations that report progress.
-   * If present, takes precedence over handler.
-   * Yields StreamItems for progress updates and final result.
-   */
-  streamingHandler?: StreamingCommandHandler;
   subcommands?: Map<string, Command>;
   callbacks?: Map<string, CallbackDefinition>;
 }

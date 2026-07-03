@@ -174,9 +174,23 @@ export class WalletFormatter {
             `*Note:* Only Solana wallets are supported. Ethereum and other chain keys will not work.`,
         );
 
+      case "operation_in_progress":
+        return new ClientResponse(
+          `Another wallet operation is in progress.\n\n` +
+            `Please try again in a moment.`,
+        );
+
       default:
         return new ClientResponse("Unable to import wallet.");
     }
+  }
+
+  formatImportFailed(error: string): ClientResponse {
+    return new ClientResponse(
+      `*Import Failed*\n\n` +
+        `${Markdown.escape(error)}\n\n` +
+        `Use /wallet import to try again.`,
+    );
   }
 
   formatImportLink(url: string, ttlMinutes: number): ClientResponse {

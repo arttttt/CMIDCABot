@@ -5,7 +5,7 @@
  * mirroring AllocationPolicy.
  */
 
-import { toDecimal } from "../../infrastructure/shared/math/index.js";
+import { Precision } from "../../infrastructure/shared/math/index.js";
 import type { PricePoint } from "../models/PricePoint.js";
 import { HOUR_MS } from "../constants/market.js";
 
@@ -27,7 +27,7 @@ export class IndicatorPolicy {
    */
   static drawdownPct(current: number, high: number): number {
     if (high <= 0) return 0;
-    return toDecimal(high).minus(current).div(high).times(100).toNumber();
+    return Precision.toDecimal(high).minus(current).div(high).times(100).toNumber();
   }
 
   /**
@@ -36,7 +36,7 @@ export class IndicatorPolicy {
    */
   static changePct(from: number, to: number): number {
     if (from <= 0) return 0;
-    return toDecimal(to).minus(from).div(from).times(100).toNumber();
+    return Precision.toDecimal(to).minus(from).div(from).times(100).toNumber();
   }
 
   /**
@@ -77,10 +77,10 @@ export class IndicatorPolicy {
     if (closes.length < period + 1) return null;
 
     // Initial averages over the first `period` deltas
-    let avgGain = toDecimal(0);
-    let avgLoss = toDecimal(0);
+    let avgGain = Precision.toDecimal(0);
+    let avgLoss = Precision.toDecimal(0);
     for (let i = 1; i <= period; i++) {
-      const delta = toDecimal(closes[i]).minus(closes[i - 1]);
+      const delta = Precision.toDecimal(closes[i]).minus(closes[i - 1]);
       if (delta.gte(0)) {
         avgGain = avgGain.plus(delta);
       } else {
@@ -92,9 +92,9 @@ export class IndicatorPolicy {
 
     // Wilder smoothing over the rest of the series
     for (let i = period + 1; i < closes.length; i++) {
-      const delta = toDecimal(closes[i]).minus(closes[i - 1]);
-      const gain = delta.gt(0) ? delta : toDecimal(0);
-      const loss = delta.lt(0) ? delta.abs() : toDecimal(0);
+      const delta = Precision.toDecimal(closes[i]).minus(closes[i - 1]);
+      const gain = delta.gt(0) ? delta : Precision.toDecimal(0);
+      const loss = delta.lt(0) ? delta.abs() : Precision.toDecimal(0);
       avgGain = avgGain.times(period - 1).plus(gain).div(period);
       avgLoss = avgLoss.times(period - 1).plus(loss).div(period);
     }
@@ -105,6 +105,6 @@ export class IndicatorPolicy {
       return avgGain.isZero() ? null : 100;
     }
     const rs = avgGain.div(avgLoss);
-    return toDecimal(100).minus(toDecimal(100).div(rs.plus(1))).toNumber();
+    return Precision.toDecimal(100).minus(Precision.toDecimal(100).div(rs.plus(1))).toNumber();
   }
 }

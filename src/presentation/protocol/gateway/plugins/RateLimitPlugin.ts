@@ -22,16 +22,9 @@ import { logger } from "../../../../infrastructure/shared/logging/index.js";
 
 /**
  * Get rate limit key from user identity
- * @throws Error if HTTP identity has empty sessionId
  */
 function getRateLimitKey(identity: UserIdentity): string {
-  if (identity.provider === "telegram") {
-    return `tg:${identity.telegramId.value}`;
-  }
-  if (!identity.sessionId) {
-    throw new Error("HTTP identity must have non-empty sessionId for rate limiting");
-  }
-  return `http:${identity.sessionId.value}`;
+  return `tg:${identity.telegramId.value}`;
 }
 
 class RateLimitHandler implements GatewayHandler {

@@ -28,24 +28,3 @@ export interface InviteToken {
  * Token expiration time in milliseconds (72 hours)
  */
 export const INVITE_TOKEN_EXPIRY_MS = 72 * 60 * 60 * 1000;
-
-/**
- * Check if token is expired
- */
-export function isTokenExpired(token: InviteToken): boolean {
-  return new Date() > token.expiresAt;
-}
-
-/**
- * Check if token has been used
- */
-export function isTokenUsed(token: InviteToken): boolean {
-  return token.usedBy !== null;
-}
-
-/**
- * Check if token is valid (not expired and not used)
- */
-export function isTokenValid(token: InviteToken): boolean {
-  return !isTokenExpired(token) && !isTokenUsed(token);
-}

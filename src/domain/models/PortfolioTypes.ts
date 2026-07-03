@@ -5,7 +5,7 @@
  * used across domain layer use cases.
  */
 
-import { AssetSymbol } from "../../types/portfolio.js";
+import { AssetSymbol } from "../constants/portfolio.js";
 
 /**
  * Single asset allocation within portfolio

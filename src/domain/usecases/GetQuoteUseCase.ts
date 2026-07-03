@@ -5,17 +5,14 @@
 
 import { SwapRepository } from "../repositories/SwapRepository.js";
 import type { SwapQuote } from "../models/quote/SwapQuote.js";
-import { AssetSymbol } from "../../types/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
-import { MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";
+import { SwapValidationPolicy } from "../policies/SwapValidationPolicy.js";
 
 export type GetQuoteResult =
   | { status: "success"; quote: SwapQuote }
   | { status: "invalid_amount"; message: string }
   | { status: "invalid_asset"; message: string }
   | { status: "error"; message: string };
-
-const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
 
 export class GetQuoteUseCase {
   constructor(private swapRepository: SwapRepository) {}
@@ -28,45 +25,20 @@ export class GetQuoteUseCase {
   async execute(amountUsdc: number, asset: string = "SOL"): Promise<GetQuoteResult> {
     logger.info("GetQuote", "Getting swap quote", { amountUsdc, asset });
 
-    // Validate amount
-    if (isNaN(amountUsdc) || amountUsdc <= 0) {
+    const amountCheck = SwapValidationPolicy.validateUsdcAmount(amountUsdc);
+    if (!amountCheck.valid) {
       logger.warn("GetQuote", "Invalid amount", { amountUsdc });
-      return {
-        status: "invalid_amount",
-        message: "Amount must be a positive number",
-      };
+      return { status: "invalid_amount", message: amountCheck.message };
     }
 
-    // Minimum amount check
-    if (amountUsdc < MIN_USDC_AMOUNT) {
-      logger.warn("GetQuote", "Amount below minimum", { amountUsdc });
-      return {
-        status: "invalid_amount",
-        message: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
-      };
-    }
-
-    // Maximum amount check
-    if (amountUsdc > MAX_USDC_AMOUNT) {
-      logger.warn("GetQuote", "Amount above maximum", { amountUsdc });
-      return {
-        status: "invalid_amount",
-        message: `Maximum amount is ${MAX_USDC_AMOUNT} USDC`,
-      };
-    }
-
-    // Validate asset
-    const assetUpper = asset.toUpperCase() as AssetSymbol;
-    if (!SUPPORTED_ASSETS.includes(assetUpper)) {
+    const assetCheck = SwapValidationPolicy.validateAsset(asset);
+    if (!assetCheck.valid) {
       logger.warn("GetQuote", "Invalid asset", { asset });
-      return {
-        status: "invalid_asset",
-        message: `Unsupported asset: ${asset}. Supported: ${SUPPORTED_ASSETS.join(", ")}`,
-      };
+      return { status: "invalid_asset", message: assetCheck.message };
     }
 
     try {
-      const quote = await this.swapRepository!.getQuoteUsdcToAsset(amountUsdc, assetUpper);
+      const quote = await this.swapRepository.getQuoteUsdcToAsset(amountUsdc, assetCheck.asset);
       logger.info("GetQuote", "Quote received", {
         inputAmount: quote.inputAmount,
         outputAmount: quote.outputAmount,

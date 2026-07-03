@@ -80,7 +80,4 @@ export class HttpServer {
     }
   }
 
-  isRunning(): boolean {
-    return this.server !== null;
-  }
 }

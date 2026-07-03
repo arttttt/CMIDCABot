@@ -6,6 +6,7 @@ import type { MarketSignal } from "../../domain/models/MarketSignal.js";
 import type { AssetMarketStats, MarketDigest } from "../../domain/models/MarketDigest.js";
 import type { GetMarketStatusResult } from "../../domain/usecases/GetMarketStatusUseCase.js";
 import { ClientResponse } from "../protocol/types.js";
+import { Markdown } from "./markdown.js";
 import { NumberFormatter } from "./NumberFormatter.js";
 
 export class MarketFormatter {
@@ -43,7 +44,7 @@ export class MarketFormatter {
    */
   formatStatus(result: GetMarketStatusResult): ClientResponse {
     if (result.status === "error") {
-      return new ClientResponse(`❌ Failed to fetch market status: ${result.message}`);
+      return new ClientResponse(`❌ Failed to fetch market status: ${Markdown.escape(result.message)}`);
     }
 
     const { assets, activeSignals } = result.market;

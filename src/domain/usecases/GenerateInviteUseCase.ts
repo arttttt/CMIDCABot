@@ -1,11 +1,11 @@
 /**
  * Use case for generating invite tokens
  */
-import { randomBytes } from "crypto";
 import type { TelegramId } from "../models/id/index.js";
 import { InviteTokenRepository } from "../repositories/InviteTokenRepository.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
-import { UserRole, canManageRole } from "../models/AuthorizedUser.js";
+import { UserRole } from "../models/AuthorizedUser.js";
+import { AuthorizationPolicy } from "../policies/AuthorizationPolicy.js";
 import { INVITE_TOKEN_EXPIRY_MS } from "../models/InviteToken.js";
 
 export type GenerateInviteResult =
@@ -33,19 +33,15 @@ export class GenerateInviteUseCase {
       return { type: "cannot_create_role", role };
     }
 
-    if (!canManageRole(creator.role, role)) {
+    if (!AuthorizationPolicy.canManageRole(creator.role, role)) {
       return { type: "cannot_create_role", role };
     }
-
-    // Generate cryptographically secure token (16 bytes = 22 base64url chars)
-    const tokenBuffer = randomBytes(16);
-    const token = tokenBuffer.toString("base64url");
 
     // Calculate expiration
     const expiresAt = new Date(Date.now() + INVITE_TOKEN_EXPIRY_MS);
 
-    // Store token
-    await this.inviteTokenRepository.create(token, role, creatorTelegramId, expiresAt);
+    // Create token (generated and hashed by the repository)
+    const token = await this.inviteTokenRepository.create(role, creatorTelegramId, expiresAt);
 
     return {
       type: "success",

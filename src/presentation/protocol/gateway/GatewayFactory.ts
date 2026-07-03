@@ -13,7 +13,6 @@ import { Gateway } from "./Gateway.js";
 import { GatewayCore } from "./GatewayCore.js";
 import { TelegramMessageHandler } from "./handlers/TelegramMessageHandler.js";
 import { TelegramCallbackHandler } from "./handlers/TelegramCallbackHandler.js";
-import { HttpRequestHandler } from "./handlers/HttpRequestHandler.js";
 import { ErrorBoundaryPlugin } from "./plugins/ErrorBoundaryPlugin.js";
 import { LoadRolePlugin } from "./plugins/LoadRolePlugin.js";
 import { RateLimitPlugin } from "./plugins/RateLimitPlugin.js";
@@ -37,7 +36,7 @@ export class GatewayFactory {
    *
    * Assembles Gateway with:
    * - Plugins: ErrorBoundary (outermost), RateLimit, LoadRole
-   * - Handlers: TelegramMessage, TelegramCallback, Http
+   * - Handlers: TelegramMessage, TelegramCallback
    *
    * Plugin chain order (execution):
    * Request → ErrorBoundary → RateLimit → LoadRole → GatewayCore → Handlers
@@ -46,7 +45,6 @@ export class GatewayFactory {
     const handlers = [
       new TelegramMessageHandler(deps.commandRegistry),
       new TelegramCallbackHandler(deps.commandRegistry),
-      new HttpRequestHandler(),
     ];
 
     const core = new GatewayCore(handlers);

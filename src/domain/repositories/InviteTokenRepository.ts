@@ -7,12 +7,13 @@ import type { UserRole } from "../models/AuthorizedUser.js";
 
 export interface InviteTokenRepository {
   /**
-   * Create a new invite token.
+   * Create a new invite token and return its plaintext value.
    *
-   * `token` is the plaintext value; implementations must persist only
-   * its hash - a leaked storage must not expose usable invites.
+   * Implementations generate the token (cryptographically secure) and
+   * persist only its hash - a leaked storage must not expose usable
+   * invites. The plaintext exists solely in the returned invite link.
    */
-  create(token: string, role: UserRole, createdBy: TelegramId, expiresAt: Date): Promise<void>;
+  create(role: UserRole, createdBy: TelegramId, expiresAt: Date): Promise<string>;
 
   /**
    * Get token by its plaintext value

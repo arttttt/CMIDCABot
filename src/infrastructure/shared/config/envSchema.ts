@@ -1,12 +1,5 @@
 import { z } from "zod";
 
-/**
- * MED-004: Environment variables that are forbidden in production mode.
- * These variables are for development only and may contain sensitive data
- * or change bot behavior in ways that are unsafe for production.
- */
-const FORBIDDEN_IN_PRODUCTION: string[] = [];
-
 // Base schema for environment variables
 const envSchema = z
   .object({
@@ -166,7 +159,7 @@ function envToConfig(env: ValidatedEnv): Config {
 
   return {
     telegram: {
-      botToken: env.TELEGRAM_BOT_TOKEN ?? "",
+      botToken: env.TELEGRAM_BOT_TOKEN,
     },
     solana: {
       rpcUrl: env.SOLANA_RPC_URL,
@@ -221,35 +214,6 @@ function formatZodErrors(error: z.ZodError): string {
 
 // Parse and validate environment, return Config or exit with errors
 export function parseEnv(env: NodeJS.ProcessEnv): Config {
-  const nodeEnv = env.NODE_ENV ?? "development";
-  const isDev = nodeEnv !== "production";
-
-  // MED-004: Block dangerous env vars in production (before schema validation)
-  if (!isDev) {
-    const foundForbidden: string[] = [];
-
-    for (const envVar of FORBIDDEN_IN_PRODUCTION) {
-      if (env[envVar]) {
-        foundForbidden.push(envVar);
-      }
-    }
-
-    if (foundForbidden.length > 0) {
-      console.error("─".repeat(50));
-      console.error("FATAL: Forbidden environment variables detected in production!");
-      console.error("─".repeat(50));
-      console.error("The following variables must NOT be set in production:");
-      for (const v of foundForbidden) {
-        console.error(`  - ${v}`);
-      }
-      console.error("");
-      console.error("These variables are for development only and pose security risks.");
-      console.error("Remove them from your environment and restart.");
-      console.error("─".repeat(50));
-      process.exit(1);
-    }
-  }
-
   const result = envSchema.safeParse(env);
 
   if (!result.success) {

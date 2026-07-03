@@ -162,9 +162,9 @@ export class CachedBalanceRepository implements BalanceRepository {
   ): Promise<{ sol: number; btc: number; eth: number; usdc: number }> {
     const [sol, btc, eth, usdc] = await Promise.all([
       this.solanaRpcClient.getBalance(walletAddress),
-      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.btc.mint.value, TOKEN_CONFIGS.btc.decimals),
-      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.eth.mint.value, TOKEN_CONFIGS.eth.decimals),
-      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.usdc.mint.value, TOKEN_CONFIGS.usdc.decimals),
+      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.btc.mint.value),
+      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.eth.mint.value),
+      this.solanaRpcClient.getTokenBalance(walletAddress, TOKEN_CONFIGS.usdc.mint.value),
     ]);
 
     return { sol, btc, eth, usdc };

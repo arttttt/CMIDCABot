@@ -9,9 +9,9 @@
  * The asset with the most negative deviation is recommended for purchase.
  */
 
-import { AssetSymbol, TARGET_ALLOCATIONS } from "../../types/portfolio.js";
+import { AssetSymbol, TARGET_ALLOCATIONS } from "../constants/portfolio.js";
 import { AssetAllocation, PortfolioStatus } from "../models/PortfolioTypes.js";
-import { divideAmount, multiplyAmount, toDecimal, Decimal } from "../../infrastructure/shared/math/index.js";
+import { Precision, Decimal } from "../../infrastructure/shared/math/index.js";
 
 export interface AssetBalances {
   btcBalance: number;
@@ -48,11 +48,11 @@ export class AllocationPolicy {
     ];
 
     // Step 1: Calculate USD value of each asset using Decimal for precision
-    let totalValueDecimal = toDecimal(0);
+    let totalValueDecimal = Precision.toDecimal(0);
     const values: { symbol: AssetSymbol; balance: number; valueInUsdc: Decimal }[] = [];
 
     for (const asset of assets) {
-      const valueInUsdc = multiplyAmount(asset.balance, prices[asset.symbol]);
+      const valueInUsdc = Precision.multiplyAmount(asset.balance, prices[asset.symbol]);
       totalValueDecimal = totalValueDecimal.plus(valueInUsdc);
       values.push({ ...asset, valueInUsdc });
     }
@@ -61,7 +61,7 @@ export class AllocationPolicy {
     return values.map((v) => {
       // Avoid division by zero for empty portfolios
       const currentAllocation = totalValueDecimal.gt(0)
-        ? divideAmount(v.valueInUsdc, totalValueDecimal).toNumber()
+        ? Precision.divideAmount(v.valueInUsdc, totalValueDecimal).toNumber()
         : 0;
       const targetAllocation = TARGET_ALLOCATIONS[v.symbol];
       const deviation = currentAllocation - targetAllocation;
@@ -106,21 +106,4 @@ export class AllocationPolicy {
     };
   }
 
-  /**
-   * Select the asset to buy based on current portfolio state
-   * Returns the asset that is most below its target allocation
-   */
-  static selectAssetToBuy(
-    balances: AssetBalances,
-    prices: AssetPrices,
-  ): AssetSymbol {
-    const status = this.calculatePortfolioStatus(balances, prices);
-
-    // If portfolio is empty, buy SOL (largest target allocation)
-    if (status.totalValueInUsdc === 0) {
-      return "SOL";
-    }
-
-    return status.assetToBuy;
-  }
 }

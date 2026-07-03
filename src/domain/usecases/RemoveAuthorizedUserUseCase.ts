@@ -6,7 +6,8 @@ import type { TelegramId } from "../models/id/index.js";
 import type { OwnerConfig } from "../models/OwnerConfig.js";
 import { UserIdentity } from "../models/UserIdentity.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
-import { canManageRole, isAdminRole, ROLE_LABELS } from "../models/AuthorizedUser.js";
+import { ROLE_LABELS } from "../models/AuthorizedUser.js";
+import { AuthorizationPolicy } from "../policies/AuthorizationPolicy.js";
 import type { GetUserRoleUseCase } from "./GetUserRoleUseCase.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
@@ -35,23 +36,21 @@ export class RemoveAuthorizedUserUseCase {
       return { success: false, error: "Cannot remove owner" };
     }
 
+    // Check admin permissions before touching the target
+    // (do not reveal user existence to unauthorized callers)
+    const adminRole = await this.getUserRole.execute(UserIdentity.telegram(adminTelegramId));
+    const denied = AuthorizationPolicy.checkAdminAccess(adminRole);
+    if (denied) {
+      return { success: false, error: denied };
+    }
+
     // Get target user
     const target = await this.authRepository.getById(targetTelegramId);
     if (!target) {
       return { success: false, error: `User ${targetTelegramId} is not authorized` };
     }
 
-    // Check admin permissions
-    const adminRole = await this.getUserRole.execute(UserIdentity.telegram(adminTelegramId));
-    if (adminRole === "guest") {
-      return { success: false, error: "Not authorized" };
-    }
-
-    if (!isAdminRole(adminRole)) {
-      return { success: false, error: "Admin privileges required" };
-    }
-
-    if (!canManageRole(adminRole, target.role)) {
+    if (!AuthorizationPolicy.canManageRole(adminRole, target.role)) {
       return { success: false, error: `Cannot manage ${ROLE_LABELS[target.role]} users` };
     }
 

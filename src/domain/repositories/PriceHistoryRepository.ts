@@ -2,7 +2,7 @@
  * PriceHistoryRepository - port for storing and reading collected price history
  */
 
-import type { AssetSymbol } from "../../types/portfolio.js";
+import type { AssetSymbol } from "../constants/portfolio.js";
 import type { PricePoint } from "../models/PricePoint.js";
 
 export interface PriceHistoryRepository {

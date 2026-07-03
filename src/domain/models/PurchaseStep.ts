@@ -7,8 +7,7 @@
  * 3. Completed with result
  */
 
-import type { SwapStep } from "./SwapStep.js";
-import type { PurchaseResult } from "../usecases/types.js";
+import type { SwapStep, SwapResult } from "./SwapStep.js";
 import type { AssetAllocation } from "./PortfolioTypes.js";
 
 /**
@@ -19,7 +18,7 @@ export type PurchaseStep =
   | { step: "selecting_asset" }
   | { step: "asset_selected"; selection: AssetAllocation }
   | { step: "swap"; swapStep: SwapStep }
-  | { step: "completed"; result: PurchaseResult };
+  | { step: "completed"; result: SwapResult };
 
 /**
  * Helper constructors for purchase steps
@@ -41,7 +40,7 @@ export const PurchaseSteps = {
     return { step: "swap", swapStep };
   },
 
-  completed(result: PurchaseResult): PurchaseStep {
+  completed(result: SwapResult): PurchaseStep {
     return { step: "completed", result };
   },
 } as const;

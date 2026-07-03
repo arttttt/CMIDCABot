@@ -5,7 +5,7 @@ import type { TelegramId } from "../models/id/index.js";
 import { InviteTokenRepository } from "../repositories/InviteTokenRepository.js";
 import { AuthRepository } from "../repositories/AuthRepository.js";
 import { UserRole } from "../models/AuthorizedUser.js";
-import { isTokenExpired, isTokenUsed } from "../models/InviteToken.js";
+import { InviteTokenPolicy } from "../policies/InviteTokenPolicy.js";
 
 export type ActivateInviteResult =
   | { type: "success"; role: UserRole }
@@ -34,12 +34,12 @@ export class ActivateInviteUseCase {
     }
 
     // Check if token is expired
-    if (isTokenExpired(inviteToken)) {
+    if (InviteTokenPolicy.isExpired(inviteToken)) {
       return { type: "token_expired" };
     }
 
     // Check if token is already used
-    if (isTokenUsed(inviteToken)) {
+    if (InviteTokenPolicy.isUsed(inviteToken)) {
       return { type: "token_already_used" };
     }
 

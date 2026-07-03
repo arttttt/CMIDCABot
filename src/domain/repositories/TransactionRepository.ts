@@ -6,11 +6,6 @@ import { Transaction, CreateTransactionData } from "../models/Transaction.js";
 
 export interface TransactionRepository {
   /**
-   * Get transaction by ID
-   */
-  getById(id: number): Promise<Transaction | undefined>;
-
-  /**
    * Get all transactions for a user
    */
   getByUserId(telegramId: TelegramId): Promise<Transaction[]>;

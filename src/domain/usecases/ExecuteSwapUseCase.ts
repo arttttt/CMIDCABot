@@ -20,13 +20,12 @@ import { BlockchainRepository, SendTransactionResult } from "../repositories/Blo
 import { SwapRepository } from "../repositories/SwapRepository.js";
 import { OperationLockRepository } from "../repositories/OperationLockRepository.js";
 import type { SwapQuote } from "../models/quote/SwapQuote.js";
-import { AssetSymbol } from "../../types/portfolio.js";
+import { AssetSymbol } from "../constants/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
-import { MIN_SOL_AMOUNT, MIN_USDC_AMOUNT, MAX_USDC_AMOUNT, MAX_PRICE_IMPACT_BPS } from "../constants.js";
+import { MIN_SOL_AMOUNT, MAX_PRICE_IMPACT_BPS } from "../constants.js";
 import { BalanceOperationLock } from "../constants/BalanceOperationLock.js";
-
-const SUPPORTED_ASSETS: AssetSymbol[] = ["BTC", "ETH", "SOL"];
+import { SwapValidationPolicy } from "../policies/SwapValidationPolicy.js";
 
 export class ExecuteSwapUseCase {
   constructor(
@@ -75,41 +74,19 @@ export class ExecuteSwapUseCase {
     }
 
     try {
-    // Validate amount
-    if (isNaN(amountUsdc) || amountUsdc <= 0) {
-      yield SwapSteps.completed({
-        status: "invalid_amount",
-        message: "Amount must be a positive number",
-      });
-      return;
-    }
+      const amountCheck = SwapValidationPolicy.validateUsdcAmount(amountUsdc);
+      if (!amountCheck.valid) {
+        yield SwapSteps.completed({ status: "invalid_amount", message: amountCheck.message });
+        return;
+      }
 
-    if (amountUsdc < MIN_USDC_AMOUNT) {
-      yield SwapSteps.completed({
-        status: "invalid_amount",
-        message: `Minimum amount is ${MIN_USDC_AMOUNT} USDC`,
-      });
-      return;
-    }
+      const assetCheck = SwapValidationPolicy.validateAsset(asset);
+      if (!assetCheck.valid) {
+        yield SwapSteps.completed({ status: "invalid_asset", message: assetCheck.message });
+        return;
+      }
 
-    if (amountUsdc > MAX_USDC_AMOUNT) {
-      yield SwapSteps.completed({
-        status: "invalid_amount",
-        message: `Maximum amount is ${MAX_USDC_AMOUNT} USDC`,
-      });
-      return;
-    }
-
-    // Validate asset
-    const assetUpper = asset.toUpperCase() as AssetSymbol;
-    if (!SUPPORTED_ASSETS.includes(assetUpper)) {
-      yield SwapSteps.completed({
-        status: "invalid_asset",
-        message: `Unsupported asset: ${asset}. Supported: ${SUPPORTED_ASSETS.join(", ")}`,
-      });
-      return;
-    }
-      yield* this.executeInternal(telegramId, amountUsdc, assetUpper);
+      yield* this.executeInternal(telegramId, amountUsdc, assetCheck.asset);
     } finally {
       if (!shouldSkipLock && lockAcquired) {
         await this.operationLockRepository.release(lockKey);

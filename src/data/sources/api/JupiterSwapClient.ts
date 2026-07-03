@@ -9,26 +9,16 @@
 import { TokenMint } from "../../../domain/models/id/index.js";
 import type { SwapQuote } from "../../../domain/models/quote/SwapQuote.js";
 import { TOKEN_MINTS, TOKEN_DECIMALS } from "../../../domain/constants/tokens.js";
-import { logger } from "../../../infrastructure/shared/logging/index.js";
-import { toRawAmount, toHumanAmountNumber } from "../../../infrastructure/shared/math/index.js";
+import {
+  DEFAULT_SLIPPAGE_BPS,
+  PRIORITY_FEE_MAX_LAMPORTS,
+  PRIORITY_FEE_LEVEL,
+} from "../../../domain/constants.js";
+import { logger, LogSanitizer } from "../../../infrastructure/shared/logging/index.js";
+import { Precision } from "../../../infrastructure/shared/math/index.js";
 
 // Jupiter Swap API v1 endpoint
 const JUPITER_SWAP_API = "https://api.jup.ag/swap/v1";
-
-/** Default slippage tolerance in basis points (0.5%) */
-const DEFAULT_SLIPPAGE_BPS = 50;
-
-/**
- * Sanitize error messages to prevent leaking sensitive data (LOW-003).
- * Removes URLs, API keys, and other potentially sensitive information.
- */
-function sanitizeErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : "Unknown error";
-  return message
-    .replace(/https?:\/\/[^\s]+/g, "[URL]")
-    .replace(/x-api-key[^\s]*/gi, "[API_KEY]")
-    .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]"); // Long base64 strings
-}
 
 export interface JupiterQuoteResponse {
   inputMint: string;
@@ -128,7 +118,7 @@ export class JupiterSwapClient {
       });
     } catch (error) {
       // Sanitize network errors to prevent leaking sensitive data (LOW-003)
-      const sanitizedMessage = sanitizeErrorMessage(error);
+      const sanitizedMessage = LogSanitizer.sanitizeApiError(error);
       logger.error("Jupiter", "Quote fetch failed", { error: sanitizedMessage });
       throw new Error(`Jupiter API error: ${sanitizedMessage}`);
     }
@@ -138,9 +128,7 @@ export class JupiterSwapClient {
     if (!response.ok) {
       const errorText = await response.text();
       // Sanitize error response
-      const sanitizedError = errorText
-        .replace(/https?:\/\/[^\s]+/g, "[URL]")
-        .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]");
+      const sanitizedError = LogSanitizer.sanitizeApiError(errorText);
       logger.error("Jupiter", "Quote API error", {
         status: response.status,
         statusText: response.statusText,
@@ -161,9 +149,9 @@ export class JupiterSwapClient {
     const inputDecimals = this.getDecimalsForMint(data.inputMint);
     const outputDecimals = this.getDecimalsForMint(data.outputMint);
 
-    const inputAmount = toHumanAmountNumber(data.inAmount, inputDecimals);
-    const outputAmount = toHumanAmountNumber(data.outAmount, outputDecimals);
-    const minOutputAmount = toHumanAmountNumber(data.otherAmountThreshold, outputDecimals);
+    const inputAmount = Precision.toHumanAmountNumber(data.inAmount, inputDecimals);
+    const outputAmount = Precision.toHumanAmountNumber(data.outAmount, outputDecimals);
+    const minOutputAmount = Precision.toHumanAmountNumber(data.otherAmountThreshold, outputDecimals);
 
     // Extract route labels
     const route = data.routePlan.map((step) => step.swapInfo.label);
@@ -231,15 +219,15 @@ export class JupiterSwapClient {
           // Priority fee settings
           prioritizationFeeLamports: {
             priorityLevelWithMaxLamports: {
-              maxLamports: 1000000, // Max 0.001 SOL for priority
-              priorityLevel: "medium",
+              maxLamports: PRIORITY_FEE_MAX_LAMPORTS,
+              priorityLevel: PRIORITY_FEE_LEVEL,
             },
           },
         }),
       });
     } catch (error) {
       // Sanitize network errors to prevent leaking sensitive data (LOW-003)
-      const sanitizedMessage = sanitizeErrorMessage(error);
+      const sanitizedMessage = LogSanitizer.sanitizeApiError(error);
       logger.error("Jupiter", "Swap build fetch failed", { error: sanitizedMessage });
       throw new Error(`Jupiter API error: ${sanitizedMessage}`);
     }
@@ -249,9 +237,7 @@ export class JupiterSwapClient {
     if (!response.ok) {
       const errorText = await response.text();
       // Sanitize error response
-      const sanitizedError = errorText
-        .replace(/https?:\/\/[^\s]+/g, "[URL]")
-        .replace(/[A-Za-z0-9+/]{40,}/g, "[REDACTED]");
+      const sanitizedError = LogSanitizer.sanitizeApiError(errorText);
       logger.error("Jupiter", "Swap build API error", {
         status: response.status,
         statusText: response.statusText,
@@ -278,24 +264,6 @@ export class JupiterSwapClient {
   }
 
   /**
-   * Get quote for SOL → USDC swap
-   *
-   * Note: We pass TOKEN_MINTS.SOL (WSOL mint) as inputMint, but the user pays
-   * with native SOL. Jupiter's wrapAndUnwrapSol=true (default) handles the
-   * conversion automatically in the swap transaction.
-   */
-  async getQuoteSolToUsdc(amountSol: number, slippageBps?: number): Promise<SwapQuote> {
-    const amountLamports = toRawAmount(amountSol, TOKEN_DECIMALS.SOL);
-
-    return this.getQuote({
-      inputMint: TOKEN_MINTS.SOL,
-      outputMint: TOKEN_MINTS.USDC,
-      amount: amountLamports,
-      slippageBps,
-    });
-  }
-
-  /**
    * Get quote for USDC → token swap
    */
   async getQuoteUsdcToToken(
@@ -303,7 +271,7 @@ export class JupiterSwapClient {
     outputMint: TokenMint,
     slippageBps?: number,
   ): Promise<SwapQuote> {
-    const amountRaw = toRawAmount(amountUsdc, TOKEN_DECIMALS.USDC);
+    const amountRaw = Precision.toRawAmount(amountUsdc, TOKEN_DECIMALS.USDC);
 
     return this.getQuote({
       inputMint: TOKEN_MINTS.USDC,

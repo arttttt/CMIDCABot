@@ -1,77 +1,29 @@
-# Deferred refactor: deduplicate the confirmation flow
+# Confirmation flow — resolved (2026-07)
 
-Status: **not implemented** — design recorded for later. Surfaced by the
-2026-06 code review. Deferred deliberately: it touches the money path
-(swap/purchase) and the project has no tests, so it warrants a careful,
-isolated change rather than being bundled with other fixes.
+Status: **implemented**. The duplication recorded here in 2026-06 was
+resolved by moving the confirmation flow into domain use cases rather
+than the presentation-layer helper originally proposed.
 
-## Where the duplication is
+## What exists now
 
-`PortfolioCommand` (`/portfolio buy`) and `SwapCommand` (`/swap execute`)
-run the same confirmation flow with near-identical code:
+- `ResolveConfirmationSessionUseCase` — shared prelude for both trades:
+  session lookup, ownership check, quote refresh, slippage re-confirm
+  policy, and consume-on-success. Also fixes a latent display bug: the
+  slippage warning used to show the already-updated quote as the
+  "original" one (the repository hands out live references and
+  `updateQuote` mutates them); the original quote is now captured
+  before the update.
+- `ConfirmSwapUseCase` / `ConfirmPurchaseUseCase` — resolve + execute.
+  After the session is consumed it is never cancelled: an unexpected
+  failure surfaces as a `send_error` result instead of a generic
+  message that could mask an already-on-chain transaction.
+- `PrepareSwapConfirmationUseCase` / `PreparePurchaseConfirmationUseCase`
+  — preview: input validation via `SwapValidationPolicy`, quote fetch,
+  session creation.
+- `CancelConfirmationUseCase` — shared cancel with ownership check.
 
-| Fragment | Swap | Portfolio | Identical? |
-|---|---|---|---|
-| `parseAmount` (module fn) | yes | yes | byte-for-byte |
-| `parseSessionId` | yes | yes | byte-for-byte |
-| `handleCancel` | yes | yes | identical except log tag |
-| confirm prelude: parse → get → ownership check | yes | yes | identical (`confirmationFormatter.formatSessionNotFound()`) |
-| slippage: freshQuote → `isExceeded` → `updateQuote`/`maxExceeded` → `consume` | yes | yes | ~identical |
-| preview: quote → `store` → `formatPreview` | ×2 (handler + stream) | ×2 | near-identical; Portfolio adds `determineAssetToBuy` |
-
-A change to the slippage/re-confirm logic currently has to be made in two
-places and can silently drift.
-
-## Why a full merge is not possible
-
-These differences must be preserved — do **not** flatten them:
-
-1. **Swap confirm is synchronous** (`handler` returning a `ClientResponse`);
-   **Portfolio confirm is streaming** (`streamingHandler` yielding progress
-   via `progressFormatter`). Making swap stream would change its UX.
-2. **Execution differs**: swap awaits `executeSwap` and formats a
-   `SwapResult`; portfolio streams `executePurchase` steps. This is the
-   riskiest code and should stay in each command.
-3. **`quote_error` is formatted per-command** (`swapFormatter` /
-   `purchaseFormatter`), not via the shared `confirmationFormatter`.
-
-## Proposed design
-
-Introduce `src/presentation/commands/ConfirmationFlow.ts` — a small
-presentation-layer helper, constructor-injected with
-`confirmationRepository`, `confirmationFormatter`, `swapRepository`, and a
-`logComponent` string. It exposes only the parts that produce a
-`ClientResponse` (never a stream — that is what decouples the sync/stream
-split):
-
-- `resolveSession(sessionIdStr, telegramId)` →
-  `{ ok: true; session; sessionId }` | `{ ok: false; response }`
-  (parse + get + ownership; failures use the shared `confirmationFormatter`).
-- `guardSlippageAndConsume(session, sessionId)` → discriminated outcome:
-  - `{ kind: "proceed" }` — session consumed, caller may execute;
-  - `{ kind: "terminal"; response }` — slippage warning / max-exceeded
-    (shared formatter);
-  - `{ kind: "quoteError" }` — caller formats with its own formatter.
-- `cancel(sessionIdStr, telegramId)` → `ClientResponse` (fully shared).
-
-Each command stays thin: call the helper, then `return` (swap) or
-`yield { mode: "final" }` (portfolio) on a terminal/error outcome, and run
-its own money path on `proceed`. `parseAmount` moves to a shared util.
-
-### Explicitly out of scope
-
-- The bodies of `executeSwap` / `executePurchase` and the
-  `consume → execute` ordering.
-- Splitting the preview step across commands (blocked by
-  `determineAssetToBuy`, which is Portfolio-only).
-
-## Suggested commit breakdown (when picked up)
-
-1. extract shared `parseAmount` util;
-2. add `ConfirmationFlow` (resolveSession / guardSlippageAndConsume / cancel);
-3. route `SwapCommand` through it;
-4. route `PortfolioCommand` through it.
-
-Build + a manual smoke of `/swap execute` and `/portfolio buy`
-(confirm, cancel, slippage re-confirm) on each step, since there are no
-automated tests.
+`SwapCommand` and `PortfolioCommand` are now thin adapters: they parse
+input (amount, session id) at the boundary and map use-case outcomes to
+formatter calls. The pacing difference is preserved deliberately: swap
+confirm renders a single final message, portfolio confirm streams
+purchase progress.

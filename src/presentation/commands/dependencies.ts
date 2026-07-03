@@ -6,12 +6,14 @@ import {
     DeleteWalletUseCase,
     ExportWalletKeyUseCase,
     GetPortfolioStatusUseCase,
-    ExecutePurchaseUseCase,
-    DetermineAssetToBuyUseCase,
     GetPricesUseCase,
     GetMarketStatusUseCase,
     GetQuoteUseCase,
-    ExecuteSwapUseCase,
+    PreparePurchaseConfirmationUseCase,
+    PrepareSwapConfirmationUseCase,
+    ConfirmPurchaseUseCase,
+    ConfirmSwapUseCase,
+    CancelConfirmationUseCase,
     GenerateInviteUseCase,
     ActivateInviteUseCase,
     DeleteUserDataUseCase,
@@ -21,11 +23,7 @@ import {
 } from "../../domain/usecases/index.js";
 
 import { UserResolver } from "../telegram/UserResolver.js";
-import type {
-    ImportSessionRepository,
-    ConfirmationRepository,
-    SwapRepository,
-} from "../../domain/repositories/index.js";
+import type { ImportSessionRepository } from "../../domain/repositories/index.js";
 
 import {
     WalletFormatter,
@@ -60,15 +58,14 @@ export interface WalletCommandDeps {
 
 export interface PortfolioCommandDeps {
     getPortfolioStatus: GetPortfolioStatusUseCase;
-    executePurchase: ExecutePurchaseUseCase;
-    determineAssetToBuy: DetermineAssetToBuyUseCase;
     portfolioFormatter: PortfolioFormatter;
     purchaseFormatter: PurchaseFormatter;
     progressFormatter: ProgressFormatter;
     // Confirmation flow dependencies
-    confirmationRepository: ConfirmationRepository;
+    preparePurchaseConfirmation: PreparePurchaseConfirmationUseCase;
+    confirmPurchase: ConfirmPurchaseUseCase;
+    cancelConfirmation: CancelConfirmationUseCase;
     confirmationFormatter: ConfirmationFormatter;
-    swapRepository: SwapRepository;
 }
 
 export interface PricesCommandDeps {
@@ -83,14 +80,13 @@ export interface MarketCommandDeps {
 
 export interface SwapCommandDeps {
     getQuote: GetQuoteUseCase;
-    executeSwap: ExecuteSwapUseCase;
     quoteFormatter: QuoteFormatter;
     swapFormatter: SwapFormatter;
-    progressFormatter: ProgressFormatter;
     // Confirmation flow dependencies
-    confirmationRepository: ConfirmationRepository;
+    prepareSwapConfirmation: PrepareSwapConfirmationUseCase;
+    confirmSwap: ConfirmSwapUseCase;
+    cancelConfirmation: CancelConfirmationUseCase;
     confirmationFormatter: ConfirmationFormatter;
-    swapRepository: SwapRepository;
 }
 
 export interface AdminCommandDeps {
