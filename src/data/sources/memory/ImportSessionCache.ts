@@ -11,9 +11,9 @@
  * - Token format validation
  */
 
-import { randomBytes } from "node:crypto";
 import { type TelegramId } from "../../../domain/models/id/index.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
+import { TtlOneTimeStore } from "./TtlOneTimeStore.js";
 
 /** Default TTL: 10 minutes for import sessions */
 export const DEFAULT_IMPORT_SESSION_TTL_MS = 10 * 60 * 1000;
@@ -21,34 +21,25 @@ export const DEFAULT_IMPORT_SESSION_TTL_MS = 10 * 60 * 1000;
 /** TTL for form sessions: 5 minutes (shorter, form is already open) */
 const FORM_SESSION_TTL_MS = 5 * 60 * 1000;
 
-/** Token format: base64url, 22 characters (16 bytes) */
-const TOKEN_REGEX = /^[A-Za-z0-9_-]{22}$/;
-
-interface ImportSession {
-  telegramId: TelegramId;
-  createdAt: number;
-  expiresAt: number;
-}
-
-interface FormSession {
-  telegramId: TelegramId;
-  expiresAt: number;
-}
-
 export interface ImportSessionStoreConfig {
   ttlMs?: number;
   publicUrl: string;
 }
 
 export class ImportSessionCache {
-  private sessions = new Map<string, ImportSession>();
-  private formSessions = new Map<string, FormSession>();
+  private readonly sessions: TtlOneTimeStore<TelegramId>;
+  private readonly formSessions: TtlOneTimeStore<TelegramId>;
   private readonly ttlMs: number;
   private readonly publicUrl: string;
 
   constructor(config: ImportSessionStoreConfig) {
     this.ttlMs = config.ttlMs ?? DEFAULT_IMPORT_SESSION_TTL_MS;
     this.publicUrl = config.publicUrl.replace(/\/$/, ""); // Remove trailing slash
+    this.sessions = new TtlOneTimeStore<TelegramId>("ImportSessionCache", this.ttlMs);
+    this.formSessions = new TtlOneTimeStore<TelegramId>(
+      "ImportSessionCache:form",
+      FORM_SESSION_TTL_MS,
+    );
   }
 
   /**
@@ -58,23 +49,9 @@ export class ImportSessionCache {
    * @returns URL to access the import form
    */
   store(telegramId: TelegramId): string {
-    // Generate cryptographically secure token (16 bytes = 128 bits entropy)
-    const token = randomBytes(16).toString("base64url");
+    const token = this.sessions.put(telegramId);
 
-    const now = Date.now();
-    const session: ImportSession = {
-      telegramId,
-      createdAt: now,
-      expiresAt: now + this.ttlMs,
-    };
-
-    this.sessions.set(token, session);
-
-    logger.debug("ImportSessionCache", "Session created", {
-      token: token.substring(0, 4) + "...",
-      telegramId,
-      expiresIn: `${this.ttlMs / 1000}s`,
-    });
+    logger.debug("ImportSessionCache", "Session created", { telegramId });
 
     return `${this.publicUrl}/import/${token}`;
   }
@@ -86,39 +63,17 @@ export class ImportSessionCache {
    * @returns telegramId or null if not found/expired/invalid
    */
   consume(token: string): TelegramId | null {
-    // Validate token format first
-    if (!TOKEN_REGEX.test(token)) {
-      logger.debug("ImportSessionCache", "Invalid token format");
-      return null;
-    }
-
-    const session = this.sessions.get(token);
-
-    if (!session) {
-      logger.debug("ImportSessionCache", "Session not found", {
-        token: token.substring(0, 4) + "...",
-      });
-      return null;
-    }
-
-    // Delete immediately (one-time access)
-    this.sessions.delete(token);
-
-    // Check if expired
-    if (Date.now() > session.expiresAt) {
-      logger.debug("ImportSessionCache", "Session expired", {
-        token: token.substring(0, 4) + "...",
-        telegramId: session.telegramId,
-      });
+    const telegramId = this.sessions.consume(token);
+    if (telegramId === null) {
       return null;
     }
 
     logger.info("ImportSessionCache", "Session consumed", {
       token: token.substring(0, 4) + "...",
-      telegramId: session.telegramId,
+      telegramId,
     });
 
-    return session.telegramId;
+    return telegramId;
   }
 
   /**
@@ -135,20 +90,9 @@ export class ImportSessionCache {
       return null;
     }
 
-    // Generate CSRF token for the form
-    const csrfToken = randomBytes(16).toString("base64url");
+    const csrfToken = this.formSessions.put(telegramId);
 
-    const formSession: FormSession = {
-      telegramId,
-      expiresAt: Date.now() + FORM_SESSION_TTL_MS,
-    };
-
-    this.formSessions.set(csrfToken, formSession);
-
-    logger.debug("ImportSessionCache", "Form session created", {
-      csrfToken: csrfToken.substring(0, 4) + "...",
-      telegramId,
-    });
+    logger.debug("ImportSessionCache", "Form session created", { telegramId });
 
     return { csrfToken, telegramId };
   }
@@ -161,37 +105,14 @@ export class ImportSessionCache {
    * @returns telegramId or null if invalid/expired
    */
   consumeForm(csrfToken: string): TelegramId | null {
-    if (!TOKEN_REGEX.test(csrfToken)) {
-      logger.debug("ImportSessionCache", "Invalid CSRF token format");
+    const telegramId = this.formSessions.consume(csrfToken);
+    if (telegramId === null) {
       return null;
     }
 
-    const formSession = this.formSessions.get(csrfToken);
+    logger.info("ImportSessionCache", "Form session consumed", { telegramId });
 
-    if (!formSession) {
-      logger.debug("ImportSessionCache", "Form session not found", {
-        csrfToken: csrfToken.substring(0, 4) + "...",
-      });
-      return null;
-    }
-
-    // Delete immediately (one-time access)
-    this.formSessions.delete(csrfToken);
-
-    // Check if expired
-    if (Date.now() > formSession.expiresAt) {
-      logger.debug("ImportSessionCache", "Form session expired", {
-        csrfToken: csrfToken.substring(0, 4) + "...",
-      });
-      return null;
-    }
-
-    logger.info("ImportSessionCache", "Form session consumed", {
-      csrfToken: csrfToken.substring(0, 4) + "...",
-      telegramId: formSession.telegramId,
-    });
-
-    return formSession.telegramId;
+    return telegramId;
   }
 
   /**
@@ -200,37 +121,14 @@ export class ImportSessionCache {
    * @returns Number of deleted entries
    */
   async deleteExpired(): Promise<number> {
-    const now = Date.now();
-    let deleted = 0;
-
-    // Clean import sessions
-    for (const [token, session] of this.sessions) {
-      if (now > session.expiresAt) {
-        this.sessions.delete(token);
-        deleted++;
-      }
-    }
-
-    // Clean form sessions
-    for (const [csrfToken, formSession] of this.formSessions) {
-      if (now > formSession.expiresAt) {
-        this.formSessions.delete(csrfToken);
-        deleted++;
-      }
-    }
-
-    if (deleted > 0) {
-      logger.debug("ImportSessionCache", "Expired sessions cleaned up", { deleted });
-    }
-
-    return deleted;
+    return this.sessions.deleteExpired() + this.formSessions.deleteExpired();
   }
 
   /**
    * Get current store size (for monitoring)
    */
   size(): number {
-    return this.sessions.size;
+    return this.sessions.size();
   }
 
   /**
