@@ -69,11 +69,4 @@ export class CleanupScheduler {
     }
     this.timers.clear();
   }
-
-  /**
-   * Check if scheduler is running
-   */
-  isRunning(): boolean {
-    return this.timers.size > 0;
-  }
 }

@@ -17,18 +17,12 @@ export class GetUserRoleUseCase {
   ) {}
 
   async execute(identity: UserIdentity): Promise<UserRole> {
-    if (identity.provider === "telegram") {
-      // Owner is always "owner" role
-      if (identity.telegramId.equals(this.ownerConfig.telegramId)) {
-        return "owner";
-      }
-
-      const user = await this.authRepository.getById(identity.telegramId);
-      return user?.role ?? "guest";
+    // Owner is always "owner" role
+    if (identity.telegramId.equals(this.ownerConfig.telegramId)) {
+      return "owner";
     }
 
-    // HTTP identity — future implementation
-    // For now, return "guest" (no authorization)
-    return "guest";
+    const user = await this.authRepository.getById(identity.telegramId);
+    return user?.role ?? "guest";
   }
 }

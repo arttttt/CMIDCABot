@@ -5,12 +5,13 @@
  * Abstracts Solana-specific details from domain layer.
  *
  * Implementations should handle:
- * - Wallet operations (balance, address derivation, keypair generation)
- * - Transaction operations (sign and send)
- * - Token operations (token balances)
+ * - Wallet operations (address derivation, keypair generation, validation)
+ * - Transaction operations (sign and send with encrypted key)
+ *
+ * Balance reads live in BalanceRepository.
  */
 
-import type { TokenMint, TxSignature, WalletAddress } from "../models/id/index.js";
+import type { TxSignature, WalletAddress } from "../models/id/index.js";
 
 /**
  * Generated keypair with extractable private key
@@ -58,24 +59,6 @@ export interface SendTransactionResult {
 }
 
 /**
- * Token configuration for batch balance fetching
- */
-export interface TokenConfig {
-  mint: TokenMint;
-  decimals: number;
-}
-
-/**
- * Result of batch balance fetch
- */
-export interface BatchBalancesResult {
-  sol: number;
-  btc: number;
-  eth: number;
-  usdc: number;
-}
-
-/**
  * Port for blockchain operations.
  * Domain layer depends on this interface, not on concrete Solana implementation.
  */
@@ -83,29 +66,14 @@ export interface BlockchainRepository {
   // === Wallet Operations ===
 
   /**
-   * Get native token balance (e.g., SOL balance in lamports converted to decimal)
-   */
-  getBalance(walletAddress: WalletAddress): Promise<number>;
-
-  /**
    * Get address from a base64-encoded private key
    */
   getAddressFromPrivateKey(privateKeyBase64: string): Promise<WalletAddress>;
 
   /**
-   * Generate a new keypair
-   */
-  generateKeypair(): Promise<GeneratedKeypair>;
-
-  /**
    * Generate a new keypair from BIP39 mnemonic (wallet-compatible)
    */
   generateKeypairFromMnemonic(): Promise<GeneratedKeypairWithMnemonic>;
-
-  /**
-   * Derive keypair from an existing BIP39 mnemonic
-   */
-  deriveKeypairFromMnemonic(mnemonic: string): Promise<GeneratedKeypair>;
 
   /**
    * Validate a BIP39 mnemonic phrase
@@ -117,20 +85,7 @@ export interface BlockchainRepository {
    */
   validatePrivateKey(privateKeyBase64: string): Promise<ValidatePrivateKeyResult>;
 
-  /**
-   * Check if address is valid (raw string, not yet branded)
-   */
-  isValidAddress(walletAddress: string): boolean;
-
   // === Transaction Operations ===
-
-  /**
-   * Sign and send a transaction (with plaintext private key)
-   */
-  signAndSendTransaction(
-    transactionBase64: string,
-    privateKeyBase64: string,
-  ): Promise<SendTransactionResult>;
 
   /**
    * Sign and send a transaction with encrypted private key (secure)
@@ -139,32 +94,4 @@ export interface BlockchainRepository {
     transactionBase64: string,
     encryptedPrivateKey: string,
   ): Promise<SendTransactionResult>;
-
-  // === Token Operations ===
-
-  /**
-   * Get SPL token balance for a wallet
-   */
-  getTokenBalance(
-    walletAddress: WalletAddress,
-    tokenMint: TokenMint,
-    decimals?: number,
-  ): Promise<number>;
-
-  /**
-   * Get USDC balance for a wallet
-   */
-  getUsdcBalance(walletAddress: WalletAddress): Promise<number>;
-
-  /**
-   * Get all portfolio balances in a single batch request
-   */
-  getAllBalancesBatch(
-    walletAddress: WalletAddress,
-    tokens: {
-      btc: TokenConfig;
-      eth: TokenConfig;
-      usdc: TokenConfig;
-    },
-  ): Promise<BatchBalancesResult>;
 }

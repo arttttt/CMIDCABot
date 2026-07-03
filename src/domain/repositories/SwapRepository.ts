@@ -6,18 +6,8 @@
  */
 
 import type { AssetSymbol } from "../constants/portfolio.js";
-import type { TokenMint, WalletAddress } from "../models/id/index.js";
+import type { WalletAddress } from "../models/id/index.js";
 import type { SwapQuote } from "../models/quote/SwapQuote.js";
-
-/**
- * Quote parameters for swap
- */
-export interface SwapQuoteParams {
-  inputMint: TokenMint;
-  outputMint: TokenMint;
-  amount: string; // Amount in smallest units
-  slippageBps?: number;
-}
 
 /**
  * Built swap transaction ready for signing
@@ -37,36 +27,12 @@ export interface SwapTransaction {
  */
 export interface SwapRepository {
   /**
-   * Get a swap quote
-   */
-  getQuote(params: SwapQuoteParams): Promise<SwapQuote>;
-
-  /**
-   * Get quote for USDC → token swap by mint address
-   * Low-level method - prefer getQuoteUsdcToAsset for domain use
-   */
-  getQuoteUsdcToToken(
-    amountUsdc: number,
-    outputMint: TokenMint,
-    slippageBps?: number,
-  ): Promise<SwapQuote>;
-
-  /**
    * Get quote for USDC → asset swap by asset symbol
    * Domain-friendly method - handles mint address resolution internally
    */
   getQuoteUsdcToAsset(
     amountUsdc: number,
     asset: AssetSymbol,
-    slippageBps?: number,
-  ): Promise<SwapQuote>;
-
-  /**
-   * Get quote for SOL → USDC swap
-   * Convenience method for common use case
-   */
-  getQuoteSolToUsdc(
-    amountSol: number,
     slippageBps?: number,
   ): Promise<SwapQuote>;
 

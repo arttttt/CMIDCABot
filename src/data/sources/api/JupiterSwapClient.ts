@@ -278,24 +278,6 @@ export class JupiterSwapClient {
   }
 
   /**
-   * Get quote for SOL → USDC swap
-   *
-   * Note: We pass TOKEN_MINTS.SOL (WSOL mint) as inputMint, but the user pays
-   * with native SOL. Jupiter's wrapAndUnwrapSol=true (default) handles the
-   * conversion automatically in the swap transaction.
-   */
-  async getQuoteSolToUsdc(amountSol: number, slippageBps?: number): Promise<SwapQuote> {
-    const amountLamports = toRawAmount(amountSol, TOKEN_DECIMALS.SOL);
-
-    return this.getQuote({
-      inputMint: TOKEN_MINTS.SOL,
-      outputMint: TOKEN_MINTS.USDC,
-      amount: amountLamports,
-      slippageBps,
-    });
-  }
-
-  /**
    * Get quote for USDC → token swap
    */
   async getQuoteUsdcToToken(

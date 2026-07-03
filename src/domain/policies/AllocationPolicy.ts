@@ -106,21 +106,4 @@ export class AllocationPolicy {
     };
   }
 
-  /**
-   * Select the asset to buy based on current portfolio state
-   * Returns the asset that is most below its target allocation
-   */
-  static selectAssetToBuy(
-    balances: AssetBalances,
-    prices: AssetPrices,
-  ): AssetSymbol {
-    const status = this.calculatePortfolioStatus(balances, prices);
-
-    // If portfolio is empty, buy SOL (largest target allocation)
-    if (status.totalValueInUsdc === 0) {
-      return "SOL";
-    }
-
-    return status.assetToBuy;
-  }
 }

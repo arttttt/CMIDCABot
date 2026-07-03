@@ -18,12 +18,8 @@ export class CommandExecutionContext {
 
   /**
    * Convenience getter for telegramId from identity.
-   * Throws if identity is not telegram-based.
    */
   get telegramId(): TelegramId {
-    if (this.identity.provider !== "telegram") {
-      throw new Error("telegramId is only available for telegram identity");
-    }
     return this.identity.telegramId;
   }
 }

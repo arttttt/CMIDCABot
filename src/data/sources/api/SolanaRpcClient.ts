@@ -165,11 +165,10 @@ export class SolanaRpcClient {
    * Get SPL token balance for a wallet
    * @param walletAddress - Wallet address to check
    * @param tokenMint - Token mint address
-   * @param decimals - Token decimals (default 9)
    * @returns Token balance (0 if no token account exists)
    * @throws Error if RPC request fails
    */
-  async getTokenBalance(walletAddress: string, tokenMint: string, _decimals: number = 9): Promise<number> {
+  async getTokenBalance(walletAddress: string, tokenMint: string): Promise<number> {
     const owner = address(walletAddress);
     const mint = address(tokenMint);
 
@@ -233,7 +232,7 @@ export class SolanaRpcClient {
   async getUsdcBalance(walletAddress: string): Promise<number> {
     // Circle USDC on Solana mainnet
     const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
-    return this.getTokenBalance(walletAddress, USDC_MINT, 6);
+    return this.getTokenBalance(walletAddress, USDC_MINT);
   }
 
   /**
@@ -370,46 +369,13 @@ export class SolanaRpcClient {
     return 0;
   }
 
-  isValidAddress(addr: string): boolean {
+  private isValidAddress(addr: string): boolean {
     try {
       address(addr);
       return true;
     } catch {
       return false;
     }
-  }
-
-  getRpc(): Rpc<SolanaRpcApi> {
-    return this.rpc;
-  }
-
-  /**
-   * Generate a new Solana keypair
-   * Returns address and private key encoded as base64
-   */
-  async generateKeypair(): Promise<GeneratedKeypair> {
-    // Generate extractable Ed25519 keypair via Web Crypto API
-    const keyPair = (await crypto.subtle.generateKey(
-      "Ed25519",
-      true, // extractable = true (required for export)
-      ["sign", "verify"],
-    )) as CryptoKeyPair;
-
-    // Export private key in PKCS8 format (raw format not supported for Ed25519 private keys)
-    // PKCS8 structure for Ed25519: 16-byte header + 32-byte seed
-    const pkcs8Bytes = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
-    const privateKeyBytes = new Uint8Array(pkcs8Bytes).slice(-32); // Extract 32-byte seed
-
-    // Create signer from bytes to get the address
-    const signer = await createKeyPairSignerFromPrivateKeyBytes(
-      privateKeyBytes,
-      true,
-    );
-
-    return {
-      address: new WalletAddress(signer.address),
-      privateKeyBase64: Buffer.from(privateKeyBytes).toString("base64"),
-    };
   }
 
   /**
@@ -451,7 +417,7 @@ export class SolanaRpcClient {
    * @param mnemonic - BIP39 mnemonic phrase (12 or 24 words)
    * @returns Generated keypair (without mnemonic in result)
    */
-  async deriveKeypairFromMnemonic(mnemonic: string): Promise<GeneratedKeypair> {
+  private async deriveKeypairFromMnemonic(mnemonic: string): Promise<GeneratedKeypair> {
     // Normalize mnemonic (lowercase, single spaces)
     const normalizedMnemonic = mnemonic.trim().toLowerCase().replace(/\s+/g, " ");
 
@@ -585,85 +551,6 @@ export class SolanaRpcClient {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return { valid: false, error: `Invalid Solana private key: ${message}` };
-    }
-  }
-
-  /**
-   * Sign and send a transaction to the network.
-   *
-   * Pipeline:
-   * 1. Create signer from private key bytes
-   * 2. Decode base64 transaction → bytes → Transaction object
-   * 3. Sign with user's keypair (adds signature to transaction)
-   * 4. Encode back: Transaction → bytes → base64
-   * 5. Send to network via RPC
-   * 6. Poll for confirmation (up to 30 seconds)
-   *
-   * @param transactionBase64 - Base64 encoded serialized transaction (from Jupiter API)
-   * @param privateKeyBase64 - Base64 encoded private key for signing
-   * @returns SendTransactionResult with signature, confirmation status, and any errors
-   */
-  async signAndSendTransaction(
-    transactionBase64: string,
-    privateKeyBase64: string,
-  ): Promise<SendTransactionResult> {
-    try {
-      // 1. Create signer from private key
-      logger.step("Solana", 1, 4, "Creating signer from private key...");
-      const signer = await this.createSignerFromPrivateKey(privateKeyBase64);
-      logger.debug("Solana", "Signer created", { address: signer.address });
-
-      // 2. Decode base64 transaction to bytes
-      logger.step("Solana", 2, 4, "Decoding and signing transaction...");
-      const transactionBytes = Buffer.from(transactionBase64, "base64");
-
-      // 3. Decode bytes to Transaction object
-      const decoder = getTransactionDecoder();
-      const transaction = decoder.decode(transactionBytes);
-
-      // 4. Sign the transaction with the signer's keypair
-      const signedTransaction = await signTransaction([signer.keyPair], transaction);
-
-      // 5. Encode signed transaction back to base64
-      const encoder = getTransactionEncoder();
-      const signedBytes = encoder.encode(signedTransaction);
-      const signedBase64 = Buffer.from(signedBytes).toString("base64") as Base64EncodedWireTransaction;
-
-      // 6. Send the transaction
-      logger.step("Solana", 3, 4, "Sending transaction to network...");
-      const sendStartTime = Date.now();
-
-      const signature = await this.rpc
-        .sendTransaction(signedBase64, {
-          encoding: "base64",
-          skipPreflight: false,
-          preflightCommitment: "confirmed",
-        })
-        .send();
-
-      const sendDuration = Date.now() - sendStartTime;
-      logger.tx("Solana", "Transaction sent", {
-        signature,
-        duration: `${sendDuration}ms`,
-      });
-
-      // 7. Wait for confirmation (poll for status)
-      logger.step("Solana", 4, 4, "Waiting for confirmation...");
-      const confirmStartTime = Date.now();
-      const confirmationStatus = await this.waitForConfirmation(signature, 30000); // 30 second timeout
-      const confirmDuration = Date.now() - confirmStartTime;
-
-      return this.buildConfirmationResult(confirmationStatus, signature, confirmDuration);
-    } catch (error) {
-      // Sanitize error to prevent leaking sensitive data (LOW-003)
-      const sanitizedMessage = sanitizeErrorMessage(error);
-      logger.error("Solana", "Transaction failed", { error: sanitizedMessage });
-      return {
-        success: false,
-        signature: null,
-        error: sanitizedMessage,
-        confirmed: false,
-      };
     }
   }
 
