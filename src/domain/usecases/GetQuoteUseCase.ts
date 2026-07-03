@@ -5,7 +5,7 @@
 
 import { SwapRepository } from "../repositories/SwapRepository.js";
 import type { SwapQuote } from "../models/quote/SwapQuote.js";
-import { AssetSymbol } from "../../types/portfolio.js";
+import { AssetSymbol } from "../constants/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { MIN_USDC_AMOUNT, MAX_USDC_AMOUNT } from "../constants.js";
 

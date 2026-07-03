@@ -9,7 +9,7 @@ import type {
   PriceRepository,
   AssetPrices,
 } from "../../domain/repositories/PriceRepository.js";
-import type { AssetSymbol } from "../../types/portfolio.js";
+import type { AssetSymbol } from "../../domain/constants/portfolio.js";
 import type { JupiterPriceClient } from "../sources/api/JupiterPriceClient.js";
 
 export class JupiterPriceRepository implements PriceRepository {

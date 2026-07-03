@@ -2,7 +2,7 @@
  * MarketDigest - daily market statistics for the portfolio basket
  */
 
-import type { AssetSymbol } from "../../types/portfolio.js";
+import type { AssetSymbol } from "../constants/portfolio.js";
 
 export interface AssetMarketStats {
   symbol: AssetSymbol;

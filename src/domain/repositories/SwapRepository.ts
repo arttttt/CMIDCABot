@@ -5,7 +5,7 @@
  * Abstracts Jupiter swap API details from domain layer.
  */
 
-import type { AssetSymbol } from "../../types/portfolio.js";
+import type { AssetSymbol } from "../constants/portfolio.js";
 import type { TokenMint, WalletAddress } from "../models/id/index.js";
 import type { SwapQuote } from "../models/quote/SwapQuote.js";
 

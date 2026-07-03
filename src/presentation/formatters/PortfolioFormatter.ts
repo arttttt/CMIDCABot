@@ -3,7 +3,7 @@
  */
 
 import { PortfolioStatusResult } from "../../domain/usecases/types.js";
-import { TARGET_ALLOCATIONS } from "../../types/portfolio.js";
+import { TARGET_ALLOCATIONS } from "../../domain/constants/portfolio.js";
 import { ClientResponse } from "../protocol/types.js";
 import { Markdown } from "./markdown.js";
 

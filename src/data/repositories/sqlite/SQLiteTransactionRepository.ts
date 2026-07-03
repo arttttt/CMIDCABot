@@ -5,7 +5,7 @@ import { Kysely, Selectable } from "kysely";
 import { TransactionRepository } from "../../../domain/repositories/TransactionRepository.js";
 import { Transaction, CreateTransactionData } from "../../../domain/models/Transaction.js";
 import { TelegramId, TxSignature } from "../../../domain/models/id/index.js";
-import { AssetSymbol } from "../../../types/portfolio.js";
+import { AssetSymbol } from "../../../domain/constants/portfolio.js";
 import type { MainDatabase, TransactionsTable } from "../../types/database.js";
 
 type TransactionRow = Selectable<TransactionsTable>;

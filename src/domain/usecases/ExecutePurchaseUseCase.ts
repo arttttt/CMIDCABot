@@ -6,7 +6,7 @@
  */
 
 import type { TelegramId } from "../models/id/index.js";
-import type { AssetSymbol } from "../../types/portfolio.js";
+import type { AssetSymbol } from "../constants/portfolio.js";
 import type { PurchaseResult } from "./types.js";
 import type { ExecuteSwapUseCase } from "./ExecuteSwapUseCase.js";
 import type { SwapResult } from "../models/SwapStep.js";

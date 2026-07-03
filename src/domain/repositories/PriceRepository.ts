@@ -5,7 +5,7 @@
  * Abstracts price source (Jupiter, mock, etc.) from domain layer.
  */
 
-import type { AssetSymbol } from "../../types/portfolio.js";
+import type { AssetSymbol } from "../constants/portfolio.js";
 
 /**
  * Asset prices in USD

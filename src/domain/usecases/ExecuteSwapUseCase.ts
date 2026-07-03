@@ -20,7 +20,7 @@ import { BlockchainRepository, SendTransactionResult } from "../repositories/Blo
 import { SwapRepository } from "../repositories/SwapRepository.js";
 import { OperationLockRepository } from "../repositories/OperationLockRepository.js";
 import type { SwapQuote } from "../models/quote/SwapQuote.js";
-import { AssetSymbol } from "../../types/portfolio.js";
+import { AssetSymbol } from "../constants/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { SwapStep, SwapSteps } from "../models/index.js";
 import { MIN_SOL_AMOUNT, MIN_USDC_AMOUNT, MAX_USDC_AMOUNT, MAX_PRICE_IMPACT_BPS } from "../constants.js";

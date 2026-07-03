@@ -5,7 +5,7 @@ import { Kysely, Selectable } from "kysely";
 import { PriceHistoryRepository } from "../../../domain/repositories/PriceHistoryRepository.js";
 import { PricePoint, PricePointSource } from "../../../domain/models/PricePoint.js";
 import { PRICE_HISTORY_RETENTION_MS } from "../../../domain/constants/market.js";
-import { AssetSymbol } from "../../../types/portfolio.js";
+import { AssetSymbol } from "../../../domain/constants/portfolio.js";
 import type { MainDatabase, PriceHistoryTable } from "../../types/database.js";
 
 type PriceHistoryRow = Selectable<PriceHistoryTable>;

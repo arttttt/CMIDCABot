@@ -8,7 +8,7 @@ import { logger } from "../../../infrastructure/shared/logging/index.js";
 import { SlippagePolicy } from "../../../domain/policies/SlippagePolicy.js";
 import type { SwapResult } from "../../../domain/models/SwapStep.js";
 import type { StreamItem } from "../../protocol/types.js";
-import type { AssetSymbol } from "../../../types/portfolio.js";
+import type { AssetSymbol } from "../../../domain/constants/portfolio.js";
 
 // Helper function from original handlers.ts
 function parseAmount(amountStr: string): number | null {

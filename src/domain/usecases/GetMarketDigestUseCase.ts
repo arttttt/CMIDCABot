@@ -5,7 +5,7 @@
 import type { PriceHistoryRepository } from "../repositories/PriceHistoryRepository.js";
 import type { AssetMarketStats, MarketDigest } from "../models/MarketDigest.js";
 import { MarketStatsPolicy } from "../policies/MarketStatsPolicy.js";
-import { PORTFOLIO_ASSETS } from "../../types/portfolio.js";
+import { PORTFOLIO_ASSETS } from "../constants/portfolio.js";
 import { DAY_MS } from "../constants/market.js";
 
 export class GetMarketDigestUseCase {

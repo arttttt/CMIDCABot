@@ -5,7 +5,7 @@
 import type { PriceRepository } from "../repositories/PriceRepository.js";
 import type { PriceHistoryRepository } from "../repositories/PriceHistoryRepository.js";
 import type { PricePoint } from "../models/PricePoint.js";
-import { PORTFOLIO_ASSETS } from "../../types/portfolio.js";
+import { PORTFOLIO_ASSETS } from "../constants/portfolio.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
 export class CollectMarketDataUseCase {

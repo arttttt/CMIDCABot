@@ -6,7 +6,7 @@
  * Set JUPITER_API_KEY environment variable to use this service.
  */
 
-import { AssetSymbol } from "../../../types/portfolio.js";
+import { AssetSymbol } from "../../../domain/constants/portfolio.js";
 import { logger } from "../../../infrastructure/shared/logging/index.js";
 import { TOKEN_MINTS } from "../../../domain/constants/tokens.js";
 

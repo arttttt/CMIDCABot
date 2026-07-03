@@ -3,7 +3,7 @@
  * These are domain objects, NOT UI structures
  */
 
-import { AssetSymbol } from "../../types/portfolio.js";
+import { AssetSymbol } from "../constants/portfolio.js";
 import type { TxSignature, WalletAddress } from "../models/id/index.js";
 import { PortfolioStatus } from "../models/PortfolioTypes.js";
 

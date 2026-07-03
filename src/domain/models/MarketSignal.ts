@@ -2,7 +2,7 @@
  * MarketSignal - a "good moment to buy" market condition detected by SignalPolicy
  */
 
-import type { AssetSymbol } from "../../types/portfolio.js";
+import type { AssetSymbol } from "../constants/portfolio.js";
 
 export type MarketSignalType = "dip24h" | "dip7d" | "rsiOversold";
 

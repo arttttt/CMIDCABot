@@ -9,7 +9,7 @@
  * The asset with the most negative deviation is recommended for purchase.
  */
 
-import { AssetSymbol, TARGET_ALLOCATIONS } from "../../types/portfolio.js";
+import { AssetSymbol, TARGET_ALLOCATIONS } from "../constants/portfolio.js";
 import { AssetAllocation, PortfolioStatus } from "../models/PortfolioTypes.js";
 import { divideAmount, multiplyAmount, toDecimal, Decimal } from "../../infrastructure/shared/math/index.js";
 

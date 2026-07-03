@@ -14,7 +14,7 @@ import type { MarketSignal } from "../models/MarketSignal.js";
 import type { PricePoint } from "../models/PricePoint.js";
 import { MarketStatsPolicy } from "../policies/MarketStatsPolicy.js";
 import { SignalPolicy } from "../policies/SignalPolicy.js";
-import { PORTFOLIO_ASSETS } from "../../types/portfolio.js";
+import { PORTFOLIO_ASSETS } from "../constants/portfolio.js";
 import { DAY_MS } from "../constants/market.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 
