@@ -81,8 +81,22 @@ export class ExecutePurchaseUseCase {
       // Step: Selecting asset
       yield PurchaseSteps.selectingAsset();
 
-      // Determine which asset to buy based on portfolio allocation
-      const selection = await this.determineAssetToBuy.execute(telegramId);
+      // Determine which asset to buy based on portfolio allocation.
+      // A fetch failure must abort the purchase — never fall back to a
+      // default asset on incomplete data.
+      let selection;
+      try {
+        selection = await this.determineAssetToBuy.execute(telegramId);
+      } catch (error) {
+        logger.error("ExecutePurchase", "Failed to determine asset to buy", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        yield PurchaseSteps.completed({
+          type: "quote_error",
+          error: "Failed to fetch balances or prices",
+        });
+        return;
+      }
 
       if (!selection) {
         logger.warn("ExecutePurchase", "No wallet connected", { telegramId });

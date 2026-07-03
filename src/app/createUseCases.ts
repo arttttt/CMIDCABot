@@ -112,6 +112,7 @@ export function createUseCases(
     blockchainRepository,
     getWalletInfoByAddress,
     getWalletInfoByPrivateKey,
+    operationLockRepository,
   );
   const deleteWallet = new DeleteWalletUseCase(userRepository);
   const exportWalletKey = new ExportWalletKeyUseCase(userRepository, secretStore);

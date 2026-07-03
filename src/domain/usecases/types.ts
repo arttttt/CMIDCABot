@@ -61,7 +61,7 @@ export interface ExportKeyResult {
 }
 
 export interface ImportWalletResult {
-  type: "imported" | "already_exists" | "invalid_key";
+  type: "imported" | "already_exists" | "invalid_key" | "operation_in_progress";
   wallet?: WalletInfo;
   error?: string;
 }

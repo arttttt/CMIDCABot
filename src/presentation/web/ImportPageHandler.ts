@@ -149,6 +149,10 @@ export class ImportPageHandler {
           this.sendErrorPage(res, result.error || "Invalid key or seed phrase");
           break;
 
+        case "operation_in_progress":
+          this.sendErrorPage(res, "Another wallet operation is in progress. Try again shortly.");
+          break;
+
         default:
           this.sendErrorPage(res, "Import failed");
       }
