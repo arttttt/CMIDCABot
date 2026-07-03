@@ -26,3 +26,18 @@ export const MAX_USDC_AMOUNT = 50;
  * 50 bps = 0.5%
  */
 export const MAX_PRICE_IMPACT_BPS = 50;
+
+/**
+ * Default slippage tolerance for swaps in basis points (0.5%).
+ */
+export const DEFAULT_SLIPPAGE_BPS = 50;
+
+/**
+ * Cap on the transaction priority fee, in lamports (0.001 SOL).
+ */
+export const PRIORITY_FEE_MAX_LAMPORTS = 1_000_000;
+
+/**
+ * Priority level requested for swap transactions.
+ */
+export const PRIORITY_FEE_LEVEL = "medium";

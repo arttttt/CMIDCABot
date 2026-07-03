@@ -9,14 +9,16 @@
 import { TokenMint } from "../../../domain/models/id/index.js";
 import type { SwapQuote } from "../../../domain/models/quote/SwapQuote.js";
 import { TOKEN_MINTS, TOKEN_DECIMALS } from "../../../domain/constants/tokens.js";
+import {
+  DEFAULT_SLIPPAGE_BPS,
+  PRIORITY_FEE_MAX_LAMPORTS,
+  PRIORITY_FEE_LEVEL,
+} from "../../../domain/constants.js";
 import { logger, LogSanitizer } from "../../../infrastructure/shared/logging/index.js";
 import { toRawAmount, toHumanAmountNumber } from "../../../infrastructure/shared/math/index.js";
 
 // Jupiter Swap API v1 endpoint
 const JUPITER_SWAP_API = "https://api.jup.ag/swap/v1";
-
-/** Default slippage tolerance in basis points (0.5%) */
-const DEFAULT_SLIPPAGE_BPS = 50;
 
 export interface JupiterQuoteResponse {
   inputMint: string;
@@ -217,8 +219,8 @@ export class JupiterSwapClient {
           // Priority fee settings
           prioritizationFeeLamports: {
             priorityLevelWithMaxLamports: {
-              maxLamports: 1000000, // Max 0.001 SOL for priority
-              priorityLevel: "medium",
+              maxLamports: PRIORITY_FEE_MAX_LAMPORTS,
+              priorityLevel: PRIORITY_FEE_LEVEL,
             },
           },
         }),

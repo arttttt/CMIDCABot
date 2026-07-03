@@ -26,8 +26,4 @@ export class JupiterPriceRepository implements PriceRepository {
   async getPricesRecord(): Promise<Record<AssetSymbol, number>> {
     return this.client.getPricesRecord();
   }
-
-  clearCache(): void {
-    this.client.clearCache();
-  }
 }

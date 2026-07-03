@@ -38,9 +38,4 @@ export interface PriceRepository {
    * Convenient for use cases that need just the numbers
    */
   getPricesRecord(): Promise<Record<AssetSymbol, number>>;
-
-  /**
-   * Clear price cache (if any)
-   */
-  clearCache(): void;
 }

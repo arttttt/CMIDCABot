@@ -121,13 +121,6 @@ export class JupiterPriceClient {
     };
   }
 
-  /**
-   * Clear the price cache (useful for testing or forcing refresh)
-   */
-  clearCache(): void {
-    this.cachedPrices = null;
-  }
-
   private isCacheValid(): boolean {
     if (!this.cachedPrices) return false;
     const age = Date.now() - this.cachedPrices.fetchedAt.getTime();
