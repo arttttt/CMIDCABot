@@ -20,7 +20,8 @@ src/
 │   ├── sources/
 │   │   ├── database/        # SQLite adapters
 │   │   ├── memory/          # in-memory caches
-│   │   └── api/             # external API clients
+│   │   ├── api/             # external API clients
+│   │   └── crypto/          # key material handling (WalletKeyService)
 │   └── factories/
 │
 ├── infrastructure/
@@ -43,22 +44,27 @@ src/
 
 ```
 app             → all layers (composition root: src/app/ + src/index.ts)
-domain          → infrastructure/shared (logging, math, config)
+domain          → infrastructure/shared (logging, math, config, resilience)
                 → domain/policies
 data            → domain/repositories (interfaces)
                 → domain/models
                 → domain/policies
+                → domain/constants
                 → infrastructure/internal
                 → infrastructure/shared
 presentation    → domain/usecases
                 → domain/models
                 → domain/policies
+                → domain/repositories (session/store ports only — e.g.
+                  ImportSessionRepository, SecretStoreRepository,
+                  RateLimitRepository; business flows go through use cases)
                 → infrastructure/shared
 infrastructure  → (nothing, except shared between own modules)
 ```
 
-> **Note:** Domain may use `infrastructure/shared` for pure utilities (logging, math).
-> Domain must NOT use `infrastructure/internal` — those are for data layer only.
+> **Note:** Domain may use `infrastructure/shared` for pure utilities
+> (logging, math, resilience). Domain must NOT use `infrastructure/internal`
+> — those are for data layer only.
 
 **Key rule:** Dependencies point inward only.
 
