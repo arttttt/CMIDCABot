@@ -23,6 +23,7 @@ import {
 import { TelegramMessageSender } from "./presentation/telegram/TelegramMessageSender.js";
 import { SecretPageHandler } from "./presentation/web/SecretPageHandler.js";
 import { ImportPageHandler } from "./presentation/web/ImportPageHandler.js";
+import { WalletFormatter } from "./presentation/formatters/index.js";
 import { createStorage } from "./app/createStorage.js";
 import { createBlockchain } from "./app/createBlockchain.js";
 import { createUseCases } from "./app/createUseCases.js";
@@ -66,6 +67,7 @@ async function main(): Promise<void> {
     storage.importSessionStore,
     useCases.importWallet,
     messageSender,
+    new WalletFormatter(),
   );
 
   const marketMonitorScheduler = await startMarketMonitor({

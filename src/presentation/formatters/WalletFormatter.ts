@@ -179,6 +179,14 @@ export class WalletFormatter {
     }
   }
 
+  formatImportFailed(error: string): ClientResponse {
+    return new ClientResponse(
+      `*Import Failed*\n\n` +
+        `${Markdown.escape(error)}\n\n` +
+        `Use /wallet import to try again.`,
+    );
+  }
+
   formatImportLink(url: string, ttlMinutes: number): ClientResponse {
     return new ClientResponse(
       `*Import Wallet*\n\n` +

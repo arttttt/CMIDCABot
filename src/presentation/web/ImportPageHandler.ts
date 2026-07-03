@@ -11,10 +11,10 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { TelegramId } from "../../domain/models/id/index.js";
 import type { ImportSessionRepository } from "../../domain/repositories/index.js";
 import type { ImportWalletUseCase } from "../../domain/usecases/ImportWalletUseCase.js";
 import type { MessageSender } from "../telegram/MessageSender.js";
+import type { WalletFormatter } from "../formatters/WalletFormatter.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { HtmlUtils, BASE_STYLES } from "./html.js";
 
@@ -35,6 +35,7 @@ export class ImportPageHandler {
     private readonly sessionStore: ImportSessionRepository,
     private readonly importWallet: ImportWalletUseCase,
     private readonly messageSender: MessageSender,
+    private readonly walletFormatter: WalletFormatter,
   ) {}
 
   /**
@@ -120,7 +121,10 @@ export class ImportPageHandler {
 
     if (!secretInput) {
       this.sendErrorPage(res, "No key or seed phrase provided");
-      await this.notifyUser(telegramId, false, "No key or seed phrase provided");
+      await this.messageSender.send(
+        telegramId,
+        this.walletFormatter.formatImportFailed("No key or seed phrase provided"),
+      );
       return true;
     }
 
@@ -135,30 +139,31 @@ export class ImportPageHandler {
             address: result.wallet!.address.value.slice(0, 8) + "...",
           });
           this.sendSuccessPage(res, result.wallet!.address.value);
-          await this.notifyUser(telegramId, true, undefined, result.wallet!.address.value);
           break;
 
         case "already_exists":
           this.sendErrorPage(res, "Wallet already exists. Delete existing wallet first.");
-          await this.notifyUser(telegramId, false, "Wallet already exists");
           break;
 
         case "invalid_key":
           this.sendErrorPage(res, result.error || "Invalid key or seed phrase");
-          await this.notifyUser(telegramId, false, result.error || "Invalid key or seed phrase");
           break;
 
         default:
           this.sendErrorPage(res, "Import failed");
-          await this.notifyUser(telegramId, false, "Import failed");
       }
+
+      await this.messageSender.send(telegramId, this.walletFormatter.formatImportWallet(result));
     } catch (error) {
       logger.error("ImportPageHandler", "Import failed", {
         telegramId,
         error: error instanceof Error ? error.message : String(error),
       });
       this.sendErrorPage(res, "An unexpected error occurred");
-      await this.notifyUser(telegramId, false, "An unexpected error occurred");
+      await this.messageSender.send(
+        telegramId,
+        this.walletFormatter.formatImportFailed("An unexpected error occurred"),
+      );
     }
 
     return true;
@@ -197,24 +202,6 @@ export class ImportPageHandler {
         reject(err);
       });
     });
-  }
-
-  private async notifyUser(
-    tgId: TelegramId,
-    success: boolean,
-    error?: string,
-    address?: string,
-  ): Promise<void> {
-    if (success && address) {
-      const shortAddress = `${address.slice(0, 4)}...${address.slice(-4)}`;
-      await this.messageSender.send(tgId, {
-        text: `**Wallet Imported Successfully!**\n\nAddress: \`${shortAddress}\`\n\nUse /wallet to view details.`,
-      });
-    } else {
-      await this.messageSender.send(tgId, {
-        text: `**Import Failed**\n\n${error || "Unknown error"}\n\nUse /wallet import to try again.`,
-      });
-    }
   }
 
   private sendFormPage(res: ServerResponse, csrfToken: string): void {

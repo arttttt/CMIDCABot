@@ -286,7 +286,7 @@ export class SolanaRpcClient {
         method: "getTokenAccountsByOwner",
         params: [
           walletAddress,
-          { mint: tokens.btc.mint },
+          { mint: tokens.btc.mint.value },
           { encoding: "jsonParsed" },
         ],
       },
@@ -295,7 +295,7 @@ export class SolanaRpcClient {
         method: "getTokenAccountsByOwner",
         params: [
           walletAddress,
-          { mint: tokens.eth.mint },
+          { mint: tokens.eth.mint.value },
           { encoding: "jsonParsed" },
         ],
       },
@@ -304,7 +304,7 @@ export class SolanaRpcClient {
         method: "getTokenAccountsByOwner",
         params: [
           walletAddress,
-          { mint: tokens.usdc.mint },
+          { mint: tokens.usdc.mint.value },
           { encoding: "jsonParsed" },
         ],
       },

@@ -30,7 +30,7 @@ export class StartCommand implements Command {
             // Initialize user (for authorized users)
             await this.deps.initUser.execute(ctx.telegramId);
 
-            let text = "**CMI DCA Bot**\n\n";
+            let text = "*CMI DCA Bot*\n\n";
             text += "Target allocations:\n";
             text += PortfolioFormatter.formatTargetAllocations() + "\n\n";
             text += "The bot purchases the asset furthest below its target allocation.\n\n";
