@@ -248,49 +248,32 @@ export class SolanaRpcClient {
   }
 
   /**
-   * Enumerate all token balances of a wallet in a single batch RPC request:
-   * native SOL plus every SPL and Token-2022 account with a non-zero balance.
+   * Enumerate all token balances of a wallet: native SOL plus every SPL
+   * and Token-2022 account with a non-zero balance.
+   *
+   * Uses sequential single RPC calls, NOT a batch: the public
+   * mainnet-beta endpoint rejects any JSON-RPC batch with more than one
+   * call ("Too many requests for a specific RPC call").
    *
    * @param walletAddress - Wallet address to scan
    * @returns Native SOL balance and all discovered token holdings
-   * @throws Error if batch request fails
+   * @throws Error if an RPC request fails after retries
    */
   async getAllTokenAccounts(walletAddress: string): Promise<WalletTokenAccountsResult> {
-    logger.debug("Solana", "Enumerating token accounts via batch RPC", {
+    logger.debug("Solana", "Enumerating token accounts", {
       wallet: walletAddress.slice(0, 8),
     });
 
-    const [solResult, splResult, token2022Result] = await this.batchClient.batch<[
-      { value: bigint },
-      { value: TokenAccountResult[] },
-      { value: TokenAccountResult[] },
-    ]>([
-      {
-        method: "getBalance",
-        params: [walletAddress],
-      },
-      {
-        method: "getTokenAccountsByOwner",
-        params: [
-          walletAddress,
-          { programId: TOKEN_PROGRAM_ID },
-          { encoding: "jsonParsed" },
-        ],
-      },
-      {
-        method: "getTokenAccountsByOwner",
-        params: [
-          walletAddress,
-          { programId: TOKEN_2022_PROGRAM_ID },
-          { encoding: "jsonParsed" },
-        ],
-      },
-    ]);
+    const sol = await this.getBalance(walletAddress);
+    const splAccounts = await this.getTokenAccountsByProgram(walletAddress, TOKEN_PROGRAM_ID);
+    const token2022Accounts = await this.getTokenAccountsByProgram(
+      walletAddress,
+      TOKEN_2022_PROGRAM_ID,
+    );
 
-    const sol = Precision.toHumanAmountNumber(solResult.value.toString(), 9);
     const tokens = [
-      ...this.parseTokenHoldings(splResult.value, "spl-token"),
-      ...this.parseTokenHoldings(token2022Result.value, "spl-token-2022"),
+      ...this.parseTokenHoldings(splAccounts, "spl-token"),
+      ...this.parseTokenHoldings(token2022Accounts, "spl-token-2022"),
     ];
 
     logger.debug("Solana", "Token accounts enumerated", {
@@ -344,6 +327,28 @@ export class SolanaRpcClient {
 
     // Unexpected data format: fail loudly rather than treat as zero balance
     throw new Error("Unexpected token account data format");
+  }
+
+  /**
+   * Fetch all token accounts of a wallet for one token program
+   */
+  private async getTokenAccountsByProgram(
+    walletAddress: string,
+    programId: string,
+  ): Promise<TokenAccountResult[]> {
+    const owner = address(walletAddress);
+
+    const result = await Retry.withRetry(() =>
+      this.rpc
+        .getTokenAccountsByOwner(
+          owner,
+          { programId: address(programId) },
+          { encoding: "jsonParsed" },
+        )
+        .send()
+    );
+
+    return result.value as unknown as TokenAccountResult[];
   }
 
   /**
