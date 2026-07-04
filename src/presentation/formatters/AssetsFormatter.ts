@@ -14,6 +14,10 @@ import { NumberFormatter } from "./NumberFormatter.js";
 
 const SEPARATOR = "─".repeat(25);
 
+// Telegram messages are capped at 4096 chars; spam-token wallets can
+// hold thousands of accounts, so the list is truncated by value.
+const MAX_TOKEN_LINES = 25;
+
 export class AssetsFormatter {
   format(result: DiscoverAssetsResult): ClientResponse {
     switch (result.type) {
@@ -35,8 +39,13 @@ export class AssetsFormatter {
     text += SEPARATOR + "\n\n";
 
     text += "*Tokens*\n";
-    for (const token of assets.tokens) {
+    const shownTokens = assets.tokens.slice(0, MAX_TOKEN_LINES);
+    for (const token of shownTokens) {
       text += this.formatToken(token) + "\n";
+    }
+    const hiddenCount = assets.tokens.length - shownTokens.length;
+    if (hiddenCount > 0) {
+      text += `_…and ${hiddenCount} more_\n`;
     }
 
     if (assets.positions.length > 0) {
