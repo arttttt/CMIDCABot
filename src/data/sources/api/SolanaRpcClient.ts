@@ -52,6 +52,7 @@ interface TokenAccountResult {
     data: {
       parsed: {
         info: {
+          mint: string;
           tokenAmount: {
             amount: string;
             decimals: number;
@@ -62,6 +63,32 @@ interface TokenAccountResult {
       };
     };
   };
+}
+
+/**
+ * SPL token program ids used to enumerate all token accounts of a wallet
+ */
+const TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const TOKEN_2022_PROGRAM_ID = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
+
+/**
+ * A non-zero token balance discovered on a wallet
+ */
+export interface RawTokenHolding {
+  mint: string;
+  /** Amount in human units */
+  amount: number;
+  decimals: number;
+  program: "spl-token" | "spl-token-2022";
+}
+
+/**
+ * Result of full wallet token enumeration
+ */
+export interface WalletTokenAccountsResult {
+  /** Native SOL balance in human units */
+  sol: number;
+  tokens: RawTokenHolding[];
 }
 
 export class SolanaRpcClient {
@@ -221,6 +248,61 @@ export class SolanaRpcClient {
   }
 
   /**
+   * Enumerate all token balances of a wallet in a single batch RPC request:
+   * native SOL plus every SPL and Token-2022 account with a non-zero balance.
+   *
+   * @param walletAddress - Wallet address to scan
+   * @returns Native SOL balance and all discovered token holdings
+   * @throws Error if batch request fails
+   */
+  async getAllTokenAccounts(walletAddress: string): Promise<WalletTokenAccountsResult> {
+    logger.debug("Solana", "Enumerating token accounts via batch RPC", {
+      wallet: walletAddress.slice(0, 8),
+    });
+
+    const [solResult, splResult, token2022Result] = await this.batchClient.batch<[
+      { value: bigint },
+      { value: TokenAccountResult[] },
+      { value: TokenAccountResult[] },
+    ]>([
+      {
+        method: "getBalance",
+        params: [walletAddress],
+      },
+      {
+        method: "getTokenAccountsByOwner",
+        params: [
+          walletAddress,
+          { programId: TOKEN_PROGRAM_ID },
+          { encoding: "jsonParsed" },
+        ],
+      },
+      {
+        method: "getTokenAccountsByOwner",
+        params: [
+          walletAddress,
+          { programId: TOKEN_2022_PROGRAM_ID },
+          { encoding: "jsonParsed" },
+        ],
+      },
+    ]);
+
+    const sol = Precision.toHumanAmountNumber(solResult.value.toString(), 9);
+    const tokens = [
+      ...this.parseTokenHoldings(splResult.value, "spl-token"),
+      ...this.parseTokenHoldings(token2022Result.value, "spl-token-2022"),
+    ];
+
+    logger.debug("Solana", "Token accounts enumerated", {
+      wallet: walletAddress.slice(0, 8),
+      sol,
+      tokens: tokens.length,
+    });
+
+    return { sol, tokens };
+  }
+
+  /**
    * Parse token account balance from getTokenAccountsByOwner result
    */
   private parseTokenAccountBalance(accounts: TokenAccountResult[]): number {
@@ -262,6 +344,38 @@ export class SolanaRpcClient {
 
     // Unexpected data format: fail loudly rather than treat as zero balance
     throw new Error("Unexpected token account data format");
+  }
+
+  /**
+   * Parse token holdings from getTokenAccountsByOwner results,
+   * skipping zero balances
+   */
+  private parseTokenHoldings(
+    accounts: TokenAccountResult[],
+    program: RawTokenHolding["program"],
+  ): RawTokenHolding[] {
+    const holdings: RawTokenHolding[] = [];
+
+    for (const account of accounts) {
+      const info = account.account.data.parsed?.info;
+      if (!info?.mint || !info.tokenAmount) {
+        continue;
+      }
+
+      const amount = this.parseTokenAccountBalance([account]);
+      if (amount <= 0) {
+        continue;
+      }
+
+      holdings.push({
+        mint: info.mint,
+        amount,
+        decimals: info.tokenAmount.decimals,
+        program,
+      });
+    }
+
+    return holdings;
   }
 
   /**
