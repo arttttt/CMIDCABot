@@ -26,4 +26,8 @@ export class JupiterPriceRepository implements PriceRepository {
   async getPricesRecord(): Promise<Record<AssetSymbol, number>> {
     return this.client.getPricesRecord();
   }
+
+  async getUsdPricesByMint(mints: string[]): Promise<Record<string, number>> {
+    return this.client.getUsdPricesByMint(mints);
+  }
 }

@@ -38,4 +38,11 @@ export interface PriceRepository {
    * Convenient for use cases that need just the numbers
    */
   getPricesRecord(): Promise<Record<AssetSymbol, number>>;
+
+  /**
+   * Get USD prices for arbitrary token mints.
+   * Returns a map of mint address -> USD price. Mints without a reliable
+   * price are omitted from the result.
+   */
+  getUsdPricesByMint(mints: string[]): Promise<Record<string, number>>;
 }

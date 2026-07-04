@@ -13,6 +13,9 @@ import { TOKEN_MINTS } from "../../../domain/constants/tokens.js";
 // Jupiter Price API v3 endpoint (requires API key from https://portal.jup.ag)
 const JUPITER_PRICE_API = "https://api.jup.ag/price/v3";
 
+// Price API v3 accepts at most 50 mint ids per request
+const PRICE_API_MAX_IDS = 50;
+
 export interface JupiterPriceData {
   decimals: number;
   usdPrice: number;
@@ -119,6 +122,50 @@ export class JupiterPriceClient {
       ETH: prices.ETH,
       SOL: prices.SOL,
     };
+  }
+
+  /**
+   * Fetch USD prices for arbitrary token mints.
+   * Mints without a reliable price are omitted by the API and absent
+   * from the result. Requests are chunked to the API limit.
+   */
+  async getUsdPricesByMint(mints: string[]): Promise<Record<string, number>> {
+    if (mints.length === 0) {
+      return {};
+    }
+
+    const prices: Record<string, number> = {};
+
+    for (let i = 0; i < mints.length; i += PRICE_API_MAX_IDS) {
+      const chunk = mints.slice(i, i + PRICE_API_MAX_IDS);
+      const url = `${this.baseUrl}?ids=${chunk.join(",")}`;
+
+      const response = await fetch(url, {
+        headers: {
+          "x-api-key": this.apiKey,
+        },
+      });
+
+      if (!response.ok) {
+        logger.error("JupiterPriceClient", "Jupiter API error", {
+          status: response.status,
+          statusText: response.statusText,
+        });
+        throw new Error(`Jupiter Price API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = (await response.json()) as JupiterPriceResponse;
+      for (const [mint, priceData] of Object.entries(data)) {
+        prices[mint] = priceData.usdPrice;
+      }
+    }
+
+    logger.debug("JupiterPriceClient", "Prices by mint fetched", {
+      requested: mints.length,
+      priced: Object.keys(prices).length,
+    });
+
+    return prices;
   }
 
   private isCacheValid(): boolean {
