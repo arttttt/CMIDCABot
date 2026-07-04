@@ -9,6 +9,7 @@ import {
   InitUserUseCase,
   ExecutePurchaseUseCase,
   GetPortfolioStatusUseCase,
+  DiscoverAssetsUseCase,
   DetermineAssetToBuyUseCase,
   GetWalletBalancesUseCase,
   GetWalletInfoByAddressUseCase,
@@ -60,6 +61,7 @@ export interface UseCases {
   determineAssetToBuy: DetermineAssetToBuyUseCase;
   executePurchase: ExecutePurchaseUseCase;
   getPortfolioStatus: GetPortfolioStatusUseCase;
+  discoverAssets: DiscoverAssetsUseCase;
   getMarketStatus: GetMarketStatusUseCase;
   cancelConfirmation: CancelConfirmationUseCase;
   confirmSwap: ConfirmSwapUseCase;
@@ -83,7 +85,13 @@ export function createUseCases(
     operationLockRepository,
     confirmationRepository,
   } = storage;
-  const { blockchainRepository, balanceRepository, priceRepository, swapRepository } = blockchain;
+  const {
+    blockchainRepository,
+    balanceRepository,
+    priceRepository,
+    swapRepository,
+    assetDiscoveryRepository,
+  } = blockchain;
 
   // Authorization
   const initializeAuthorization = new InitializeAuthorizationUseCase(authRepository, ownerConfig);
@@ -145,6 +153,11 @@ export function createUseCases(
   const determineAssetToBuy = new DetermineAssetToBuyUseCase(userRepository, balanceRepository, priceRepository);
   const executePurchase = new ExecutePurchaseUseCase(executeSwap, determineAssetToBuy, operationLockRepository);
   const getPortfolioStatus = new GetPortfolioStatusUseCase(userRepository, balanceRepository, priceRepository);
+  const discoverAssets = new DiscoverAssetsUseCase(
+    userRepository,
+    assetDiscoveryRepository,
+    priceRepository,
+  );
 
   // Confirmation flow (preview -> confirm/cancel)
   const resolveConfirmationSession = new ResolveConfirmationSessionUseCase(
@@ -188,6 +201,7 @@ export function createUseCases(
     determineAssetToBuy,
     executePurchase,
     getPortfolioStatus,
+    discoverAssets,
     getMarketStatus,
     cancelConfirmation,
     confirmSwap,

@@ -11,6 +11,7 @@ import {
   AdminCommandDeps,
   StartCommandDeps,
   PortfolioCommandDeps,
+  AssetsCommandDeps,
   MarketCommandDeps,
   VersionCommandDeps,
   HelpCommandExternalDeps,
@@ -20,6 +21,7 @@ import {
   AdminCommand,
   StartCommand,
   PortfolioCommand,
+  AssetsCommand,
   MarketCommand,
   VersionCommand,
   HelpCommand,
@@ -33,6 +35,7 @@ export interface ProdCommandRegistryDeps {
   start: StartCommandDeps;
   wallet: WalletCommandDeps;
   portfolio: PortfolioCommandDeps;
+  assets: AssetsCommandDeps;
   market: MarketCommandDeps;
   admin: AdminCommandDeps;
   version: VersionCommandDeps;
@@ -64,6 +67,7 @@ export class ProdCommandRegistry implements CommandRegistry {
       ["start", new StartCommand(deps.start)],
       ["wallet", new WalletCommand(deps.wallet)],
       ["portfolio", new PortfolioCommand(deps.portfolio)],
+      ["assets", new AssetsCommand(deps.assets)],
       ["market", new MarketCommand(deps.market)],
       ["admin", new AdminCommand(deps.admin)],
       ["version", new VersionCommand(deps.version)],

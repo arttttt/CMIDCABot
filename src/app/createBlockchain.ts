@@ -8,6 +8,7 @@ import type {
   BalanceRepository,
   PriceRepository,
   SwapRepository,
+  AssetDiscoveryRepository,
 } from "../domain/repositories/index.js";
 import type { KeyEncryptionService } from "../infrastructure/internal/crypto/index.js";
 import { SolanaRpcClient } from "../data/sources/api/SolanaRpcClient.js";
@@ -16,6 +17,7 @@ import { JupiterPriceClient } from "../data/sources/api/JupiterPriceClient.js";
 import { JupiterSwapClient } from "../data/sources/api/JupiterSwapClient.js";
 import { SolanaBlockchainRepository } from "../data/repositories/SolanaBlockchainRepository.js";
 import { CachedBalanceRepository } from "../data/repositories/memory/CachedBalanceRepository.js";
+import { AssetDiscoveryRepositoryImpl } from "../data/repositories/AssetDiscoveryRepositoryImpl.js";
 import { JupiterPriceRepository } from "../data/repositories/JupiterPriceRepository.js";
 import { JupiterSwapRepository } from "../data/repositories/JupiterSwapRepository.js";
 
@@ -24,6 +26,7 @@ export interface Blockchain {
   balanceRepository: BalanceRepository;
   priceRepository: PriceRepository;
   swapRepository: SwapRepository;
+  assetDiscoveryRepository: AssetDiscoveryRepository;
 }
 
 export function createBlockchain(
@@ -39,5 +42,14 @@ export function createBlockchain(
   const priceRepository = new JupiterPriceRepository(new JupiterPriceClient(config.price.jupiterApiKey));
   const swapRepository = new JupiterSwapRepository(new JupiterSwapClient(config.price.jupiterApiKey));
 
-  return { blockchainRepository, balanceRepository, priceRepository, swapRepository };
+  // Position fetchers (Kamino etc.) are registered here as they are added
+  const assetDiscoveryRepository = new AssetDiscoveryRepositoryImpl(solanaRpcClient, []);
+
+  return {
+    blockchainRepository,
+    balanceRepository,
+    priceRepository,
+    swapRepository,
+    assetDiscoveryRepository,
+  };
 }

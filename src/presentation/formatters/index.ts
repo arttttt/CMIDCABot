@@ -14,3 +14,4 @@ export { InviteFormatter } from "./InviteFormatter.js";
 export { ProgressFormatter } from "./ProgressFormatter.js";
 export { ConfirmationFormatter } from "./ConfirmationFormatter.js";
 export { MarketFormatter } from "./MarketFormatter.js";
+export { AssetsFormatter } from "./AssetsFormatter.js";

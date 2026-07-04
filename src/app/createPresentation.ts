@@ -28,6 +28,7 @@ import {
   ConfirmationFormatter,
   HelpFormatter,
   MarketFormatter,
+  AssetsFormatter,
 } from "../presentation/formatters/index.js";
 
 export interface PresentationDeps {
@@ -64,6 +65,7 @@ export function createPresentation(deps: PresentationDeps): Presentation {
   const confirmationFormatter = new ConfirmationFormatter();
   const helpFormatter = new HelpFormatter();
   const marketFormatter = new MarketFormatter();
+  const assetsFormatter = new AssetsFormatter();
 
   function createRegistryAndGateway(botUsername?: string) {
     // Invite links need the bot username, available only after getMe()
@@ -123,6 +125,11 @@ export function createPresentation(deps: PresentationDeps): Presentation {
       formatter: marketFormatter,
     };
 
+    const assetsDeps = {
+      discoverAssets: useCases.discoverAssets,
+      formatter: assetsFormatter,
+    };
+
     let registry: CommandRegistry;
 
     if (config.isDev) {
@@ -130,6 +137,7 @@ export function createPresentation(deps: PresentationDeps): Presentation {
         start: startDeps,
         wallet: walletDeps,
         portfolio: portfolioDeps,
+        assets: assetsDeps,
         prices: {
           getPrices: useCases.getPrices,
           formatter: priceFormatter,
@@ -154,6 +162,7 @@ export function createPresentation(deps: PresentationDeps): Presentation {
         start: startDeps,
         wallet: walletDeps,
         portfolio: portfolioDeps,
+        assets: assetsDeps,
         market: marketDeps,
         admin: adminDeps,
         version: versionDeps,

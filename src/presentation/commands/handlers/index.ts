@@ -1,5 +1,6 @@
 export * from "./WalletCommand.js";
 export * from "./PortfolioCommand.js";
+export * from "./AssetsCommand.js";
 export * from "./PricesCommand.js";
 export * from "./MarketCommand.js";
 export * from "./SwapCommand.js";
