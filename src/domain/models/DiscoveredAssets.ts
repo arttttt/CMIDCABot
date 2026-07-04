@@ -46,6 +46,8 @@ export interface DefiPositionAsset {
   /** Amount in human units */
   amount: number;
   usdValue?: number;
+  /** Side of the asset inside the position; treated as supplied when omitted */
+  role?: "supplied" | "borrowed";
 }
 
 /**

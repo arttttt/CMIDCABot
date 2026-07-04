@@ -88,10 +88,11 @@ export class AssetsFormatter {
         : asset.mint
           ? Markdown.code(this.shortMint(asset.mint))
           : "?";
+      const side = asset.role === "borrowed" ? "borrow " : "";
       const amount = NumberFormatter.formatAmount(asset.amount);
       const value =
         asset.usdValue !== undefined ? ` ($${NumberFormatter.formatPrice(asset.usdValue)})` : "";
-      return `  ${name}: ${amount}${value}`;
+      return `  ${side}${name}: ${amount}${value}`;
     });
 
     const total =
