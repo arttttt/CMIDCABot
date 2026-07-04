@@ -18,6 +18,8 @@ import { JupiterSwapClient } from "../data/sources/api/JupiterSwapClient.js";
 import { SolanaBlockchainRepository } from "../data/repositories/SolanaBlockchainRepository.js";
 import { CachedBalanceRepository } from "../data/repositories/memory/CachedBalanceRepository.js";
 import { AssetDiscoveryRepositoryImpl } from "../data/repositories/AssetDiscoveryRepositoryImpl.js";
+import { KaminoPositionFetcher } from "../data/repositories/KaminoPositionFetcher.js";
+import { KaminoPortfolioClient } from "../data/sources/api/KaminoPortfolioClient.js";
 import { JupiterPriceRepository } from "../data/repositories/JupiterPriceRepository.js";
 import { JupiterSwapRepository } from "../data/repositories/JupiterSwapRepository.js";
 
@@ -43,7 +45,9 @@ export function createBlockchain(
   const swapRepository = new JupiterSwapRepository(new JupiterSwapClient(config.price.jupiterApiKey));
 
   // Position fetchers (Kamino etc.) are registered here as they are added
-  const assetDiscoveryRepository = new AssetDiscoveryRepositoryImpl(solanaRpcClient, []);
+  const assetDiscoveryRepository = new AssetDiscoveryRepositoryImpl(solanaRpcClient, [
+    new KaminoPositionFetcher(new KaminoPortfolioClient()),
+  ]);
 
   return {
     blockchainRepository,
