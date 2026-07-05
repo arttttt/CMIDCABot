@@ -55,7 +55,7 @@ export class ConfirmationFormatter {
       ],
     ];
 
-    return new ClientResponse(lines.join("\n"), buttons);
+    return ClientResponse.sensitive(lines.join("\n"), buttons);
   }
 
   /**
@@ -112,7 +112,7 @@ export class ConfirmationFormatter {
       ],
     ];
 
-    return new ClientResponse(lines.join("\n"), buttons);
+    return ClientResponse.sensitive(lines.join("\n"), buttons);
   }
 
   /**

@@ -87,7 +87,7 @@ export class SwapFormatter {
       Markdown.link("View on Solscan", `https://solscan.io/tx/${sigStr}`),
     ];
 
-    return new ClientResponse(lines.join("\n"));
+    return ClientResponse.sensitive(lines.join("\n"));
   }
 
   formatUsage(): ClientResponse {

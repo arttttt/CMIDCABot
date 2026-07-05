@@ -22,7 +22,21 @@ export class ClientResponse {
     public readonly text: string,
     public readonly buttons?: ClientButton[][],
     public readonly deleteUserMessage?: boolean,
+    /** Content is hidden (edited to a placeholder) after a short TTL */
+    public readonly sensitive?: boolean,
   ) {}
+
+  /**
+   * Response carrying sensitive data (balances, amounts, addresses):
+   * the rendered message is replaced with a placeholder after a TTL.
+   */
+  static sensitive(
+    text: string,
+    buttons?: ClientButton[][],
+    deleteUserMessage?: boolean,
+  ): ClientResponse {
+    return new ClientResponse(text, buttons, deleteUserMessage, true);
+  }
 }
 
 /**
