@@ -14,6 +14,7 @@
 import type { Context, InlineKeyboard } from "grammy";
 import type { StreamItem } from "../protocol/types.js";
 import { TelegramKeyboard } from "./keyboard.js";
+import { MessageRedactor } from "./MessageRedactor.js";
 import { logger } from "../../infrastructure/shared/logging/index.js";
 import { Retry } from "../../infrastructure/shared/resilience/index.js";
 
@@ -24,6 +25,8 @@ export interface RenderStreamOptions {
   statusMessageId?: number;
   /** Honor deleteUserMessage on the first item (text-message flow only) */
   deleteUserMessage?: boolean;
+  /** Schedules hiding of rendered sensitive responses */
+  redactor?: MessageRedactor;
 }
 
 export class StreamRenderer {
@@ -59,7 +62,10 @@ export class StreamRenderer {
       const keyboard = TelegramKeyboard.from(item.response);
 
       if (item.mode === "new") {
-        await this.send(ctx, chatId, item.response.text, keyboard);
+        const sentId = await this.send(ctx, chatId, item.response.text, keyboard);
+        if (sentId !== undefined) {
+          this.trackSensitivity(ctx, options.redactor, chatId, sentId, item);
+        }
         continue;
       }
 
@@ -67,6 +73,7 @@ export class StreamRenderer {
       if (statusMessageId !== undefined) {
         const edited = await this.edit(ctx, chatId, statusMessageId, item.response.text, keyboard);
         if (edited) {
+          this.trackSensitivity(ctx, options.redactor, chatId, statusMessageId, item);
           continue;
         }
       }
@@ -75,7 +82,30 @@ export class StreamRenderer {
       const sentId = await this.send(ctx, chatId, item.response.text, keyboard);
       if (sentId !== undefined) {
         statusMessageId = sentId;
+        this.trackSensitivity(ctx, options.redactor, chatId, sentId, item);
       }
+    }
+  }
+
+  /**
+   * Keep the redaction schedule in sync with the latest rendered
+   * content of a message: sensitive -> (re)schedule hiding,
+   * non-sensitive -> cancel any pending hide.
+   */
+  private static trackSensitivity(
+    ctx: Context,
+    redactor: MessageRedactor | undefined,
+    chatId: number,
+    messageId: number,
+    item: StreamItem,
+  ): void {
+    if (!redactor) {
+      return;
+    }
+    if (item.response.sensitive) {
+      redactor.schedule(ctx.api, chatId, messageId);
+    } else {
+      redactor.cancel(chatId, messageId);
     }
   }
 
