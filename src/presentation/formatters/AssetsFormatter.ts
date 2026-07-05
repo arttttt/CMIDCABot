@@ -30,7 +30,7 @@ export class AssetsFormatter {
         return new ClientResponse("Failed to discover assets. Please try again later.");
 
       case "success":
-        return new ClientResponse(this.formatAssets(result.assets));
+        return ClientResponse.sensitive(this.formatAssets(result.assets));
     }
   }
 

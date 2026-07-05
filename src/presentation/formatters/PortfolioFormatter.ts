@@ -66,7 +66,7 @@ export class PortfolioFormatter {
           text += `Portfolio is balanced`;
         }
 
-        return new ClientResponse(text);
+        return ClientResponse.sensitive(text);
       }
 
       default:

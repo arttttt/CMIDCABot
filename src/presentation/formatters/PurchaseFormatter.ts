@@ -68,7 +68,7 @@ export class PurchaseFormatter {
         const amountUsdc = result.quote.inputAmount;
         const priceUsd = amountUsdc / amountAsset;
 
-        return new ClientResponse(
+        return ClientResponse.sensitive(
           `Purchase Complete\n` +
             `${"─".repeat(25)}\n\n` +
             `Asset: ${Markdown.escape(asset)}\n` +

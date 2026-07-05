@@ -45,7 +45,7 @@ export class QuoteFormatter {
       `_Quote valid for ~30 seconds_`,
     ];
 
-    return new ClientResponse(lines.join("\n"));
+    return ClientResponse.sensitive(lines.join("\n"));
   }
 
   formatUsage(): ClientResponse {

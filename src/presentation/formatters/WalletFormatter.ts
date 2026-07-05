@@ -37,7 +37,7 @@ export class WalletFormatter {
   formatGetWalletInfo(result: GetWalletInfoResult): ClientResponse {
     switch (result.type) {
       case "success":
-        return new ClientResponse(
+        return ClientResponse.sensitive(
           `*DCA Wallet*\n\n` +
             this.formatWalletInfo(result.wallet!) +
             `\n\nDeposit SOL to this address to fund your DCA purchases.\n\n` +
@@ -75,7 +75,7 @@ export class WalletFormatter {
           );
         }
 
-        return new ClientResponse(
+        return ClientResponse.sensitive(
           `*Wallet Created!*\n\n` +
             this.formatWalletInfo(result.wallet!) +
             `\n\nDeposit SOL to this address to fund your DCA purchases.\n\n` +
@@ -84,7 +84,7 @@ export class WalletFormatter {
       }
 
       case "already_exists":
-        return new ClientResponse(
+        return ClientResponse.sensitive(
           `Wallet already exists.\n\n` +
             this.formatWalletInfo(result.wallet!) +
             `\n\nTo create a new wallet, first delete the existing one with /wallet delete.`,
@@ -150,7 +150,7 @@ export class WalletFormatter {
   formatImportWallet(result: ImportWalletResult): ClientResponse {
     switch (result.type) {
       case "imported":
-        return new ClientResponse(
+        return ClientResponse.sensitive(
           `*Wallet Imported!*\n\n` +
             this.formatWalletInfo(result.wallet!) +
             `\n\nYour wallet has been successfully imported.\n\n` +
@@ -158,7 +158,7 @@ export class WalletFormatter {
         );
 
       case "already_exists":
-        return new ClientResponse(
+        return ClientResponse.sensitive(
           `Wallet already exists.\n\n` +
             this.formatWalletInfo(result.wallet!) +
             `\n\nTo import a different wallet, first delete the existing one with /wallet delete.`,
