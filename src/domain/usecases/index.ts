@@ -14,6 +14,12 @@ export { ExecutePurchaseUseCase } from "./ExecutePurchaseUseCase.js";
 export { GetPortfolioStatusUseCase } from "./GetPortfolioStatusUseCase.js";
 export { DetermineAssetToBuyUseCase } from "./DetermineAssetToBuyUseCase.js";
 
+// Asset discovery
+export {
+  DiscoverAssetsUseCase,
+  type DiscoverAssetsResult,
+} from "./DiscoverAssetsUseCase.js";
+
 // Wallet
 export { GetWalletBalancesUseCase } from "./GetWalletBalancesUseCase.js";
 export { GetWalletInfoByAddressUseCase } from "./GetWalletInfoByAddressUseCase.js";

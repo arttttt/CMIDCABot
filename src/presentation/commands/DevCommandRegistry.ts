@@ -9,6 +9,7 @@ import { CommandRegistry, Command, ModeInfo } from "./types.js";
 import {
   WalletCommandDeps,
   PortfolioCommandDeps,
+  AssetsCommandDeps,
   PricesCommandDeps,
   MarketCommandDeps,
   SwapCommandDeps,
@@ -20,6 +21,7 @@ import {
 import {
   WalletCommand,
   PortfolioCommand,
+  AssetsCommand,
   PricesCommand,
   MarketCommand,
   SwapCommand,
@@ -37,6 +39,7 @@ export interface DevCommandRegistryDeps {
   start: StartCommandDeps;
   wallet: WalletCommandDeps;
   portfolio: PortfolioCommandDeps;
+  assets: AssetsCommandDeps;
   prices: PricesCommandDeps;
   market: MarketCommandDeps;
   swap: SwapCommandDeps;
@@ -70,6 +73,7 @@ export class DevCommandRegistry implements CommandRegistry {
       ["start", new StartCommand(deps.start)],
       ["wallet", new WalletCommand(deps.wallet)],
       ["portfolio", new PortfolioCommand(deps.portfolio)],
+      ["assets", new AssetsCommand(deps.assets)],
       ["prices", new PricesCommand(deps.prices)],
       ["market", new MarketCommand(deps.market)],
       ["swap", new SwapCommand(deps.swap)],

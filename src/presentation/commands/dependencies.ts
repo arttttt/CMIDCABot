@@ -6,6 +6,7 @@ import {
     DeleteWalletUseCase,
     ExportWalletKeyUseCase,
     GetPortfolioStatusUseCase,
+    DiscoverAssetsUseCase,
     GetPricesUseCase,
     GetMarketStatusUseCase,
     GetQuoteUseCase,
@@ -38,6 +39,7 @@ import {
     ConfirmationFormatter,
     HelpFormatter,
     MarketFormatter,
+    AssetsFormatter,
 } from "../formatters/index.js";
 
 import { CommandRegistry } from "./types.js";
@@ -66,6 +68,11 @@ export interface PortfolioCommandDeps {
     confirmPurchase: ConfirmPurchaseUseCase;
     cancelConfirmation: CancelConfirmationUseCase;
     confirmationFormatter: ConfirmationFormatter;
+}
+
+export interface AssetsCommandDeps {
+    discoverAssets: DiscoverAssetsUseCase;
+    formatter: AssetsFormatter;
 }
 
 export interface PricesCommandDeps {

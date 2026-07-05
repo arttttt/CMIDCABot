@@ -10,6 +10,7 @@ export * from "./InviteToken.js";
 export * from "./SwapStep.js";
 export * from "./PurchaseStep.js";
 export * from "./PortfolioTypes.js";
+export * from "./DiscoveredAssets.js";
 export * from "./UserIdentity.js";
 export * from "./OwnerConfig.js";
 export * from "./ConfirmationSession.js";

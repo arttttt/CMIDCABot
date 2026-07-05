@@ -6,6 +6,7 @@ export * from "./TransactionRepository.js";
 export * from "./AuthRepository.js";
 export * from "./InviteTokenRepository.js";
 export * from "./BalanceRepository.js";
+export * from "./AssetDiscoveryRepository.js";
 export * from "./BlockchainRepository.js";
 export * from "./PriceRepository.js";
 export * from "./SwapRepository.js";

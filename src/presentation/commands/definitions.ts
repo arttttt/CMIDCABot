@@ -28,6 +28,11 @@ export const Definitions = {
     description: "Portfolio status and manual buy",
   },
 
+  assets: {
+    name: "assets",
+    description: "All wallet assets: tokens and DeFi positions",
+  },
+
   prices: {
     name: "prices",
     description: "Current prices for BTC, ETH, SOL",
